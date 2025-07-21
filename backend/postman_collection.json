@@ -1,0 +1,425 @@
+{
+	"info": {
+		"_postman_id": "vivere-stays-api",
+		"name": "Vivere Stays API",
+		"description": "API collection for testing Vivere Stays endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"testpass123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/token/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"token",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/token/refresh/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"token",
+								"refresh",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Dynamic Pricing",
+			"item": [
+				{
+					"name": "Create Property",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has property data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('property');",
+									"    pm.expect(response.property).to.have.property('name');",
+									"    pm.expect(response.property).to.have.property('id');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"property_id\", response.property.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Hotel\",\n    \"booking_hotel_url\": \"https://www.booking.com/hotel/test.html\",\n    \"street_address\": \"123 Test Street\",\n    \"city\": \"Test City\",\n    \"country\": \"Test Country\",\n    \"postal_code\": \"12345\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/create/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"create",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Properties",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has properties array\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('properties');",
+									"    pm.expect(response).to.have.property('count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Property Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has property data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('property');",
+									"    pm.expect(response.property).to.have.property('id');",
+									"    pm.expect(response.property).to.have.property('name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Property",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Property updated successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('property');",
+									"    pm.expect(response.property.state_province).to.eql('NY');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"state_province\": \"NY\",\n    \"latitude\": 40.7128,\n    \"longitude\": -74.0060\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Property PMS",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"PMS updated successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('property');",
+									"    pm.expect(response).to.have.property('pms_change');",
+									"    pm.expect(response.property.pms_name).to.eql('apaleo');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pms_name\": \"apaleo\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/pms/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								"pms",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Property",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Property deleted successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-add Authorization header for authenticated requests",
+					"if (pm.environment.get(\"token\")) {",
+					"    pm.request.headers.add({",
+					"        key: \"Authorization\",",
+					"        value: \"Bearer \" + pm.environment.get(\"token\")",
+					"    });",
+					"}",
+					"",
+					"// Set default Content-Type for POST/PUT requests",
+					"if (pm.request.method === \"POST\" || pm.request.method === \"PUT\") {",
+					"    pm.request.headers.add({",
+					"        key: \"Content-Type\",",
+					"        value: \"application/json\"",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "property_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 
