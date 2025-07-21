@@ -1,0 +1,25 @@
+# Django/Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.pyo
+*.pyd
+*.db
+*.egg-info/
+
+# Django static/media
+media/
+staticfiles/
+
+# Local settings
+local_settings.py
+.env
+
+# Test/coverage
+.coverage
+htmlcov/
+*.cover
+*.py,cover
+
+# VSCode
+.vscode/ 
