@@ -12,7 +12,8 @@ urlpatterns = [
     path('api/profiles/', include('profiles.urls')),
     path('api/dynamic-pricing/', include('dynamic_pricing.urls')),
     path('api/booking/', include('booking.urls')),
-    
+    # Allauth URLs for authentication
+    path('accounts/', include('allauth.urls')),
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

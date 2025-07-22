@@ -19,30 +19,37 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').s
 
 # Application definition
 INSTALLED_APPS = [
+    # Django built-in apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Third party apps
+    'django.contrib.sites',
+
+    # Allauth (order matters!)
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+
+    # Third-party REST/auth
     'rest_framework',
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
     'corsheaders',
     'django_filters',
     'drf_spectacular',
-    
+
     # Local apps
     'profiles',
     'dynamic_pricing',
     'booking',
 ]
 
-# Development tools (only in DEBUG mode)
-if DEBUG:
-    INSTALLED_APPS += ['debug_toolbar']
-    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
-    INTERNAL_IPS = ['127.0.0.1', 'localhost']
+SITE_ID = 1
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -52,9 +59,13 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Development tools (only in DEBUG mode)
+# (debug_toolbar removed)
 
 ROOT_URLCONF = 'vivere_stays.urls'
 
@@ -182,5 +193,15 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 # Redis settings (commented out - not needed for current setup)
 # REDIS_URL = config('REDIS_URL', default='redis://redis:6379/0')
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': 'dummy-client-id',
+            'secret': 'dummy-client-secret',
+            'key': ''
+        }
+    }
+}
 
  
