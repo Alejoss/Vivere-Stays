@@ -22,4 +22,7 @@ yarn-error.log*
 # Python/Node at root
 __pycache__/
 *.pyc
-node_modules/ 
+node_modules/
+
+# Project specific
+other_files/ 

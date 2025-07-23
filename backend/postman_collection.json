@@ -10,7 +10,91 @@
 			"name": "Authentication",
 			"item": [
 				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has user data and access token\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('username');",
+									"    pm.expect(response).to.have.property('email');",
+									"    pm.expect(response).to.have.property('access_token');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"user_id\", response.id);",
+									"    pm.environment.set(\"username\", response.username);",
+									"    pm.environment.set(\"access_token\", response.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"testuser\",\n    \"email\": \"testuser@example.com\",\n    \"password\": \"testpass123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profiles/register/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"register",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has user data and access token\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('username');",
+									"    pm.expect(response).to.have.property('access_token');",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"access_token\", response.access_token);",
+									"    pm.environment.set(\"user_id\", response.id);",
+									"    pm.environment.set(\"username\", response.username);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -24,13 +108,14 @@
 							"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"testpass123\"\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/token/",
+							"raw": "{{base_url}}/api/profiles/login/",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"token",
+								"profiles",
+								"login",
 								""
 							]
 						}
@@ -39,6 +124,29 @@
 				},
 				{
 					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has new access token\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('access_token');",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"access_token\", response.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -49,17 +157,247 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"refresh\": \"{{refresh_token}}\"\n}"
+							"raw": "{}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/token/refresh/",
+							"raw": "{{base_url}}/api/profiles/refresh_token/",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"token",
-								"refresh",
+								"profiles",
+								"refresh_token",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Auth",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has authentication status\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('is_authenticated');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/profiles/check_auth/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"check_auth",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get CSRF Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has CSRF token\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/profiles/get_csrf_token/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"get_csrf_token",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has logout message\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.environment.unset(\"access_token\");",
+									"    pm.environment.unset(\"user_id\");",
+									"    pm.environment.unset(\"username\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profiles/logout/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"logout",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profiles",
+			"item": [
+				{
+					"name": "Get User Properties",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has properties data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('properties');",
+									"    pm.expect(response).to.have.property('count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/profiles/properties/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"properties",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Associate Property",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has association message\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"property_id\": \"{{property_id}}\",\n    \"action\": \"add\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profiles/properties/associate/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"properties",
+								"associate",
 								""
 							]
 						}
@@ -103,7 +441,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{token}}"
+								"value": "Bearer {{access_token}}"
 							},
 							{
 								"key": "Content-Type",
@@ -156,7 +494,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{token}}"
+								"value": "Bearer {{access_token}}"
 							}
 						],
 						"url": {
@@ -201,7 +539,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{token}}"
+								"value": "Bearer {{access_token}}"
 							}
 						],
 						"url": {
@@ -246,7 +584,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{token}}"
+								"value": "Bearer {{access_token}}"
 							},
 							{
 								"key": "Content-Type",
@@ -300,7 +638,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{token}}"
+								"value": "Bearer {{access_token}}"
 							},
 							{
 								"key": "Content-Type",
@@ -353,7 +691,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{token}}"
+								"value": "Bearer {{access_token}}"
 							}
 						],
 						"url": {
@@ -373,6 +711,205 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Booking",
+			"item": [
+				{
+					"name": "Create Competitor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has competitor data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('competitor');",
+									"    pm.expect(response.competitor).to.have.property('name');",
+									"    pm.expect(response.competitor).to.have.property('id');",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"competitor_id\", response.competitor.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Competitor Hotel\",\n    \"url\": \"https://www.booking.com/hotel/competitor.html\",\n    \"property_id\": \"{{property_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/booking/competitors/create/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"booking",
+								"competitors",
+								"create",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Competitors",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has competitors array\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('competitors');",
+									"    pm.expect(response).to.have.property('count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/booking/competitors/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"booking",
+								"competitors",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Competitor Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has competitor data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('competitor');",
+									"    pm.expect(response.competitor).to.have.property('id');",
+									"    pm.expect(response.competitor).to.have.property('name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/booking/competitors/{{competitor_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"booking",
+								"competitors",
+								"{{competitor_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Property Competitors",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has property competitors\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('competitors');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/booking/properties/{{property_id}}/competitors/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"booking",
+								"properties",
+								"{{property_id}}",
+								"competitors",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
@@ -382,10 +919,10 @@
 				"type": "text/javascript",
 				"exec": [
 					"// Auto-add Authorization header for authenticated requests",
-					"if (pm.environment.get(\"token\")) {",
+					"if (pm.environment.get(\"access_token\")) {",
 					"    pm.request.headers.add({",
 					"        key: \"Authorization\",",
-					"        value: \"Bearer \" + pm.environment.get(\"token\")",
+					"        value: \"Bearer \" + pm.environment.get(\"access_token\")",
 					"    });",
 					"}",
 					"",
@@ -407,17 +944,27 @@
 			"type": "string"
 		},
 		{
-			"key": "token",
+			"key": "access_token",
 			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "refresh_token",
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "username",
 			"value": "",
 			"type": "string"
 		},
 		{
 			"key": "property_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "competitor_id",
 			"value": "",
 			"type": "string"
 		}
