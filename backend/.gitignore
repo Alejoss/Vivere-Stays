@@ -10,6 +10,7 @@ __pycache__/
 # Django static/media
 media/
 staticfiles/
+# Note: static/ directory is tracked for development static files
 
 # Local settings
 local_settings.py

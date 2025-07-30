@@ -91,3 +91,5 @@ class Competitor(models.Model):
         from django.utils import timezone
         now = timezone.now()
         return self.valid_from <= now and (self.valid_to is None or self.valid_to > now)
+
+
