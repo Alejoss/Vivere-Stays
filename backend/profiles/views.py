@@ -28,8 +28,8 @@ from datetime import datetime
 import jwt
 import json
 
-from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer
-from profiles.models import Profile
+from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer
+from profiles.models import Profile, PMSIntegrationRequirement
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -277,8 +277,8 @@ class LoginView(APIView):
 
                 # Prepare response data
                 response_data = {
-                    **UserSerializer(user).data,
-                    'access_token': access_token
+                    'access': access_token,
+                    'user': UserSerializer(user).data
                 }
 
                 response = Response(response_data)
@@ -318,8 +318,49 @@ class GetCsrfToken(APIView):
         Ensure a CSRF cookie is set and return a simple JSON message.
         """
         get_token(request)  # This will set the CSRF cookie if it is not already set
-        logger.debug(f"CSRF token requested by user {request.user.username if request.user.is_authenticated else 'anonymous'}")
-        return Response({'message': 'CSRF cookie set'})
+        return Response({'message': 'CSRF cookie set'}, status=status.HTTP_200_OK)
+
+
+class ProfileView(APIView):
+    """
+    View to get and update the authenticated user's profile
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Get the current user's profile information
+        """
+        try:
+            profile = get_object_or_404(Profile, user=request.user)
+            serializer = ProfileSerializer(profile, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error getting profile for user {request.user.username}: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve profile'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def put(self, request):
+        """
+        Update the current user's profile information
+        """
+        try:
+            profile = get_object_or_404(Profile, user=request.user)
+            serializer = ProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error updating profile for user {request.user.username}: {str(e)}")
+            return Response(
+                {'error': 'Failed to update profile'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 def activate_account(request, uid, token):
@@ -395,6 +436,37 @@ class LogoutView(APIView):
             )
 
 
+class CheckUserExistsView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request, format=None):
+        """
+        Check if a user with the given email or username already exists
+        """
+        email = request.data.get('email')
+        username = request.data.get('username')
+        
+        if not email and not username:
+            return Response(
+                {'error': 'Email or username is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        errors = {}
+        
+        if email and User.objects.filter(email=email).exists():
+            errors['email'] = 'A user with that email already exists.'
+        
+        if username and User.objects.filter(username=username).exists():
+            errors['username'] = 'A user with that username already exists.'
+        
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({'message': 'Username and email are available'}, status=status.HTTP_200_OK)
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = [] # No auth needed to register
@@ -402,8 +474,7 @@ class RegisterView(APIView):
     def post(self, request, format=None):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save() # This calls serializer.create()
-            Profile.objects.create(user=user) # Explicitly create profile
+            user = serializer.save() # This calls serializer.create() which now creates the Profile
 
             # Log the user in and set JWT token
             try:
@@ -439,6 +510,9 @@ class RegisterView(APIView):
                 return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 
 
 class RefreshTokenView(APIView):
@@ -711,3 +785,106 @@ class GoogleLoginView(SocialLoginView):
                 {'error': 'Failed to complete login process'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class PMSIntegrationRequirementView(APIView):
+    """
+    View to handle PMS integration requirements
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Create a new PMS integration requirement
+        """
+        try:
+            # Get the user's profile
+            user_profile = request.user.profile
+            
+            # Get the property (assuming it's the most recent one for now)
+            from dynamic_pricing.models import Property
+            try:
+                property_obj = user_profile.get_properties().latest('created_at')
+            except Property.DoesNotExist:
+                return Response({
+                    'error': 'No property found for this user'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Prepare data for serializer
+            pms_id = request.data.get('pms_id')
+            custom_pms_name = request.data.get('custom_pms_name')
+            
+            data = {
+                'property_obj': property_obj.id,
+                'profile': user_profile.id,
+                'custom_pms_name': custom_pms_name,
+            }
+            
+            # If pms_id is provided, get the PMS object
+            if pms_id:
+                try:
+                    from dynamic_pricing.models import PropertyManagementSystem
+                    pms_system = PropertyManagementSystem.objects.get(id=pms_id)
+                    data['pms_system'] = pms_system.id
+                except PropertyManagementSystem.DoesNotExist:
+                    return Response({
+                        'error': 'PMS system not found'
+                    }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Check if integration already exists
+            existing_integration = PMSIntegrationRequirement.objects.filter(
+                property_obj=property_obj,
+                profile=user_profile
+            ).first()
+            
+            if existing_integration:
+                # Update existing integration
+                serializer = PMSIntegrationRequirementSerializer(
+                    existing_integration, 
+                    data=data, 
+                    partial=True
+                )
+            else:
+                # Create new integration
+                serializer = PMSIntegrationRequirementSerializer(data=data)
+            
+            if serializer.is_valid():
+                integration = serializer.save()
+                
+                logger.info(f"PMS integration requirement created/updated: {integration}")
+                
+                return Response({
+                    'message': 'PMS integration requirement saved successfully',
+                    'integration': serializer.data
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    'error': 'Invalid data provided',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating PMS integration requirement: {str(e)}")
+            return Response({
+                'error': 'Failed to save PMS integration requirement'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def get(self, request):
+        """
+        Get PMS integration requirements for the authenticated user
+        """
+        try:
+            user_profile = request.user.profile
+            integrations = PMSIntegrationRequirement.objects.filter(profile=user_profile)
+            
+            serializer = PMSIntegrationRequirementSerializer(integrations, many=True)
+            
+            return Response({
+                'integrations': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error getting PMS integration requirements: {str(e)}")
+            return Response({
+                'error': 'Failed to retrieve PMS integration requirements'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

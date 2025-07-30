@@ -52,22 +52,67 @@ class PropertyCreateView(APIView):
     
     def post(self, request):
         """
-        Create a new property with the provided data
+        Create a new property with the provided data and associate it with the current user's profile
         """
         try:
+            # Check if this is part of the onboarding process
+            is_onboarding = request.data.get('is_onboarding', False)
+            
+            # If it's onboarding, check if user already has a property
+            if is_onboarding:
+                user_profile = request.user.profile
+                existing_properties = user_profile.get_properties()
+                
+                if existing_properties.exists():
+                    # User already has a property, update the first one
+                    property_instance = existing_properties.first()
+                    serializer = PropertyCreateSerializer(property_instance, data=request.data, partial=True)
+                    
+                    if serializer.is_valid():
+                        serializer.save()
+                        
+                        # Return the updated property with full details
+                        detail_serializer = PropertyDetailSerializer(property_instance)
+                        
+                        logger.info(f"Property updated during onboarding: {property_instance.id} - {property_instance.name} for user: {request.user.username}")
+                        
+                        return Response({
+                            'message': 'Property updated successfully during onboarding',
+                            'property': detail_serializer.data,
+                            'action': 'updated'
+                        }, status=status.HTTP_200_OK)
+                    else:
+                        logger.warning(f"Property update during onboarding failed - validation errors: {serializer.errors}")
+                        return Response({
+                            'message': 'Property update failed during onboarding',
+                            'errors': serializer.errors
+                        }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Create new property (either not onboarding or user has no existing properties)
             serializer = PropertyCreateSerializer(data=request.data)
             
             if serializer.is_valid():
-                property_instance = serializer.save()
+                # Generate a unique ID for the property
+                import uuid
+                property_id = str(uuid.uuid4())
+                
+                # Create the property instance
+                property_instance = serializer.save(id=property_id)
+                
+                # Associate the property with the current user's profile
+                user_profile = request.user.profile
+                user_profile.add_property(property_instance)
                 
                 # Return the created property with full details
                 detail_serializer = PropertyDetailSerializer(property_instance)
                 
-                logger.info(f"Property created successfully: {property_instance.id} - {property_instance.name}")
+                action = 'updated' if is_onboarding else 'created'
+                logger.info(f"Property {action} successfully: {property_instance.id} - {property_instance.name} for user: {request.user.username}")
                 
                 return Response({
-                    'message': 'Property created successfully',
-                    'property': detail_serializer.data
+                    'message': f'Property {action} successfully',
+                    'property': detail_serializer.data,
+                    'action': action
                 }, status=status.HTTP_201_CREATED)
             else:
                 logger.warning(f"Property creation failed - validation errors: {serializer.errors}")

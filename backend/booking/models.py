@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 class PriceHistory(models.Model):
     """
     Model representing price history data for hotel bookings.
-    Maps to booking.price_history table.
     """
     hotel_id = models.CharField(max_length=255)
     hotel_name = models.CharField(max_length=255)
@@ -45,13 +44,11 @@ class PriceHistory(models.Model):
     region = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
-        db_table = 'booking.price_history'
         unique_together = [
             'hotel_id', 'checkin_date', 'checkout_date', 'b_id', 
             'b_roomtype_id', 'b_blocks_b_block_id', 'b_blocks_b_cancellation_type', 
             'b_blocks_b_stay_prices_b_stays', 'as_of'
         ]
-        managed = False  # Since this is an existing table
 
     def __str__(self):
         return f"{self.hotel_name} - {self.checkin_date} to {self.checkout_date} - {self.as_of}"
@@ -64,7 +61,6 @@ class PriceHistory(models.Model):
 class Competitor(models.Model):
     """
     Model representing competitor hotels for price monitoring.
-    Maps to booking.competitors table.
     """
     competitor_id = models.CharField(max_length=255)
     competitor_name = models.CharField(max_length=255)
@@ -80,9 +76,7 @@ class Competitor(models.Model):
     region = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
-        db_table = 'booking.competitors'
         unique_together = ['competitor_id', 'valid_from']
-        managed = False  # Since this is an existing table
 
     def __str__(self):
         return f"{self.competitor_name} ({self.competitor_id}) - Valid from {self.valid_from}"

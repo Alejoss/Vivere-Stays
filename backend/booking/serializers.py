@@ -6,6 +6,130 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class BulkCompetitorCreateSerializer(serializers.Serializer):
+    """
+    Serializer for creating multiple competitors at once
+    """
+    property_id = serializers.CharField(help_text='ID of the Property to associate with these competitors')
+    booking_links = serializers.ListField(
+        child=serializers.URLField(),
+        min_length=1,
+        max_length=10,  # Limit to 10 competitors at once
+        help_text='List of Booking.com URLs for competitor hotels'
+    )
+    
+    def validate_booking_links(self, value):
+        """
+        Validate that all booking links are valid Booking.com URLs
+        """
+        for link in value:
+            if not link.startswith('https://www.booking.com/'):
+                raise serializers.ValidationError("All URLs must be valid Booking.com URLs.")
+            
+            # Check if it's a hotel URL (either direct or with query parameters)
+            clean_url = link.split('?')[0]
+            if '/hotel/' not in clean_url:
+                raise serializers.ValidationError("All URLs must be valid Booking.com hotel URLs.")
+        
+        return value
+
+    def validate_property_id(self, value):
+        """
+        Validate that the property exists
+        """
+        try:
+            Property.objects.get(id=value)
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("Property with this ID does not exist.")
+        return value
+
+    def create(self, validated_data):
+        """
+        Create multiple Competitor instances
+        """
+        property_id = validated_data['property_id']
+        booking_links = validated_data['booking_links']
+        
+        created_competitors = []
+        errors = []
+        
+        # Get the property instance
+        try:
+            property_instance = Property.objects.get(id=property_id)
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("Property not found.")
+        
+        for booking_link in booking_links:
+            try:
+                # Extract competitor_id from the booking link
+                clean_url = booking_link.split('?')[0]
+                
+                # Extract the hotel identifier from the URL
+                url_parts = clean_url.split('/')
+                if 'hotel' in url_parts:
+                    hotel_index = url_parts.index('hotel')
+                    if hotel_index + 2 < len(url_parts):  # We need both country and hotel name
+                        country = url_parts[hotel_index + 1]
+                        hotel_name = url_parts[hotel_index + 2].replace('.html', '')
+                        competitor_id = f"{country}/{hotel_name}"
+                    elif hotel_index + 1 < len(url_parts):
+                        # Fallback: just use the country if hotel name is missing
+                        competitor_id = url_parts[hotel_index + 1]
+                    else:
+                        # Fallback: use a hash of the URL
+                        import hashlib
+                        competitor_id = hashlib.md5(booking_link.encode()).hexdigest()[:10]
+                else:
+                    # Fallback: use a hash of the URL
+                    import hashlib
+                    competitor_id = hashlib.md5(booking_link.encode()).hexdigest()[:10]
+                
+                # Check if competitor already exists
+                if Competitor.objects.filter(competitor_id=competitor_id).exists():
+                    # Update existing competitor
+                    competitor = Competitor.objects.get(competitor_id=competitor_id)
+                    competitor.booking_link = booking_link
+                    competitor.save()
+                    logger.info(f"Updated existing competitor: {competitor_id}")
+                else:
+                    # Create new competitor
+                    competitor = Competitor.objects.create(
+                        competitor_id=competitor_id,
+                        competitor_name=f"Competitor {competitor_id}",
+                        booking_link=booking_link
+                    )
+                    logger.info(f"Created new competitor: {competitor_id}")
+                
+                # Create or update the property-competitor relationship
+                from dynamic_pricing.models import DpPropertyCompetitor
+                dp_property_competitor, created = DpPropertyCompetitor.objects.get_or_create(
+                    property_id=property_instance,
+                    competitor_id=competitor
+                )
+                
+                if created:
+                    logger.info(f"Created property-competitor relationship: {property_id} - {competitor_id}")
+                
+                created_competitors.append(competitor)
+                
+            except Exception as e:
+                logger.error(f"Error creating competitor for URL {booking_link}: {str(e)}")
+                errors.append({
+                    'url': booking_link,
+                    'error': str(e)
+                })
+        
+        if errors and not created_competitors:
+            # If all competitors failed to create, raise an error
+            raise serializers.ValidationError(f"Failed to create any competitors: {errors}")
+        
+        return {
+            'created_competitors': created_competitors,
+            'errors': errors,
+            'property_id': property_id
+        }
+
+
 class CompetitorCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for creating a new Competitor with minimal data

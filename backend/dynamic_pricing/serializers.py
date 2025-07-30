@@ -16,102 +16,105 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for creating a new Property
     """
-    pms_id = serializers.IntegerField(write_only=True, help_text='ID of the Property Management System')
-    
+    # Map frontend field names to model field names using snake_case
+    hotel_name = serializers.CharField(source='name', required=False, allow_blank=True, help_text='Hotel/Property name')
+    booking_url = serializers.CharField(source='booking_hotel_url', required=False, allow_blank=True, help_text='Booking.com URL')
+    street_address = serializers.CharField(required=False, allow_blank=True, help_text='Street address')
+    city = serializers.CharField(required=False, allow_blank=True, help_text='City')
+    country = serializers.CharField(required=False, allow_blank=True, help_text='Country')
+    postal_code = serializers.CharField(required=False, allow_blank=True, help_text='Postal/ZIP code')
+    phone_number = serializers.CharField(required=False, allow_blank=True, help_text='Phone number')
+    website = serializers.CharField(required=False, allow_blank=True, help_text='Property website')
+    cif = serializers.CharField(required=False, allow_blank=True, help_text='CIF (tax identification code)')
+    number_of_rooms = serializers.IntegerField(required=False, help_text='Number of rooms')
+    property_type = serializers.CharField(required=False, allow_blank=True, help_text='Type of property')
+
     class Meta:
         model = Property
         fields = [
-            'name', 
-            'pms_id',
-            'booking_hotel_url', 
-            'street_address', 
-            'city', 
-            'country', 
-            'postal_code'
+            'hotel_name', 'booking_url', 'street_address', 'city', 'country', 
+            'postal_code', 'phone_number', 'website', 'cif', 'number_of_rooms', 
+            'property_type'
         ]
-        extra_kwargs = {
-            'name': {'help_text': 'Hotel/Property name'},
-            'pms_id': {'help_text': 'ID of the Property Management System'},
-            'booking_hotel_url': {'help_text': 'Booking.com URL for the property'},
-            'street_address': {'help_text': 'Street address including building number and street name'},
-            'city': {'help_text': 'City where the property is located'},
-            'country': {'help_text': 'Country where the property is located'},
-            'postal_code': {'help_text': 'Postal/ZIP code'},
-        }
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
-    def validate_name(self, value):
+    def validate_hotel_name(self, value):
         """
-        Validate that the property name is not empty
+        Validate that hotel name is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("Property name cannot be empty.")
+            raise serializers.ValidationError("Hotel name is required.")
         return value.strip()
 
-    def validate_booking_hotel_url(self, value):
+    def validate_city(self, value):
         """
-        Validate booking.com URL format
+        Validate that city is provided
         """
-        if value and not value.startswith('https://www.booking.com/'):
-            raise serializers.ValidationError("Please provide a valid Booking.com URL.")
-        return value
+        if not value or not value.strip():
+            raise serializers.ValidationError("City is required.")
+        return value.strip()
 
-    def validate_pms_id(self, value):
+    def validate_country(self, value):
         """
-        Validate that the PMS exists
+        Validate that country is provided
         """
-        try:
-            PropertyManagementSystem.objects.get(id=value)
-        except PropertyManagementSystem.DoesNotExist:
-            raise serializers.ValidationError("Property Management System with this ID does not exist.")
-        return value
+        if not value or not value.strip():
+            raise serializers.ValidationError("Country is required.")
+        return value.strip()
 
-    def create(self, validated_data):
+    def validate_street_address(self, value):
         """
-        Create a new Property instance
+        Validate that street address is provided
         """
-        # Extract PMS ID and get the PMS instance
-        pms_id = validated_data.pop('pms_id')
-        pms = PropertyManagementSystem.objects.get(id=pms_id)
-        
-        # Generate a unique ID for the property
-        import uuid
-        property_id = str(uuid.uuid4())
-        
-        # Set default values for required fields that are not provided
-        validated_data['id'] = property_id
-        validated_data['pms'] = pms
-        validated_data['pms_name'] = pms.name  # Keep for backward compatibility
-        validated_data['pms_hotel_id'] = property_id  # Use the same ID for PMS
-        validated_data['spreadsheet_id'] = ''  # Empty by default
-        
-        return super().create(validated_data)
+        if not value or not value.strip():
+            raise serializers.ValidationError("Street address is required.")
+        return value.strip()
+
+    def validate_postal_code(self, value):
+        """
+        Validate that postal code is provided
+        """
+        if not value or not value.strip():
+            raise serializers.ValidationError("Postal code is required.")
+        return value.strip()
+
+    def validate_phone_number(self, value):
+        """
+        Validate that phone number is provided
+        """
+        if not value or not value.strip():
+            raise serializers.ValidationError("Phone number is required.")
+        return value.strip()
+
+    def validate_property_type(self, value):
+        """
+        Validate that property type is provided
+        """
+        if not value or not value.strip():
+            raise serializers.ValidationError("Property type is required.")
+        return value.strip()
 
 
 class PropertyDetailSerializer(serializers.ModelSerializer):
     """
-    Serializer for detailed Property information
+    Serializer for Property detail view
     """
-    full_address = serializers.ReadOnlyField()
-    pms = PropertyManagementSystemSerializer(read_only=True)
-    
     class Meta:
         model = Property
-        fields = [
-            'id', 'name', 'pms', 'pms_name', 'pms_hotel_id', 'spreadsheet_id',
-            'booking_hotel_url', 'street_address', 'city', 'country',
-            'postal_code', 'state_province', 'latitude', 'longitude',
-            'rm_email', 'is_active', 'created_at', 'updated_at', 'full_address'
-        ]
+        fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class PropertyPMSUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating Property PMS
+    """
+    class Meta:
+        model = Property
+        fields = ['pms'] 
+
+
 class PropertyListSerializer(serializers.ModelSerializer):
-    """
-    Serializer for listing properties (simplified view)
-    """
-    full_address = serializers.ReadOnlyField()
-    pms = PropertyManagementSystemSerializer(read_only=True)
-    
     class Meta:
         model = Property
         fields = [

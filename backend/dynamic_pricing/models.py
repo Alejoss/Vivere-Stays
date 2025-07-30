@@ -12,23 +12,32 @@ class PropertyManagementSystem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.property_management_system'
         verbose_name = 'Property Management System'
         verbose_name_plural = 'Property Management Systems'
+
+    def __str__(self):
+        return self.name
 
 
 class Property(models.Model):
     """
     Properties table - stores information about hotels/properties
     """
+    PROPERTY_TYPE_CHOICES = [
+        ('hotel', 'Hotel'),
+        ('apartment', 'Apartment'),
+        ('hostel', 'Hostel'),
+        ('guesthouse', 'Guesthouse'),
+        ('other', 'Other'),
+    ]
+    # id = models.CharField(max_length=255, primary_key=True)
     id = models.CharField(max_length=255, primary_key=True)
     profiles = models.ManyToManyField(Profile, related_name='properties', blank=True)
-    pms = models.ForeignKey(PropertyManagementSystem, on_delete=models.CASCADE)
-    name = models.CharField(max_length=255)    
-    pms_name = models.CharField(max_length=255)  # mrplan, apaleo, avirato, or other
-    pms_hotel_id = models.CharField(max_length=255)
-    spreadsheet_id = models.CharField(max_length=255)
+    pms = models.ForeignKey(PropertyManagementSystem, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    pms_name = models.CharField(max_length=255, null=True, blank=True)  # mrplan, apaleo, avirato, or other
+    pms_hotel_id = models.CharField(max_length=255, null=True, blank=True)
+    spreadsheet_id = models.CharField(max_length=255, null=True, blank=True)
     booking_hotel_url = models.TextField(null=True, blank=True)
     city = models.CharField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255, null=True, blank=True)
@@ -36,6 +45,11 @@ class Property(models.Model):
     street_address = models.CharField(max_length=500, null=True, blank=True, help_text="Street address including building number and street name")
     postal_code = models.CharField(max_length=20, null=True, blank=True, help_text="Postal/ZIP code")
     state_province = models.CharField(max_length=100, null=True, blank=True, help_text="State, province, or region")
+    phone_number = models.CharField(max_length=20, null=True, blank=True, help_text="Phone number in international format (e.g. +34612345678)")
+    website = models.CharField(max_length=255, null=True, blank=True)
+    cif = models.CharField(max_length=255, null=True, blank=True)
+    number_of_rooms = models.IntegerField(null=True, blank=True)
+    property_type = models.CharField(max_length=255, null=True, blank=True, choices=PROPERTY_TYPE_CHOICES)
     # Geolocation fields
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude coordinate")
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitude coordinate")
@@ -45,8 +59,6 @@ class Property(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.property'
         verbose_name = 'Property'
         verbose_name_plural = 'Properties'
 
@@ -90,8 +102,6 @@ class DpGeneralSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_general_settings'
         verbose_name = 'Dynamic Pricing General Settings'
         verbose_name_plural = 'Dynamic Pricing General Settings'
 
@@ -109,8 +119,6 @@ class DpPropertyCompetitor(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_property_competitor'
         unique_together = ('property_id', 'competitor_id')
         verbose_name = 'Property Competitor'
         verbose_name_plural = 'Property Competitors'
@@ -133,8 +141,6 @@ class DpDynamicIncrementsV1(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_dynamic_increments_v1'
         unique_together = ('property_id', 'var_name', 'var_from', 'var_to')
         verbose_name = 'Dynamic Increment V1'
         verbose_name_plural = 'Dynamic Increments V1'
@@ -156,8 +162,6 @@ class DpDynamicIncrementsV2(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_dynamic_increments_v2'
         unique_together = ('property_id', 'occupancy_level', 'lead_time_days')
         verbose_name = 'Dynamic Increment V2'
         verbose_name_plural = 'Dynamic Increments V2'
@@ -182,8 +186,6 @@ class DpOfferIncrements(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_offer_increments'
         unique_together = ('property_id', 'valid_from', 'valid_until')
         verbose_name = 'Offer Increment'
         verbose_name_plural = 'Offer Increments'
@@ -207,8 +209,6 @@ class DpLosSetup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_los_setup'
         unique_together = ('property_id', 'valid_from', 'day_of_week')
         verbose_name = 'LOS Setup'
         verbose_name_plural = 'LOS Setups'
@@ -229,8 +229,6 @@ class DpLosReduction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_los_reduction'
         unique_together = ('property_id', 'lead_time_days')
         verbose_name = 'LOS Reduction'
         verbose_name_plural = 'LOS Reductions'
@@ -252,8 +250,6 @@ class DpMinimumSellingPrice(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_minimum_selling_price'
         unique_together = ('property_id', 'valid_from')
         verbose_name = 'Minimum Selling Price'
         verbose_name_plural = 'Minimum Selling Prices'
@@ -274,8 +270,6 @@ class DpWeekdayIncrements(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_weekday_increments'
         unique_together = ('property_id', 'weekday')
         verbose_name = 'Weekday Increment'
         verbose_name_plural = 'Weekday Increments'
@@ -298,8 +292,6 @@ class DpEvents(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_events'
         unique_together = ('property_id', 'valid_from')
         verbose_name = 'Event'
         verbose_name_plural = 'Events'
@@ -321,8 +313,6 @@ class DpRoomRates(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
-        db_table = 'dynamic.dp_room_rates'
         unique_together = ('property_id', 'rate_id')
         verbose_name = 'Room Rate'
         verbose_name_plural = 'Room Rates'

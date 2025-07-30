@@ -6,11 +6,71 @@ from django.shortcuts import get_object_or_404
 import logging
 
 from .models import Competitor
-from .serializers import CompetitorCreateSerializer, CompetitorDetailSerializer, CompetitorListSerializer
+from .serializers import (
+    CompetitorCreateSerializer, 
+    CompetitorDetailSerializer, 
+    CompetitorListSerializer,
+    BulkCompetitorCreateSerializer
+)
 from dynamic_pricing.models import Property, DpPropertyCompetitor
 
 # Get logger for booking views
 logger = logging.getLogger(__name__)
+
+
+class BulkCompetitorCreateView(APIView):
+    """
+    API endpoint for creating multiple competitors at once
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Create multiple competitors for a property with booking URLs
+        """
+        try:
+            serializer = BulkCompetitorCreateSerializer(data=request.data)
+            
+            if serializer.is_valid():
+                # Create the competitors
+                result = serializer.save()
+                
+                # Prepare response data
+                created_competitors = result['created_competitors']
+                errors = result['errors']
+                property_id = result['property_id']
+                
+                # Serialize the created competitors
+                competitor_serializer = CompetitorDetailSerializer(created_competitors, many=True)
+                
+                response_data = {
+                    'message': f'Successfully created {len(created_competitors)} competitors',
+                    'property_id': property_id,
+                    'created_competitors': competitor_serializer.data,
+                    'total_created': len(created_competitors),
+                    'total_errors': len(errors)
+                }
+                
+                if errors:
+                    response_data['errors'] = errors
+                    response_data['message'] += f' with {len(errors)} errors'
+                
+                logger.info(f"Bulk competitor creation completed: {len(created_competitors)} created, {len(errors)} errors")
+                
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            else:
+                logger.warning(f"Bulk competitor creation failed - validation errors: {serializer.errors}")
+                return Response({
+                    'message': 'Bulk competitor creation failed',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error in bulk competitor creation: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the competitors',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CompetitorCreateView(APIView):

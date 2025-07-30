@@ -20,22 +20,6 @@ services:
     networks:
       - vivere_network
 
-  # React Frontend (Vite)
-  vivere_frontend:
-    build: ./frontend
-    container_name: vivere_frontend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://localhost:8000/api/v1
-    depends_on:
-      - vivere_backend
-    networks:
-      - vivere_network
-
   # PostgreSQL Database
   postgres:
     image: postgres

@@ -1,9 +1,17 @@
 from django.contrib import admin
 from .models import (
-    Property, DpGeneralSettings, DpPropertyCompetitor, DpDynamicIncrementsV1,
+    Property, PropertyManagementSystem, DpGeneralSettings, DpPropertyCompetitor, DpDynamicIncrementsV1,
     DpDynamicIncrementsV2, DpOfferIncrements, DpLosSetup, DpLosReduction,
     DpMinimumSellingPrice, DpWeekdayIncrements, DpEvents, DpRoomRates
 )
+
+
+@admin.register(PropertyManagementSystem)
+class PropertyManagementSystemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'created_at')
+    search_fields = ('name',)
+    readonly_fields = ('created_at', 'updated_at')
+    ordering = ('name',)
 
 
 @admin.register(Property)

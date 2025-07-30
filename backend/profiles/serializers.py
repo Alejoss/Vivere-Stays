@@ -3,7 +3,7 @@ import logging
 
 from django.contrib.auth.models import User
 
-from profiles.models import Profile
+from profiles.models import Profile, PMSIntegrationRequirement
 
 # Get logger for profiles serializers
 logger = logging.getLogger('academia_blockchain.profiles.serializers')
@@ -13,10 +13,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     email = serializers.EmailField(required=True)
     username = serializers.CharField(required=True)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    receive_updates = serializers.BooleanField(required=False, default=False)
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password')
+        fields = ('username', 'email', 'password', 'first_name', 'last_name', 'receive_updates')
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -29,11 +32,20 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        # Extract receive_updates from validated_data
+        receive_updates = validated_data.pop('receive_updates', False)
+        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
-            password=validated_data['password']
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', '')
         )
+        
+        # Create profile with receive_updates preference
+        Profile.objects.create(user=user, receive_updates=receive_updates)
+        
         return user
 
 class UserSerializer(serializers.ModelSerializer):
@@ -59,7 +71,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['user', 'timezone', 'profile_picture', 'properties', 'properties_count']
+        fields = ['user', 'timezone', 'profile_picture', 'properties', 'properties_count', 'receive_updates']
 
     def get_profile_picture(self, obj):
         if obj.profile_picture:
@@ -107,3 +119,51 @@ class PropertyAssociationSerializer(serializers.Serializer):
             return value
         except Property.DoesNotExist:
             raise serializers.ValidationError("Property does not exist.")
+
+
+class PMSIntegrationRequirementSerializer(serializers.ModelSerializer):
+    property_name = serializers.CharField(source='property_obj.name', read_only=True)
+    pms_name = serializers.CharField(source='pms_system.name', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    class Meta:
+        model = PMSIntegrationRequirement
+        fields = [
+            'id', 'property_obj', 'property_name', 'profile', 'pms_system', 'pms_name',
+            'status', 'status_display', 'custom_pms_name', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """
+        Custom validation to ensure either pms_system or custom_pms_name is provided
+        """
+        pms_system = data.get('pms_system')
+        custom_pms_name = data.get('custom_pms_name')
+        
+        if not pms_system and not custom_pms_name:
+            raise serializers.ValidationError(
+                "Either a PMS system or custom PMS name must be provided."
+            )
+        
+        return data
+
+    def create(self, validated_data):
+        """
+        Create PMS integration requirement with proper status handling
+        """
+        pms_system = validated_data.get('pms_system')
+        custom_pms_name = validated_data.get('custom_pms_name')
+        
+        # Set appropriate status based on PMS selection
+        if not pms_system and not custom_pms_name:
+            # No PMS selected
+            validated_data['status'] = 'no_pms'
+        elif pms_system:
+            # Standard PMS selected - set as requested (we'll support all PMS systems)
+            validated_data['status'] = 'requested'
+        elif custom_pms_name:
+            # Custom PMS name provided - set as not_supported
+            validated_data['status'] = 'not_supported'
+        
+        return super().create(validated_data)
