@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { apiClient } from "../../../shared/api/client";
+import { useCurrentUser } from "../../../shared/api/hooks";
+import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 // Success Overlay Component
 const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
@@ -8,7 +11,7 @@ const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
       {/* Logo */}
       <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
         <img
-          src="/images/logo.jpeg"
+          src="/images/logo.png"
           alt="Vivere Stays Logo"
           className="w-60 h-auto"
         />
@@ -56,13 +59,17 @@ const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useCurrentUser();
   const [verificationCode, setVerificationCode] = useState("");
-  const [expectedCode, setExpectedCode] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState("");
+
+  // Get email from authenticated user
+  const email = user?.email || "";
 
   // Countdown timer for resend
   useEffect(() => {
@@ -78,38 +85,62 @@ export default function VerifyEmail() {
 
   const handleVerifyEmail = async () => {
     setError("");
-    if (verificationCode.length === 6) {
+    if (verificationCode.length === 5) {
       setIsVerifying(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (expectedCode === null) {
-        // First code entered becomes the expected code
-        setExpectedCode(verificationCode);
-        setIsVerified(true);
+      
+      try {
+        // For authenticated users, only send the code (backend gets email from user object)
+        const { data } = await apiClient.post('/profiles/verify-email-code/', {
+          code: verificationCode
+        });
+        
         setIsVerifying(false);
-      } else if (verificationCode === expectedCode) {
-        setIsVerified(true);
-        setIsVerifying(false);
-      } else {
-        setError("The verification code is incorrect. Please try again.");
+        if (data.verified) {
+          setIsVerified(true);
+        } else {
+          setError(data.error || "Verification failed. Please try again.");
+        }
+      } catch (error: any) {
+        console.error('Verification error:', error);
+        
+        // Extract error message from API response
+        let errorMessage = "Network error. Please try again.";
+        if (error?.error) {
+          errorMessage = error.error;
+        } else if (error?.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+        
+        setError(errorMessage);
         setIsVerifying(false);
       }
     } else {
-      setError("Please enter a 6-digit verification code.");
+      setError("Please enter a 5-digit verification code.");
     }
   };
 
   const handleVerificationComplete = () => {
+    // Clear any registration data (user is already authenticated)
+    localStorage.removeItem('registerFormData');
     // Redirect to hotel information page
     navigate("/hotel-information");
   };
 
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
     if (canResend) {
-      // Here you would make an API call to resend the verification code
-      console.log("Resending verification code");
-      setResendTimer(60);
-      setCanResend(false);
-      alert("Verification code resent!");
+      try {
+        // For authenticated users, the backend will get email and first_name from the user object
+        // No need to send email and first_name in the request body
+        const { data } = await apiClient.post('/profiles/resend-verification-email/', {});
+        
+        // Success - reset timer
+        setResendTimer(60);
+        setCanResend(false);
+        alert("Verification code resent!");
+      } catch (error) {
+        console.error('Resend error:', error);
+        alert("Failed to resend verification code. Please try again.");
+      }
     }
   };
 
@@ -119,18 +150,19 @@ export default function VerifyEmail() {
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, ""); // Only allow digits
-    if (value.length <= 6) {
+    if (value.length <= 5) {
       setVerificationCode(value);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex items-center justify-center px-4 py-8 relative">
+      <OnboardingProgressTracker currentStep="verify_email" />
       <div className="w-full max-w-2xl">
         {/* Logo */}
         <div className="text-center mb-8">
           <img
-            src="/images/logo.jpeg"
+            src="/images/logo.png"
             alt="Vivere Stays Logo"
             className="w-60 h-auto mx-auto"
           />
@@ -167,7 +199,7 @@ export default function VerifyEmail() {
               Verify Your Email
             </h1>
             <p className="text-[18px] text-[#485567] leading-normal max-w-md mx-auto">
-              We've sent a 6-digit verification code to your email address.
+              We've sent a 5-digit verification code to your email address.
               Please enter it below to continue.
             </p>
           </div>
@@ -183,16 +215,16 @@ export default function VerifyEmail() {
                   type="text"
                   value={verificationCode}
                   onChange={handleCodeChange}
-                  placeholder="Enter 6 - digit code"
+                  placeholder="Enter 5-digit code"
                   className={`w-full h-[73px] px-8 py-5 border rounded-[8px] bg-[#F8FAFC] text-[30px] text-center placeholder:text-[#9BA9BC] focus:outline-none transition-colors font-mono tracking-widest ${
-                    verificationCode.length === 6
+                    verificationCode.length === 5
                       ? "border-[#485567] text-[#1E1E1E]"
                       : "border-[#D7DFE8] focus:border-[#294859]"
                   }`}
                   style={{
                     fontFamily: "'Courier Prime', 'Courier New', monospace",
                   }}
-                  maxLength={6}
+                  maxLength={5}
                 />
               </div>
               {error && (
@@ -211,11 +243,11 @@ export default function VerifyEmail() {
               className={`w-full h-[55px] text-white font-bold text-[16px] rounded-[10px] transition-colors flex items-center justify-center gap-2 ${
                 isVerifying
                   ? "bg-[#4B6472] cursor-not-allowed"
-                  : verificationCode.length === 6
+                  : verificationCode.length === 5
                     ? "bg-[#294758] hover:bg-[#1e3340]"
                     : "bg-gray-400 cursor-not-allowed"
               }`}
-              disabled={verificationCode.length !== 6 || isVerifying}
+              disabled={verificationCode.length !== 5 || isVerifying}
             >
               {isVerifying ? (
                 <>

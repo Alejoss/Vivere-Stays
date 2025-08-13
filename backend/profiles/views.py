@@ -486,7 +486,7 @@ class RegisterView(APIView):
                 # Prepare response data with access token (same as login endpoint)
                 response_data = {
                     **UserSerializer(user).data,
-                    'access_token': access_token
+                    'access': access_token
                 }
 
                 response = Response(response_data, status=status.HTTP_201_CREATED)
@@ -500,7 +500,31 @@ class RegisterView(APIView):
                     samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
                     path=settings.SIMPLE_JWT['AUTH_COOKIE_PATH'],
                 )
-                # TODO: Implement email activation sending here if needed
+                # Send verification email immediately after registration
+                try:
+                    from .email_service import email_service
+                    success, message_id, verification_code = email_service.send_verification_email(
+                        email=user.email,
+                        user_name=user.first_name,
+                        user=user  # Pass the newly created user
+                    )
+                    
+                    if success:
+                        logger.info(f"Verification email sent to {user.email} after registration")
+                        # Include verification info in response for debugging
+                        response_data['verification_sent'] = True
+                        if hasattr(settings, 'POSTMARK_TEST_MODE') and settings.POSTMARK_TEST_MODE:
+                            response_data['verification_code'] = verification_code
+                    else:
+                        logger.warning(f"Failed to send verification email to {user.email}: {message_id}")
+                        response_data['verification_sent'] = False
+                        response_data['verification_error'] = message_id
+                        
+                except Exception as e:
+                    logger.error(f"Error sending verification email during registration for {user.email}: {str(e)}")
+                    response_data['verification_sent'] = False
+                    response_data['verification_error'] = str(e)
+                
                 return response
             except Exception as e:
                 # Log this error, as it's a server-side issue during token generation/setting
@@ -552,7 +576,7 @@ class RefreshTokenView(APIView):
             logger.debug(f"Generated new access token for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
 
             return Response({
-                'access_token': access_token
+                'access': access_token
             })
 
         except Exception as e:
@@ -763,7 +787,7 @@ class GoogleLoginView(SocialLoginView):
             # Prepare response
             response_data = {
                 **UserSerializer(user).data,
-                'access_token': access_token
+                'access': access_token
             }
 
             response = Response(response_data)
@@ -887,4 +911,288 @@ class PMSIntegrationRequirementView(APIView):
             logger.error(f"Error getting PMS integration requirements: {str(e)}")
             return Response({
                 'error': 'Failed to retrieve PMS integration requirements'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class SendVerificationEmailView(APIView):
+    """
+    Send email verification code to user's email address
+    For authenticated users: uses their email and first name
+    For anonymous users: requires email and first_name in request
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """
+        Send verification email with 5-digit code
+        
+        For authenticated users: no payload needed (uses user.email and user.first_name)
+        For anonymous users: Expected payload:
+        {
+            "email": "user@example.com",
+            "first_name": "John"
+        }
+        """
+        try:
+            # Check if user is authenticated
+            if request.user.is_authenticated:
+                # Use authenticated user's data
+                email = request.user.email
+                first_name = request.user.first_name or request.user.username
+                logger.info(f"Sending verification email to authenticated user: {email}")
+            else:
+                # Use data from request for anonymous users
+                email = request.data.get('email', '').strip().lower()
+                first_name = request.data.get('first_name', '').strip()
+                
+                if not email:
+                    return Response({
+                        'error': 'Email address is required'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                if not first_name:
+                    return Response({
+                        'error': 'First name is required'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                logger.info(f"Sending verification email to anonymous user: {email}")
+            
+            # Import email service
+            from .email_service import email_service
+            
+            # Send verification email
+            # Pass user object if authenticated, None otherwise
+            user_obj = request.user if request.user.is_authenticated else None
+            success, message_id_or_error, verification_code = email_service.send_verification_email(
+                email=email,
+                user_name=first_name,
+                user=user_obj
+            )
+            
+            if success:
+                logger.info(f"Verification email sent to {email}")
+                
+                # In test mode, return the code for development purposes
+                response_data = {
+                    'message': 'Verification email sent successfully',
+                    'message_id': message_id_or_error
+                }
+                
+                # Only include verification code in test mode for development
+                if hasattr(settings, 'POSTMARK_TEST_MODE') and settings.POSTMARK_TEST_MODE:
+                    response_data['verification_code'] = verification_code
+                
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                logger.error(f"Failed to send verification email to {email}: {message_id_or_error}")
+                return Response({
+                    'error': 'Failed to send verification email. Please try again.'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        except Exception as e:
+            logger.error(f"Error in SendVerificationEmailView: {str(e)}")
+            return Response({
+                'error': 'An unexpected error occurred. Please try again.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class VerifyEmailCodeView(APIView):
+    """
+    Verify the email verification code
+    For authenticated users: uses their email from user object
+    For anonymous users: requires email in request
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """
+        Verify submitted verification code
+        
+        For authenticated users: Expected payload: { "code": "12345" }
+        For anonymous users: Expected payload: { "email": "user@example.com", "code": "12345" }
+        """
+        try:
+            # Get the verification code from request
+            code = request.data.get('code', '').strip()
+            
+            if not code:
+                return Response({
+                    'error': 'Verification code is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if user is authenticated
+            if request.user.is_authenticated:
+                # Use authenticated user's email
+                email = request.user.email
+                user_obj = request.user
+                logger.info(f"Verifying code for authenticated user: {email}")
+            else:
+                # Use email from request for anonymous users
+                email = request.data.get('email', '').strip().lower()
+                user_obj = None
+                
+                if not email:
+                    return Response({
+                        'error': 'Email address is required'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                logger.info(f"Verifying code for anonymous user: {email}")
+            
+            # Import email service
+            from .email_service import email_service
+            
+            # Verify the code
+            success, message = email_service.verify_code(email, code, user_obj)
+            
+            if success:
+                logger.info(f"Email verification successful for {email}")
+                return Response({
+                    'message': message,
+                    'verified': True
+                }, status=status.HTTP_200_OK)
+            else:
+                logger.warning(f"Email verification failed for {email}: {message}")
+                return Response({
+                    'error': message,
+                    'verified': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error in VerifyEmailCodeView: {str(e)}")
+            return Response({
+                'error': 'An unexpected error occurred. Please try again.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+class OnboardingProgressView(APIView):
+    """
+    View to get and update onboarding progress
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get current onboarding progress
+        """
+        try:
+            profile = request.user.profile
+            progress = profile.get_onboarding_progress()
+            
+            return Response(progress, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error getting onboarding progress: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to get onboarding progress'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """
+        Update onboarding progress
+        """
+        try:
+            step = request.data.get('step')
+            
+            if not step:
+                return Response({
+                    'error': 'Step is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate step
+            valid_steps = [step[0] for step in request.user.profile.ONBOARDING_STEPS]
+            if step not in valid_steps:
+                return Response({
+                    'error': f'Invalid step. Valid steps are: {valid_steps}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update progress
+            profile = request.user.profile
+            profile.update_onboarding_step(step)
+            
+            # Return updated progress
+            progress = profile.get_onboarding_progress()
+            
+            logger.info(f"Updated onboarding progress for user {request.user.username}: {step}")
+            
+            return Response({
+                'message': 'Onboarding progress updated successfully',
+                'progress': progress
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error updating onboarding progress: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to update onboarding progress'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TestEmailView(APIView):
+    """
+    Simple test endpoint for sending verification emails
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """
+        Test endpoint for sending verification emails
+        
+        Expected payload:
+        {
+            "email": "test@viverestays.com",  # Must be @viverestays.com while account is pending
+            "first_name": "Test"
+        }
+        """
+        try:
+            email = request.data.get('email', '').strip().lower()
+            first_name = request.data.get('first_name', '').strip()
+            
+            if not email:
+                return Response({
+                    'error': 'Email address is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not first_name:
+                return Response({
+                    'error': 'First name is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Import email service
+            from .email_service import email_service
+            
+            # Send verification email
+            success, message_id_or_error, verification_code = email_service.send_verification_email(
+                email=email,
+                user_name=first_name
+            )
+            
+            if success:
+                logger.info(f"Test verification email sent to {email}")
+                
+                response_data = {
+                    'message': 'Test verification email sent successfully',
+                    'message_id': message_id_or_error,
+                    'email': email,
+                    'first_name': first_name
+                }
+                
+                # Always include verification code in test endpoint for easy testing
+                response_data['verification_code'] = verification_code
+                
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                logger.error(f"Failed to send test verification email to {email}: {message_id_or_error}")
+                return Response({
+                    'error': f'Failed to send verification email: {message_id_or_error}',
+                    'email': email,
+                    'first_name': first_name
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        except Exception as e:
+            logger.error(f"Error in TestEmailView: {str(e)}")
+            return Response({
+                'error': f'An unexpected error occurred: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

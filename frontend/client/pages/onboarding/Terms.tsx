@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useRegister } from "../../shared/api/hooks";
+import { useRegister } from "../../../shared/api/hooks";
+import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 export default function Terms() {
   const navigate = useNavigate();
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [receiveUpdates, setReceiveUpdates] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(true);
+  const [receiveUpdates, setReceiveUpdates] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -69,11 +70,12 @@ export default function Terms() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+      <OnboardingProgressTracker currentStep="register" />
       <div className="max-w-4xl mx-auto">
         {/* Logo */}
         <div className="text-center mb-10">
           <img
-            src="/images/logo.jpeg"
+            src="/images/logo.png"
             alt="Vivere Stays Logo"
             className="w-60 h-auto mx-auto"
           />

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Property, PropertyManagementSystem
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice
 
 
 class PropertyManagementSystemSerializer(serializers.ModelSerializer):
@@ -26,7 +26,7 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(required=False, allow_blank=True, help_text='Phone number')
     website = serializers.CharField(required=False, allow_blank=True, help_text='Property website')
     cif = serializers.CharField(required=False, allow_blank=True, help_text='CIF (tax identification code)')
-    number_of_rooms = serializers.IntegerField(required=False, help_text='Number of rooms')
+    number_of_rooms = serializers.IntegerField(required=True, help_text='Number of rooms')
     property_type = serializers.CharField(required=False, allow_blank=True, help_text='Type of property')
 
     class Meta:
@@ -94,6 +94,16 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Property type is required.")
         return value.strip()
 
+    def validate_number_of_rooms(self, value):
+        """
+        Validate that number of rooms is provided and is a positive integer
+        """
+        if value is None:
+            raise serializers.ValidationError("Number of rooms is required.")
+        if value <= 0:
+            raise serializers.ValidationError("Number of rooms must be a positive number.")
+        return value
+
 
 class PropertyDetailSerializer(serializers.ModelSerializer):
     """
@@ -115,9 +125,65 @@ class PropertyPMSUpdateSerializer(serializers.ModelSerializer):
 
 
 class PropertyListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing properties
+    """
     class Meta:
         model = Property
         fields = [
-            'id', 'name', 'pms', 'city', 'country', 'full_address', 
-            'is_active', 'created_at'
-        ] 
+            'id', 'name', 'city', 'country', 'property_type', 'number_of_rooms',
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class MinimumSellingPriceSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DpMinimumSellingPrice model
+    """
+    class Meta:
+        model = DpMinimumSellingPrice
+        fields = [
+            'id', 'property_id', 'valid_from', 'valid_until', 
+            'manual_alternative_price', 'msp', 'period_title', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """
+        Custom validation for MSP data
+        """
+        valid_from = data.get('valid_from')
+        valid_until = data.get('valid_until')
+        msp = data.get('msp')
+
+        # Validate date range
+        if valid_from and valid_until and valid_from >= valid_until:
+            raise serializers.ValidationError(
+                "valid_until must be after valid_from"
+            )
+
+        # Validate MSP value
+        if msp is not None and msp < 0:
+            raise serializers.ValidationError(
+                "MSP value cannot be negative"
+            )
+
+        return data
+
+    def create(self, validated_data):
+        """
+        Create MSP entry with additional logging
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Creating MSP entry with validated data: {validated_data}")
+        
+        try:
+            msp_entry = super().create(validated_data)
+            logger.info(f"MSP entry created successfully with ID: {msp_entry.id}")
+            return msp_entry
+        except Exception as e:
+            logger.error(f"Error creating MSP entry: {str(e)}", exc_info=True)
+            raise 

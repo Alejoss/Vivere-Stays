@@ -205,8 +205,8 @@ CORS_ALLOW_METHODS = [
 # JWT settings
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=config('JWT_ACCESS_TOKEN_LIFETIME', default=5, cast=int)),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('JWT_REFRESH_TOKEN_LIFETIME', default=1, cast=int)),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', default=15, cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('JWT_REFRESH_TOKEN_LIFETIME', default=15, cast=int)),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     # Cookie settings
@@ -230,11 +230,28 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': 'dummy-client-id',
-            'secret': 'dummy-client-secret',
+            'client_id': config('GOOGLE_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_CLIENT_SECRET', default=''),
             'key': ''
         }
     }
 }
+
+# Postmark Email Configuration
+POSTMARK_TOKEN = config('POSTMARK_TOKEN', default='')
+POSTMARK_TEST_MODE = False
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='analytics@viverestays.com')
+
+# Email verification settings
+EMAIL_VERIFICATION_EXPIRY_MINUTES = 10
+EMAIL_VERIFICATION_CODE_LENGTH = 5
+
+# Company-wide settings for emails
+COMPANY_LOGO_URL = 'https://viverestays.com/wp-content/uploads/2022/06/VS_sticky.png'
+COMPANY_WEBSITE = 'https://viverestays.com'
+COMPANY_UNSUBSCRIBE_URL = f'{COMPANY_WEBSITE}/unsubscribe'
 
  

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreatePMSIntegration, useCreateHotel, usePMSList } from "../../shared/api/hooks";
+import { useCreatePMSIntegration, useCreateHotel, usePMSList } from "../../../shared/api/hooks";
+import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 type PMSOption = "mews" | "cloudbeds" | "opera" | "other" | "none" | null;
 
@@ -14,6 +15,40 @@ export default function PMSIntegration() {
   const createPMSIntegration = useCreatePMSIntegration();
   const createHotelMutation = useCreateHotel();
   const { data: pmsListData, isLoading: pmsListLoading, error: pmsListError } = usePMSList();
+
+  // Add authentication check on component mount
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('access_token');
+    console.log('🔐 PMSIntegration - Access token exists:', !!token);
+    
+    if (token) {
+      try {
+        // Decode token to check expiration
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const currentTime = Date.now() / 1000;
+        const isExpired = payload.exp < currentTime;
+        
+        console.log('🔐 PMSIntegration - Token expiration check:');
+        console.log('  - Token expires at:', new Date(payload.exp * 1000));
+        console.log('  - Current time:', new Date(currentTime * 1000));
+        console.log('  - Token is expired:', isExpired);
+        console.log('  - User ID:', payload.user_id);
+        console.log('  - Username:', payload.username);
+        console.log('  - Email:', payload.email);
+        
+        if (isExpired) {
+          console.warn('⚠️ PMSIntegration - Token is expired!');
+        } else {
+          console.log('✅ PMSIntegration - User is authenticated and token is valid');
+        }
+      } catch (error) {
+        console.error('❌ PMSIntegration - Error decoding token:', error);
+      }
+    } else {
+      console.warn('⚠️ PMSIntegration - No access token found in localStorage');
+    }
+  }, []);
 
   const handleBack = () => {
     navigate("/hotel-information");
@@ -44,12 +79,13 @@ export default function PMSIntegration() {
       const hotelData = JSON.parse(hotelDataString);
 
       // Step 1: Create the Property
-      console.log("Creating property...");
+      console.log("🏨 PMSIntegration - Creating property...");
+      console.log("🏨 PMSIntegration - Hotel data:", hotelData);
       const propertyResponse = await createHotelMutation.mutateAsync(hotelData);
-      console.log(`Property ${propertyResponse.action} successfully:`, propertyResponse.property);
+      console.log(`✅ PMSIntegration - Property ${propertyResponse.action} successfully:`, propertyResponse.property);
 
       // Step 2: Create PMS Integration
-      console.log("Creating PMS integration...");
+      console.log("🔗 PMSIntegration - Creating PMS integration...");
       const integrationData: any = {};
       
       if (selectedPMS === "none") {
@@ -75,16 +111,29 @@ export default function PMSIntegration() {
 
       await createPMSIntegration.mutateAsync(integrationData);
       
-      console.log("PMS integration saved successfully");
+      console.log("✅ PMSIntegration - PMS integration saved successfully");
       
       // Don't clear localStorage - keep data for potential back navigation
       // localStorage.removeItem('hotelDataForPMS');
       // localStorage.removeItem('hotelInformationData');
       
-      // Navigate to next step (Select Plan)
-      navigate("/select-plan");
+      // Navigate based on PMS selection
+      if (selectedPMS === "other" || selectedPMS === "none") {
+        // For custom PMS or no PMS, show information page first
+        // Pass the custom PMS name if "other" was selected
+        const pmsInfo = selectedPMS === "other" ? { customPMSName } : null;
+        navigate("/pms-information", { state: { pmsInfo } });
+      } else {
+        // For standard PMS selections, go directly to plans
+        navigate("/select-plan");
+      }
     } catch (err: any) {
-      console.error("Error during property creation or PMS integration:", err);
+      console.error("❌ PMSIntegration - Error during property creation or PMS integration:", err);
+      console.error("❌ PMSIntegration - Error details:", {
+        message: err.message,
+        status: err.status,
+        response: err.response?.data
+      });
       
       if (err && typeof err === 'object' && 'error' in err) {
         setError(err.error);
@@ -142,10 +191,11 @@ export default function PMSIntegration() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      <OnboardingProgressTracker currentStep="pms_integration" />
       {/* Logo */}
       <div className="text-center mb-10">
         <img
-          src="/images/logo.jpeg"
+          src="/images/logo.png"
           alt="Vivere Stays Logo"
           className="w-60 h-auto mx-auto"
         />
@@ -393,7 +443,10 @@ export default function PMSIntegration() {
                 </>
               ) : (
                 <>
-                  Continue to Plans
+                  {selectedPMS === "other" || selectedPMS === "none" 
+                    ? "Continue" 
+                    : "Continue to Plans"
+                  }
                   <svg
                     width="20"
                     height="20"

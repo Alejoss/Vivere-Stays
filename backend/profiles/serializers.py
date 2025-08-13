@@ -137,15 +137,13 @@ class PMSIntegrationRequirementSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """
         Custom validation to ensure either pms_system or custom_pms_name is provided
+        Note: Both can be None/null for "no PMS" case
         """
         pms_system = data.get('pms_system')
         custom_pms_name = data.get('custom_pms_name')
         
-        if not pms_system and not custom_pms_name:
-            raise serializers.ValidationError(
-                "Either a PMS system or custom PMS name must be provided."
-            )
-        
+        # Allow both to be None/null for "no PMS" case
+        # The create method will handle setting appropriate status
         return data
 
     def create(self, validated_data):

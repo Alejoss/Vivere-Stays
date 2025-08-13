@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 type PlanType = "start" | "scale" | "pro";
 
@@ -7,6 +8,7 @@ interface Plan {
   id: PlanType;
   name: string;
   description: string;
+  pricePerRoom: number;
   price: string;
   isSelected?: boolean;
 }
@@ -14,25 +16,62 @@ interface Plan {
 export default function SelectPlan() {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("scale");
+  const [numberOfRooms, setNumberOfRooms] = useState<number>(1);
+
+  // Pricing calculation function
+  const calculatePrice = (pricePerRoom: number, rooms: number): number => {
+    const calculatedPrice = pricePerRoom * rooms;
+    return Math.max(calculatedPrice, 300); // Minimum $300
+  };
+
+  // Load hotel data from localStorage to get number of rooms
+  useEffect(() => {
+    try {
+      const hotelDataString = localStorage.getItem('hotelDataForPMS');
+      if (hotelDataString) {
+        const hotelData = JSON.parse(hotelDataString);
+        if (hotelData.number_of_rooms) {
+          setNumberOfRooms(hotelData.number_of_rooms);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading hotel data:', error);
+      // Fallback to checking hotelInformationData
+      try {
+        const hotelInfoString = localStorage.getItem('hotelInformationData');
+        if (hotelInfoString) {
+          const hotelInfo = JSON.parse(hotelInfoString);
+          if (hotelInfo.numberOfRooms) {
+            setNumberOfRooms(parseInt(hotelInfo.numberOfRooms) || 1);
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Error loading fallback hotel data:', fallbackError);
+      }
+    }
+  }, []);
 
   const plans: Plan[] = [
     {
       id: "start",
       name: "Start",
       description: "Perfect for single properties",
-      price: "$29/month",
+      pricePerRoom: 20,
+      price: `$${calculatePrice(20, numberOfRooms)}/month`,
     },
     {
       id: "scale",
       name: "Scale",
       description: "For growing hotel businesses",
-      price: "$79/month",
+      pricePerRoom: 50,
+      price: `$${calculatePrice(50, numberOfRooms)}/month`,
     },
     {
       id: "pro",
       name: "Pro",
       description: "Enterprise-level features",
-      price: "$149/month",
+      pricePerRoom: 80, // Assuming $80 per room for Pro plan - please confirm
+      price: "% of total revenue",
     },
   ];
 
@@ -50,6 +89,7 @@ export default function SelectPlan() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      <OnboardingProgressTracker currentStep="select_plan" />
       {/* Logo */}
       <div className="mb-8">
         <img
@@ -299,36 +339,17 @@ export default function SelectPlan() {
         {/* Title and Description */}
         <div className="text-center mb-8">
           <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-2">Plans</h1>
-          <p className="text-[18px] text-[#485567]">
+          <p className="text-[18px] text-[#485567] mb-4">
             Choose your plan and complete your registration
           </p>
+          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4">
+            <p className="text-[14px] text-[#64748B]">
+              Pricing calculated for {numberOfRooms} {numberOfRooms === 1 ? 'room' : 'rooms'}
+            </p>
+          </div>
         </div>
 
-        {/* Important Notice */}
-        <div className="border border-[#C2410C] bg-[#FFF9F1] rounded-lg p-[17px] mb-5">
-          <div className="flex items-center gap-[6px] mb-[10px]">
-            <svg
-              width="27"
-              height="27"
-              viewBox="0 0 27 27"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M13.5 18.5197C13.6965 18.5197 13.8611 18.4534 13.9939 18.3206C14.1259 18.1879 14.1919 18.0232 14.1919 17.8267C14.1919 17.631 14.1255 17.4668 13.9928 17.334C13.86 17.2013 13.6958 17.1345 13.5 17.1337C13.3042 17.133 13.14 17.1994 13.0072 17.3329C12.8745 17.4664 12.8081 17.6306 12.8081 17.8256C12.8081 18.0206 12.8745 18.1853 13.0072 18.3195C13.14 18.4538 13.3042 18.5212 13.5 18.5197ZM12.9375 14.7971H14.0625V8.04712H12.9375V14.7971ZM13.5034 23.625C12.1039 23.625 10.7876 23.3595 9.55463 22.8285C8.32237 22.2967 7.25025 21.5753 6.33825 20.664C5.42625 19.7528 4.70438 18.6818 4.17263 17.451C3.64088 16.2203 3.375 14.9044 3.375 13.5034C3.375 12.1024 3.64088 10.7861 4.17263 9.55463C4.70363 8.32237 5.424 7.25025 6.33375 6.33825C7.2435 5.42625 8.31488 4.70438 9.54788 4.17263C10.7809 3.64088 12.0971 3.375 13.4966 3.375C14.8961 3.375 16.2124 3.64088 17.4454 4.17263C18.6776 4.70363 19.7497 5.42438 20.6617 6.33488C21.5737 7.24538 22.2956 8.31675 22.8274 9.549C23.3591 10.7812 23.625 12.0971 23.625 13.4966C23.625 14.8961 23.3595 16.2124 22.8285 17.4454C22.2975 18.6784 21.576 19.7505 20.664 20.6617C19.752 21.573 18.681 22.2949 17.451 22.8274C16.221 23.3599 14.9051 23.6257 13.5034 23.625ZM13.5 22.5C16.0125 22.5 18.1406 21.6281 19.8844 19.8844C21.6281 18.1406 22.5 16.0125 22.5 13.5C22.5 10.9875 21.6281 8.85937 19.8844 7.11562C18.1406 5.37187 16.0125 4.5 13.5 4.5C10.9875 4.5 8.85937 5.37187 7.11562 7.11562C5.37187 8.85937 4.5 10.9875 4.5 13.5C4.5 16.0125 5.37187 18.1406 7.11562 19.8844C8.85937 21.6281 10.9875 22.5 13.5 22.5Z"
-                fill="#C2410C"
-              />
-            </svg>
-            <span className="text-[18px] font-normal text-[#C2410C]">
-              Important: PMS Integration
-            </span>
-          </div>
-          <p className="text-[14px] text-[#C2410C] leading-normal">
-            For an optimal experience, Vivere Stays integrates with your
-            Property Management System (PMS). If you haven't set up your PMS
-            yet, our support team will contact you to assist you after payment.
-          </p>
-        </div>
+
 
         {/* Plan Cards */}
         <div className="space-y-5 mb-5">
@@ -352,7 +373,7 @@ export default function SelectPlan() {
                 <p className="text-[20px] font-bold text-black">{plan.price}</p>
               </div>
               <button className="bg-[#2C4E60] text-white px-[17px] py-[11px] rounded-[9px] text-[14px] font-normal hover:bg-[#234149] transition-colors">
-                Select
+                {plan.id === "pro" ? "Contact Sales" : "Select"}
               </button>
             </div>
           ))}

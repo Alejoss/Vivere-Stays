@@ -29,7 +29,7 @@ class BulkCompetitorCreateView(APIView):
         Create multiple competitors for a property with booking URLs
         """
         try:
-            serializer = BulkCompetitorCreateSerializer(data=request.data)
+            serializer = BulkCompetitorCreateSerializer(data=request.data, context={'request': request})
             
             if serializer.is_valid():
                 # Create the competitors

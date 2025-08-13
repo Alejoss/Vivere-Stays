@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useLogin } from "../../shared/api/hooks";
+import { GoogleLogin } from "@react-oauth/google";
+import { useLogin, useGoogleLogin } from "../../shared/api/hooks";
+import { OnboardingStep } from "../../shared/api/onboarding";
+import { profilesService } from "../../shared/api/profiles";
 import { LoginRequest } from "../../shared/api/types";
 
 export default function Login() {
@@ -11,6 +14,7 @@ export default function Login() {
   const [error, setError] = useState("");
   
   const loginMutation = useLogin();
+  const googleLoginMutation = useGoogleLogin();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +41,64 @@ export default function Login() {
       const response = await loginMutation.mutateAsync(loginData);
       console.log("Login successful:", response);
       
-      // Redirect to the next step in the onboarding process
-      navigate("/hotel-information");
+      // Get user's onboarding progress and redirect to appropriate step
+      try {
+        console.log('🔍 Login: Fetching onboarding progress...');
+        console.log('🔍 Login: Access token available:', !!response.access);
+        
+        const progressData = await profilesService.getOnboardingProgress();
+        console.log('📊 Login: Onboarding progress data:', progressData);
+        console.log('📊 Login: Progress data type:', typeof progressData);
+        console.log('📊 Login: Progress data keys:', Object.keys(progressData));
+        
+        // Check if onboarding is completed
+        if (progressData.completed) {
+          console.log('✅ Login: Onboarding completed, redirecting to dashboard');
+          navigate("/dashboard");
+          return;
+        }
+        
+        const currentStep = progressData.current_step;
+        console.log('📍 Login: Current onboarding step:', currentStep);
+        console.log('📍 Login: Current step type:', typeof currentStep);
+        
+        // Validate that the current step is a valid OnboardingStep
+        const validSteps = ['register', 'verify_email', 'hotel_information', 'pms_integration', 'select_plan', 'payment', 'add_competitor', 'msp', 'complete'] as const;
+        console.log('🔍 Login: Valid steps:', validSteps);
+        console.log('🔍 Login: Is current step valid?', validSteps.includes(currentStep as any));
+        
+        if (validSteps.includes(currentStep as any)) {
+          // Navigate directly to the step route
+          const stepRoutes = {
+            register: '/register',
+            verify_email: '/verify-email',
+            hotel_information: '/hotel-information',
+            pms_integration: '/pms-integration',
+            select_plan: '/select-plan',
+            payment: '/payment',
+            add_competitor: '/add-competitor',
+            msp: '/msp',
+            complete: '/welcome-complete',
+          };
+          
+          const route = stepRoutes[currentStep as keyof typeof stepRoutes];
+          console.log('🚀 Login: Navigating to route:', route);
+          navigate(route);
+          console.log(`✅ Login: Redirecting to onboarding step: ${currentStep}`);
+        } else {
+          console.warn(`⚠️ Login: Invalid onboarding step: ${currentStep}, defaulting to hotel-information`);
+          navigate("/hotel-information");
+        }
+      } catch (progressError) {
+        console.error('❌ Login: Error getting onboarding progress:', progressError);
+        console.error('❌ Login: Error details:', {
+          message: progressError.message,
+          stack: progressError.stack,
+          name: progressError.name
+        });
+        // Fallback to hotel-information if progress check fails
+        navigate("/hotel-information");
+      }
     } catch (error: any) {
       console.error("Login failed:", error);
       
@@ -53,18 +113,91 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSignUp = () => {
-    console.log("Google sign up clicked");
-  };
+  const handleGoogleCredentialResponse = useCallback(async (response: any) => {
+    console.log('Google OAuth response received:', response);
+    setError("");
+
+    try {
+      console.log('Attempting to login with Google credential...');
+      const data = await googleLoginMutation.mutateAsync(response.credential);
+      console.log('Google login successful, raw response data:', data);
+      
+      if (!data || !data.id || !data.username || !data.email || !data.access) {
+        console.error('Invalid user data structure:', data);
+        throw new Error('Invalid user data received from server');
+      }
+      
+      // Get user's onboarding progress and redirect to appropriate step
+      try {
+        console.log('🔍 Google Login: Fetching onboarding progress...');
+        console.log('🔍 Google Login: Access token available:', !!data.access);
+        
+        const progressData = await profilesService.getOnboardingProgress();
+        console.log('📊 Google Login: Onboarding progress data:', progressData);
+        
+        // Check if onboarding is completed
+        if (progressData.completed) {
+          console.log('✅ Google Login: Onboarding completed, redirecting to dashboard');
+          navigate("/dashboard");
+          return;
+        }
+        
+        const currentStep = progressData.current_step;
+        console.log('📍 Google Login: Current onboarding step:', currentStep);
+        
+        // Validate that the current step is a valid OnboardingStep
+        const validSteps = ['register', 'verify_email', 'hotel_information', 'pms_integration', 'select_plan', 'payment', 'add_competitor', 'msp', 'complete'] as const;
+        
+        if (validSteps.includes(currentStep as any)) {
+          // Navigate directly to the step route
+          const stepRoutes = {
+            register: '/register',
+            verify_email: '/verify-email',
+            hotel_information: '/hotel-information',
+            pms_integration: '/pms-integration',
+            select_plan: '/select-plan',
+            payment: '/payment',
+            add_competitor: '/add-competitor',
+            msp: '/msp',
+            complete: '/welcome-complete',
+          };
+          
+          const route = stepRoutes[currentStep as keyof typeof stepRoutes];
+          console.log('🚀 Google Login: Navigating to route:', route);
+          navigate(route);
+          console.log(`✅ Google Login: Redirecting to onboarding step: ${currentStep}`);
+        } else {
+          console.warn(`⚠️ Google Login: Invalid onboarding step: ${currentStep}, defaulting to hotel-information`);
+          navigate("/hotel-information");
+        }
+      } catch (progressError) {
+        console.error('❌ Google Login: Error getting onboarding progress:', progressError);
+        // Fallback to hotel-information if progress check fails
+        navigate("/hotel-information");
+      }
+    } catch (error: any) {
+      console.error('Google login failed:', error);
+      setError(error.message || 'Failed to login with Google');
+    }
+  }, [googleLoginMutation, navigate]);
 
   const handleCreateAccount = () => {
     console.log("Create account clicked");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 px-4 py-8">
+    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      {/* Logo */}
+      <div className="text-center mb-10">
+        <img
+          src="/images/logo.png"
+          alt="Vivere Stays Logo"
+          className="w-60 h-auto mx-auto"
+        />
+      </div>
+
       <div className="w-full max-w-md lg:max-w-lg">
-        <div className="bg-white rounded-[20px] px-16 py-14 shadow-[0_0_30px_0_rgba(207,241,255,1)] w-full">
+        <div className="bg-white rounded-[20px] px-16 py-14 shadow-[0_0_30px_0_rgba(0,0,0,0.25)] w-full">
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
@@ -264,45 +397,19 @@ export default function Login() {
           </div>
 
           {/* Google Sign Up Button */}
-          <button
-            onClick={handleGoogleSignUp}
-            className="w-full h-[54px] border-[1.7px] border-[#D7DFE8] rounded-[10px] text-[16px] text-[#294859] font-medium hover:border-[#294859] transition-colors flex items-center justify-center gap-[10px]"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g clipPath="url(#clip0_74_59941)">
-                <path
-                  d="M10 18.125C14.9476 18.125 18.9584 14.1142 18.9584 9.16665C18.9584 4.2191 14.9476 0.208313 10 0.208313C5.05247 0.208313 1.04169 4.2191 1.04169 9.16665C1.04169 14.1142 5.05247 18.125 10 18.125Z"
-                  stroke="black"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M10.075 12.925C12.1461 12.925 13.825 11.2461 13.825 9.17499C13.825 7.10392 12.1461 5.42499 10.075 5.42499C8.00394 5.42499 6.32501 7.10392 6.32501 9.17499C6.32501 11.2461 8.00394 12.925 10.075 12.925Z"
-                  stroke="black"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M10.075 5.42504H18.1417M6.82752 11.05L2.79419 4.06421M13.3225 11.05L9.28919 18.0359"
-                  stroke="black"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </g>
-              <defs>
-                <clipPath id="clip0_74_59941">
-                  <rect width="20" height="20" fill="white" />
-                </clipPath>
-              </defs>
-            </svg>
-            Sign up with Google
-          </button>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleCredentialResponse}
+              onError={() => {
+                console.error('Google OAuth error occurred');
+                setError('Failed to initialize Google login');
+              }}
+              theme="filled_blue"
+              shape="rectangular"
+              text="continue_with"
+              locale="en"
+            />
+          </div>
 
           {/* Create Account Section */}
           <div className="mt-5 space-y-5 text-center">

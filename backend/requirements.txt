@@ -23,6 +23,7 @@ requests==2.32.3
 redis==5.0.1
 PyJWT==2.8.0
 pytz==2024.2
+postmarker==1.0
 
 # Testing and Development
 pytest==7.4.3

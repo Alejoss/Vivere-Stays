@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 export default function WelcomeComplete() {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ export default function WelcomeComplete() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      <OnboardingProgressTracker currentStep="complete" />
       {/* Logo */}
       <div className="mb-8">
         <img

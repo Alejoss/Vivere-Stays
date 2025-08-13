@@ -48,7 +48,7 @@ class Property(models.Model):
     phone_number = models.CharField(max_length=20, null=True, blank=True, help_text="Phone number in international format (e.g. +34612345678)")
     website = models.CharField(max_length=255, null=True, blank=True)
     cif = models.CharField(max_length=255, null=True, blank=True)
-    number_of_rooms = models.IntegerField(null=True, blank=True)
+    number_of_rooms = models.IntegerField()
     property_type = models.CharField(max_length=255, null=True, blank=True, choices=PROPERTY_TYPE_CHOICES)
     # Geolocation fields
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude coordinate")
@@ -94,6 +94,7 @@ class DpGeneralSettings(models.Model):
     min_competitors = models.IntegerField(default=2)
     comp_price_calculation = models.CharField(max_length=255, default='min')  # Minimum, etc.
     competitor_excluded = models.TextField(null=True, blank=True)
+    competitors_excluded = models.ManyToManyField(Competitor, related_name='properties_excluded', blank=True)
     msp_include_events_weekend_increments = models.BooleanField(default=False)
     future_days_to_price = models.IntegerField(default=365)
     pricing_status = models.CharField(max_length=255, default='offline')
@@ -178,8 +179,8 @@ class DpOfferIncrements(models.Model):
     offer_name = models.CharField(max_length=255, null=True, blank=True)
     valid_from = models.DateField()
     valid_until = models.DateField()
-    applied_from_days = models.IntegerField()
-    applied_until_days = models.IntegerField()
+    applied_from_days = models.IntegerField(null=True, blank=True)
+    applied_until_days = models.IntegerField(null=True, blank=True)
     increment_type = models.CharField(max_length=255, default='Additional')  # "Percentage" or "Additional"
     increment_value = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -200,11 +201,11 @@ class DpLosSetup(models.Model):
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     valid_from = models.DateField()
-    day_of_week = models.CharField(max_length=255)  # "mon", "tue", "wed", "thu", "fri", "sat", "sun"
-    num_competitors = models.IntegerField(default=2)
-    los_aggregation = models.CharField(max_length=255, default='min')
     valid_until = models.DateField()
+    day_of_week = models.CharField(max_length=255)  # "mon", "tue", "wed", "thu", "fri", "sat", "sun"
     los_value = models.IntegerField()
+    num_competitors = models.IntegerField(default=2)
+    los_aggregation = models.CharField(max_length=255, default='min')        
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -244,8 +245,9 @@ class DpMinimumSellingPrice(models.Model):
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     valid_from = models.DateField()
     valid_until = models.DateField()
-    manual_alternative_price = models.IntegerField()
+    manual_alternative_price = models.IntegerField(null=True, blank=True)
     msp = models.IntegerField()
+    period_title = models.CharField(max_length=255, null=True, blank=True, help_text="Optional name for this MSP period")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

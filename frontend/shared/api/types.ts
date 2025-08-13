@@ -6,7 +6,11 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access: string;
-  user: UserData;
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
 }
 
 export interface RegisterRequest {
@@ -20,7 +24,7 @@ export interface RegisterRequest {
 
 export interface RegisterResponse {
   user: UserData;
-  access_token: string;
+  access: string;
 }
 
 // User Types

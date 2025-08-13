@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService } from './auth';
-import { profilesService, ProfileUpdateRequest, HotelInformation, PMSIntegrationData } from './profiles';
+import { profilesService, ProfileUpdateRequest, HotelInformation, PMSIntegrationData, MSPData, OnboardingProgressUpdate } from './profiles';
 import { LoginRequest, RegisterRequest } from './types';
 
 // Query keys
@@ -24,7 +24,13 @@ export const useLogin = () => {
     mutationFn: (credentials: LoginRequest) => authService.login(credentials),
     onSuccess: (data) => {
       // Invalidate and refetch user data
-      queryClient.setQueryData(queryKeys.auth.user, data.user);
+      queryClient.setQueryData(queryKeys.auth.user, {
+        id: data.id,
+        username: data.username,
+        email: data.email,
+        first_name: data.first_name,
+        last_name: data.last_name,
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile });
     },
   });
@@ -58,6 +64,25 @@ export const useCheckUserExists = () => {
   return useMutation({
     mutationFn: ({ email, username }: { email?: string; username?: string }) => 
       authService.checkUserExists(email, username),
+  });
+};
+
+export const useGoogleLogin = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (credential: string) => authService.googleLogin(credential),
+    onSuccess: (data) => {
+      // Invalidate and refetch user data
+      queryClient.setQueryData(queryKeys.auth.user, {
+        id: data.id,
+        username: data.username,
+        email: data.email,
+        first_name: data.first_name,
+        last_name: data.last_name,
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.profile });
+    },
   });
 };
 
@@ -112,9 +137,36 @@ export const usePMSList = () => {
   });
 };
 
+export const useCreateMSP = () => {
+  return useMutation({
+    mutationFn: (data: MSPData) => profilesService.createMSP(data),
+  });
+};
+
+export const useGetMSPEntries = () => {
+  return useQuery({
+    queryKey: ['msp-entries'],
+    queryFn: () => profilesService.getMSPEntries(),
+  });
+};
+
+export const useGetOnboardingProgress = () => {
+  return useQuery({
+    queryKey: ['onboarding-progress'],
+    queryFn: () => profilesService.getOnboardingProgress(),
+  });
+};
+
+export const useUpdateOnboardingProgress = () => {
+  return useMutation({
+    mutationFn: (data: OnboardingProgressUpdate) => 
+      profilesService.updateOnboardingProgress(data),
+  });
+};
+
 export const useCreateBulkCompetitors = () => {
   return useMutation({
-    mutationFn: (data: { property_id: string; booking_links: string[] }) =>
+    mutationFn: (data: { competitor_names: string[] }) =>
       profilesService.createBulkCompetitors(data),
   });
 };

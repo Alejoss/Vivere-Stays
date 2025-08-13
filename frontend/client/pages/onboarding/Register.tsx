@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useCheckUserExists } from "../../shared/api/hooks";
-import { useRegister } from "../../shared/api/hooks";
-import { RegisterRequest } from "../../shared/api/types";
+import { useCheckUserExists } from "../../../shared/api/hooks";
+import { useRegister } from "../../../shared/api/hooks";
+import { RegisterRequest } from "../../../shared/api/types";
+import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 // Error Message Component
 const ErrorMessage = ({ message }: { message: string }) => {
@@ -297,11 +298,12 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+      <OnboardingProgressTracker currentStep="register" />
       <div className="max-w-4xl mx-auto">
         {/* Logo */}
         <div className="text-center mb-10">
           <img
-            src="/images/logo.jpeg"
+            src="/images/logo.png"
             alt="Vivere Stays Logo"
             className="w-60 h-auto mx-auto"
           />

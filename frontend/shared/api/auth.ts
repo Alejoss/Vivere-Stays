@@ -47,8 +47,8 @@ export const authService = {
     });
 
     // Store access token if provided
-    if (response.access_token) {
-      localStorage.setItem('access_token', response.access_token);
+    if (response.access) {
+      localStorage.setItem('access_token', response.access);
     }
     
     return response;
@@ -141,5 +141,21 @@ export const authService = {
    */
   clearAuth(): void {
     localStorage.removeItem('access_token');
+  },
+
+  /**
+   * Login with Google OAuth
+   */
+  async googleLogin(credential: string): Promise<LoginResponse> {
+    const response = await apiRequest<LoginResponse>({
+      method: 'POST',
+      url: '/profiles/google-login/',
+      data: { access_token: credential },
+    });
+
+    // Store access token
+    localStorage.setItem('access_token', response.access);
+    
+    return response;
   },
 }; 

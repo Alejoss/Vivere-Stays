@@ -2,7 +2,9 @@ from django.urls import path
 from .views import (
     CheckAuth, UserPropertiesView, PropertyAssociationView, LoginView, 
     GetCsrfToken, ProfileView, LogoutView, CheckUserExistsView, RegisterView, 
-    RefreshTokenView, GoogleLoginView, PMSIntegrationRequirementView
+    RefreshTokenView, GoogleLoginView, PMSIntegrationRequirementView,
+    SendVerificationEmailView, VerifyEmailCodeView,
+    OnboardingProgressView, TestEmailView
 )
 
 urlpatterns = [
@@ -18,4 +20,13 @@ urlpatterns = [
     path('refresh-token/', RefreshTokenView.as_view(), name='refresh-token'),
     path('google-login/', GoogleLoginView.as_view(), name='google-login'),
     path('pms-integration/', PMSIntegrationRequirementView.as_view(), name='pms-integration'),
+    
+    # Email verification endpoints
+    path('send-verification-email/', SendVerificationEmailView.as_view(), name='send-verification-email'),
+    path('verify-email-code/', VerifyEmailCodeView.as_view(), name='verify-email-code'),
+    path('resend-verification-email/', SendVerificationEmailView.as_view(), name='resend-verification-email'),
+    path('test-email/', TestEmailView.as_view(), name='test-email'),
+    
+    # Onboarding progress endpoints
+    path('onboarding-progress/', OnboardingProgressView.as_view(), name='onboarding-progress'),
 ]

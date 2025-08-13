@@ -42,20 +42,26 @@ const createAxiosInstance = (): AxiosInstance => {
 
       // Handle 401 errors (unauthorized) - try to refresh token
       if (error.response?.status === 401 && !originalRequest._retry) {
+        console.log('🔄 Axios Interceptor - 401 error detected, attempting token refresh...');
         originalRequest._retry = true;
 
         try {
           // Try to refresh the token
-          const refreshResponse = await instance.post('/profiles/refresh_token/');
+          console.log('🔄 Axios Interceptor - Calling refresh token endpoint...');
+          const refreshResponse = await instance.post('/profiles/refresh-token/');
           const { access } = refreshResponse.data;
           
+          console.log('✅ Axios Interceptor - Token refresh successful, storing new token');
           // Store new access token
           localStorage.setItem('access_token', access);
           
           // Retry original request with new token
+          console.log('🔄 Axios Interceptor - Retrying original request with new token');
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return instance(originalRequest);
         } catch (refreshError) {
+          console.error('❌ Axios Interceptor - Token refresh failed:', refreshError);
+          console.log('🔄 Axios Interceptor - Redirecting to login page');
           // Refresh failed, redirect to login
           localStorage.removeItem('access_token');
           window.location.href = '/';

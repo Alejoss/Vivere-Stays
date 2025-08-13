@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vivere Stays Email</title>
+    <style>
+        /* Reset styles for email compatibility */
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+        
+        /* Main styles */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #F6F9FD;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.4;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #F6F9FD;
+        }
+        
+        .logo-section {
+            text-align: center;
+            padding: 32px 16px 40px 16px;
+        }
+        
+        .logo {
+            width: 240px;
+            height: auto;
+            max-width: 100%;
+        }
+        
+        .main-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 0 30px 0 rgba(0, 0, 0, 0.25);
+            margin: 0 16px 32px 16px;
+            padding: 48px 32px;
+            position: relative;
+        }
+        
+        .icon-container {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #D7E4EB 0%, #CEF4FC 100%);
+            border: 1px solid #9CAABD;
+            border-radius: 10px;
+            margin: 0 auto 24px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .main-title {
+            font-size: 34px;
+            font-weight: bold;
+            color: #1E1E1E;
+            text-align: center;
+            margin: 0 0 12px 0;
+            line-height: 1.2;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #485567;
+            text-align: center;
+            margin: 0 0 32px 0;
+            line-height: 1.5;
+        }
+        
+        .content-section {
+            margin: 24px 0;
+        }
+        
+        .primary-button {
+            display: inline-block;
+            background-color: #294758;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        .primary-button:hover {
+            background-color: #1e3340 !important;
+        }
+        
+        .success-button {
+            display: inline-block;
+            background-color: #16B257;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .success-button:hover {
+            background-color: #14A04A !important;
+        }
+        
+        .info-box {
+            background-color: #EEF9FF;
+            border: 1px solid #D8E9FE;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .success-box {
+            background-color: #D7FBE6;
+            border: 1px solid #16B257;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        
+        .error-box {
+            background-color: #FEF2F2;
+            border: 1px solid #FCA5A5;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+        
+        .verification-code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: #1E1E1E;
+            background-color: #F8FAFC;
+            border: 2px solid #D7DFE8;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            letter-spacing: 4px;
+            margin: 16px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 32px 16px;
+            color: #9CAABD;
+            font-size: 14px;
+        }
+        
+        .footer a {
+            color: #294758;
+            text-decoration: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #E2E8F0;
+            border-radius: 6px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #285A6E 0%, #03CBF5 100%);
+            border-radius: 6px;
+        }
+        
+        /* Responsive styles */
+        @media only screen and (max-width: 600px) {
+            .main-card {
+                margin: 0 8px 16px 8px;
+                padding: 32px 24px;
+            }
+            
+            .main-title {
+                font-size: 28px;
+            }
+            
+            .subtitle {
+                font-size: 16px;
+            }
+            
+            .logo {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <img src="{{logo_url}}" alt="Vivere Stays" class="logo">
+        </div>
+        
+        <!-- Main Content Card -->
+        <div class="main-card">
+            <!-- Icon Container (can be customized per email type) -->
+            <div class="icon-container">
+                <!-- Default user icon - can be replaced with email-specific icons -->
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 11.6667C16.5774 11.6667 18.6667 9.57737 18.6667 7.00004C18.6667 4.42271 16.5774 2.33337 14 2.33337C11.4227 2.33337 9.33337 4.42271 9.33337 7.00004C9.33337 9.57737 11.4227 11.6667 14 11.6667Z" stroke="black" stroke-width="1.5"/>
+                    <path d="M23.331 21.0001C23.3326 20.8087 23.3334 20.6143 23.3334 20.4167C23.3334 17.5176 19.1544 15.1667 14 15.1667C8.84569 15.1667 4.66669 17.5176 4.66669 20.4167C4.66669 23.3159 4.66669 25.6667 14 25.6667C16.6029 25.6667 18.48 25.4836 19.8334 25.1569" stroke="black" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            
+            <!-- Email Title -->
+            <h1 class="main-title">{{email_title}}</h1>
+            
+            <!-- Email Subtitle -->
+            <p class="subtitle">{{email_subtitle}}</p>
+            
+            <!-- Dynamic Content Area -->
+            <div class="content-section">
+                {{{@content}}}
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                © 2025 Vivere Stays. All rights reserved.<br>
+                <a href="{{unsubscribe_url}}">Unsubscribe</a> | 
+                <a href="{{company_website}}">Visit our website</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

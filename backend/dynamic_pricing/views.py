@@ -4,13 +4,15 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 import logging
+from datetime import datetime
 
-from .models import Property, PropertyManagementSystem
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice
 from .serializers import (
     PropertyCreateSerializer, 
     PropertyDetailSerializer, 
     PropertyListSerializer,
-    PropertyManagementSystemSerializer
+    PropertyManagementSystemSerializer,
+    MinimumSellingPriceSerializer
 )
 
 # Get logger for dynamic_pricing views
@@ -415,4 +417,259 @@ class PropertyListView(APIView):
             return Response({
                 'message': 'An error occurred while retrieving the properties list',
                 'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MinimumSellingPriceView(APIView):
+    """
+    API endpoint for creating and managing Minimum Selling Price (MSP) entries
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get MSP entries for the user's property
+        """
+        try:
+            user_profile = request.user.profile
+            try:
+                property_instance = user_profile.get_properties().latest('created_at')
+            except Property.DoesNotExist:
+                return Response({
+                    'error': 'No property found for this user'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            msp_entries = DpMinimumSellingPrice.objects.filter(
+                property_id=property_instance
+            ).order_by('valid_from')
+            
+            serializer = MinimumSellingPriceSerializer(msp_entries, many=True)
+            
+            return Response({
+                'msp_entries': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving MSP entries: {str(e)}")
+            return Response({
+                'error': 'Failed to retrieve MSP entries'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """
+        Create or update MSP entries for a property
+        """
+        try:
+            # Get the user's profile and their most recent property
+            user_profile = request.user.profile
+            try:
+                property_instance = user_profile.get_properties().latest('created_at')
+            except Property.DoesNotExist:
+                return Response({
+                    'error': 'No property found for this user'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Get the periods data from request
+            periods = request.data.get('periods', [])
+            
+            if not periods:
+                return Response({
+                    'error': 'No periods provided'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            created_msp_entries = []
+            updated_msp_entries = []
+            errors = []
+            
+            for period in periods:
+                try:
+                    # Parse dates from dd/mm/yyyy format
+                    from_date = self._parse_date(period.get('fromDate'))
+                    to_date = self._parse_date(period.get('toDate'))
+                    price = int(period.get('price', 0))
+                    period_title = period.get('periodTitle', '')  # Get optional period title
+                    
+                    if not from_date or not to_date:
+                        errors.append(f"Invalid date format for period: {period}")
+                        continue
+                    
+                    # Check if this is an existing entry (has existing- prefix in id)
+                    period_id = period.get('id', '')
+                    is_existing = period_id.startswith('existing-')
+                    
+                    if is_existing:
+                        # Extract the actual database ID
+                        db_id = period_id.replace('existing-', '')
+                        
+                        # Try to find and update the existing entry
+                        try:
+                            existing_entry = DpMinimumSellingPrice.objects.get(
+                                id=db_id,
+                                property_id=property_instance
+                            )
+                            
+                            # Update the existing entry
+                            existing_entry.valid_from = from_date
+                            existing_entry.valid_until = to_date
+                            existing_entry.msp = price
+                            existing_entry.period_title = period_title
+                            existing_entry.save()
+                            
+                            updated_msp_entries.append({
+                                'id': existing_entry.id,
+                                'valid_from': existing_entry.valid_from,
+                                'valid_until': existing_entry.valid_until,
+                                'msp': existing_entry.msp,
+                                'period_title': existing_entry.period_title
+                            })
+                            
+                        except DpMinimumSellingPrice.DoesNotExist:
+                            errors.append(f"Could not find existing MSP entry with ID: {db_id}")
+                            continue
+                    else:
+                        # Check for overlapping periods (only for new entries)
+                        existing_same_start = DpMinimumSellingPrice.objects.filter(
+                            property_id=property_instance,
+                            valid_from=from_date
+                        ).exists()
+                        
+                        if existing_same_start:
+                            errors.append(f"An MSP entry already exists for the start date: {period.get('fromDate')}")
+                            continue
+                        
+                        # Check for actual overlaps (periods that intersect)
+                        existing_overlap = DpMinimumSellingPrice.objects.filter(
+                            property_id=property_instance
+                        ).filter(
+                            # Periods overlap if: existing_start < new_end AND existing_end > new_start
+                            valid_from__lt=to_date,
+                            valid_until__gt=from_date
+                        ).exists()
+                        
+                        # Debug: Let's see what existing entries we have
+                        existing_entries = DpMinimumSellingPrice.objects.filter(
+                            property_id=property_instance
+                        ).values('valid_from', 'valid_until')
+                        print(f"Debug - New period: {from_date} to {to_date}")
+                        print(f"Debug - Existing entries: {list(existing_entries)}")
+                        print(f"Debug - Overlap detected: {existing_overlap}")
+                        
+                        # More detailed debug: Check each existing entry individually
+                        for entry in existing_entries:
+                            existing_start = entry['valid_from']
+                            existing_end = entry['valid_until']
+                            overlaps = (existing_start < to_date) and (existing_end > from_date)
+                            print(f"Debug - Checking overlap: existing({existing_start} to {existing_end}) vs new({from_date} to {to_date}) = {overlaps}")
+                        
+                        if existing_overlap:
+                            errors.append(f"Period overlaps with existing MSP entry: {period.get('fromDate')} to {period.get('toDate')}")
+                            continue
+                        
+                        # Create new MSP entry
+                        msp_data = {
+                            'property_id': property_instance.id,
+                            'valid_from': from_date,
+                            'valid_until': to_date,
+                            'msp': price,
+                            'period_title': period_title,
+                            'manual_alternative_price': None  # Can be set later if needed
+                        }
+                        
+                        serializer = MinimumSellingPriceSerializer(data=msp_data)
+                        if serializer.is_valid():
+                            msp_entry = serializer.save()
+                            created_msp_entries.append(serializer.data)
+                        else:
+                            errors.append(f"Validation error for period {period}: {serializer.errors}")
+                        
+                except ValueError as e:
+                    errors.append(f"Invalid price value for period {period}: {str(e)}")
+                except Exception as e:
+                    errors.append(f"Error processing period {period}: {str(e)}")
+            
+            if created_msp_entries or updated_msp_entries:
+                return Response({
+                    'message': f'Successfully processed MSP entries (Created: {len(created_msp_entries)}, Updated: {len(updated_msp_entries)})',
+                    'created_entries': created_msp_entries,
+                    'updated_entries': updated_msp_entries,
+                    'errors': errors if errors else None
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    'error': 'Failed to process any MSP entries',
+                    'errors': errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating MSP entries: {str(e)}")
+            return Response({
+                'error': 'Failed to create MSP entries'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _parse_date(self, date_str):
+        """
+        Parse date from dd/mm/yyyy format to Date object
+        """
+        if not date_str:
+            return None
+        
+        try:
+            # Handle dd/mm/yyyy format
+            if '/' in date_str:
+                day, month, year = date_str.split('/')
+                return datetime(int(year), int(month), int(day)).date()
+            else:
+                # Try ISO format
+                return datetime.fromisoformat(date_str).date()
+        except (ValueError, TypeError):
+            return None
+
+    def test_model_creation(self, request):
+        """
+        Test method to verify model creation works
+        """
+        try:
+            logger.info("Testing MSP model creation...")
+            
+            # Get user's property
+            user_profile = request.user.profile
+            property_instance = user_profile.get_properties().latest('created_at')
+            
+            # Try to create a test MSP entry
+            from datetime import date
+            test_data = {
+                'property_id': property_instance.id,
+                'valid_from': date(2025, 1, 1),
+                'valid_until': date(2025, 1, 31),
+                'msp': 100,
+                'manual_alternative_price': None
+            }
+            
+            logger.info(f"Test data: {test_data}")
+            
+            serializer = MinimumSellingPriceSerializer(data=test_data)
+            if serializer.is_valid():
+                msp_entry = serializer.save()
+                logger.info(f"Test MSP entry created successfully: {msp_entry.id}")
+                
+                # Clean up the test entry
+                msp_entry.delete()
+                logger.info("Test MSP entry deleted")
+                
+                return Response({
+                    'message': 'MSP model creation test passed',
+                    'test_entry_id': msp_entry.id
+                }, status=status.HTTP_200_OK)
+            else:
+                logger.error(f"Test MSP creation failed: {serializer.errors}")
+                return Response({
+                    'error': 'Test MSP creation failed',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Test failed: {str(e)}", exc_info=True)
+            return Response({
+                'error': f'Test failed: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

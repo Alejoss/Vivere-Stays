@@ -57,6 +57,63 @@ export interface PMSIntegrationResponse {
   };
 }
 
+export interface MSPPeriod {
+  id: string;
+  fromDate: string;
+  toDate: string;
+  price: string;
+  periodTitle: string;
+}
+
+export interface MSPData {
+  periods: MSPPeriod[];
+}
+
+export interface MSPResponse {
+  message: string;
+  created_entries: Array<{
+    id: number;
+    property_id: string;
+    valid_from: string;
+    valid_until: string;
+    manual_alternative_price: number | null;
+    msp: number;
+    period_title: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+  errors?: string[];
+}
+
+export interface MSPEntriesResponse {
+  msp_entries: Array<{
+    id: number;
+    property_id: string;
+    valid_from: string;
+    valid_until: string;
+    manual_alternative_price: number | null;
+    msp: number;
+    period_title: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+  count: number;
+}
+
+export interface OnboardingProgress {
+  current_step: string;
+  current_step_display: string;
+  progress_percentage: number;
+  completed: boolean;
+  started_at: string | null;
+  completed_at: string | null;
+  next_step: string | null;
+}
+
+export interface OnboardingProgressUpdate {
+  step: string;
+}
+
 export const profilesService = {
   async getProfile(): Promise<ProfileData> {
     return apiRequest<ProfileData>({
@@ -109,13 +166,13 @@ export const profilesService = {
     });
   },
 
-  async createBulkCompetitors(data: { property_id: string; booking_links: string[] }): Promise<{
+  async createBulkCompetitors(data: { competitor_names: string[] }): Promise<{
     message: string;
     property_id: string;
     created_competitors: Array<{
       competitor_id: string;
       competitor_name: string;
-      booking_link: string;
+      booking_link: string | null;
       valid_from: string;
       valid_to: string | null;
       daily_num_days: number;
@@ -129,7 +186,7 @@ export const profilesService = {
     }>;
     total_created: number;
     total_errors: number;
-    errors?: Array<{ url: string; error: string }>;
+    errors?: Array<{ name: string; error: string }>;
   }> {
     return apiRequest<{
       message: string;
@@ -137,7 +194,7 @@ export const profilesService = {
       created_competitors: Array<{
         competitor_id: string;
         competitor_name: string;
-        booking_link: string;
+        booking_link: string | null;
         valid_from: string;
         valid_to: string | null;
         daily_num_days: number;
@@ -151,7 +208,7 @@ export const profilesService = {
       }>;
       total_created: number;
       total_errors: number;
-      errors?: Array<{ url: string; error: string }>;
+      errors?: Array<{ name: string; error: string }>;
     }>({
       method: 'POST',
       url: '/booking/competitors/bulk-create/',
@@ -188,6 +245,42 @@ export const profilesService = {
     return apiRequest<{ integrations: any[] }>({
       method: 'GET',
       url: '/profiles/pms-integration/',
+    });
+  },
+
+  async createMSP(data: MSPData): Promise<MSPResponse> {
+    return apiRequest<MSPResponse>({
+      method: 'POST',
+      url: '/dynamic-pricing/msp/',
+      data,
+    });
+  },
+
+  async getMSPEntries(): Promise<MSPEntriesResponse> {
+    return apiRequest<MSPEntriesResponse>({
+      method: 'GET',
+      url: '/dynamic-pricing/msp/',
+    });
+  },
+
+  async getOnboardingProgress(): Promise<OnboardingProgress> {
+    return apiRequest<OnboardingProgress>({
+      method: 'GET',
+      url: '/profiles/onboarding-progress/',
+    });
+  },
+
+  async updateOnboardingProgress(data: OnboardingProgressUpdate): Promise<{
+    message: string;
+    progress: OnboardingProgress;
+  }> {
+    return apiRequest<{
+      message: string;
+      progress: OnboardingProgress;
+    }>({
+      method: 'POST',
+      url: '/profiles/onboarding-progress/',
+      data,
     });
   },
 }; 

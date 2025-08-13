@@ -64,7 +64,7 @@ class Competitor(models.Model):
     """
     competitor_id = models.CharField(max_length=255)
     competitor_name = models.CharField(max_length=255)
-    booking_link = models.URLField()
+    booking_link = models.URLField(null=True, blank=True)  # Made optional
     valid_from = models.DateTimeField(default=timezone.now)
     valid_to = models.DateTimeField(null=True, blank=True)
     daily_num_days = models.IntegerField(default=15)
