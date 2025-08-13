@@ -29,6 +29,10 @@ class Profile(models.Model):
     profile_picture = models.ImageField(upload_to=upload_profile_picture, null=True, blank=True)
     receive_updates = models.BooleanField(default=False, help_text="Whether the user wants to receive email updates")
     
+    # Additional profile fields
+    dni = models.CharField(max_length=20, blank=True, help_text="Spanish National Identity Document")
+    phone_number = models.CharField(max_length=20, blank=True, help_text="Phone number with country code")
+    
     # Onboarding progress fields
     onboarding_step = models.CharField(
         max_length=20, 

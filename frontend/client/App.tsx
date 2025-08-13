@@ -10,6 +10,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
 import Register from "./pages/onboarding/Register";
+import ProfileCompletion from "./pages/onboarding/ProfileCompletion";
 import Terms from "./pages/onboarding/Terms";
 import VerifyEmail from "./pages/onboarding/VerifyEmail";
 import HotelInformation from "./pages/onboarding/HotelInformation";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/profile-completion" element={<ProfileCompletion />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/hotel-information" element={<HotelInformation />} />

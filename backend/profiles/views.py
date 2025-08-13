@@ -348,7 +348,26 @@ class ProfileView(APIView):
         """
         try:
             profile = get_object_or_404(Profile, user=request.user)
-            serializer = ProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
+            
+            # Separate user fields from profile fields
+            user_fields = {}
+            profile_fields = {}
+            
+            for field, value in request.data.items():
+                if field in ['first_name', 'last_name']:
+                    user_fields[field] = value
+                else:
+                    profile_fields[field] = value
+            
+            # Update user fields if provided
+            if user_fields:
+                user = request.user
+                for field, value in user_fields.items():
+                    setattr(user, field, value)
+                user.save()
+            
+            # Update profile fields
+            serializer = ProfileSerializer(profile, data=profile_fields, partial=True, context={'request': request})
             
             if serializer.is_valid():
                 serializer.save()
@@ -600,6 +619,9 @@ class GoogleLoginView(SocialLoginView):
         
         # Check for access token
         id_token = request.data.get('access_token')
+        logger.debug(f"Received request data: {request.data}")
+        logger.debug(f"Access token present: {bool(id_token)}")
+        
         if not id_token:
             logger.error(f"No access token provided in request for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
             return Response(
@@ -647,6 +669,8 @@ class GoogleLoginView(SocialLoginView):
             
             # Get Google OAuth client ID from settings
             client_id = settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['client_id']
+            logger.debug(f"Google OAuth client ID from settings: {client_id[:20]}..." if client_id else "None")
+            
             if not client_id:
                 logger.error(f"Google OAuth client ID not configured in settings for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
                 return Response(

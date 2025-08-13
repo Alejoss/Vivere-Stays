@@ -13,11 +13,17 @@ export interface ProfileData {
   profile_picture: string | null;
   properties_count: number;
   receive_updates: boolean;
+  dni?: string;
+  phone_number?: string;
 }
 
 export interface ProfileUpdateRequest {
   timezone?: string;
   profile_picture?: File;
+  dni?: string;
+  phone_number?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface HotelInformation {
@@ -131,6 +137,22 @@ export const profilesService = {
     
     if (data.profile_picture) {
       formData.append('profile_picture', data.profile_picture);
+    }
+
+    if (data.dni) {
+      formData.append('dni', data.dni);
+    }
+
+    if (data.phone_number) {
+      formData.append('phone_number', data.phone_number);
+    }
+
+    if (data.first_name) {
+      formData.append('first_name', data.first_name);
+    }
+
+    if (data.last_name) {
+      formData.append('last_name', data.last_name);
     }
 
     return apiRequest<ProfileData>({

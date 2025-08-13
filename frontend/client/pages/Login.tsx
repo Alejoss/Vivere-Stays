@@ -62,6 +62,13 @@ export default function Login() {
         console.log('📍 Login: Current onboarding step:', currentStep);
         console.log('📍 Login: Current step type:', typeof currentStep);
         
+        // For users at register step, check if they need to complete their profile
+        if (currentStep === 'register' && !progressData.completed) {
+          console.log('📝 Login: User at register step and onboarding not completed, redirecting to profile completion');
+          navigate("/profile-completion");
+          return;
+        }
+        
         // Validate that the current step is a valid OnboardingStep
         const validSteps = ['register', 'verify_email', 'hotel_information', 'pms_integration', 'select_plan', 'payment', 'add_competitor', 'msp', 'complete'] as const;
         console.log('🔍 Login: Valid steps:', validSteps);
@@ -145,6 +152,13 @@ export default function Login() {
         const currentStep = progressData.current_step;
         console.log('📍 Google Login: Current onboarding step:', currentStep);
         
+        // For new Google users, check if they need to complete their profile
+        if (currentStep === 'register' && !progressData.completed) {
+          console.log('📝 Google Login: User at register step and onboarding not completed, redirecting to profile completion');
+          navigate("/profile-completion");
+          return;
+        }
+        
         // Validate that the current step is a valid OnboardingStep
         const validSteps = ['register', 'verify_email', 'hotel_information', 'pms_integration', 'select_plan', 'payment', 'add_competitor', 'msp', 'complete'] as const;
         
@@ -177,7 +191,17 @@ export default function Login() {
       }
     } catch (error: any) {
       console.error('Google login failed:', error);
-      setError(error.message || 'Failed to login with Google');
+      
+      // Handle the API error structure
+      if (error && typeof error === 'object' && 'error' in error) {
+        setError(error.error);
+      } else if (error && typeof error === 'object' && 'response' in error && error.response?.data?.error) {
+        setError(error.response.data.error);
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Google login failed. Please try again.");
+      }
     }
   }, [googleLoginMutation, navigate]);
 

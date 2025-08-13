@@ -43,6 +43,8 @@ export interface ProfileData {
   properties: PropertyData[];
   properties_count: number;
   receive_updates: boolean;
+  dni?: string;
+  phone_number?: string;
 }
 
 // Property Types (for onboarding)
