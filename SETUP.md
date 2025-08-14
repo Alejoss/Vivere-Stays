@@ -8,7 +8,7 @@ This guide will walk you through setting up the Vivere Stays project after cloni
 
 - **Docker and Docker Compose** installed on your system
 - **Git** for cloning the repository
-- **Node.js 18+** (for local development, optional)
+- **Node.js 18+** (for frontend development)
 
 ### Step-by-Step Setup
 
@@ -21,39 +21,74 @@ cd Vivere-Stays
 
 #### 2. Set Up Environment Variables
 
+You need to create `.env` files in three locations:
+
+**Root Environment (for Docker Compose):**
+```bash
+# Create .env in the root directory
+touch .env
+```
+
+Edit the root `.env` file with your configuration:
+```env
+# Database Configuration
+POSTGRES_DB=vivere_stays_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+
+```
+
 **Backend Environment:**
 ```bash
-cp backend/env.example backend/.env
+# Create .env in the backend directory
+touch backend/.env
 ```
 
 Edit `backend/.env` with your configuration:
 ```env
+# Django Settings
 DEBUG=True
 SECRET_KEY=your-secret-key-here-change-in-production
 ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+
+# Database Configuration
 DB_NAME=vivere_stays_db
 DB_USER=postgres
 DB_PASSWORD=password
-DB_HOST=db
+DB_HOST=postgres
 DB_PORT=5432
-REDIS_URL=redis://redis:6379/0
+
+# CORS Settings
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# Email Configuration (if needed)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
 ```
 
 **Frontend Environment:**
 ```bash
-cp frontend/env.example frontend/.env
+# Create .env in the frontend directory
+touch frontend/.env
 ```
 
 Edit `frontend/.env` with your configuration:
 ```env
+# API Configuration
 VITE_API_URL=http://localhost:8000/api/v1
+
+# External Services (optional)
 VITE_MAPBOX_TOKEN=your-mapbox-token-here
 VITE_STRIPE_PUBLIC_KEY=your-stripe-public-key-here
 VITE_GOOGLE_MAPS_API_KEY=your-google-maps-api-key-here
 ```
 
-#### 3. Generate Frontend Dependencies (Required for Docker Build)
+#### 3. Install Frontend Dependencies
 
 ```bash
 cd frontend
@@ -61,24 +96,39 @@ npm install
 cd ..
 ```
 
-**Why this step is needed:** The Docker build uses `npm ci` which requires a `package-lock.json` file. Running `npm install` generates this file.
-
-#### 4. Build and Start the Application
+#### 4. Build and Start the Backend Services
 
 ```bash
 docker-compose up --build
 ```
 
 This command will:
-- Build all Docker containers
-- Start all services (frontend, backend, database, redis, celery)
+- Build the backend Docker container
+- Start the backend service and PostgreSQL database
 - Set up the network between services
 
-#### 5. Access the Application
+#### 5. Run Database Migrations
+
+In a new terminal window, run the migrations:
+
+```bash
+docker-compose exec vivere_backend python manage.py migrate
+```
+
+#### 6. Start the Frontend Development Server
+
+In another terminal window, start the frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+#### 7. Access the Application
 
 Once all services are running, you can access:
 
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:3000 (or the port shown by Vite)
 - **Backend API**: http://localhost:8000
 - **Django Admin**: http://localhost:8000/admin
 
@@ -87,55 +137,50 @@ Once all services are running, you can access:
 ### Starting the Application
 
 ```bash
-# Start all services
+# Start backend services
 docker-compose up
 
-# Start in detached mode (background)
-docker-compose up -d
-
-# Start with rebuild (if you made changes)
-docker-compose up --build
+# Start frontend (in a separate terminal)
+cd frontend
+npm run dev
 ```
 
 ### Stopping the Application
 
 ```bash
-# Stop all services
+# Stop backend services
 docker-compose down
 
-# Stop and remove volumes (database data)
-docker-compose down -v
+# Stop frontend (Ctrl+C in the frontend terminal)
 ```
 
 ### Viewing Logs
 
 ```bash
-# View all logs
-docker-compose logs
+# View backend logs
+docker-compose logs vivere_backend
 
-# View specific service logs
-docker-compose logs frontend
-docker-compose logs backend
-docker-compose logs db
+# View database logs
+docker-compose logs postgres
 
 # Follow logs in real-time
-docker-compose logs -f
+docker-compose logs -f vivere_backend
 ```
 
 ### Database Management
 
 ```bash
 # Access Django shell
-docker-compose exec backend python manage.py shell
+docker-compose exec vivere_backend python manage.py shell
 
 # Run migrations
-docker-compose exec backend python manage.py migrate
+docker-compose exec vivere_backend python manage.py migrate
 
 # Create superuser
-docker-compose exec backend python manage.py createsuperuser
+docker-compose exec vivere_backend python manage.py createsuperuser
 
 # Collect static files
-docker-compose exec backend python manage.py collectstatic
+docker-compose exec vivere_backend python manage.py collectstatic
 ```
 
 ## 🐛 Troubleshooting
@@ -163,28 +208,28 @@ docker-compose build --no-cache
 #### 3. Database Connection Issues
 ```bash
 # Restart database service
-docker-compose restart db
+docker-compose restart postgres
 
 # Check database logs
-docker-compose logs db
+docker-compose logs postgres
 ```
 
 #### 4. Frontend Not Loading
 ```bash
-# Check if package-lock.json exists
-ls frontend/package-lock.json
-
-# If missing, regenerate it
+# Check if dependencies are installed
 cd frontend && npm install && cd ..
+
+# Check if the dev server is running
+npm run dev
 ```
 
 #### 5. Backend API Errors
 ```bash
 # Check Django logs
-docker-compose logs backend
+docker-compose logs vivere_backend
 
 # Restart backend
-docker-compose restart backend
+docker-compose restart vivere_backend
 ```
 
 ### Reset Everything
@@ -208,12 +253,13 @@ docker-compose up --build
 
 ### Backend Tests
 ```bash
-docker-compose exec backend python manage.py test
+docker-compose exec vivere_backend python manage.py test
 ```
 
 ### Frontend Tests (if implemented)
 ```bash
-docker-compose exec frontend npm test
+cd frontend
+npm test
 ```
 
 ## 📁 Project Structure
@@ -222,25 +268,34 @@ docker-compose exec frontend npm test
 Vivere Stays/
 ├── backend/                 # Django REST API
 │   ├── vivere_stays/       # Django project settings
-│   ├── users/              # User management
-│   ├── properties/         # Property listings
-│   ├── bookings/           # Booking system
-│   ├── payments/           # Payment processing
+│   ├── profiles/           # User profiles and authentication
+│   ├── booking/            # Booking system
+│   ├── dynamic_pricing/    # Dynamic pricing system
 │   ├── requirements.txt    # Python dependencies
 │   ├── Dockerfile         # Backend container
 │   └── .env               # Backend environment variables
 ├── frontend/               # React + Vite application
-│   ├── src/               # React source code
+│   ├── client/            # React source code
+│   ├── shared/            # Shared utilities and API
 │   ├── package.json       # Node.js dependencies
-│   ├── vite.config.js     # Vite configuration
-│   ├── Dockerfile         # Frontend container
+│   ├── vite.config.ts     # Vite configuration
 │   └── .env               # Frontend environment variables
-├── docker-compose.yml      # Multi-service orchestration
+├── docker-compose.yml      # Backend services orchestration
 ├── README.md              # Project overview
 └── SETUP.md               # This file
 ```
 
 ## 🔐 Environment Variables Reference
+
+### Root (.env)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `POSTGRES_DB` | Database name | `vivere_stays_db` |
+| `POSTGRES_USER` | Database user | `postgres` |
+| `POSTGRES_PASSWORD` | Database password | `password` |
+| `POSTGRES_HOST` | Database host | `postgres` |
+| `POSTGRES_PORT` | Database port | `5432` |
+| `REDIS_URL` | Redis connection | `redis://redis:6379/0` |
 
 ### Backend (.env)
 | Variable | Description | Default |
@@ -251,7 +306,7 @@ Vivere Stays/
 | `DB_NAME` | Database name | `vivere_stays_db` |
 | `DB_USER` | Database user | `postgres` |
 | `DB_PASSWORD` | Database password | `password` |
-| `DB_HOST` | Database host | `db` |
+| `DB_HOST` | Database host | `postgres` |
 | `DB_PORT` | Database port | `5432` |
 | `REDIS_URL` | Redis connection | `redis://redis:6379/0` |
 | `CORS_ALLOWED_ORIGINS` | CORS origins | `http://localhost:3000` |
@@ -273,6 +328,7 @@ For production deployment, you'll need to:
 3. **Use production database** credentials
 4. **Configure domain names** in CORS settings
 5. **Set up SSL certificates** for HTTPS
+6. **Build frontend for production** using `npm run build`
 
 ## 📞 Support
 

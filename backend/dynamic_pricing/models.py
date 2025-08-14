@@ -321,3 +321,34 @@ class DpRoomRates(models.Model):
 
     def __str__(self):
         return f"{self.property_id.name} - Rate {self.rate_id}"
+
+
+class DpPriceChangeHistory(models.Model):
+    """
+    Dynamic pricing price change history - tracks pricing decisions over time
+    """
+    property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    pms_hotel_id = models.CharField(max_length=255)
+    checkin_date = models.DateField()  # Date for which the price change was calculated
+    as_of = models.DateTimeField()  # Timestamp when the data was captured
+
+    # Key pricing data
+    occupancy = models.FloatField(null=True, blank=True)  # Occupancy level
+    msp = models.IntegerField()  # Minimum Selling Price
+    recom_price = models.IntegerField()  # Recommended price
+    overwrite_price = models.IntegerField(null=True, blank=True)  # Overwrite price (from RM)
+    recom_los = models.IntegerField()  # Recommended LOS
+    overwrite_los = models.IntegerField(null=True, blank=True)  # Overwrite LOS (from RM)
+    base_price = models.IntegerField()  # Base price used in calculation
+    base_price_choice = models.CharField(max_length=255)  # "competitor" or "manual"
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('property_id', 'checkin_date', 'as_of')
+        verbose_name = 'Price Change History'
+        verbose_name_plural = 'Price Change Histories'
+
+    def __str__(self):
+        return f"{self.property_id.name} - {self.checkin_date} at {self.as_of}"

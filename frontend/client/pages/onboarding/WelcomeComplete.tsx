@@ -28,8 +28,8 @@ export default function WelcomeComplete() {
   }, []);
 
   const handleGoToDashboard = () => {
-    // Navigate to dashboard or home page
-    navigate("/");
+    // Navigate to dashboard
+    navigate("/dashboard");
   };
 
   return (

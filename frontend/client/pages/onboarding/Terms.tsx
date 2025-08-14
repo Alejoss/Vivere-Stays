@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegister } from "../../../shared/api/hooks";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 export default function Terms() {
   const navigate = useNavigate();
@@ -70,7 +69,6 @@ export default function Terms() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
-      <OnboardingProgressTracker currentStep="register" />
       <div className="max-w-4xl mx-auto">
         {/* Logo */}
         <div className="text-center mb-10">

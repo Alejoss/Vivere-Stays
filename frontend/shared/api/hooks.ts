@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService } from './auth';
 import { profilesService, ProfileUpdateRequest, HotelInformation, PMSIntegrationData, MSPData, OnboardingProgressUpdate } from './profiles';
 import { LoginRequest, RegisterRequest } from './types';
+import { dynamicPricingService } from './dynamic';
 
 // Query keys
 export const queryKeys = {
@@ -182,6 +183,62 @@ export const usePMSIntegrations = () => {
   return useQuery({
     queryKey: ['pms-integrations'],
     queryFn: () => profilesService.getPMSIntegrations(),
+  });
+};
+
+// Dynamic Pricing hooks
+export const usePriceHistory = (propertyId: string, year?: number, month?: number) => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'price-history', propertyId, year, month],
+    queryFn: () => dynamicPricingService.getPriceHistory(propertyId, year, month),
+    enabled: !!propertyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useProperties = () => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'properties'],
+    queryFn: () => dynamicPricingService.getProperties(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useProperty = (propertyId: string) => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'property', propertyId],
+    queryFn: () => dynamicPricingService.getProperty(propertyId),
+    enabled: !!propertyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useDynamicPMSList = () => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'pms-list'],
+    queryFn: () => dynamicPricingService.getPMSList(),
+    staleTime: 10 * 60 * 1000, // 10 minutes (PMS list doesn't change often)
+  });
+};
+
+export const useDynamicMSPEntries = () => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'msp-entries'],
+    queryFn: () => dynamicPricingService.getMSPEntries(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useCreateDynamicMSP = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: { periods: Array<{ fromDate: string; toDate: string; price: string; periodTitle: string }> }) => 
+      dynamicPricingService.createMSP(data),
+    onSuccess: () => {
+      // Invalidate MSP entries after creating new ones
+      queryClient.invalidateQueries({ queryKey: ['dynamic-pricing', 'msp-entries'] });
+    },
   });
 };
 

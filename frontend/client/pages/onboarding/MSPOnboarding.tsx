@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { useCreateMSP, useGetMSPEntries } from "../../../shared/api/hooks";
+import { useCreateDynamicMSP, useDynamicMSPEntries } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 interface MSPPeriod {
@@ -20,8 +20,8 @@ interface MSPPeriod {
 
 export default function MSP() {
   const navigate = useNavigate();
-  const createMSP = useCreateMSP();
-  const { data: mspEntriesData, isLoading: mspEntriesLoading } = useGetMSPEntries();
+  const createMSP = useCreateDynamicMSP();
+  const { data: mspEntriesData, isLoading: mspEntriesLoading } = useDynamicMSPEntries();
   
   // Helper function to get current date in dd/MM/yyyy format
   const getCurrentDate = () => {
@@ -95,6 +95,24 @@ export default function MSP() {
       setError("Please add at least one valid period with dates and price.");
       return;
     }
+    
+    // Validate date ranges before submitting
+    const invalidPeriods = periods.filter(period => {
+      if (!period.fromDate || !period.toDate) return false; // Skip validation for incomplete periods
+      
+      const fromDate = parseDate(period.fromDate);
+      const toDate = parseDate(period.toDate);
+      
+      if (!fromDate || !toDate) return true; // Invalid date format
+      
+      return toDate <= fromDate; // End date should be after start date
+    });
+    
+    if (invalidPeriods.length > 0) {
+      const invalidPeriod = invalidPeriods[0]; // Show first invalid period
+      setError(`Invalid date range: The end date (${invalidPeriod.toDate}) must be after the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`);
+      return;
+    }
     setIsLoading(true);
     try {
       // Call the MSP API
@@ -106,15 +124,54 @@ export default function MSP() {
       }
       
       console.log("MSP periods saved successfully:", result);
-      console.log(`Created: ${result.created_entries?.length || 0}, Updated: ${result.updated_entries?.length || 0}`);
+      console.log(`Created: ${result.created_entries?.length || 0} entries`);
       navigate("/welcome-complete");
     } catch (err: any) {
       console.error("Error saving MSP periods:", err);
+      
+      // Parse and format error messages for better user experience
+      let errorMessage = "Failed to save MSP periods. Please try again.";
+      
       if (err?.error) {
-        setError(err.error);
-      } else {
-        setError("Failed to save MSP periods. Please try again.");
+        // Handle the specific validation error format from the backend
+        if (typeof err.error === 'string' && err.error.includes('Validation error for period')) {
+          try {
+            // Extract the period data and error details
+            const errorMatch = err.error.match(/Validation error for period \{'([^}]+)'\}: \{'([^}]+)'\}/);
+            if (errorMatch) {
+              const periodData = errorMatch[1];
+              const errorDetails = errorMatch[2];
+              
+              // Parse the period data to get the dates
+              const periodMatch = periodData.match(/'fromDate': '([^']+)', 'toDate': '([^']+)'/);
+              if (periodMatch) {
+                const fromDate = periodMatch[1];
+                const toDate = periodMatch[2];
+                
+                // Check for specific validation errors
+                if (errorDetails.includes('valid_until must be after valid_from')) {
+                  errorMessage = `Invalid date range: The end date (${toDate}) must be after the start date (${fromDate}). Please correct the dates and try again.`;
+                } else if (errorDetails.includes('non_field_errors')) {
+                  errorMessage = `Invalid period data: Please check that all dates and prices are valid.`;
+                } else {
+                  errorMessage = `Period validation error: ${errorDetails.replace(/'/g, '')}`;
+                }
+              } else {
+                errorMessage = `Invalid period data: Please check that all required fields are filled correctly.`;
+              }
+            } else {
+              errorMessage = err.error;
+            }
+          } catch (parseError) {
+            console.error("Error parsing validation error:", parseError);
+            errorMessage = err.error;
+          }
+        } else {
+          errorMessage = err.error;
+        }
       }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

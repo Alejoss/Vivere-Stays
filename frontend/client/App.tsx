@@ -22,6 +22,11 @@ import AddCompetitor from "./pages/onboarding/AddCompetitor";
 import MSPOnboarding from "./pages/onboarding/MSPOnboarding";
 import WelcomeComplete from "./pages/onboarding/WelcomeComplete";
 import NotFound from "./pages/NotFound";
+import DashboardLayout from "./components/dashboard/Layout";
+import DashboardIndex from "./pages/dashboard/Index";
+import PropertyList from "./pages/dashboard/PropertyList";
+import PropertyDashboard from "./pages/dashboard/PropertyDashboard";
+import ChangePrices from "./pages/dashboard/ChangePrices";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +56,12 @@ const App = () => (
             <Route path="/add-competitor" element={<AddCompetitor />} />
             <Route path="/msp" element={<MSPOnboarding />} />
             <Route path="/welcome-complete" element={<WelcomeComplete />} />
+            
+            {/* Dashboard Routes */}
+            <Route path="/dashboard" element={<DashboardLayout><PropertyList /></DashboardLayout>} />
+            <Route path="/dashboard/property/:propertyId" element={<DashboardLayout><PropertyDashboard /></DashboardLayout>} />
+            <Route path="/dashboard/change-prices" element={<DashboardLayout><ChangePrices /></DashboardLayout>} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

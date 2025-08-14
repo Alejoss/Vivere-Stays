@@ -24,6 +24,7 @@ export interface ProfileUpdateRequest {
   phone_number?: string;
   first_name?: string;
   last_name?: string;
+  selected_plan?: string;
 }
 
 export interface HotelInformation {
@@ -155,6 +156,10 @@ export const profilesService = {
       formData.append('last_name', data.last_name);
     }
 
+    if (data.selected_plan) {
+      formData.append('selected_plan', data.selected_plan);
+    }
+
     return apiRequest<ProfileData>({
       method: 'PUT',
       url: '/profiles/profile/',
@@ -259,7 +264,7 @@ export const profilesService = {
       }>;
     }>({
       method: 'GET',
-      url: '/profiles/properties/',
+      url: '/profiles/user-properties/',
     });
   },
 

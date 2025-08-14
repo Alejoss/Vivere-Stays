@@ -5,7 +5,8 @@ from .views import (
     PropertyListView, 
     PropertyPMSUpdateView,
     PropertyManagementSystemListView,
-    MinimumSellingPriceView
+    MinimumSellingPriceView,
+    PriceHistoryView
 )
 
 app_name = 'dynamic_pricing'
@@ -22,4 +23,7 @@ urlpatterns = [
     
     # Minimum Selling Price endpoints
     path('msp/', MinimumSellingPriceView.as_view(), name='msp-create'),
+    
+    # Price History endpoints
+    path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),
 ] 

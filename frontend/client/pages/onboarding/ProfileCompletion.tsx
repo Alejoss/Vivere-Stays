@@ -65,15 +65,18 @@ export default function ProfileCompletion() {
   const { data: profileData, isLoading: isLoadingProfile } = useQuery({
     queryKey: queryKeys.profiles.profile,
     queryFn: profilesService.getProfile,
-    onSuccess: (data) => {
-      // Pre-fill form with existing user data
+  });
+
+  // Pre-fill form with existing user data when profile data is loaded
+  useEffect(() => {
+    if (profileData) {
       setFormData(prev => ({
         ...prev,
-        firstName: data.user.first_name || "",
-        lastName: data.user.last_name || "",
+        firstName: profileData.user.first_name || "",
+        lastName: profileData.user.last_name || "",
       }));
-    },
-  });
+    }
+  }, [profileData]);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -111,9 +114,9 @@ export default function ProfileCompletion() {
       case "lastName":
         return value.trim() !== "";
       case "dni":
-        return value.trim() !== "";
+        return true; // DNI is optional, always valid
       case "phoneNumber":
-        return value.trim() !== "";
+        return true; // Phone number is optional, always valid
       default:
         return false;
     }
@@ -126,9 +129,9 @@ export default function ProfileCompletion() {
       case "lastName":
         return value.trim() === "" ? "Last name is required" : "";
       case "dni":
-        return value.trim() === "" ? "DNI is required" : "";
+        return ""; // DNI is optional
       case "phoneNumber":
-        return value.trim() === "" ? "Phone number is required" : "";
+        return ""; // Phone number is optional
       default:
         return "";
     }
@@ -167,7 +170,7 @@ export default function ProfileCompletion() {
     e.preventDefault();
 
     // Validate all required fields
-    const requiredFields = ["firstName", "lastName", "dni", "phoneNumber"];
+    const requiredFields = ["firstName", "lastName"];
     const newErrors: { [key: string]: string } = {};
 
     requiredFields.forEach((field) => {
@@ -211,7 +214,7 @@ export default function ProfileCompletion() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
-      <OnboardingProgressTracker currentStep="profile_completion" />
+      <OnboardingProgressTracker currentStep="register" />
       <div className="max-w-4xl mx-auto">
         {/* Logo */}
         <div className="text-center mb-10">
@@ -363,7 +366,7 @@ export default function ProfileCompletion() {
                 <div>
                   <input
                     type="email"
-                    value={profileData?.user.email || ""}
+                    value={(profileData as any)?.user?.email || ""}
                     readOnly
                     className="w-full h-[60px] px-4 py-[17px] border border-[#D7DFE8] rounded-[10px] text-[16px] text-[#9CAABD] bg-gray-50 cursor-not-allowed"
                   />
@@ -377,7 +380,7 @@ export default function ProfileCompletion() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-[14px]">
                   <label className="text-[16px] text-[#485567] font-medium">
-                    DNI*
+                    DNI
                   </label>
                   <input
                     type="text"
@@ -397,7 +400,7 @@ export default function ProfileCompletion() {
                 </div>
                 <div className="space-y-[14px]">
                   <label className="text-[16px] text-[#485567] font-medium">
-                    Phone Number*
+                    Phone Number
                   </label>
                   <input
                     type="tel"

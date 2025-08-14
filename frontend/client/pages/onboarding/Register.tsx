@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { useCheckUserExists } from "../../../shared/api/hooks";
-import { useRegister } from "../../../shared/api/hooks";
+import { useRegister, useGoogleLogin } from "../../../shared/api/hooks";
 import { RegisterRequest } from "../../../shared/api/types";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { profilesService } from "../../../shared/api/profiles";
 
 // Error Message Component
 const ErrorMessage = ({ message }: { message: string }) => {
@@ -108,6 +109,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
 
   const registerMutation = useRegister();
+  const googleLoginMutation = useGoogleLogin();
 
   // Password strength validation
   const getPasswordStrength = (password: string) => {
@@ -292,13 +294,93 @@ export default function Register() {
     }
   };
 
-  const handleGoogleSignUp = () => {
-    console.log("Google sign up clicked");
-  };
+  const handleGoogleCredentialResponse = useCallback(async (response: any) => {
+    console.log('Google OAuth response received:', response);
+    setFormError("");
+
+    try {
+      console.log('Attempting to login with Google credential...');
+      const data = await googleLoginMutation.mutateAsync(response.credential);
+      console.log('Google login successful, raw response data:', data);
+      
+      if (!data || !data.id || !data.username || !data.email || !data.access) {
+        console.error('Invalid user data structure:', data);
+        throw new Error('Invalid user data received from server');
+      }
+      
+      // Get user's onboarding progress and redirect to appropriate step
+      try {
+        console.log('🔍 Google Register: Fetching onboarding progress...');
+        console.log('🔍 Google Register: Access token available:', !!data.access);
+        
+        const progressData = await profilesService.getOnboardingProgress();
+        console.log('📊 Google Register: Onboarding progress data:', progressData);
+        
+        // Check if onboarding is completed
+        if (progressData.completed) {
+          console.log('✅ Google Register: Onboarding completed, redirecting to dashboard');
+          navigate("/dashboard");
+          return;
+        }
+        
+        const currentStep = progressData.current_step;
+        console.log('📍 Google Register: Current onboarding step:', currentStep);
+        
+        // For new Google users, check if they need to complete their profile
+        if (currentStep === 'register' && !progressData.completed) {
+          console.log('📝 Google Register: User at register step and onboarding not completed, redirecting to profile completion');
+          navigate("/profile-completion");
+          return;
+        }
+        
+        // Validate that the current step is a valid OnboardingStep
+        const validSteps = ['register', 'verify_email', 'hotel_information', 'pms_integration', 'select_plan', 'payment', 'add_competitor', 'msp', 'complete'] as const;
+        
+        if (validSteps.includes(currentStep as any)) {
+          // Navigate directly to the step route
+          const stepRoutes = {
+            register: '/register',
+            verify_email: '/verify-email',
+            hotel_information: '/hotel-information',
+            pms_integration: '/pms-integration',
+            select_plan: '/select-plan',
+            payment: '/payment',
+            add_competitor: '/add-competitor',
+            msp: '/msp',
+            complete: '/welcome-complete',
+          };
+          
+          const route = stepRoutes[currentStep as keyof typeof stepRoutes];
+          console.log('🚀 Google Register: Navigating to route:', route);
+          navigate(route);
+          console.log(`✅ Google Register: Redirecting to onboarding step: ${currentStep}`);
+        } else {
+          console.warn(`⚠️ Google Register: Invalid onboarding step: ${currentStep}, defaulting to hotel-information`);
+          navigate("/hotel-information");
+        }
+      } catch (progressError) {
+        console.error('❌ Google Register: Error getting onboarding progress:', progressError);
+        // Fallback to hotel-information if progress check fails
+        navigate("/hotel-information");
+      }
+    } catch (error: any) {
+      console.error('Google login failed:', error);
+      
+      // Handle the API error structure
+      if (error && typeof error === 'object' && 'error' in error) {
+        setFormError(error.error);
+      } else if (error && typeof error === 'object' && 'response' in error && error.response?.data?.error) {
+        setFormError(error.response.data.error);
+      } else if (error instanceof Error) {
+        setFormError(error.message);
+      } else {
+        setFormError("Google login failed. Please try again.");
+      }
+    }
+  }, [googleLoginMutation, navigate]);
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
-      <OnboardingProgressTracker currentStep="register" />
       <div className="max-w-4xl mx-auto">
         {/* Logo */}
         <div className="text-center mb-10">
@@ -698,12 +780,19 @@ export default function Register() {
             </div>
 
             {/* Google Sign Up Button */}
-            <button
-              onClick={handleGoogleSignUp}
-              className="w-full h-[54px] border-[1.7px] border-[#D7DFE8] rounded-[10px] text-[16px] text-[#294859] font-medium hover:border-[#294859] transition-colors flex items-center justify-center gap-[10px] mb-5"
-            >
-              Sign up with Google
-            </button>
+            <div className="flex justify-center mb-5">
+              <GoogleLogin
+                onSuccess={handleGoogleCredentialResponse}
+                onError={() => {
+                  console.error('Google OAuth error occurred');
+                  setFormError('Failed to initialize Google login');
+                }}
+                theme="filled_blue"
+                shape="rectangular"
+                text="signup_with"
+                locale="en"
+              />
+            </div>
 
             {/* Bottom Divider and Sign In Link */}
             <div className="space-y-5">

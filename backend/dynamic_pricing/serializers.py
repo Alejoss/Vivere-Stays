@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory
 
 
 class PropertyManagementSystemSerializer(serializers.ModelSerializer):
@@ -187,3 +187,36 @@ class MinimumSellingPriceSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.error(f"Error creating MSP entry: {str(e)}", exc_info=True)
             raise 
+
+
+class PriceHistorySerializer(serializers.ModelSerializer):
+    """
+    Serializer for price history data
+    """
+    checkin_date = serializers.DateField()
+    price = serializers.SerializerMethodField()
+    occupancy_level = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DpPriceChangeHistory
+        fields = ['checkin_date', 'price', 'occupancy_level']
+    
+    def get_price(self, obj):
+        """
+        Return the price to display (overwrite_price if exists, otherwise recom_price)
+        """
+        return obj.overwrite_price if obj.overwrite_price is not None else obj.recom_price
+    
+    def get_occupancy_level(self, obj):
+        """
+        Return occupancy level as string (low, medium, high)
+        """
+        if obj.occupancy is None:
+            return "medium"
+        
+        if obj.occupancy <= 35:
+            return "low"
+        elif obj.occupancy <= 69:
+            return "medium"
+        else:
+            return "high" 

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { profilesService } from "../../../shared/api/profiles";
+import { queryKeys } from "../../../shared/api/hooks";
 
 type PlanType = "start" | "scale" | "pro";
 
@@ -15,8 +18,10 @@ interface Plan {
 
 export default function SelectPlan() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("scale");
   const [numberOfRooms, setNumberOfRooms] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Pricing calculation function
   const calculatePrice = (pricePerRoom: number, rooms: number): number => {
@@ -79,8 +84,39 @@ export default function SelectPlan() {
     navigate("/pms-integration");
   };
 
-  const handleContinue = () => {
-    navigate("/payment");
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (plan: string) => profilesService.updateProfile({ selected_plan: plan }),
+    onSuccess: () => {
+      // Invalidate profile data
+      queryClient.invalidateQueries({ queryKey: queryKeys.profiles.profile });
+    },
+  });
+
+  // Update onboarding progress mutation
+  const updateOnboardingMutation = useMutation({
+    mutationFn: (step: string) => profilesService.updateOnboardingProgress({ step }),
+    onSuccess: () => {
+      // Navigate to next step
+      navigate("/payment");
+    },
+  });
+
+  const handleContinue = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Save selected plan to profile
+      await updateProfileMutation.mutateAsync(selectedPlan);
+      
+      // Update onboarding progress
+      await updateOnboardingMutation.mutateAsync('payment');
+    } catch (error) {
+      console.error("Error saving plan selection:", error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSelectPlan = (planId: PlanType) => {
@@ -404,24 +440,38 @@ export default function SelectPlan() {
           </button>
           <button
             onClick={handleContinue}
-            className="flex items-center gap-2 px-[36px] py-[18px] bg-[#294758] text-white rounded-[10px] text-[16px] font-bold hover:bg-[#234149] transition-colors"
+            disabled={isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending}
+            className={`flex items-center gap-2 px-[36px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors ${
+              isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending 
+                ? "bg-gray-400 cursor-not-allowed" 
+                : "bg-[#294758] text-white hover:bg-[#234149]"
+            }`}
           >
-            Continue to Payment
-            <svg
-              width="21"
-              height="20"
-              viewBox="0 0 21 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M4.66669 10H16.3334M16.3334 10L11.3334 15M16.3334 10L11.3334 5"
-                stroke="white"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            {isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                Continue to Payment
+                <svg
+                  width="21"
+                  height="20"
+                  viewBox="0 0 21 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M4.66669 10H16.3334M16.3334 10L11.3334 15M16.3334 10L11.3334 5"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </>
+            )}
           </button>
         </div>
       </div>

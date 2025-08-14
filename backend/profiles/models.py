@@ -31,7 +31,15 @@ class Profile(models.Model):
     
     # Additional profile fields
     dni = models.CharField(max_length=20, blank=True, help_text="Spanish National Identity Document")
-    phone_number = models.CharField(max_length=20, blank=True, help_text="Phone number with country code")
+    phone_number = models.CharField(max_length=20, blank=True, help_text="Phone number with country code")    
+    
+    # Plan selection
+    selected_plan = models.CharField(
+        max_length=50, 
+        blank=True, 
+        null=True,
+        help_text="The plan selected by the user during onboarding"
+    )
     
     # Onboarding progress fields
     onboarding_step = models.CharField(
@@ -181,3 +189,190 @@ class EmailVerificationCode(models.Model):
     
     def __str__(self):
         return f"Verification code for {self.email} ({self.code})"
+
+
+class Payment(models.Model):
+    """
+    Payment model to track payment status and details for users
+    """
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+        ('refunded', 'Refunded'),
+    ]
+
+    PAYMENT_METHOD_CHOICES = [
+        ('credit_card', 'Credit Card'),
+        ('debit_card', 'Debit Card'),
+        ('paypal', 'PayPal'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('stripe', 'Stripe'),
+        ('other', 'Other'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Payment amount")
+    currency = models.CharField(max_length=3, default='EUR', help_text="Payment currency (ISO 4217)")
+    status = models.CharField(
+        max_length=20, 
+        choices=PAYMENT_STATUS_CHOICES, 
+        default='pending',
+        help_text="Current status of the payment"
+    )
+    payment_method = models.CharField(
+        max_length=20, 
+        choices=PAYMENT_METHOD_CHOICES, 
+        help_text="Method used for payment"
+    )
+    plan_name = models.CharField(max_length=100, help_text="Name of the plan being paid for")
+    plan_duration = models.CharField(max_length=20, help_text="Duration of the plan (e.g., 'monthly', 'yearly')")
+    
+    # Payment provider details
+    transaction_id = models.CharField(max_length=255, blank=True, null=True, help_text="External transaction ID from payment provider")
+    payment_provider = models.CharField(max_length=50, blank=True, null=True, help_text="Payment provider name (e.g., 'stripe', 'paypal')")
+    
+    # Stripe-specific fields
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe PaymentIntent ID")
+    stripe_charge_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe Charge ID")
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe Customer ID")
+    stripe_subscription_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe Subscription ID (if recurring)")
+    stripe_invoice_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe Invoice ID")
+    stripe_payment_method_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe PaymentMethod ID")
+    
+    # Stripe webhook and event tracking
+    stripe_webhook_event_id = models.CharField(max_length=255, blank=True, null=True, help_text="Stripe webhook event ID for tracking")
+    stripe_webhook_processed = models.BooleanField(default=False, help_text="Whether the Stripe webhook has been processed")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    paid_at = models.DateTimeField(blank=True, null=True, help_text="When the payment was completed")
+    
+    # Additional details
+    description = models.TextField(blank=True, null=True, help_text="Additional payment details")
+    metadata = models.JSONField(default=dict, blank=True, help_text="Additional payment metadata")
+    
+    # Stripe-specific metadata
+    stripe_metadata = models.JSONField(default=dict, blank=True, help_text="Stripe-specific metadata and response data")
+    
+    class Meta:
+        verbose_name = 'Payment'
+        verbose_name_plural = 'Payments'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['transaction_id']),
+            # Stripe-specific indexes
+            models.Index(fields=['stripe_payment_intent_id']),
+            models.Index(fields=['stripe_customer_id']),
+            models.Index(fields=['stripe_subscription_id']),
+            models.Index(fields=['stripe_webhook_event_id']),
+            models.Index(fields=['stripe_webhook_processed']),
+        ]
+
+    def __str__(self):
+        return f"Payment {self.id} - {self.user.username} - {self.amount} {self.currency} ({self.status})"
+
+    def mark_as_completed(self, transaction_id=None, paid_at=None):
+        """Mark payment as completed"""
+        from django.utils import timezone
+        self.status = 'completed'
+        if transaction_id:
+            self.transaction_id = transaction_id
+        if paid_at:
+            self.paid_at = paid_at
+        else:
+            self.paid_at = timezone.now()
+        self.save()
+
+    def mark_as_failed(self, description=None):
+        """Mark payment as failed"""
+        self.status = 'failed'
+        if description:
+            self.description = description
+        self.save()
+
+    def mark_as_cancelled(self):
+        """Mark payment as cancelled"""
+        self.status = 'cancelled'
+        self.save()
+
+    def is_active(self):
+        """Check if payment is active (completed and not refunded)"""
+        return self.status == 'completed'
+
+    @property
+    def is_paid(self):
+        """Check if payment has been completed"""
+        return self.status == 'completed'
+
+    @property
+    def formatted_amount(self):
+        """Return formatted amount with currency"""
+        return f"{self.amount} {self.currency}"
+
+    # Stripe-specific methods
+    def set_stripe_payment_intent(self, payment_intent_id):
+        """Set Stripe PaymentIntent ID"""
+        self.stripe_payment_intent_id = payment_intent_id
+        self.payment_provider = 'stripe'
+        self.save()
+
+    def set_stripe_customer(self, customer_id):
+        """Set Stripe Customer ID"""
+        self.stripe_customer_id = customer_id
+        self.save()
+
+    def set_stripe_subscription(self, subscription_id):
+        """Set Stripe Subscription ID"""
+        self.stripe_subscription_id = subscription_id
+        self.save()
+
+    def mark_webhook_processed(self, event_id):
+        """Mark webhook as processed"""
+        self.stripe_webhook_event_id = event_id
+        self.stripe_webhook_processed = True
+        self.save()
+
+    def is_stripe_payment(self):
+        """Check if this is a Stripe payment"""
+        return self.payment_provider == 'stripe'
+
+    def has_stripe_payment_intent(self):
+        """Check if payment has a Stripe PaymentIntent"""
+        return bool(self.stripe_payment_intent_id)
+
+    def get_stripe_metadata(self, key=None):
+        """Get Stripe metadata"""
+        if key:
+            return self.stripe_metadata.get(key)
+        return self.stripe_metadata
+
+    def set_stripe_metadata(self, key, value):
+        """Set Stripe metadata"""
+        if not self.stripe_metadata:
+            self.stripe_metadata = {}
+        self.stripe_metadata[key] = value
+        self.save()
+
+    @classmethod
+    def find_by_stripe_payment_intent(cls, payment_intent_id):
+        """Find payment by Stripe PaymentIntent ID"""
+        return cls.objects.filter(stripe_payment_intent_id=payment_intent_id).first()
+
+    @classmethod
+    def find_by_stripe_customer(cls, customer_id):
+        """Find payments by Stripe Customer ID"""
+        return cls.objects.filter(stripe_customer_id=customer_id)
+
+    @classmethod
+    def find_unprocessed_webhooks(cls):
+        """Find payments with unprocessed webhooks"""
+        return cls.objects.filter(
+            stripe_webhook_event_id__isnull=False,
+            stripe_webhook_processed=False
+        )

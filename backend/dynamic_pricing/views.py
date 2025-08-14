@@ -4,15 +4,17 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+from django.utils import timezone
 
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory
 from .serializers import (
     PropertyCreateSerializer, 
     PropertyDetailSerializer, 
     PropertyListSerializer,
     PropertyManagementSystemSerializer,
-    MinimumSellingPriceSerializer
+    MinimumSellingPriceSerializer,
+    PriceHistorySerializer
 )
 
 # Get logger for dynamic_pricing views
@@ -672,4 +674,101 @@ class MinimumSellingPriceView(APIView):
             logger.error(f"Test failed: {str(e)}", exc_info=True)
             return Response({
                 'error': f'Test failed: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PriceHistoryView(APIView):
+    """
+    API endpoint for retrieving price history data for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve price history data for a specific property
+        Returns the most recent price data for each checkin_date
+        """
+        try:
+            # Get the user's profile
+            user_profile = request.user.profile
+            
+            # Verify the user owns this property
+            if not user_profile.properties.filter(id=property_id).exists():
+                logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership")
+                return Response({
+                    'message': 'Property not found or access denied'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Get the property
+            property_obj = get_object_or_404(Property, id=property_id)
+            
+            # Get query parameters for date range
+            year = request.query_params.get('year', timezone.now().year)
+            month = request.query_params.get('month', timezone.now().month)
+            
+            try:
+                year = int(year)
+                month = int(month)
+            except ValueError:
+                return Response({
+                    'message': 'Invalid year or month parameter'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Calculate date range for the month
+            start_date = datetime(year, month, 1).date()
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+            else:
+                end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+            
+            # Get the most recent price data for each checkin_date in the range
+            # Using a subquery to get the latest as_of for each checkin_date
+            from django.db.models import Max, Subquery, OuterRef
+            
+            latest_records = DpPriceChangeHistory.objects.filter(
+                property_id=property_id,
+                checkin_date__gte=start_date,
+                checkin_date__lte=end_date
+            ).values('checkin_date').annotate(
+                latest_as_of=Max('as_of')
+            ).values('checkin_date', 'latest_as_of')
+            
+            # Get the actual records with the latest as_of for each date
+            price_history = []
+            for record in latest_records:
+                latest_price_record = DpPriceChangeHistory.objects.filter(
+                    property_id=property_id,
+                    checkin_date=record['checkin_date'],
+                    as_of=record['latest_as_of']
+                ).first()
+                
+                if latest_price_record:
+                    serializer = PriceHistorySerializer(latest_price_record)
+                    price_history.append(serializer.data)
+            
+            # Sort by checkin_date
+            price_history.sort(key=lambda x: x['checkin_date'])
+            
+            logger.info(f"Retrieved price history for property {property_id} - {len(price_history)} records")
+            
+            return Response({
+                'property_id': property_id,
+                'property_name': property_obj.name,
+                'year': year,
+                'month': month,
+                'price_history': price_history,
+                'count': len(price_history)
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            logger.warning(f"Property {property_id} not found")
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving price history for property {property_id}: {str(e)}", exc_info=True)
+            return Response({
+                'message': 'An error occurred while retrieving price history',
+                'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
