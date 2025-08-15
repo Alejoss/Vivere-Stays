@@ -42,4 +42,4 @@ class Command(BaseCommand):
                 self.style.WARNING(
                     f'Superuser "{username}" already exists.'
                 )
-            ) 
+            )

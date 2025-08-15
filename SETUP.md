@@ -9,6 +9,7 @@ This guide will walk you through setting up the Vivere Stays project after cloni
 - **Docker and Docker Compose** installed on your system
 - **Git** for cloning the repository
 - **Node.js 18+** (for frontend development)
+- **npm (Node Package Manager)** (usually comes with Node.js, required for frontend development)
 
 ### Step-by-Step Setup
 
