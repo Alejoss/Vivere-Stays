@@ -21,6 +21,11 @@ from .serializers import (
     PriceHistorySerializer
 )
 
+from rest_framework.decorators import action
+from .models import DpHistoricalCompetitorPrice
+from .serializers import HistoricalCompetitorPriceSerializer
+from django.db import models
+
 # Get logger for dynamic_pricing views
 logger = logging.getLogger(__name__)
 
@@ -807,6 +812,69 @@ class OverwritePriceView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class OverwritePriceRangeView(APIView):
+    """
+    API endpoint to overwrite prices for a range of dates for a property.
+    POST /dynamic-pricing/properties/{property_id}/price-history/overwrite-range/
+    Body: {"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "overwrite_price": 123}
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, property_id):
+        try:
+            start_date_str = request.data.get('start_date')
+            end_date_str = request.data.get('end_date')
+            overwrite_price = request.data.get('overwrite_price')
+            if not (start_date_str and end_date_str and overwrite_price is not None):
+                return Response({'error': 'start_date, end_date, and overwrite_price are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+            if end_date < start_date:
+                return Response({'error': 'end_date must be after or equal to start_date.'}, status=status.HTTP_400_BAD_REQUEST)
+            property_obj = get_object_or_404(Property, id=property_id)
+            created_records = []
+            errors = []
+            for i in range((end_date - start_date).days + 1):
+                checkin_date = start_date + timedelta(days=i)
+                price_record = (
+                    DpPriceChangeHistory.objects
+                    .filter(property_id=property_id, checkin_date=checkin_date)
+                    .order_by('-as_of')
+                    .first()
+                )
+                if not price_record:
+                    errors.append(str(checkin_date))
+                    continue
+                new_record = DpPriceChangeHistory.objects.create(
+                    property_id=price_record.property_id,
+                    pms_hotel_id=price_record.pms_hotel_id,
+                    checkin_date=price_record.checkin_date,
+                    as_of=timezone.now(),
+                    occupancy=price_record.occupancy,
+                    msp=price_record.msp,
+                    recom_price=price_record.recom_price,
+                    overwrite_price=overwrite_price,
+                    recom_los=price_record.recom_los,
+                    overwrite_los=price_record.overwrite_los,
+                    base_price=price_record.base_price,
+                    base_price_choice=price_record.base_price_choice,
+                )
+                created_records.append(PriceHistorySerializer(new_record).data)
+            return Response({
+                'message': f'Processed {len(created_records)} dates. {len(errors)} errors.',
+                'created': created_records,
+                'errors': errors,
+                'start_date': start_date_str,
+                'end_date': end_date_str,
+                'overwrite_price': overwrite_price,
+            }, status=status.HTTP_201_CREATED if created_records else status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def property_msp_for_date(request, property_id):
@@ -833,3 +901,176 @@ def property_msp_for_date(request, property_id):
         return Response({'error': 'No MSP configured for this date'}, status=status.HTTP_404_NOT_FOUND)
     serializer = MinimumSellingPriceSerializer(msp_entry)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+def get_lowest_competitor_prices_queryset(base_queryset=None):
+    """
+    Utility to get, for each (competitor, checkin_date), the row with the lowest raw_price.
+    Filters out rows where max_persons < 0 or hotel_name == 'NOT PARSABLE'.
+    Uses a window function to partition by competitor and checkin_date, ordering by raw_price.
+    Args:
+        base_queryset: Optionally, a queryset to start from. If None, uses all DpHistoricalCompetitorPrice objects.
+    Returns:
+        Queryset annotated with lowest price per (competitor, checkin_date).
+    """
+    from django.db.models import F, Window
+    from django.db.models.functions import RowNumber
+    from .models import DpHistoricalCompetitorPrice
+    from django.db import models
+
+    qs = base_queryset or DpHistoricalCompetitorPrice.objects.all()
+    qs = qs.filter(
+        models.Q(max_persons__lt=0) | models.Q(max_persons__gte=2),
+        ~models.Q(hotel_name='NOT PARSABLE')
+    )
+    qs = qs.annotate(
+        rn=Window(
+            expression=RowNumber(),
+            partition_by=[F('competitor'), F('checkin_date')],
+            order_by=F('raw_price').asc(nulls_last=True)
+        )
+    ).filter(rn=1)
+    return qs
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def lowest_competitor_prices(request):
+    """
+    Retrieve, for each (competitor_id, checkin_date), the historical competitor price row with the lowest raw_price.
+    Filters out rows where max_persons < 0 or hotel_name == 'NOT PARSABLE'.
+    Equivalent to the following SQL:
+
+        SELECT * FROM (
+          SELECT *, ROW_NUMBER() OVER(
+            PARTITION BY cp.competitor_id, cp.checkin_date
+            ORDER BY cp.raw_price ASC
+          ) as rn
+          FROM booking.historical_competitor_prices cp
+          WHERE (
+              cp.max_persons < 0
+              OR cp.max_persons >= 2
+            )
+            AND cp.hotel_name != 'NOT PARSABLE'
+        ) ranked_prices
+        WHERE rn = 1;
+
+    Returns:
+        List of lowest price records per (competitor_id, checkin_date).
+    """
+    qs = get_lowest_competitor_prices_queryset()
+    serializer = HistoricalCompetitorPriceSerializer(qs, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def competitor_prices_weekly_chart(request, property_id):
+    """
+    Returns a matrix of lowest competitor prices for a property for a given week.
+    - Rows: Each competitor (by name)
+    - Columns: Each day of the week (dates)
+    - Cells: The lowest price for that competitor on that date
+    Query params:
+        - start_date (YYYY-MM-DD): The Monday of the week (required)
+    Response:
+        {
+            "dates": ["2024-06-10", ...],
+            "competitors": [
+                {"id": 1, "name": "Hotel X", "prices": [56, 57, ...]},
+                ...
+            ]
+        }
+    """
+    from datetime import datetime, timedelta
+    from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice
+    from booking.models import Competitor
+
+    # Parse start_date
+    start_date_str = request.query_params.get('start_date')
+    if not start_date_str:
+        return Response({'error': 'start_date query parameter is required (YYYY-MM-DD)'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return Response({'error': 'Invalid start_date format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+    # Build week dates (Monday to Sunday)
+    week_dates = [start_date + timedelta(days=i) for i in range(7)]
+    # Get competitors for the property
+    competitor_links = DpPropertyCompetitor.objects.filter(property_id=property_id)
+    competitor_ids = list(competitor_links.values_list('competitor_id', flat=True))
+    competitors = Competitor.objects.filter(id__in=competitor_ids)
+    # Get lowest prices for these competitors and dates
+    price_qs = DpHistoricalCompetitorPrice.objects.filter(
+        competitor_id__in=competitor_ids,
+        checkin_date__in=week_dates
+    )
+    lowest_prices = get_lowest_competitor_prices_queryset(price_qs)
+    # Build a lookup: {(competitor_id, checkin_date): price}
+    price_lookup = {}
+    for row in lowest_prices:
+        price_lookup[(row.competitor_id, row.checkin_date)] = row.raw_price
+    # Build response
+    competitors_data = []
+    for comp in competitors:
+        prices = [price_lookup.get((comp.id, d), None) for d in week_dates]
+        competitors_data.append({
+            'id': comp.id,
+            'name': comp.competitor_name,
+            'prices': prices
+        })
+    return Response({
+        'dates': [d.isoformat() for d in week_dates],
+        'competitors': competitors_data
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def competitor_prices_for_date(request, property_id):
+    """
+    Returns a list of lowest competitor prices for a property for a given date.
+    Query params:
+        - date (YYYY-MM-DD): The date to fetch prices for (required)
+    Response:
+        [
+            {"id": 1, "name": "Hotel X", "price": 56, "currency": "USD", "room_name": "Standard Room"},
+            ...
+        ]
+    """
+    from datetime import datetime
+    from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice
+    from booking.models import Competitor
+
+    # Parse date
+    date_str = request.query_params.get('date')
+    if not date_str:
+        return Response({'error': 'date query parameter is required (YYYY-MM-DD)'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return Response({'error': 'Invalid date format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+    # Get competitors for the property
+    competitor_links = DpPropertyCompetitor.objects.filter(property_id=property_id)
+    competitor_ids = list(competitor_links.values_list('competitor_id', flat=True))
+    competitors = Competitor.objects.filter(id__in=competitor_ids)
+    # Get lowest prices for these competitors for the date
+    price_qs = DpHistoricalCompetitorPrice.objects.filter(
+        competitor_id__in=competitor_ids,
+        checkin_date=date_obj
+    )
+    lowest_prices = get_lowest_competitor_prices_queryset(price_qs)
+    # Build a lookup: {competitor_id: row}
+    price_lookup = {row.competitor_id: row for row in lowest_prices}
+    # Build response
+    competitors_data = []
+    for comp in competitors:
+        row = price_lookup.get(comp.id)
+        competitors_data.append({
+            'id': comp.id,
+            'name': comp.competitor_name,
+            'price': row.raw_price if row else None,
+            'currency': row.currency if row else None,
+            'room_name': row.room_name if row else None,
+        })
+    return Response(competitors_data, status=status.HTTP_200_OK)

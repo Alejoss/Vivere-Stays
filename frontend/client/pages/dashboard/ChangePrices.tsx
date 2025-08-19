@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useUserProperties, usePriceHistory } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { CompetitorWeeklyPricesResponse } from '../../../shared/api/dynamic';
 
 // Sample data for the week view
 const weeklyData = {
@@ -83,35 +84,46 @@ const generateWeekDates = (week: number) => {
 function WeeklyPriceOverview({
   currentWeek,
   setCurrentWeek,
+  propertyId,
+  refreshKey,
 }: {
   currentWeek: number;
   setCurrentWeek: (week: number) => void;
+  propertyId?: string;
+  refreshKey?: number;
 }) {
-  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
-  // Get user's propertyId
-  const { data: userPropertiesData, isLoading: propertiesLoading } = useUserProperties();
-  const propertyId = userPropertiesData?.properties?.[0]?.id || null;
+  const [competitorData, setCompetitorData] = useState<CompetitorWeeklyPricesResponse | null>(null);
+  const [competitorLoading, setCompetitorLoading] = useState(false);
+  const [competitorError, setCompetitorError] = useState<string | null>(null);
 
   // Calculate week dates
   const weekDates = generateWeekDates(currentWeek);
   const weekYear = 2025; // Hardcoded for now
   const weekMonth = weekDates[0]?.fullDate.getMonth() + 1; // 1-indexed
 
-  // Fetch price history for the month
-  const { data: priceHistoryData, isLoading: priceLoading, refetch } = usePriceHistory(
-    propertyId || '',
-    weekYear,
-    weekMonth
-  );
+  // Compute the Monday of the week for the backend
+  const weekStartDate = weekDates[0]?.fullDate;
+  const weekStartDateStr = weekStartDate
+    ? `${weekStartDate.getFullYear()}-${(weekStartDate.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}-${weekStartDate.getDate().toString().padStart(2, '0')}`
+    : '';
 
-  // Helper: get price entry for a date
-  const getPriceEntryForDate = (dateObj: Date) => {
-    if (!priceHistoryData?.price_history) return null;
-    const dateStr = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1)
-      .toString()
-      .padStart(2, "0")}-${dateObj.getDate().toString().padStart(2, "0")}`;
-    return priceHistoryData.price_history.find((entry) => entry.checkin_date === dateStr) || null;
-  };
+  useEffect(() => {
+    if (!propertyId || !weekStartDateStr) return;
+    setCompetitorLoading(true);
+    setCompetitorError(null);
+    setCompetitorData(null);
+    dynamicPricingService
+      .getCompetitorWeeklyPrices(propertyId, weekStartDateStr)
+      .then((data) => {
+        setCompetitorData(data);
+      })
+      .catch((err) => {
+        setCompetitorError('Failed to load competitor data');
+      })
+      .finally(() => setCompetitorLoading(false));
+  }, [propertyId, weekStartDateStr, refreshKey]);
 
   // Handle price change
   const handlePriceChange = async (index: number, newValue: string) => {
@@ -124,17 +136,25 @@ function WeeklyPriceOverview({
     try {
       await dynamicPricingService.updateOverwritePrice(propertyId, dateStr, Number(newValue));
       alert("Price changed successfully");
-      refetch();
+      // No need to refetch here, as the competitor data is fetched on mount
     } catch (e) {
       alert("Failed to change price");
     }
   };
 
-  if (propertiesLoading || priceLoading) {
-    return <div className="p-8 text-center">Loading...</div>;
-  }
   if (!propertyId) {
-    return <div className="p-8 text-center">No property found.</div>;
+    return <div className="p-8 text-center text-red-600">No property selected.</div>;
+  }
+  if (competitorLoading) {
+    return <div className="p-8 text-center">Loading competitor data...</div>;
+  }
+  if (competitorError) {
+    return <div className="p-8 text-center text-red-600">{competitorError}</div>;
+  }
+
+  // If no competitor data or empty
+  if (!competitorData || !competitorData.competitors || competitorData.competitors.length === 0) {
+    return <div className="p-8 text-center text-gray-500">No competitor data</div>;
   }
 
   const goToPreviousWeek = () => {
@@ -189,7 +209,7 @@ function WeeklyPriceOverview({
   const handleMonthSelect = (monthIndex: number) => {
     const firstWeek = getFirstWeekOfMonth(monthIndex);
     setCurrentWeek(firstWeek);
-    setShowMonthDropdown(false);
+    // setShowMonthDropdown(false); // This state was removed
   };
 
   const monthNames = [
@@ -243,12 +263,12 @@ function WeeklyPriceOverview({
       {/* Month/Year Dropdown */}
       <div className="px-6 py-4 bg-hotel-brand relative">
         <button
-          onClick={() => setShowMonthDropdown(!showMonthDropdown)}
-          className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors"
+          onClick={() => {}} // Removed setShowMonthDropdown
+          className="flex items-center gap-2 px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm text-hotel-brand text-[20px] font-bold hover:bg-white transition-colors"
         >
-          <span className="text-[16px]">{getCurrentMonthYear(currentWeek)}</span>
+          <span>{getCurrentMonthYear(currentWeek)}</span>
           <div
-            className={`w-5 h-5 transition-transform ${showMonthDropdown ? "rotate-180" : ""}`}
+            className="w-5 h-5 transition-transform"
           >
             <svg viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 13L13 7L5 7L9 13Z" />
@@ -256,19 +276,7 @@ function WeeklyPriceOverview({
           </div>
         </button>
 
-        {showMonthDropdown && (
-          <div className="absolute top-full left-6 right-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
-            {monthNames.map((month, index) => (
-              <button
-                key={index}
-                onClick={() => handleMonthSelect(index)}
-                className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
-              >
-                {month} 2025
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Removed Month/Year Dropdown content */}
       </div>
 
       {/* Date Headers */}
@@ -279,24 +287,24 @@ function WeeklyPriceOverview({
           </span>
         </div>
         <div className="flex-1 flex items-center justify-between px-4">
-          {weekDates.map((date, index) => (
-            <div
-              key={index}
-              className="flex flex-col items-center gap-3 w-[78px] lg:w-[90px] xl:w-[110px]"
-            >
-              <span className="text-hotel-brand text-[18px] font-bold">
-                {date.day}
-              </span>
-              <span className="text-gray-700 text-[16px] font-semibold">
-                {date.date}
-              </span>
-            </div>
-          ))}
+          {competitorData.dates.map((date, index) => {
+            const d = new Date(date);
+            const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            return (
+              <div
+                key={index}
+                className="flex flex-col items-center gap-3 w-[78px] lg:w-[90px] xl:w-[110px]"
+              >
+                <span className="text-hotel-brand text-[22px] font-bold">{dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}</span>
+                <span className="text-gray-700 text-[18px] font-semibold">{d.getDate().toString().padStart(2, '0')}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Competitor Rows */}
-      {weeklyData.competitors.map((competitor, rowIndex) => (
+      {competitorData.competitors.map((competitor, rowIndex) => (
         <div
           key={rowIndex}
           className="flex items-center border-b border-gray-200 px-4 py-4"
@@ -307,19 +315,11 @@ function WeeklyPriceOverview({
             </span>
           </div>
           <div className="flex-1 flex items-center justify-between px-4">
-            {competitor.values.map((value, index) => (
+            {competitor.prices.map((value, index) => (
               <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
-                {competitor.type === "occupancy" ? (
-                  <div
-                    className={`px-2 py-1 rounded text-[14px] font-semibold ${getOccupancyColor(value)}`}
-                  >
-                    {value}
-                  </div>
-                ) : (
-                  <div className="px-3 py-1 bg-gray-100 rounded text-[13px] text-gray-600">
-                    {value}
-                  </div>
-                )}
+                <div className="px-3 py-1 bg-gray-100 rounded text-[13px] text-gray-600">
+                  {value !== null && value !== undefined ? `$${value}` : '--'}
+                </div>
               </div>
             ))}
           </div>
@@ -332,13 +332,15 @@ function WeeklyPriceOverview({
           <span className="text-black text-[20px] font-bold">Your Price</span>
         </div>
         <div className="flex-1 flex items-center justify-between px-4">
-          {weekDates.map((date, index) => {
-            const priceEntry = getPriceEntryForDate(date.fullDate);
+          {competitorData.dates.map((date, index) => {
+            const priceEntry = competitorData.competitors.find((entry) => entry.prices[index] !== null && entry.prices[index] !== undefined);
             const price = priceEntry
-              ? priceEntry.overwrite && priceEntry.price
-                ? priceEntry.price
-                : priceEntry.price
+              ? priceEntry.prices[index]
               : "";
+            // Determine if the date is in the past
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isPast = new Date(date) < today;
             return (
               <div key={index} className="w-[100px] lg:w-[120px] xl:w-[140px] flex justify-center">
                 <div className="relative flex items-center w-full">
@@ -347,9 +349,11 @@ function WeeklyPriceOverview({
                     type="text"
                     value={price}
                     onChange={(e) => handlePriceChange(index, e.target.value)}
-                    className="w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-[20px] text-[#294859] font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200"
+                    className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-[20px] font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
                     style={{ minWidth: 70, maxWidth: 110 }}
                     maxLength={5}
+                    disabled={isPast}
+                    title={isPast ? 'Cannot edit past prices' : ''}
                   />
                 </div>
               </div>
@@ -361,14 +365,51 @@ function WeeklyPriceOverview({
   );
 }
 
+function getISOWeekNumber(date: Date) {
+  const tempDate = new Date(date.getTime());
+  tempDate.setHours(0, 0, 0, 0);
+  // Thursday in current week decides the year.
+  tempDate.setDate(tempDate.getDate() + 3 - ((tempDate.getDay() + 6) % 7));
+  // January 4 is always in week 1.
+  const week1 = new Date(tempDate.getFullYear(), 0, 4);
+  // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+  return (
+    1 + Math.round(
+      ((tempDate.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7
+    )
+  );
+}
+
+function getTodayDateString() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function StayPeriodSelector({
   onStartDateChange,
+  propertyId,
+  onSuccess,
+  setSuccessMsg,
 }: {
   onStartDateChange: (date: string) => void;
+  propertyId?: string;
+  onSuccess?: () => void;
+  setSuccessMsg: (msg: string | null) => void;
 }) {
-  const [checkIn, setCheckIn] = useState("2025-08-05");
-  const [checkOut, setCheckOut] = useState("2025-08-10");
+  const todayStr = getTodayDateString();
+  const [checkIn, setCheckIn] = useState(todayStr);
+  const [checkOut, setCheckOut] = useState(() => {
+    const today = new Date();
+    const out = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000);
+    return `${out.getFullYear()}-${String(out.getMonth() + 1).padStart(2, '0')}-${String(out.getDate()).padStart(2, '0')}`;
+  });
   const [totalPrice, setTotalPrice] = useState("337.50");
+  const [loading, setLoading] = useState(false);
+  // Remove local successMsg state
+  // const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Static nightly rate for informational purposes only
   const nightlyRate = "67.50";
@@ -377,6 +418,29 @@ function StayPeriodSelector({
   const handleStartDateChange = (date: string) => {
     setCheckIn(date);
     onStartDateChange(date);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!propertyId || !checkIn || !checkOut || !totalPrice) return;
+    setLoading(true);
+    try {
+      const res = await dynamicPricingService.overwritePriceRange(
+        propertyId,
+        checkIn,
+        checkOut,
+        Number(totalPrice)
+      );
+      setSuccessMsg(
+        `Prices from ${res.start_date} to ${res.end_date} updated successfully to $${res.overwrite_price}`
+      );
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      setSuccessMsg(null);
+      alert(err?.message || 'Failed to update prices');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -398,7 +462,7 @@ function StayPeriodSelector({
               strokeLinejoin="round"
             />
             <path
-              d="M6.6665 1.66699V5.00033M13.3332 1.66699V5.00033M1.6665 8.33366H18.3332"
+              d="M6.6665 1.66699V5.00033M13.3332 1.66699V5.00033M1.66675 8.33366H18.3332"
               stroke="currentColor"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -409,9 +473,8 @@ function StayPeriodSelector({
           </span>
         </div>
       </div>
-
       {/* Form Content */}
-      <div className="px-6 py-6 pb-12">
+      <form className="px-6 py-6 pb-12" onSubmit={handleSubmit}>
         {/* Check-in Date */}
         <div className="mb-6">
           <label className="block text-[14px] font-semibold text-black mb-3">
@@ -453,7 +516,6 @@ function StayPeriodSelector({
             </svg>
           </div>
         </div>
-
         {/* Check-out Date */}
         <div className="mb-6">
           <label className="block text-[14px] font-semibold text-black mb-3">
@@ -495,7 +557,6 @@ function StayPeriodSelector({
             </svg>
           </div>
         </div>
-
         {/* Total Price Input */}
         <div className="mb-3 relative">
           <span className="absolute left-4 top-2 text-[17px] font-bold text-[#294859] z-10">
@@ -508,24 +569,32 @@ function StayPeriodSelector({
             className="w-full h-[36px] pl-8 pr-4 py-2 border border-[#294859] bg-[#BFDBFE] rounded text-[17px] font-bold text-[#294859] text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-
         {/* Nightly Rate Display */}
         <div className="flex justify-between items-center mb-6">
           <span className="text-[12px] text-[#294859]">Nightly rate:</span>
           <span className="text-[12px] text-[#294859]">${nightlyRate}</span>
         </div>
-
         {/* Submit Button */}
-        <button className="w-full h-[37px] bg-[#2766EC] text-white text-[14px] font-semibold rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center">
-          Submit
+        <button
+          type="submit"
+          className="w-full h-[37px] bg-[#2766EC] text-white text-[14px] font-semibold rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50"
+          disabled={loading || !propertyId || !checkIn || !checkOut || !totalPrice}
+        >
+          {loading ? 'Updating...' : 'Submit'}
         </button>
-      </div>
+      </form>
     </div>
   );
 }
 
 export default function ChangePrices() {
-  const [currentWeek, setCurrentWeek] = useState(29); // Start with week 29 (mid-July 2025)
+  const { propertyId } = useParams();
+  // Set default week to current week (today)
+  const today = new Date();
+  const defaultWeek = getISOWeekNumber(today);
+  const [currentWeek, setCurrentWeek] = useState(defaultWeek);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Calculate which ISO week a given date falls into
   const getWeekNumberFromDate = (dateString: string) => {
@@ -552,6 +621,7 @@ export default function ChangePrices() {
     }
   };
 
+  // Pass propertyId to WeeklyPriceOverview and StayPeriodSelector
   return (
     <div className="min-h-screen bg-white">
       {/* Header Section */}
@@ -566,7 +636,7 @@ export default function ChangePrices() {
             </p>
           </div>
           <Link
-            to="/dashboard"
+            to={propertyId ? `/dashboard/property/${propertyId}` : "/dashboard"}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-hotel-brand hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={20} />
@@ -576,17 +646,28 @@ export default function ChangePrices() {
           </Link>
         </div>
       </div>
-
       {/* Main Content */}
       <div className="flex gap-6 p-6">
         <div className="flex-1">
           <WeeklyPriceOverview
             currentWeek={currentWeek}
             setCurrentWeek={setCurrentWeek}
+            propertyId={propertyId}
+            refreshKey={refreshKey}
           />
         </div>
         <div className="flex-shrink-0">
-          <StayPeriodSelector onStartDateChange={handleStartDateChange} />
+          <StayPeriodSelector
+            onStartDateChange={handleStartDateChange}
+            propertyId={propertyId}
+            onSuccess={() => setRefreshKey((k) => k + 1)}
+            setSuccessMsg={setSuccessMsg}
+          />
+          {successMsg && (
+            <div className="w-[275px] mt-4 mx-auto px-4 py-2 bg-green-100 text-green-800 text-center text-[14px] font-medium rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
+              {successMsg}
+            </div>
+          )}
         </div>
       </div>
     </div>

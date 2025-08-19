@@ -9,6 +9,10 @@ from .views import (
     PriceHistoryView,
     OverwritePriceView,
     property_msp_for_date,  # <-- add import
+    OverwritePriceRangeView,  # <-- new import
+    lowest_competitor_prices,  # <-- new import
+    competitor_prices_weekly_chart,  # <-- new import
+    competitor_prices_for_date,  # <-- new import
 )
 
 app_name = 'dynamic_pricing'
@@ -30,4 +34,8 @@ urlpatterns = [
     # Price History endpoints
     path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),
     path('properties/<str:property_id>/price-history/<str:checkin_date>/overwrite/', OverwritePriceView.as_view(), name='overwrite-price'),
+    path('properties/<str:property_id>/price-history/overwrite-range/', OverwritePriceRangeView.as_view(), name='overwrite-price-range'),
+    path('historical-competitor-prices/lowest/', lowest_competitor_prices, name='lowest-competitor-prices'),
+    path('properties/<str:property_id>/competitor-prices/week/', competitor_prices_weekly_chart, name='competitor-prices-weekly-chart'),
+    path('properties/<str:property_id>/competitor-prices/for-date/', competitor_prices_for_date, name='competitor-prices-for-date'),
 ] 

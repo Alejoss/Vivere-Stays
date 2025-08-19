@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpHistoricalCompetitorPrice
 
 
 class PropertyManagementSystemSerializer(serializers.ModelSerializer):
@@ -224,3 +224,19 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     
     def get_overwrite(self, obj):
         return obj.overwrite_price is not None 
+
+
+class HistoricalCompetitorPriceSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DpHistoricalCompetitorPrice model.
+    """
+    competitor_id = serializers.CharField(source='competitor.competitor_id', read_only=True)
+    competitor_name = serializers.CharField(source='competitor.competitor_name', read_only=True)
+
+    class Meta:
+        model = DpHistoricalCompetitorPrice
+        fields = [
+            'competitor_id', 'competitor_name', 'hotel_name', 'room_name', 'checkin_date', 'checkout_date',
+            'raw_price', 'currency', 'cancellation_type', 'max_persons', 'min_los', 'sold_out_message',
+            'taking_reservations', 'scrape_date', 'is_available', 'num_days', 'price', 'update_tz'
+        ] 

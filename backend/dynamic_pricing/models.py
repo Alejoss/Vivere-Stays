@@ -352,3 +352,39 @@ class DpPriceChangeHistory(models.Model):
 
     def __str__(self):
         return f"{self.property_id.name} - {self.checkin_date} at {self.as_of}"
+
+
+class DpHistoricalCompetitorPrice(models.Model):
+    """
+    Historical competitor prices (imported from booking.historical_competitor_prices)
+    """
+    competitor = models.ForeignKey(
+        'booking.Competitor',
+        on_delete=models.CASCADE,
+        db_column='competitor_id',
+        related_name='historical_prices',
+    )
+    hotel_name = models.CharField(max_length=255)
+    room_name = models.CharField(max_length=255)
+    checkin_date = models.DateField()
+    checkout_date = models.DateField()
+    raw_price = models.FloatField(null=True, blank=True)
+    currency = models.CharField(max_length=10, null=True, blank=True)
+    cancellation_type = models.CharField(max_length=255, null=True, blank=True)
+    max_persons = models.IntegerField(null=True, blank=True)
+    min_los = models.IntegerField(null=True, blank=True)
+    sold_out_message = models.CharField(max_length=500, null=True, blank=True)
+    taking_reservations = models.BooleanField(null=True, blank=True)
+    scrape_date = models.DateField()
+    is_available = models.IntegerField(null=True, blank=True)
+    num_days = models.IntegerField(null=True, blank=True)
+    price = models.FloatField(null=True, blank=True)
+    update_tz = models.DateTimeField()
+
+    class Meta:
+        unique_together = ('competitor', 'checkin_date', 'room_name')
+        verbose_name = 'Historical Competitor Price'
+        verbose_name_plural = 'Historical Competitor Prices'
+
+    def __str__(self):
+        return f"{self.competitor.competitor_name} - {self.room_name} ({self.checkin_date})"

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { useEffect } from "react";
+import type { CompetitorPriceForDate } from "../../../shared/api/dynamic";
 
 interface Competitor {
   name: string;
@@ -45,6 +47,26 @@ export default function CompetitorPrices({
   selectedDayPriceHistory,
 }: CompetitorPricesProps) {
   const [suggestedPrice, setSuggestedPrice] = useState("66");
+  const [competitorData, setCompetitorData] = useState<CompetitorPriceForDate[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!propertyId || !selectedDate) return;
+    setLoading(true);
+    setError(null);
+    setCompetitorData([]);
+    // Convert month name to number
+    const monthIndex = new Date(`${selectedDate.month} 1, 2000`).getMonth() + 1;
+    const checkinDate = `${selectedDate.year}-${monthIndex
+      .toString()
+      .padStart(2, "0")}-${selectedDate.day.toString().padStart(2, "0")}`;
+    dynamicPricingService
+      .getCompetitorPricesForDate(propertyId, checkinDate)
+      .then((data) => setCompetitorData(data))
+      .catch(() => setError("Failed to load competitor prices"))
+      .finally(() => setLoading(false));
+  }, [propertyId, selectedDate]);
 
   const handleUpdatePrice = async () => {
     if (!propertyId || !selectedDate) return;
@@ -83,23 +105,31 @@ export default function CompetitorPrices({
       </div>
       {/* Competitor List */}
       <div className="flex flex-col mb-[20px]">
-        {competitorData.map((competitor, index) => (
-          <div
-            key={competitor.name}
-            className={`flex justify-between items-center py-[13px] px-[2px] ${
-              index < competitorData.length - 1
-                ? "border-b-[1.5px] border-hotel-border-light"
-                : ""
-            }`}
-          >
-            <span className="text-[14px] font-semibold text-black">
-              {competitor.name}
-            </span>
-            <span className="text-[15px] font-semibold text-gray-600">
-              $ {competitor.price}
-            </span>
-          </div>
-        ))}
+        {loading ? (
+          <div className="text-center text-gray-500 py-4">Loading competitor prices...</div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-4">{error}</div>
+        ) : competitorData.length === 0 ? (
+          <div className="text-center text-gray-500 py-4">No competitor data</div>
+        ) : (
+          competitorData.map((competitor, index) => (
+            <div
+              key={competitor.id}
+              className={`flex justify-between items-center py-[13px] px-[2px] ${
+                index < competitorData.length - 1
+                  ? "border-b-[1.5px] border-hotel-border-light"
+                  : ""
+              }`}
+            >
+              <span className="text-[14px] font-semibold text-black">
+                {competitor.name}
+              </span>
+              <span className="text-[15px] font-semibold text-gray-600">
+                {competitor.price !== null && competitor.price !== undefined ? `$${competitor.price}` : "--"}
+              </span>
+            </div>
+          ))
+        )}
       </div>
       {/* Suggested Price Section */}
       <div className="border border-blue-300 rounded-[9px] bg-blue-50 p-[15px] flex flex-col items-center gap-2">

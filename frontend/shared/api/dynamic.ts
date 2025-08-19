@@ -83,6 +83,23 @@ export interface MSPEntriesResponse {
   count: number;
 }
 
+export interface CompetitorWeeklyPricesResponse {
+  dates: string[];
+  competitors: Array<{
+    id: number;
+    name: string;
+    prices: (number | null)[];
+  }>;
+}
+
+export interface CompetitorPriceForDate {
+  id: number;
+  name: string;
+  price: number | null;
+  currency: string | null;
+  room_name: string | null;
+}
+
 export const dynamicPricingService = {
   // Price History endpoints
   async getPriceHistory(
@@ -148,6 +165,26 @@ export const dynamicPricingService = {
     });
   },
 
+  /**
+   * Overwrite prices for a range of dates for a property.
+   */
+  async overwritePriceRange(
+    propertyId: string,
+    startDate: string,
+    endDate: string,
+    overwritePrice: number
+  ): Promise<{ message: string; created: any[]; errors: string[]; start_date: string; end_date: string; overwrite_price: number }> {
+    return apiRequest<{ message: string; created: any[]; errors: string[]; start_date: string; end_date: string; overwrite_price: number }>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/price-history/overwrite-range/`,
+      data: {
+        start_date: startDate,
+        end_date: endDate,
+        overwrite_price: overwritePrice,
+      },
+    });
+  },
+
   // Property Management System endpoints
   async getPMSList(): Promise<PMSListResponse> {
     return apiRequest<PMSListResponse>({
@@ -196,5 +233,31 @@ export const dynamicPricingService = {
       }
       throw err;
     }
+  },
+
+  /**
+   * Fetches the weekly competitor prices matrix for a property.
+   * @param propertyId The property ID
+   * @param startDate The Monday of the week (YYYY-MM-DD)
+   */
+  async getCompetitorWeeklyPrices(propertyId: string, startDate: string): Promise<CompetitorWeeklyPricesResponse> {
+    const url = `/dynamic-pricing/properties/${propertyId}/competitor-prices/week/?start_date=${startDate}`;
+    return apiRequest<CompetitorWeeklyPricesResponse>({
+      method: 'GET',
+      url,
+    });
+  },
+
+  /**
+   * Fetches competitor prices for a property and a specific date.
+   * @param propertyId The property ID
+   * @param date The date (YYYY-MM-DD)
+   */
+  async getCompetitorPricesForDate(propertyId: string, date: string): Promise<CompetitorPriceForDate[]> {
+    const url = `/dynamic-pricing/properties/${propertyId}/competitor-prices/for-date/?date=${date}`;
+    return apiRequest<CompetitorPriceForDate[]>({
+      method: 'GET',
+      url,
+    });
   },
 };
