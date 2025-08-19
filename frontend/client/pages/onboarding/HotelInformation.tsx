@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { getHotelInformationData, setHotelInformationData, HotelInformationData } from '../../../shared/localStorage';
 
 interface FormData {
   hotelName: string;
@@ -55,13 +56,9 @@ export default function HotelInformation() {
   
   // Load saved form data from localStorage on component mount
   const [formData, setFormData] = useState<FormData>(() => {
-    const savedData = localStorage.getItem('hotelInformationData');
+    const savedData = getHotelInformationData();
     if (savedData) {
-      try {
-        return JSON.parse(savedData);
-      } catch (e) {
-        console.error('Error parsing saved hotel data:', e);
-      }
+      return savedData;
     }
     return {
       hotelName: "",
@@ -85,7 +82,7 @@ export default function HotelInformation() {
 
   // Save form data to localStorage
   const saveFormData = (data: FormData) => {
-    localStorage.setItem('hotelInformationData', JSON.stringify(data));
+    setHotelInformationData(data);
   };
 
   const validateForm = (): boolean => {

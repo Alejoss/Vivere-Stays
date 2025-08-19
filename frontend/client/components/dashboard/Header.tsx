@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useContext } from "react";
+import { PropertyContext, PropertyContextType } from "../../../shared/PropertyContext";
+import { ConnectionContext } from '../../../shared/ConnectionContext';
 
 export default function Header() {
-  const [isConnected, setIsConnected] = useState(true);
+  const context = useContext(PropertyContext) as PropertyContextType | undefined;
+  const connectionContext = useContext(ConnectionContext);
+  const isConnected = connectionContext?.isConnected ?? true;
+  const setIsConnected = connectionContext?.setIsConnected ?? (() => {});
+
+  const propertyName = context?.property?.name || "Hotel";
 
   const toggleConnection = () => {
     setIsConnected(!isConnected);
@@ -11,7 +18,7 @@ export default function Header() {
     <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-hotel-border-light bg-white">
       {/* Hotel Name */}
       <h1 className="text-[18px] lg:text-[20px] font-bold text-hotel-brand">
-        Hotel Ejemplo
+        {propertyName}
       </h1>
 
       {/* Connection Status Toggle */}

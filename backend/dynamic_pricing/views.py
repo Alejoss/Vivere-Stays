@@ -6,6 +6,10 @@ from django.shortcuts import get_object_or_404
 import logging
 from datetime import datetime, timedelta
 from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from .models import DpMinimumSellingPrice, Property
+from .serializers import MinimumSellingPriceSerializer
 
 from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory
 from .serializers import (
@@ -689,23 +693,17 @@ class PriceHistoryView(APIView):
         Returns the most recent price data for each checkin_date
         """
         try:
-            # Get the user's profile
             user_profile = request.user.profile
-            
-            # Verify the user owns this property
             if not user_profile.properties.filter(id=property_id).exists():
                 logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership")
                 return Response({
                     'message': 'Property not found or access denied'
                 }, status=status.HTTP_404_NOT_FOUND)
-            
-            # Get the property
+
             property_obj = get_object_or_404(Property, id=property_id)
-            
-            # Get query parameters for date range
+
             year = request.query_params.get('year', timezone.now().year)
             month = request.query_params.get('month', timezone.now().month)
-            
             try:
                 year = int(year)
                 month = int(month)
@@ -713,44 +711,28 @@ class PriceHistoryView(APIView):
                 return Response({
                     'message': 'Invalid year or month parameter'
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             # Calculate date range for the month
             start_date = datetime(year, month, 1).date()
             if month == 12:
                 end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
             else:
                 end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
-            
-            # Get the most recent price data for each checkin_date in the range
-            # Using a subquery to get the latest as_of for each checkin_date
-            from django.db.models import Max, Subquery, OuterRef
-            
-            latest_records = DpPriceChangeHistory.objects.filter(
-                property_id=property_id,
-                checkin_date__gte=start_date,
-                checkin_date__lte=end_date
-            ).values('checkin_date').annotate(
-                latest_as_of=Max('as_of')
-            ).values('checkin_date', 'latest_as_of')
-            
-            # Get the actual records with the latest as_of for each date
+
+            # For each day in the month, get the latest record by as_of
             price_history = []
-            for record in latest_records:
-                latest_price_record = DpPriceChangeHistory.objects.filter(
+            for day in range(1, (end_date - start_date).days + 2):
+                checkin_date = start_date + timedelta(days=day - 1)
+                latest_record = DpPriceChangeHistory.objects.filter(
                     property_id=property_id,
-                    checkin_date=record['checkin_date'],
-                    as_of=record['latest_as_of']
-                ).first()
-                
-                if latest_price_record:
-                    serializer = PriceHistorySerializer(latest_price_record)
+                    checkin_date=checkin_date
+                ).order_by('-as_of').first()
+                if latest_record:
+                    serializer = PriceHistorySerializer(latest_record)
                     price_history.append(serializer.data)
-            
-            # Sort by checkin_date
+
             price_history.sort(key=lambda x: x['checkin_date'])
-            
-            logger.info(f"Retrieved price history for property {property_id} - {len(price_history)} records")
-            
+
             return Response({
                 'property_id': property_id,
                 'property_name': property_obj.name,
@@ -759,16 +741,95 @@ class PriceHistoryView(APIView):
                 'price_history': price_history,
                 'count': len(price_history)
             }, status=status.HTTP_200_OK)
-            
         except Property.DoesNotExist:
             logger.warning(f"Property {property_id} not found")
             return Response({
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
-            
         except Exception as e:
             logger.error(f"Error retrieving price history for property {property_id}: {str(e)}", exc_info=True)
             return Response({
                 'message': 'An error occurred while retrieving price history',
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OverwritePriceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, property_id, checkin_date):
+        """
+        Create a new price history record for a given property and checkin_date, copying all fields from the latest record but setting overwrite_price to the provided value.
+        """
+        try:
+            print(f"[OverwritePriceView] User: {request.user}")
+            print(f"[OverwritePriceView] PATCH property_id={property_id}, checkin_date={checkin_date}")
+            # Validate property
+            property_obj = get_object_or_404(Property, id=property_id)
+            # Find the latest price history record for this date
+            price_record = (
+                DpPriceChangeHistory.objects
+                .filter(property_id=property_id, checkin_date=checkin_date)
+                .order_by('-as_of')
+                .first()
+            )
+            if not price_record:
+                print(f"[OverwritePriceView] No price history found for property {property_id} on {checkin_date}")
+                return Response({'error': 'Price history not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+            new_price = request.data.get('overwrite_price')
+            print(f"[OverwritePriceView] New overwrite_price: {new_price}")
+            if new_price is None:
+                print(f"[OverwritePriceView] overwrite_price missing in request data: {request.data}")
+                return Response({'error': 'overwrite_price is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create a new record with the same fields, but updated overwrite_price and as_of
+            new_record = DpPriceChangeHistory.objects.create(
+                property_id=price_record.property_id,
+                pms_hotel_id=price_record.pms_hotel_id,
+                checkin_date=price_record.checkin_date,
+                as_of=timezone.now(),
+                occupancy=price_record.occupancy,
+                msp=price_record.msp,
+                recom_price=price_record.recom_price,
+                overwrite_price=new_price,
+                recom_los=price_record.recom_los,
+                overwrite_los=price_record.overwrite_los,
+                base_price=price_record.base_price,
+                base_price_choice=price_record.base_price_choice,
+            )
+            print(f"[OverwritePriceView] Created new price history record with id: {new_record.id}")
+
+            serializer = PriceHistorySerializer(new_record)
+            return Response({'message': 'Overwrite price set. New price history record created.', 'price_history': serializer.data}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(f"[OverwritePriceView] Exception: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def property_msp_for_date(request, property_id):
+    """
+    Get the Minimum Selling Price (MSP) for a property for a specific date.
+    Query param: date=YYYY-MM-DD
+    """
+    from datetime import datetime
+    date_str = request.query_params.get('date')
+    if not date_str:
+        return Response({'error': 'Missing date parameter'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return Response({'error': 'Invalid date format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+
+    property_instance = get_object_or_404(Property, id=property_id)
+    msp_entry = DpMinimumSellingPrice.objects.filter(
+        property_id=property_instance,
+        valid_from__lte=date_obj,
+        valid_until__gte=date_obj
+    ).first()
+    if not msp_entry:
+        return Response({'error': 'No MSP configured for this date'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = MinimumSellingPriceSerializer(msp_entry)
+    return Response(serializer.data, status=status.HTTP_200_OK)

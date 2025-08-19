@@ -5,6 +5,8 @@ export interface PriceHistoryEntry {
   checkin_date: string;
   price: number;
   occupancy_level: 'low' | 'medium' | 'high';
+  overwrite: boolean;
+  occupancy: number;
 }
 
 export interface PriceHistoryResponse {
@@ -131,6 +133,21 @@ export const dynamicPricingService = {
     });
   },
 
+  /**
+   * Set a manual overwrite price for a specific date by creating a new price history record.
+   */
+  async updateOverwritePrice(
+    propertyId: string,
+    checkinDate: string,
+    overwritePrice: number
+  ): Promise<{ message: string; price_history: PriceHistoryEntry }> {
+    return apiRequest<{ message: string; price_history: PriceHistoryEntry }>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/price-history/${checkinDate}/overwrite/`,
+      data: { overwrite_price: overwritePrice },
+    });
+  },
+
   // Property Management System endpoints
   async getPMSList(): Promise<PMSListResponse> {
     return apiRequest<PMSListResponse>({
@@ -161,5 +178,23 @@ export const dynamicPricingService = {
       url: '/dynamic-pricing/msp/',
       data,
     });
+  },
+
+  /**
+   * Get the Minimum Selling Price (MSP) for a property and a specific date.
+   */
+  async getMSPForDate(propertyId: string, date: string): Promise<MSPEntry | null> {
+    try {
+      const url = `/dynamic-pricing/properties/${propertyId}/msp-for-date/?date=${date}`;
+      return await apiRequest<MSPEntry>({
+        method: 'GET',
+        url,
+      });
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        return null;
+      }
+      throw err;
+    }
   },
 };

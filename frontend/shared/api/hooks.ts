@@ -187,9 +187,9 @@ export const usePMSIntegrations = () => {
 };
 
 // Dynamic Pricing hooks
-export const usePriceHistory = (propertyId: string, year?: number, month?: number) => {
+export const usePriceHistory = (propertyId: string, year?: number, month?: number, refreshKey?: number) => {
   return useQuery({
-    queryKey: ['dynamic-pricing', 'price-history', propertyId, year, month],
+    queryKey: ['dynamic-pricing', 'price-history', propertyId, year, month, refreshKey],
     queryFn: () => dynamicPricingService.getPriceHistory(propertyId, year, month),
     enabled: !!propertyId,
     staleTime: 5 * 60 * 1000, // 5 minutes

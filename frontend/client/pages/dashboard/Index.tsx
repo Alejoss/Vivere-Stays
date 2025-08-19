@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import PriceCalendar from "../../components/dashboard/PriceCalendar";
 import RightSidebar from "../../components/dashboard/RightSidebar";
+import { PropertyContext } from "../../../shared/PropertyContext";
 
 export default function Index() {
   const [selectedDate, setSelectedDate] = useState<{
@@ -8,6 +9,8 @@ export default function Index() {
     month: string;
     year: string;
   } | null>(null);
+
+  const { property } = useContext(PropertyContext) ?? {};
 
   const handleDateClick = (
     day: number,
@@ -28,7 +31,7 @@ export default function Index() {
 
       {/* Right Sidebar */}
       <div className="lg:block md:block sm:hidden">
-        <RightSidebar selectedDate={selectedDate} />
+        <RightSidebar selectedDate={selectedDate} hasPMS={!!property?.pms} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Property, PropertyManagementSystem, DpGeneralSettings, DpPropertyCompetitor, DpDynamicIncrementsV1,
     DpDynamicIncrementsV2, DpOfferIncrements, DpLosSetup, DpLosReduction,
-    DpMinimumSellingPrice, DpWeekdayIncrements, DpEvents, DpRoomRates
+    DpMinimumSellingPrice, DpWeekdayIncrements, DpEvents, DpRoomRates, DpPriceChangeHistory
 )
 
 
@@ -133,3 +133,4 @@ class DpRoomRatesAdmin(admin.ModelAdmin):
 # Register the models
 admin.site.register(DpDynamicIncrementsV1, DpDynamicIncrementsV1Admin)
 admin.site.register(DpDynamicIncrementsV2, DpDynamicIncrementsV2Admin)
+admin.site.register(DpPriceChangeHistory)

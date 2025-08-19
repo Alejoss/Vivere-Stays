@@ -1,11 +1,14 @@
-import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePriceHistory, useUserProperties } from "../../../shared/api/hooks";
+import { getLocalStorageItem, setLocalStorageItem, getVivereConnection } from "../../../shared/localStorage";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
 
 type CalendarCell = {
   day: number;
   price: string;
   occupancy: string;
+  overwrite: boolean;
 } | null;
 
 const monthNames = [
@@ -37,7 +40,7 @@ const getDaysInMonth = (year: number, month: number) => {
 const generateCalendarData = (
   year: number,
   month: number,
-  priceHistory: Array<{ checkin_date: string; price: number; occupancy_level: string }> = []
+  priceHistory: Array<{ checkin_date: string; price: number; occupancy_level: string; overwrite: boolean }> = []
 ): CalendarCell[][] => {
   const firstDay = getFirstDayOfMonth(year, month);
   const daysInMonth = getDaysInMonth(year, month);
@@ -55,13 +58,12 @@ const generateCalendarData = (
     // Find price data for this day
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     const priceData = priceHistory.find(item => item.checkin_date === dateStr);
-    
     currentWeek.push({
       day,
       price: priceData ? `$${priceData.price}` : "$200", // Default price if no data
       occupancy: priceData ? priceData.occupancy_level : "medium", // Default occupancy if no data
+      overwrite: priceData ? priceData.overwrite : false,
     });
-
     // If the week is complete (7 days), start a new week
     if (currentWeek.length === 7) {
       weeks.push(currentWeek);
@@ -100,18 +102,28 @@ function CalendarCell({
   day,
   price,
   occupancy,
+  overwrite,
   onClick,
+  highlight = false,
 }: {
   day: number;
   price: string;
   occupancy: string;
+  overwrite: boolean;
   onClick: () => void;
+  highlight?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex w-[100px] sm:w-[80px] md:w-[100px] lg:w-[120px] xl:w-[140px] h-[59px] sm:h-[50px] md:h-[59px] lg:h-[70px] xl:h-[80px] rounded-lg ${getOccupancyColor(occupancy)} p-[10px] sm:p-[8px] md:p-[10px] lg:p-[12px] xl:p-[14px] justify-center items-center hover:scale-105 transition-transform cursor-pointer`}
+      className={`flex w-[100px] sm:w-[80px] md:w-[100px] lg:w-[120px] xl:w-[140px] h-[59px] sm:h-[50px] md:h-[59px] lg:h-[70px] xl:h-[80px] rounded-lg ${getOccupancyColor(occupancy)} p-[10px] sm:p-[8px] md:p-[10px] lg:p-[12px] xl:p-[14px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-4 border-yellow-400 z-10' : ''}`}
     >
+      {/* Lock icon at top right if overwrite is true */}
+      {overwrite && (
+        <span className="absolute top-1 right-1 text-white opacity-80">
+          <Lock size={16} />
+        </span>
+      )}
       <div className="flex flex-col items-center gap-[5px] sm:gap-[3px] md:gap-[5px] text-white">
         <span className="text-[16px] sm:text-[14px] md:text-[16px] font-normal">
           {price}
@@ -127,14 +139,16 @@ function CalendarCell({
 interface PriceCalendarProps {
   onDateClick: (day: number, month?: string, year?: string) => void;
   propertyId?: string; // Optional prop for when we know the property ID
+  refreshKey?: number;
 }
 
-export default function PriceCalendar({ onDateClick, propertyId }: PriceCalendarProps) {
+export default function PriceCalendar({ onDateClick, propertyId, refreshKey }: PriceCalendarProps) {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(propertyId || null);
+  const [propertyData, setPropertyData] = useState<any>(null);
 
   // Get user properties (only if no propertyId is provided)
   const { data: userPropertiesData, isLoading: propertiesLoading } = useUserProperties();
@@ -143,8 +157,39 @@ export default function PriceCalendar({ onDateClick, propertyId }: PriceCalendar
   const { data: priceHistoryData, isLoading: priceHistoryLoading } = usePriceHistory(
     selectedPropertyId || '',
     currentYear,
-    currentMonth + 1 // Convert to 1-indexed for API
+    currentMonth + 1, // Convert to 1-indexed for API
+    refreshKey // Pass refreshKey as a dependency
   );
+
+  // Fetch property data if not in localStorage
+  useEffect(() => {
+    async function fetchAndStorePropertyData(id: string) {
+      try {
+        const localKey = `property_${id}_info`;
+        let data = getLocalStorageItem<any>(localKey);
+        if (!data) {
+          const response = await dynamicPricingService.getProperty(id);
+          data = response;
+          setLocalStorageItem(localKey, data);
+        }
+        setPropertyData(data);
+      } catch (e) {
+        console.error("Error fetching property data:", e);
+      }
+    }
+    if (selectedPropertyId) {
+      fetchAndStorePropertyData(selectedPropertyId);
+    }
+  }, [selectedPropertyId]);
+
+    // Debug: Log the price history data and the entry for August 23
+  if (priceHistoryData && priceHistoryData.price_history) {
+    console.log('[PriceCalendar] priceHistoryData:', priceHistoryData);
+    // Find entry for August 23 (month 7 in JS is August, but API uses 1-indexed)
+    const targetDate = `${currentYear}-08-23`;
+    const aug23 = priceHistoryData.price_history.find((entry: any) => entry.checkin_date === targetDate);
+    console.log('[PriceCalendar] Entry for 2025-08-23:', aug23);
+  }
 
   // Set the first property as selected when properties are loaded (only if no propertyId is provided)
   useEffect(() => {
@@ -194,6 +239,16 @@ export default function PriceCalendar({ onDateClick, propertyId }: PriceCalendar
     setShowMonthPicker(!showMonthPicker);
   };
 
+  // Get today's date for highlighting
+  const today = new Date();
+  const isToday = (day: number) => {
+    return (
+      day === today.getDate() &&
+      currentMonth === today.getMonth() &&
+      currentYear === today.getFullYear()
+    );
+  };
+
   // Show loading state while fetching properties (only if no propertyId is provided)
   if (!propertyId && propertiesLoading) {
     return (
@@ -221,11 +276,15 @@ export default function PriceCalendar({ onDateClick, propertyId }: PriceCalendar
     );
   }
 
+  // Determine if PMS is missing
+  const hasPMS = propertyData && (propertyData.pms || propertyData.pms_name);
+  const isConnected = getVivereConnection();
+
   return (
     <div className="w-full max-w-none bg-white border border-hotel-border-light rounded-[9px] p-4 lg:p-[26px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-[57px]">
-        <h2 className="text-[24px] font-bold text-black">Price Calendar</h2>
+        <h2 className="text-[24px] font-bold text-gray-700">Price Calendar</h2>
 
                   <div className="flex items-center gap-4">
             {/* Property Selector - only show if no propertyId is provided */}
@@ -324,6 +383,12 @@ export default function PriceCalendar({ onDateClick, propertyId }: PriceCalendar
           </button>
         </div>
       </div>
+      {/* Dynamic PMS warning */}
+      {!isConnected && !hasPMS && (
+        <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
+          If the PMS is not connected (live mode), changes will not be reflected in the PMS.
+        </div>
+      )}
 
       {/* Calendar */}
       <div className="flex flex-col gap-[14px]">
@@ -352,7 +417,9 @@ export default function PriceCalendar({ onDateClick, propertyId }: PriceCalendar
                     day={cell.day}
                     price={cell.price}
                     occupancy={cell.occupancy}
+                    overwrite={cell.overwrite}
                     onClick={() => handleDateClick(cell.day)}
+                    highlight={isToday(cell.day)}
                   />
                 ) : (
                   <div

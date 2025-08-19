@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PriceCalendar from "../../components/dashboard/PriceCalendar";
 import RightSidebar from "../../components/dashboard/RightSidebar";
-import { useProperty } from "../../../shared/api/hooks";
+import { PropertyContext } from "../../../shared/PropertyContext";
 
 export default function PropertyDashboard() {
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -12,22 +12,23 @@ export default function PropertyDashboard() {
     month: string;
     year: string;
   } | null>(null);
+  const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
 
-  // Get property details
-  const { data: propertyData, isLoading: propertyLoading, error: propertyError } = useProperty(propertyId || '');
+  // Get property from context
+  const { property } = useContext(PropertyContext) ?? {};
 
   const handleDateClick = (
     day: number,
-    month: string = "August",
+    month: string = "September",
     year: string = "2025",
   ) => {
     setSelectedDate({ day, month, year });
   };
 
+  const handlePriceUpdate = () => setCalendarRefreshKey((k) => k + 1);
 
-
-  // Show loading state while fetching property
-  if (propertyLoading) {
+  // Show loading state while property is not loaded
+  if (!property) {
     return (
       <div className="flex-1 flex lg:flex-row flex-col overflow-hidden">
         <div className="flex-1 p-3 lg:p-6 overflow-auto">
@@ -44,48 +45,26 @@ export default function PropertyDashboard() {
     );
   }
 
-  // Show error state
-  if (propertyError || !propertyData) {
-    return (
-      <div className="flex-1 flex lg:flex-row flex-col overflow-hidden">
-        <div className="flex-1 p-3 lg:p-6 overflow-auto">
-          <div className="w-full">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center max-w-md">
-                <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Property Not Found</h3>
-                <p className="text-gray-600 mb-6">
-                  The property you're looking for doesn't exist or you don't have access to it.
-                </p>
-                <button
-                  onClick={handleBackToProperties}
-                  className="px-6 py-3 bg-[#294758] text-white rounded-lg hover:bg-[#234149] transition-colors"
-                >
-                  Back to Properties
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  console.log('[PropertyDashboard] property.pms:', property.pms);
 
   return (
     <div className="flex-1 flex lg:flex-row flex-col overflow-hidden">
       {/* Calendar Area */}
       <div className="flex-1 p-3 lg:p-6 overflow-auto">
-        <div className="w-full">
-
-
+        <div className="w-full">         
           {/* Price Calendar */}
-          <PriceCalendar onDateClick={handleDateClick} propertyId={propertyId} />
+          <PriceCalendar onDateClick={handleDateClick} propertyId={propertyId} refreshKey={calendarRefreshKey} />
         </div>
       </div>
 
       {/* Right Sidebar */}
-      <div className="lg:block md:block sm:hidden">
-        <RightSidebar selectedDate={selectedDate} />
+      <div className="lg:block md:block sm:hidden">        
+        <RightSidebar 
+          selectedDate={selectedDate} 
+          propertyId={propertyId} 
+          onPriceUpdate={handlePriceUpdate} 
+          hasPMS={!!property.pms}
+        />
       </div>
     </div>
   );

@@ -196,10 +196,12 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     checkin_date = serializers.DateField()
     price = serializers.SerializerMethodField()
     occupancy_level = serializers.SerializerMethodField()
+    overwrite = serializers.SerializerMethodField()
+    occupancy = serializers.FloatField()  # Add raw occupancy
     
     class Meta:
         model = DpPriceChangeHistory
-        fields = ['checkin_date', 'price', 'occupancy_level']
+        fields = ['checkin_date', 'price', 'occupancy_level', 'overwrite', 'occupancy']
     
     def get_price(self, obj):
         """
@@ -213,10 +215,12 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         """
         if obj.occupancy is None:
             return "medium"
-        
         if obj.occupancy <= 35:
             return "low"
         elif obj.occupancy <= 69:
             return "medium"
         else:
-            return "high" 
+            return "high"
+    
+    def get_overwrite(self, obj):
+        return obj.overwrite_price is not None 

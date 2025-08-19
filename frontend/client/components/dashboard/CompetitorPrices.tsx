@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
 
 interface Competitor {
   name: string;
@@ -12,32 +13,74 @@ const competitorData: Competitor[] = [
   { name: "Hostal mainz", price: 72 },
 ];
 
+interface PriceHistoryEntry {
+  checkin_date: string;
+  price: number;
+  occupancy_level: 'low' | 'medium' | 'high';
+  overwrite: boolean;
+  occupancy: number;
+}
+
 interface CompetitorPricesProps {
-  selectedDate?: string;
+  selectedDate?: { day: number; month: string; year: string };
+  propertyId?: string;
+  onPriceUpdate?: () => void;
+  selectedDayPriceHistory?: PriceHistoryEntry | null;
+}
+
+function getOrdinal(n: number) {
+  if (n > 3 && n < 21) return "th";
+  switch (n % 10) {
+    case 1: return "st";
+    case 2: return "nd";
+    case 3: return "rd";
+    default: return "th";
+  }
 }
 
 export default function CompetitorPrices({
-  selectedDate = "1/1/2025",
+  selectedDate = { day: 1, month: "January", year: "2025" },
+  propertyId,
+  onPriceUpdate,
+  selectedDayPriceHistory,
 }: CompetitorPricesProps) {
   const [suggestedPrice, setSuggestedPrice] = useState("66");
 
-  const handleUpdatePrice = () => {
-    // Handle price update logic here
-    console.log("Updating price to:", suggestedPrice);
+  const handleUpdatePrice = async () => {
+    if (!propertyId || !selectedDate) return;
+    // Convert month name to number
+    const monthIndex = new Date(`${selectedDate.month} 1, 2000`).getMonth() + 1;
+    const checkinDate = `${selectedDate.year}-${monthIndex
+      .toString()
+      .padStart(2, "0")}-${selectedDate.day.toString().padStart(2, "0")}`;
+    console.log('[handleUpdatePrice] propertyId:', propertyId, 'checkinDate:', checkinDate, 'suggestedPrice:', suggestedPrice);
+    try {
+      const response = await dynamicPricingService.updateOverwritePrice(
+        propertyId,
+        checkinDate,
+        Number(suggestedPrice)
+      );
+      console.log('[handleUpdatePrice] API response:', response);
+      if (onPriceUpdate) onPriceUpdate();
+    } catch (error) {
+      console.error('[handleUpdatePrice] API error:', error);
+    }
   };
 
+  // Format date as "August 23rd"
+  const formattedDate = `${selectedDate.month} ${selectedDate.day}${getOrdinal(selectedDate.day)}`;
+  const occupancyValue = selectedDayPriceHistory ? Math.round(selectedDayPriceHistory.occupancy) : null;
+
   return (
-    <div className="flex flex-col p-[23px] border border-hotel-border-light rounded-lg bg-white">
-      {/* Header */}
-      <h3 className="text-[15px] font-bold text-hotel-brand mb-[20px]">
-        Competitor Prices - {selectedDate}
-      </h3>
-
-      {/* Occupancy */}
-      <div className="text-[15px] font-bold text-hotel-status-connected mb-[20px]">
-        Occupancy 234
+    <div className="flex flex-col p-[23px] border border-hotel-border-light rounded-lg bg-white gap-6">
+      {/* Date Display */}
+      <div className="text-[2rem] font-bold text-hotel-brand text-center mb-2">
+        {formattedDate}
       </div>
-
+      {/* Occupancy */}
+      <div className="text-[15px] font-bold text-gray-700 mb-[20px] text-center">
+        {occupancyValue !== null ? `Occupancy ${occupancyValue}%` : "Occupancy --"}
+      </div>
       {/* Competitor List */}
       <div className="flex flex-col mb-[20px]">
         {competitorData.map((competitor, index) => (
@@ -58,15 +101,13 @@ export default function CompetitorPrices({
           </div>
         ))}
       </div>
-
       {/* Suggested Price Section */}
-      <div className="border border-blue-300 rounded-[9px] bg-blue-50 p-[15px]">
-        <div className="text-[15px] font-semibold text-blue-700 mb-[11px]">
-          Suggested price:
+      <div className="border border-blue-300 rounded-[9px] bg-blue-50 p-[15px] flex flex-col items-center gap-2">
+        <div className="text-[15px] font-semibold text-blue-700 mb-[11px] text-center">
+          Set price for this day
         </div>
-
         {/* Price Input */}
-        <div className="relative mb-[10px]">
+        <div className="relative w-full mb-[10px]">
           <div className="absolute left-[15px] top-1/2 transform -translate-y-1/2 text-[17px] font-medium text-blue-700">
             $
           </div>
@@ -77,11 +118,10 @@ export default function CompetitorPrices({
             className="w-full pl-[35px] pr-[15px] py-[11px] border border-blue-300 rounded-md bg-white text-[16px] font-normal text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-
         {/* Update Button */}
         <button
           onClick={handleUpdatePrice}
-          className="w-full py-[11px] bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-[14px] font-medium transition-colors"
+          className="w-full py-[11px] bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-[14px] font-medium transition-colors mt-2"
         >
           Update price
         </button>

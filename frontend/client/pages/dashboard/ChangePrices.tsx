@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUserProperties, usePriceHistory } from "../../../shared/api/hooks";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
 
 // Sample data for the week view
 const weeklyData = {
@@ -50,6 +52,34 @@ const getOccupancyColor = (value: string) => {
   return "bg-green-200 text-green-600";
 };
 
+const getWeekStartDate = (year: number, week: number) => {
+  // January 4th is always in week 1 of the year
+  const jan4 = new Date(year, 0, 4);
+  const jan4DayOfWeek = jan4.getDay() || 7; // Convert Sunday (0) to 7
+  // Find Monday of week 1
+  const week1Monday = new Date(
+    jan4.getTime() - (jan4DayOfWeek - 1) * 24 * 60 * 60 * 1000,
+  );
+  // Calculate the start date of the requested week
+  const weekStart = new Date(
+    week1Monday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000,
+  );
+  return weekStart;
+};
+
+const generateWeekDates = (week: number) => {
+  const weekStart = getWeekStartDate(2025, week);
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+    const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return {
+      day: dayNames[i], // ISO week starts on Monday
+      date: date.getDate().toString().padStart(2, "0"),
+      fullDate: date,
+    };
+  });
+};
+
 function WeeklyPriceOverview({
   currentWeek,
   setCurrentWeek,
@@ -58,15 +88,54 @@ function WeeklyPriceOverview({
   setCurrentWeek: (week: number) => void;
 }) {
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
-  const [yourPrices, setYourPrices] = useState([
-    "56",
-    "56",
-    "56",
-    "56",
-    "56",
-    "56",
-    "56",
-  ]);
+  // Get user's propertyId
+  const { data: userPropertiesData, isLoading: propertiesLoading } = useUserProperties();
+  const propertyId = userPropertiesData?.properties?.[0]?.id || null;
+
+  // Calculate week dates
+  const weekDates = generateWeekDates(currentWeek);
+  const weekYear = 2025; // Hardcoded for now
+  const weekMonth = weekDates[0]?.fullDate.getMonth() + 1; // 1-indexed
+
+  // Fetch price history for the month
+  const { data: priceHistoryData, isLoading: priceLoading, refetch } = usePriceHistory(
+    propertyId || '',
+    weekYear,
+    weekMonth
+  );
+
+  // Helper: get price entry for a date
+  const getPriceEntryForDate = (dateObj: Date) => {
+    if (!priceHistoryData?.price_history) return null;
+    const dateStr = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${dateObj.getDate().toString().padStart(2, "0")}`;
+    return priceHistoryData.price_history.find((entry) => entry.checkin_date === dateStr) || null;
+  };
+
+  // Handle price change
+  const handlePriceChange = async (index: number, newValue: string) => {
+    if (!propertyId) return;
+    const dateObj = weekDates[index]?.fullDate;
+    if (!dateObj) return;
+    const dateStr = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1)
+      .toString()
+      .padStart(2, "0")}-${dateObj.getDate().toString().padStart(2, "0")}`;
+    try {
+      await dynamicPricingService.updateOverwritePrice(propertyId, dateStr, Number(newValue));
+      alert("Price changed successfully");
+      refetch();
+    } catch (e) {
+      alert("Failed to change price");
+    }
+  };
+
+  if (propertiesLoading || priceLoading) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
+  if (!propertyId) {
+    return <div className="p-8 text-center">No property found.</div>;
+  }
 
   const goToPreviousWeek = () => {
     setCurrentWeek(Math.max(1, currentWeek - 1));
@@ -74,40 +143,6 @@ function WeeklyPriceOverview({
 
   const goToNextWeek = () => {
     setCurrentWeek(Math.min(53, currentWeek + 1));
-  };
-
-  // Get the start of a specific ISO week in 2025
-  const getWeekStartDate = (year: number, week: number) => {
-    // January 4th is always in week 1 of the year
-    const jan4 = new Date(year, 0, 4);
-    const jan4DayOfWeek = jan4.getDay() || 7; // Convert Sunday (0) to 7
-
-    // Find Monday of week 1
-    const week1Monday = new Date(
-      jan4.getTime() - (jan4DayOfWeek - 1) * 24 * 60 * 60 * 1000,
-    );
-
-    // Calculate the start date of the requested week
-    const weekStart = new Date(
-      week1Monday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000,
-    );
-
-    return weekStart;
-  };
-
-  // Generate dates based on current week (ISO week system)
-  const generateWeekDates = (week: number) => {
-    const weekStart = getWeekStartDate(2025, week);
-
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
-      const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      return {
-        day: dayNames[i], // ISO week starts on Monday
-        date: date.getDate().toString().padStart(2, "0"),
-        fullDate: date,
-      };
-    });
   };
 
   // Get the month name for the current week
@@ -172,9 +207,6 @@ function WeeklyPriceOverview({
     "December",
   ];
 
-  const weekDates = generateWeekDates(currentWeek);
-  const monthYear = getCurrentMonthYear(currentWeek);
-
   return (
     <div className="w-full bg-white rounded-lg shadow-lg">
       {/* Header */}
@@ -214,7 +246,7 @@ function WeeklyPriceOverview({
           onClick={() => setShowMonthDropdown(!showMonthDropdown)}
           className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors"
         >
-          <span className="text-[16px]">{monthYear}</span>
+          <span className="text-[16px]">{getCurrentMonthYear(currentWeek)}</span>
           <div
             className={`w-5 h-5 transition-transform ${showMonthDropdown ? "rotate-180" : ""}`}
           >
@@ -294,31 +326,35 @@ function WeeklyPriceOverview({
         </div>
       ))}
 
-      {/* Your Price Row */}
+      {/* Your Price Row (dynamic) */}
       <div className="flex items-center bg-gray-50 border-b-2 border-hotel-brand px-4 py-5 rounded-b-lg">
         <div className="w-[140px]">
           <span className="text-black text-[20px] font-bold">Your Price</span>
         </div>
         <div className="flex-1 flex items-center justify-between px-4">
-          {yourPrices.map((price, index) => (
-            <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
-              <div className="relative">
-                <span className="absolute left-2 top-2 text-[17px] text-[#294859] font-bold z-10">
-                  $
-                </span>
-                <input
-                  type="text"
-                  value={price}
-                  onChange={(e) => {
-                    const newPrices = [...yourPrices];
-                    newPrices[index] = e.target.value;
-                    setYourPrices(newPrices);
-                  }}
-                  className="w-[58px] h-[40px] pl-6 pr-2 py-2 border border-[#294859] bg-[#BFDBFE] rounded-md text-center text-[17px] text-[#294859] font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                />
+          {weekDates.map((date, index) => {
+            const priceEntry = getPriceEntryForDate(date.fullDate);
+            const price = priceEntry
+              ? priceEntry.overwrite && priceEntry.price
+                ? priceEntry.price
+                : priceEntry.price
+              : "";
+            return (
+              <div key={index} className="w-[100px] lg:w-[120px] xl:w-[140px] flex justify-center">
+                <div className="relative flex items-center w-full">
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[17px] text-[#294859] font-bold z-10">$</span>
+                  <input
+                    type="text"
+                    value={price}
+                    onChange={(e) => handlePriceChange(index, e.target.value)}
+                    className="w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-[20px] text-[#294859] font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200"
+                    style={{ minWidth: 70, maxWidth: 110 }}
+                    maxLength={5}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -490,18 +526,6 @@ function StayPeriodSelector({
 
 export default function ChangePrices() {
   const [currentWeek, setCurrentWeek] = useState(29); // Start with week 29 (mid-July 2025)
-
-  // Get the start of a specific ISO week in 2025 (shared function)
-  const getWeekStartDate = (year: number, week: number) => {
-    const jan4 = new Date(year, 0, 4);
-    const jan4DayOfWeek = jan4.getDay() || 7;
-    const week1Monday = new Date(
-      jan4.getTime() - (jan4DayOfWeek - 1) * 24 * 60 * 60 * 1000,
-    );
-    return new Date(
-      week1Monday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000,
-    );
-  };
 
   // Calculate which ISO week a given date falls into
   const getWeekNumberFromDate = (dateString: string) => {
