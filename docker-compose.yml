@@ -30,6 +30,20 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - vivere_network
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: vivere_ngrok
+    depends_on:
+      - vivere_backend
+    env_file:
+      - .env
+    command: >
+      http --authtoken ${NGROK_AUTHTOKEN} vivere_backend:8000
+    ports:
+      - "4040:4040"   # optional: exposes ngrok web UI at http://localhost:4040
+    networks:
+      - vivere_network
+
 
 networks:
   vivere_network:

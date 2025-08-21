@@ -29,17 +29,112 @@ import jwt
 import json
 
 from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer
-from profiles.models import Profile, PMSIntegrationRequirement
+from profiles.models import Profile, PMSIntegrationRequirement, Payment
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.google.provider import GoogleProvider
 from allauth.socialaccount.models import SocialApp, SocialToken
 from allauth.socialaccount.models import SocialAccount
+from rest_framework.decorators import api_view, permission_classes
+import stripe
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from stripe import Webhook
+from stripe.error import SignatureVerificationError
 
+stripe.api_key = settings.STRIPE_SECRET_KEY
+endpoint_secret = settings.STRIPE_WEBHOOK_SECRET 
 logger = logging.getLogger(__name__)
 
+class CreateCheckoutSession(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
+        user = request.user
+        data = request.data
+
+        plan_type = data.get("planType")
+        number_of_rooms = data.get("numberOfRooms")
+        calculated_price = data.get("calculatedPrice")
+
+        unit_amount = int(calculated_price * 100)
+
+        price = stripe.Price.create(
+            unit_amount=unit_amount,
+            currency="usd",
+            recurring={"interval": "month"},
+            product_data={"name": f"{plan_type.title()} Plan"},
+        )
+
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{"price": price.id, "quantity": 1}],
+            mode="subscription",
+            success_url="http://localhost:8080/add-competitor/",
+            cancel_url="http://localhost:8080/select-plan/",
+            metadata={
+                "user_id": str(user.id),
+                "plan_type": plan_type,
+                "number_of_rooms": str(number_of_rooms),
+            },
+        )
+
+        return Response({"sessionId": session.id})
+ 
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+        logger.info(f"✅ Verified event: {event['id']}")
+    except ValueError as e:
+        logger.error(f"❌ Invalid payload: {e}")
+        return JsonResponse({"error": "Invalid payload"}, status=400)
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"❌ Invalid signature: {e}")
+        return JsonResponse({"error": "Invalid signature"}, status=400)
+
+    
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        user_id = session["metadata"].get("user_id")
+        user = User.objects.get(id=user_id)
+        logger.info(f"💳 Checkout session completed: {session['id']}")
+        print('payment done')
+        print(session)
+        # You can access details here
+        customer_id = session.get("customer")
+        subscription_id = session.get("subscription")
+        client_email = session.get("customer_details", {}).get("email")
+
+        logger.info(f"Customer: {customer_id}, Email: {client_email}, Subscription: {subscription_id}")
+
+        Payment.objects.create(
+            user=user, 
+            stripe_customer_id=session.get("customer"),
+            stripe_subscription_id=session.get("subscription"),
+            stripe_session_id=session["id"],
+            amount_total=session["amount_total"],
+            currency=session["currency"],
+            payment_status=session["payment_status"],
+            status=session["status"],
+            email=session["customer_details"]["email"],
+            invoice_id=session.get("invoice"),
+            raw_response=session,  # optional
+        )
+
+    else:
+        pass
+
+    return JsonResponse({"status": "success"}, status=200)
 class CheckAuth(APIView):
     permission_classes = [AllowAny]
 
@@ -320,6 +415,7 @@ class GetCsrfToken(APIView):
         get_token(request)  # This will set the CSRF cookie if it is not already set
         return Response({'message': 'CSRF cookie set'}, status=status.HTTP_200_OK)
 
+   
 
 class ProfileView(APIView):
     """

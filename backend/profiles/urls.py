@@ -4,7 +4,7 @@ from .views import (
     GetCsrfToken, ProfileView, LogoutView, CheckUserExistsView, RegisterView, 
     RefreshTokenView, GoogleLoginView, PMSIntegrationRequirementView,
     SendVerificationEmailView, VerifyEmailCodeView,
-    OnboardingProgressView, TestEmailView
+    OnboardingProgressView, TestEmailView,stripe_webhook,CreateCheckoutSession
 )
 
 urlpatterns = [
@@ -29,4 +29,7 @@ urlpatterns = [
     
     # Onboarding progress endpoints
     path('onboarding-progress/', OnboardingProgressView.as_view(), name='onboarding-progress'),
+
+    path("create-checkout-session/",CreateCheckoutSession.as_view(), name="create-checkout-session"),
+    path('webhook/', stripe_webhook, name='stripe_webhook'),
 ]

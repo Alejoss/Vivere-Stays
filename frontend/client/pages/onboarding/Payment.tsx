@@ -5,38 +5,33 @@ import OnboardingProgressTracker from "../../components/OnboardingProgressTracke
 export default function Payment() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Simulate payment completion and automatically redirect to add competitor
-    const timer = setTimeout(() => {
-      navigate("/add-competitor");
-    }, 2000);
+  // useEffect(() => {
+  //   // Simulate payment completion and automatically redirect to add competitor
+  //   const timer = setTimeout(() => {
+  //     navigate("/add-competitor");
+  //   }, 2000);
 
-    return () => clearTimeout(timer);
-  }, [navigate]);
+  //   return () => clearTimeout(timer);
+  // }, [navigate]);
 
-  const handleBack = () => {
-    navigate("/select-plan");
-  };
+  // const handleBack = () => {
+  //   navigate("/select-plan");
+  // };
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex items-center justify-center px-4 py-8">
       <OnboardingProgressTracker currentStep="payment" />
       <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 w-full max-w-3xl text-center">
-        <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-4">Payment</h1>
+        <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-4">Payment with Stripe</h1>
         <p className="text-[18px] text-[#485567] mb-8">
-          Processing payment... Redirecting to competitor setup.
+          Please wait while we process your payment with Stripe.
         </p>
 
         <div className="flex justify-center mb-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#294758]"></div>
         </div>
 
-        <button
-          onClick={handleBack}
-          className="px-8 py-3 border border-[#D9D9D9] rounded-[10px] bg-white text-[16px] font-bold text-[#294758] hover:bg-gray-50 transition-colors"
-        >
-          Back to Plan Selection
-        </button>
+        
       </div>
     </div>
   );
