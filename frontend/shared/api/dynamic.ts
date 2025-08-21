@@ -100,6 +100,17 @@ export interface CompetitorPriceForDate {
   room_name: string | null;
 }
 
+export interface PriceHistoryForDateRangeResponse {
+  property_id: string;
+  property_name: string;
+  start_date: string;
+  end_date: string;
+  price_history: PriceHistoryEntry[];
+  average_price: number;
+  count: number;
+  valid_days: number;
+}
+
 export const dynamicPricingService = {
   // Price History endpoints
   async getPriceHistory(
@@ -256,6 +267,24 @@ export const dynamicPricingService = {
   async getCompetitorPricesForDate(propertyId: string, date: string): Promise<CompetitorPriceForDate[]> {
     const url = `/dynamic-pricing/properties/${propertyId}/competitor-prices/for-date/?date=${date}`;
     return apiRequest<CompetitorPriceForDate[]>({
+      method: 'GET',
+      url,
+    });
+  },
+
+  /**
+   * Fetches price history for a date range and calculates the average nightly rate.
+   * @param propertyId The property ID
+   * @param startDate The start date (YYYY-MM-DD)
+   * @param endDate The end date (YYYY-MM-DD)
+   */
+  async getPriceHistoryForDateRange(
+    propertyId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<PriceHistoryForDateRangeResponse> {
+    const url = `/dynamic-pricing/properties/${propertyId}/price-history/for-date-range/?start_date=${startDate}&end_date=${endDate}`;
+    return apiRequest<PriceHistoryForDateRangeResponse>({
       method: 'GET',
       url,
     });

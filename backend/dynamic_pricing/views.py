@@ -10,6 +10,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import DpMinimumSellingPrice, Property
 from .serializers import MinimumSellingPriceSerializer
+import requests
+from decouple import config
+from django.conf import settings
 
 from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory
 from .serializers import (
@@ -812,6 +815,122 @@ class OverwritePriceView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def price_history_for_date_range(request, property_id):
+    """
+    Get price history data for a property for a specific date range.
+    Query params:
+        - start_date (YYYY-MM-DD): The start date (required)
+        - end_date (YYYY-MM-DD): The end date (required)
+    Response:
+        {
+            "property_id": "uuid",
+            "start_date": "2025-01-01",
+            "end_date": "2025-01-05",
+            "price_history": [
+                {"checkin_date": "2025-01-01", "price": 100, "occupancy_level": "medium", "overwrite": false},
+                ...
+            ],
+            "average_price": 95.5,
+            "count": 5
+        }
+    """
+    from datetime import datetime, timedelta
+    from .models import DpPriceChangeHistory
+    from .serializers import PriceHistorySerializer
+
+    # Parse date parameters
+    start_date_str = request.query_params.get('start_date')
+    end_date_str = request.query_params.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return Response({
+            'error': 'start_date and end_date query parameters are required (YYYY-MM-DD)'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return Response({
+            'error': 'Invalid date format, expected YYYY-MM-DD'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if end_date < start_date:
+        return Response({
+            'error': 'end_date must be after or equal to start_date'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if date range is more than one month (31 days)
+    date_difference = (end_date - start_date).days
+    if date_difference > 31:
+        return Response({
+            'error': 'Date range cannot exceed 31 days (one month). Please select a shorter date range.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Validate property ownership
+        user_profile = request.user.profile
+        if not user_profile.properties.filter(id=property_id).exists():
+            logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership")
+            return Response({
+                'message': 'Property not found or access denied'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        property_obj = get_object_or_404(Property, id=property_id)
+
+        # Get price history for each day in the range
+        price_history = []
+        total_price = 0
+        valid_days = 0
+        
+        current_date = start_date
+        while current_date <= end_date:
+            latest_record = DpPriceChangeHistory.objects.filter(
+                property_id=property_id,
+                checkin_date=current_date
+            ).order_by('-as_of').first()
+            
+            if latest_record:
+                serializer = PriceHistorySerializer(latest_record)
+                price_data = serializer.data
+                price_history.append(price_data)
+                
+                # Add to total for average calculation
+                if price_data['price'] is not None:
+                    total_price += price_data['price']
+                    valid_days += 1
+            
+            current_date += timedelta(days=1)
+
+        # Calculate average price
+        average_price = round(total_price / valid_days, 2) if valid_days > 0 else 0
+
+        return Response({
+            'property_id': property_id,
+            'property_name': property_obj.name,
+            'start_date': start_date_str,
+            'end_date': end_date_str,
+            'price_history': price_history,
+            'average_price': average_price,
+            'count': len(price_history),
+            'valid_days': valid_days
+        }, status=status.HTTP_200_OK)
+        
+    except Property.DoesNotExist:
+        logger.warning(f"Property {property_id} not found")
+        return Response({
+            'message': 'Property not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error retrieving price history for date range for property {property_id}: {str(e)}", exc_info=True)
+        return Response({
+            'message': 'An error occurred while retrieving price history',
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class OverwritePriceRangeView(APIView):
     """
     API endpoint to overwrite prices for a range of dates for a property.
@@ -1074,3 +1193,179 @@ def competitor_prices_for_date(request, property_id):
             'room_name': row.room_name if row else None,
         })
     return Response(competitors_data, status=status.HTTP_200_OK)
+
+
+class FetchCompetitorsView(APIView):
+    """
+    API endpoint to fetch competitors from an external API using a Booking.com URL.
+    """
+    # permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Fetch competitors from the external API using a Booking.com URL.
+        Expected request body: {"booking_url": "https://booking.com/hotel/..."}
+        """
+        print(f"[FetchCompetitorsView] Starting request processing")
+        print(f"[FetchCompetitorsView] Request data: {request.data}")
+        
+        try:
+            # Get the booking URL from the request
+            booking_url = request.data.get('booking_url')
+            print(f"[FetchCompetitorsView] Booking URL: {booking_url}")
+            
+            if not booking_url:
+                print(f"[FetchCompetitorsView] ERROR: No booking_url provided")
+                return Response({
+                    'error': 'booking_url is required in request body'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Get API configuration from settings and environment
+            api_base_url = settings.COMPETITOR_API_BASE_URL
+            api_token = config('COMPETITOR_API_TOKEN', default='')
+            api_token = 'Op6fVIu%'
+            
+            print(f"[FetchCompetitorsView] API Base URL: {api_base_url}")
+            print(f"[FetchCompetitorsView] API Token: {api_token[:10]}..." if api_token else "None")
+            
+            if not api_token:
+                print(f"[FetchCompetitorsView] ERROR: No API token configured")
+                logger.error("Competitor API configuration missing: COMPETITOR_API_TOKEN")
+                return Response({
+                    'error': 'Competitor API not properly configured'
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            # Prepare the request to the external API
+            api_url = f"{api_base_url}/api/v1/competitors"
+            headers = {
+                'Authorization': f'Bearer {api_token}',
+                'Content-Type': 'application/json'
+            }
+            payload = {
+                'booking_url': booking_url,
+                'num_competitors': 5
+            }
+
+            print(f"[FetchCompetitorsView] Full API URL: {api_url}")
+            print(f"[FetchCompetitorsView] Headers: {headers}")
+            print(f"[FetchCompetitorsView] Payload: {payload}")
+
+            logger.info(f"Calling external competitor API: {api_url}")
+            logger.info(f"Request payload: {payload}")
+
+            # Make the request to the external API
+            print(f"[FetchCompetitorsView] Making HTTP request...")
+            response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+            print(f"[FetchCompetitorsView] Response status code: {response.status_code}")
+            print(f"[FetchCompetitorsView] Response headers: {dict(response.headers)}")
+            
+            # Print response content for debugging
+            try:
+                response_text = response.text
+                print(f"[FetchCompetitorsView] Response text: {response_text}")
+                if response_text:
+                    print(f"[FetchCompetitorsView] Response text length: {len(response_text)}")
+            except Exception as e:
+                print(f"[FetchCompetitorsView] Error reading response text: {e}")
+            
+            if response.status_code == 401:
+                print(f"[FetchCompetitorsView] ERROR: 401 Unauthorized - Authentication failed")
+                logger.error("Authentication failed with external competitor API")
+                return Response({
+                    'error': 'Authentication failed with competitor API'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+            
+            if response.status_code == 404:
+                print(f"[FetchCompetitorsView] ERROR: 404 Not Found - No competitors found")
+                logger.warning(f"No competitors found for URL: {booking_url}")
+                return Response({
+                    'error': 'No competitors found for the provided Booking.com URL'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            print(f"[FetchCompetitorsView] Response status is not 401 or 404, checking for other errors...")
+            
+            try:
+                response.raise_for_status()
+                print(f"[FetchCompetitorsView] Response status is OK, proceeding to parse JSON")
+            except requests.exceptions.HTTPError as e:
+                print(f"[FetchCompetitorsView] HTTP Error: {e}")
+                print(f"[FetchCompetitorsView] Response content: {response.text}")
+                raise
+            
+            # Parse the response
+            try:
+                api_response = response.json()
+                print(f"[FetchCompetitorsView] Successfully parsed JSON response")
+                print(f"[FetchCompetitorsView] API Response keys: {list(api_response.keys()) if isinstance(api_response, dict) else 'Not a dict'}")
+                
+                logger.info(f"External API response: {api_response}")
+            except Exception as e:
+                print(f"[FetchCompetitorsView] ERROR parsing JSON response: {e}")
+                print(f"[FetchCompetitorsView] Raw response text: {response.text}")
+                raise
+            
+            # Extract the competitors from the response
+            competitors = api_response.get('competitors', [])
+            target_hotel = api_response.get('target_hotel', {})
+            
+            print(f"[FetchCompetitorsView] Found {len(competitors)} competitors in response")
+            print(f"[FetchCompetitorsView] Target hotel: {target_hotel.get('name', 'Unknown')}")
+            
+            # Process and return the competitors
+            processed_competitors = []
+            for i, comp in enumerate(competitors):
+                print(f"[FetchCompetitorsView] Processing competitor {i+1}: {comp}")
+                hotel_data = comp.get('hotel', {})
+                processed_competitor = {
+                    'name': hotel_data.get('name', 'Unknown Hotel'),
+                    'booking_url': hotel_data.get('booking_url'),
+                    'review_score': hotel_data.get('review_score'),
+                    'similarity_score': comp.get('similarity_score'),
+                    'distance_km': comp.get('distance_km'),
+                    'location': hotel_data.get('location', {}),
+                    'amenities': hotel_data.get('amenities', [])
+                }
+                processed_competitors.append(processed_competitor)
+                print(f"[FetchCompetitorsView] Processed competitor: {processed_competitor['name']}")
+
+            final_response = {
+                'message': f'Successfully found {len(processed_competitors)} competitors',
+                'target_hotel': {
+                    'name': target_hotel.get('name', 'Unknown Hotel'),
+                    'booking_url': target_hotel.get('booking_url'),
+                    'review_score': target_hotel.get('review_score'),
+                    'location': target_hotel.get('location', {})
+                },
+                'competitors': processed_competitors,
+                'processing_time_ms': api_response.get('processing_time_ms'),
+                'total_competitors_found': api_response.get('total_competitors_found')
+            }
+            
+            print(f"[FetchCompetitorsView] SUCCESS: Returning response with {len(processed_competitors)} competitors")
+            print(f"[FetchCompetitorsView] Final response: {final_response}")
+            
+            return Response(final_response, status=status.HTTP_200_OK)
+            
+        except requests.exceptions.Timeout:
+            print(f"[FetchCompetitorsView] ERROR: Request timeout")
+            logger.error("Timeout while calling external competitor API")
+            return Response({
+                'error': 'Request to competitor API timed out'
+            }, status=status.HTTP_504_GATEWAY_TIMEOUT)
+            
+        except requests.exceptions.RequestException as e:
+            print(f"[FetchCompetitorsView] ERROR: Request exception: {e}")
+            logger.error(f"Error calling external competitor API: {str(e)}")
+            return Response({
+                'error': f'Failed to call competitor API: {str(e)}'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            
+        except Exception as e:
+            print(f"[FetchCompetitorsView] ERROR: Unexpected exception: {e}")
+            print(f"[FetchCompetitorsView] Exception type: {type(e)}")
+            import traceback
+            print(f"[FetchCompetitorsView] Traceback: {traceback.format_exc()}")
+            logger.error(f"Unexpected error in FetchCompetitorsView: {str(e)}")
+            return Response({
+                'error': 'An unexpected error occurred while fetching competitors'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,0 +1,48 @@
+{
+  "info": {
+    "name": "Hotel Competitor Service",
+    "_postman_id": "12345678-abcd-efgh-ijkl-1234567890ab",
+    "description": "Collection with one request to fetch competitors",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Competitors",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer Op6fVIu%",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"booking_url\": \"<PUT-YOUR-BOOKING-URL-HERE>\",\n  \"num_competitors\": 5\n}"
+        },
+        "url": {
+          "raw": "https://hotel-competitor-service-e3keqismia-ew.a.run.app/api/v1/competitors",
+          "protocol": "https",
+          "host": [
+            "hotel-competitor-service-e3keqismia-ew",
+            "a",
+            "run",
+            "app"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "competitors"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

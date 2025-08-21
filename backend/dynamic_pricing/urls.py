@@ -13,6 +13,8 @@ from .views import (
     lowest_competitor_prices,  # <-- new import
     competitor_prices_weekly_chart,  # <-- new import
     competitor_prices_for_date,  # <-- new import
+    FetchCompetitorsView,  # <-- new import
+    price_history_for_date_range,  # <-- new import
 )
 
 app_name = 'dynamic_pricing'
@@ -35,7 +37,11 @@ urlpatterns = [
     path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),
     path('properties/<str:property_id>/price-history/<str:checkin_date>/overwrite/', OverwritePriceView.as_view(), name='overwrite-price'),
     path('properties/<str:property_id>/price-history/overwrite-range/', OverwritePriceRangeView.as_view(), name='overwrite-price-range'),
+    path('properties/<str:property_id>/price-history/for-date-range/', price_history_for_date_range, name='price-history-for-date-range'),
     path('historical-competitor-prices/lowest/', lowest_competitor_prices, name='lowest-competitor-prices'),
     path('properties/<str:property_id>/competitor-prices/week/', competitor_prices_weekly_chart, name='competitor-prices-weekly-chart'),
     path('properties/<str:property_id>/competitor-prices/for-date/', competitor_prices_for_date, name='competitor-prices-for-date'),
+    
+    # External Competitor API endpoint
+    path('fetch-competitors/', FetchCompetitorsView.as_view(), name='fetch-competitors'),
 ] 

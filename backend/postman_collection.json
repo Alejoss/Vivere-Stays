@@ -403,6 +403,292 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has profile data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"    pm.expect(response).to.have.property('user');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/profiles/profile/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"profile",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Profile updated successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('id');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"Updated Name\",\n    \"phone_number\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profiles/profile/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"profile",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Verification Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Verification email sent\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"first_name\": \"Test User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profiles/send-verification-email/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"send-verification-email",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Email verified successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('verified');",
+									"    pm.expect(response.verified).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"code\": \"12345\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profiles/verify-email-code/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"verify-email-code",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Onboarding Progress",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has onboarding progress\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('current_step');",
+									"    pm.expect(response).to.have.property('completed_steps');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/profiles/onboarding-progress/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"onboarding-progress",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Onboarding Progress",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Onboarding progress updated\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"    pm.expect(response).to.have.property('progress');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"step\": \"property_created\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profiles/onboarding-progress/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profiles",
+								"onboarding-progress",
+								""
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -709,6 +995,567 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Fetch Competitors from External API",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has competitors data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('competitors');",
+									"    pm.expect(response).to.have.property('target_hotel');",
+									"    pm.expect(response).to.have.property('total_competitors_found');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"booking_url\": \"https://booking.com/hotel/us/grand-hotel-spa.html\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/fetch-competitors/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"fetch-competitors",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List PMS Systems",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has PMS list\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('pms_list');",
+									"    pm.expect(response).to.have.property('count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/pms/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"pms",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get MSP Entries",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has MSP entries\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('msp_entries');",
+									"    pm.expect(response).to.have.property('count');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/msp/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"msp",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create MSP Entries",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"MSP entries created successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"    pm.expect(response).to.have.property('created_entries');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"periods\": [\n        {\n            \"fromDate\": \"01/01/2025\",\n            \"toDate\": \"31/01/2025\",\n            \"price\": 100,\n            \"periodTitle\": \"January 2025\"\n        },\n        {\n            \"fromDate\": \"01/02/2025\",\n            \"toDate\": \"28/02/2025\",\n            \"price\": 120,\n            \"periodTitle\": \"February 2025\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/msp/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"msp",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Property MSP for Date",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has MSP data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('msp');",
+									"    pm.expect(response).to.have.property('valid_from');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/msp-for-date/?date=2025-01-15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								"msp-for-date",
+								""
+							],
+							"query": [
+								{
+									"key": "date",
+									"value": "2025-01-15"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Price History",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has price history\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('price_history');",
+									"    pm.expect(response).to.have.property('property_id');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/price-history/?year=2025&month=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								"price-history",
+								""
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "2025"
+								},
+								{
+									"key": "month",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Overwrite Price for Date",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Price overwritten successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"    pm.expect(response).to.have.property('price_history');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"overwrite_price\": 150\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/price-history/2025-01-15/overwrite/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								"price-history",
+								"2025-01-15",
+								"overwrite",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Overwrite Price Range",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Price range overwritten successfully\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('message');",
+									"    pm.expect(response).to.have.property('created');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"start_date\": \"2025-01-01\",\n    \"end_date\": \"2025-01-31\",\n    \"overwrite_price\": 140\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/price-history/overwrite-range/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								"price-history",
+								"overwrite-range",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Lowest Competitor Prices",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has competitor prices\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/historical-competitor-prices/lowest/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"historical-competitor-prices",
+								"lowest",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Competitor Prices Weekly Chart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has weekly chart data\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('dates');",
+									"    pm.expect(response).to.have.property('competitors');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/competitor-prices/week/?start_date=2025-01-06",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								"competitor-prices",
+								"week",
+								""
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2025-01-06"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Competitor Prices for Date",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has competitor prices for date\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/dynamic-pricing/properties/{{property_id}}/competitor-prices/for-date/?date=2025-01-15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"dynamic-pricing",
+								"properties",
+								"{{property_id}}",
+								"competitor-prices",
+								"for-date",
+								""
+							],
+							"query": [
+								{
+									"key": "date",
+									"value": "2025-01-15"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -903,6 +1750,59 @@
 								"properties",
 								"{{property_id}}",
 								"competitors",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Create Competitors",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has created competitors\", function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('created_competitors');",
+									"    pm.expect(response).to.have.property('total_created');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"property_id\": \"{{property_id}}\",\n    \"competitors\": [\n        {\n            \"name\": \"Competitor Hotel 1\",\n            \"url\": \"https://www.booking.com/hotel/competitor1.html\"\n        },\n        {\n            \"name\": \"Competitor Hotel 2\",\n            \"url\": \"https://www.booking.com/hotel/competitor2.html\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/booking/competitors/bulk-create/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"booking",
+								"competitors",
+								"bulk-create",
 								""
 							]
 						}

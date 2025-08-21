@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar, ArrowLeft } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useUserProperties, usePriceHistory } from "../../../shared/api/hooks";
@@ -86,15 +86,20 @@ function WeeklyPriceOverview({
   setCurrentWeek,
   propertyId,
   refreshKey,
+  onPriceChange,
 }: {
   currentWeek: number;
   setCurrentWeek: (week: number) => void;
   propertyId?: string;
   refreshKey?: number;
-}) {
+  onPriceChange?: () => void;
+}): React.JSX.Element {
   const [competitorData, setCompetitorData] = useState<CompetitorWeeklyPricesResponse | null>(null);
   const [competitorLoading, setCompetitorLoading] = useState(false);
   const [competitorError, setCompetitorError] = useState<string | null>(null);
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [localPrices, setLocalPrices] = useState<{ [key: string]: string }>({});
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Calculate week dates
   const weekDates = generateWeekDates(currentWeek);
@@ -108,6 +113,35 @@ function WeeklyPriceOverview({
         .toString()
         .padStart(2, '0')}-${weekStartDate.getDate().toString().padStart(2, '0')}`
     : '';
+
+  // Get price history for the property (similar to PriceCalendar)
+  const { data: priceHistoryData, isLoading: priceHistoryLoading } = usePriceHistory(
+    propertyId || '',
+    weekYear,
+    weekMonth, // Convert to 1-indexed for API
+    refreshKey
+  );
+
+  // Debug: Log the price history data
+  if (priceHistoryData && priceHistoryData.price_history) {
+    console.log('[ChangePrices] priceHistoryData:', priceHistoryData);
+    console.log('[ChangePrices] Week dates:', competitorData?.dates);
+    // Log a few sample price entries
+    if (competitorData?.dates && competitorData.dates.length > 0) {
+      const sampleDate = competitorData.dates[0];
+      const samplePrice = priceHistoryData.price_history.find((entry: any) => entry.checkin_date === sampleDate);
+      console.log('[ChangePrices] Sample price for', sampleDate, ':', samplePrice);
+    }
+  }
+
+  // Debug: Log success message state
+  console.log('[WeeklyPriceOverview] Current successMsg state:', successMsg);
+
+  // Reset local prices when data refreshes
+  useEffect(() => {
+    setLocalPrices({});
+    // Don't clear success message - let it stay visible for user to see
+  }, [refreshKey]);
 
   useEffect(() => {
     if (!propertyId || !weekStartDateStr) return;
@@ -125,28 +159,95 @@ function WeeklyPriceOverview({
       .finally(() => setCompetitorLoading(false));
   }, [propertyId, weekStartDateStr, refreshKey]);
 
-  // Handle price change
-  const handlePriceChange = async (index: number, newValue: string) => {
+  // Handle clicking outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showMonthDropdown && !target.closest('.month-dropdown-container')) {
+        setShowMonthDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMonthDropdown]);
+
+  // Handle price change (local state only)
+  const handlePriceChange = (index: number, newValue: string) => {
+    const date = competitorData?.dates[index];
+    if (!date) return;
+    
+    // Update local state only
+    setLocalPrices(prev => ({
+      ...prev,
+      [date]: newValue
+    }));
+  };
+
+  // Handle price change when user finishes editing (on blur)
+  const handlePriceBlur = async (index: number) => {
     if (!propertyId) return;
+    const date = competitorData?.dates[index];
+    if (!date) return;
+    
+    const newValue = localPrices[date];
+    console.log('[WeeklyPriceOverview] handlePriceBlur - index:', index, 'date:', date, 'newValue:', newValue);
+    
+    // Check if there's actually a change in value
+    const priceData = priceHistoryData?.price_history?.find(
+      (entry: any) => entry.checkin_date === date
+    );
+    const originalPrice = priceData ? priceData.price.toString() : "200";
+    
+    if (!newValue || newValue === "" || newValue === originalPrice) {
+      console.log('[WeeklyPriceOverview] No change detected or empty value, skipping update');
+      return;
+    }
+    
     const dateObj = weekDates[index]?.fullDate;
     if (!dateObj) return;
     const dateStr = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1)
       .toString()
       .padStart(2, "0")}-${dateObj.getDate().toString().padStart(2, "0")}`;
+    
     try {
+      console.log('[WeeklyPriceOverview] Updating price for', dateStr, 'from', originalPrice, 'to', newValue);
       await dynamicPricingService.updateOverwritePrice(propertyId, dateStr, Number(newValue));
-      alert("Price changed successfully");
-      // No need to refetch here, as the competitor data is fetched on mount
+      console.log("Price changed successfully for", dateStr, "to", newValue);
+      
+      // Create success message with day name and date
+      const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      const dayName = dayNames[dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]; // Convert to Monday=0 format
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const monthName = monthNames[dateObj.getMonth()];
+      const dayOfMonth = dateObj.getDate();
+      
+      const successMessage = `The price for ${dayName} ${dayOfMonth} of ${monthName} was changed to $${newValue}`;
+      console.log('[WeeklyPriceOverview] Setting success message:', successMessage);
+      setSuccessMsg(successMessage);
+      
+      // Trigger a refresh of the price history data
+      if (onPriceChange) {
+        onPriceChange();
+      }
     } catch (e) {
+      console.error("Failed to change price for", dateStr, ":", e);
       alert("Failed to change price");
+      // Revert the local state to the original value
+      setLocalPrices(prev => ({
+        ...prev,
+        [date]: originalPrice
+      }));
     }
   };
 
   if (!propertyId) {
     return <div className="p-8 text-center text-red-600">No property selected.</div>;
   }
-  if (competitorLoading) {
-    return <div className="p-8 text-center">Loading competitor data...</div>;
+  if (competitorLoading || priceHistoryLoading) {
+    return <div className="p-8 text-center">Loading data...</div>;
   }
   if (competitorError) {
     return <div className="p-8 text-center text-red-600">{competitorError}</div>;
@@ -209,7 +310,7 @@ function WeeklyPriceOverview({
   const handleMonthSelect = (monthIndex: number) => {
     const firstWeek = getFirstWeekOfMonth(monthIndex);
     setCurrentWeek(firstWeek);
-    // setShowMonthDropdown(false); // This state was removed
+    setShowMonthDropdown(false);
   };
 
   const monthNames = [
@@ -261,14 +362,14 @@ function WeeklyPriceOverview({
       </div>
 
       {/* Month/Year Dropdown */}
-      <div className="px-6 py-4 bg-hotel-brand relative">
+      <div className="px-6 py-4 bg-hotel-brand relative month-dropdown-container">
         <button
-          onClick={() => {}} // Removed setShowMonthDropdown
+          onClick={() => setShowMonthDropdown(!showMonthDropdown)}
           className="flex items-center gap-2 px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm text-hotel-brand text-[20px] font-bold hover:bg-white transition-colors"
         >
           <span>{getCurrentMonthYear(currentWeek)}</span>
           <div
-            className="w-5 h-5 transition-transform"
+            className={`w-5 h-5 transition-transform ${showMonthDropdown ? 'rotate-180' : ''}`}
           >
             <svg viewBox="0 0 20 20" fill="currentColor">
               <path d="M9 13L13 7L5 7L9 13Z" />
@@ -276,7 +377,24 @@ function WeeklyPriceOverview({
           </div>
         </button>
 
-        {/* Removed Month/Year Dropdown content */}
+        {/* Month/Year Dropdown content */}
+        {showMonthDropdown && (
+          <div className="absolute top-full left-6 right-6 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-60 overflow-y-auto">
+            <div className="p-4">
+              <div className="grid grid-cols-3 gap-2">
+                {monthNames.map((month, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleMonthSelect(index)}
+                    className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
+                  >
+                    {month}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Date Headers */}
@@ -333,10 +451,15 @@ function WeeklyPriceOverview({
         </div>
         <div className="flex-1 flex items-center justify-between px-4">
           {competitorData.dates.map((date, index) => {
-            const priceEntry = competitorData.competitors.find((entry) => entry.prices[index] !== null && entry.prices[index] !== undefined);
-            const price = priceEntry
-              ? priceEntry.prices[index]
-              : "";
+            // Find the price for this specific date from price history
+            const priceData = priceHistoryData?.price_history?.find(
+              (entry: any) => entry.checkin_date === date
+            );
+            const apiPrice = priceData ? priceData.price.toString() : "200"; // Default price if no data found
+            
+            // Use local price if available, otherwise use API price
+            const price = localPrices[date] !== undefined ? localPrices[date] : apiPrice;
+            
             // Determine if the date is in the past
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -349,6 +472,7 @@ function WeeklyPriceOverview({
                     type="text"
                     value={price}
                     onChange={(e) => handlePriceChange(index, e.target.value)}
+                    onBlur={() => handlePriceBlur(index)}
                     className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-[20px] font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
                     style={{ minWidth: 70, maxWidth: 110 }}
                     maxLength={5}
@@ -361,6 +485,13 @@ function WeeklyPriceOverview({
           })}
         </div>
       </div>
+      
+      {/* Success Message */}
+      {successMsg && (
+        <div className="mt-4 px-4 py-2 bg-green-100 text-green-800 text-center text-[14px] font-medium rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
+          {successMsg}
+        </div>
+      )}
     </div>
   );
 }
@@ -408,11 +539,61 @@ function StayPeriodSelector({
   });
   const [totalPrice, setTotalPrice] = useState("337.50");
   const [loading, setLoading] = useState(false);
-  // Remove local successMsg state
-  // const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [nightlyRate, setNightlyRate] = useState("67.50"); // Default value
+  const [nightlyRateLoading, setNightlyRateLoading] = useState(false);
 
-  // Static nightly rate for informational purposes only
-  const nightlyRate = "67.50";
+  // Calculate average nightly rate when dates change
+  useEffect(() => {
+    if (!propertyId || !checkIn || !checkOut) return;
+    
+    // Validate that end date is after start date
+    const startDate = new Date(checkIn);
+    const endDate = new Date(checkOut);
+    if (endDate <= startDate) {
+      setNightlyRate("0.00");
+      return;
+    }
+    
+    // Check if date range is more than 31 days (one month)
+    const dateDifference = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (dateDifference > 31) {
+      setNightlyRate("N/A");
+      return;
+    }
+    
+    const fetchAverageNightlyRate = async () => {
+      setNightlyRateLoading(true);
+      try {
+        console.log('[StayPeriodSelector] Fetching average nightly rate for:', { propertyId, checkIn, checkOut });
+        const response = await dynamicPricingService.getPriceHistoryForDateRange(
+          propertyId,
+          checkIn,
+          checkOut
+        );
+        
+        console.log('[StayPeriodSelector] Average nightly rate response:', response);
+        
+        if (response.average_price > 0) {
+          setNightlyRate(response.average_price.toFixed(2));
+        } else {
+          setNightlyRate("0.00");
+        }
+      } catch (error: any) {
+        console.error("Error fetching average nightly rate:", error);
+        
+        // Handle specific error for date range exceeding one month
+        if (error?.response?.status === 400 && error?.response?.data?.error?.includes('31 days')) {
+          setNightlyRate("N/A");
+        } else {
+          setNightlyRate("0.00");
+        }
+      } finally {
+        setNightlyRateLoading(false);
+      }
+    };
+
+    fetchAverageNightlyRate();
+  }, [propertyId, checkIn, checkOut]);
 
   // Handle start date change and notify parent
   const handleStartDateChange = (date: string) => {
@@ -570,10 +751,18 @@ function StayPeriodSelector({
           />
         </div>
         {/* Nightly Rate Display */}
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-[12px] text-[#294859]">Nightly rate:</span>
-          <span className="text-[12px] text-[#294859]">${nightlyRate}</span>
-        </div>
+        {nightlyRate !== "N/A" && (
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-[12px] text-[#294859]">Nightly rate:</span>
+            <span className="text-[12px] text-[#294859]">
+              {nightlyRateLoading ? (
+                <span className="text-gray-400">Loading...</span>
+              ) : (
+                `$${nightlyRate}`
+              )}
+            </span>
+          </div>
+        )}
         {/* Submit Button */}
         <button
           type="submit"
@@ -654,6 +843,7 @@ export default function ChangePrices() {
             setCurrentWeek={setCurrentWeek}
             propertyId={propertyId}
             refreshKey={refreshKey}
+            onPriceChange={() => setRefreshKey((k) => k + 1)}
           />
         </div>
         <div className="flex-shrink-0">

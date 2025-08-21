@@ -254,4 +254,6 @@ COMPANY_LOGO_URL = 'https://viverestays.com/wp-content/uploads/2022/06/VS_sticky
 COMPANY_WEBSITE = 'https://viverestays.com'
 COMPANY_UNSUBSCRIBE_URL = f'{COMPANY_WEBSITE}/unsubscribe'
 
- 
+# External Competitor API Settings
+COMPETITOR_API_BASE_URL = 'https://hotel-competitor-service-e3keqismia-ew.a.run.app/'  # Update this with the actual API URL
+COMPETITOR_API_TOKEN = config('COMPETITOR_API_TOKEN', default='')
