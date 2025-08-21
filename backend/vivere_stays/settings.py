@@ -15,7 +15,8 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
+# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -178,6 +179,10 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:\d+$",
     r"^http://127.0.0.1:\d+$",
 ]
+CSRF_TRUSTED_ORIGINS = [
+    "https://bbb63d545b63.ngrok-free.app",
+    "http://bbb63d545b63.ngrok-free.app",
+]
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -253,6 +258,11 @@ EMAIL_VERIFICATION_CODE_LENGTH = 5
 COMPANY_LOGO_URL = 'https://viverestays.com/wp-content/uploads/2022/06/VS_sticky.png'
 COMPANY_WEBSITE = 'https://viverestays.com'
 COMPANY_UNSUBSCRIBE_URL = f'{COMPANY_WEBSITE}/unsubscribe'
+
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
 
 # External Competitor API Settings
 COMPETITOR_API_BASE_URL = 'https://hotel-competitor-service-e3keqismia-ew.a.run.app/'  # Update this with the actual API URL

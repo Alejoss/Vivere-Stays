@@ -1,5 +1,5 @@
 from django.contrib import admin
-from profiles.models import Profile, PMSIntegrationRequirement
+from profiles.models import Profile, PMSIntegrationRequirement, Payment
 
 
 @admin.register(Profile)
@@ -21,3 +21,4 @@ class PMSIntegrationRequirementAdmin(admin.ModelAdmin):
     search_fields = ('profile__user__username', 'profile__user__email', 'property_obj__name', 'custom_pms_name')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-created_at',)
+admin.site.register(Payment)

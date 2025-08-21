@@ -4,6 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { profilesService } from "../../../shared/api/profiles";
 import { queryKeys } from "../../../shared/api/hooks";
+import { loadStripe } from "@stripe/stripe-js";
+import { paymentService } from "@shared/api/payments";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
+
 
 type PlanType = "start" | "scale" | "pro";
 
@@ -102,23 +107,55 @@ export default function SelectPlan() {
     },
   });
 
-  const handleContinue = async () => {
-    setIsLoading(true);
+  // const handleContinue = async () => {
+  //   setIsLoading(true);
     
-    try {
-      // Save selected plan to profile
-      await updateProfileMutation.mutateAsync(selectedPlan);
+  //   try {
+  //     // Save selected plan to profile
+  //     await updateProfileMutation.mutateAsync(selectedPlan);
       
-      // Update onboarding progress
-      await updateOnboardingMutation.mutateAsync('payment');
-    } catch (error) {
-      console.error("Error saving plan selection:", error);
-      // You might want to show an error message to the user here
-    } finally {
-      setIsLoading(false);
+  //     // Update onboarding progress
+  //     await updateOnboardingMutation.mutateAsync('payment');
+  //   } catch (error) {
+  //     console.error("Error saving plan selection:", error);
+  //     // You might want to show an error message to the user here
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+  const token = localStorage.getItem("access_token");
+
+  const handleContinue = async () => {
+    try {
+      await updateProfileMutation.mutateAsync(selectedPlan);
+
+    
+      await updateOnboardingMutation.mutateAsync("payment");
+      const stripe = await stripePromise;
+  
+      // Find selected plan details
+      const planDetails = plans.find(p => p.id === selectedPlan)!;
+  
+      // Calculate price
+      const calculatedPrice = calculatePrice(planDetails.pricePerRoom, numberOfRooms);
+  
+      // Option 1: reuse same variable
+        const { sessionId } = await paymentService.createCheckoutSession(
+          selectedPlan,
+          numberOfRooms,
+          calculatedPrice
+        );
+
+        console.log("sessionId from backend:", sessionId);
+
+        // redirect to Stripe
+        const { error } = await stripe!.redirectToCheckout({ sessionId });
+      if (error) console.error(error);
+    } catch (err) {
+      console.error("Stripe error:", err);
     }
   };
-
+  
   const handleSelectPlan = (planId: PlanType) => {
     setSelectedPlan(planId);
   };
