@@ -12,7 +12,11 @@ export interface DemoResponse {
 }
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+if (!import.meta.env.VITE_API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL environment variable is required. Please set it in your .env file.');
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Authentication Types
 export interface LoginRequest {
