@@ -267,3 +267,6 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # External Competitor API Settings
 COMPETITOR_API_BASE_URL = 'https://hotel-competitor-service-e3keqismia-ew.a.run.app/'  # Update this with the actual API URL
 COMPETITOR_API_TOKEN = config('COMPETITOR_API_TOKEN', default='')
+
+# Hotel Competitor Service Settings
+HOTEL_COMPETITOR_SERVICE_TOKEN = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='')

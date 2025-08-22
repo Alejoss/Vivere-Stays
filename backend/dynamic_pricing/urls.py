@@ -15,6 +15,7 @@ from .views import (
     competitor_prices_for_date,  # <-- new import
     FetchCompetitorsView,  # <-- new import
     price_history_for_date_range,  # <-- new import
+    NearbyHotelsView,  # <-- new import
 )
 
 app_name = 'dynamic_pricing'
@@ -44,4 +45,7 @@ urlpatterns = [
     
     # External Competitor API endpoint
     path('fetch-competitors/', FetchCompetitorsView.as_view(), name='fetch-competitors'),
+    
+    # Nearby Hotels API endpoint
+    path('nearby-hotels/', NearbyHotelsView.as_view(), name='nearby-hotels'),
 ] 

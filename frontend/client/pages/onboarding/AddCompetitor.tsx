@@ -14,20 +14,69 @@ export default function AddCompetitor() {
     { id: "1", name: "" },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingNearbyHotels, setIsLoadingNearbyHotels] = useState(false);
   const [error, setError] = useState("");
   
   const createBulkCompetitors = useCreateBulkCompetitors();
 
-  // Clear Hotel Information form data from localStorage when component mounts
-  // This is because the property was already created and user can't go back to edit it after payment
+  const fetchNearbyHotels = async (hotelData: any) => {
+    setIsLoadingNearbyHotels(true);
+    try {
+      console.log('🔍 AddCompetitor: Fetching nearby hotels for:', hotelData);
+      
+      const response = await fetch('/api/dynamic-pricing/nearby-hotels/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: hotelData.street_address,
+          city: hotelData.city,
+          country: hotelData.country,
+          postal_code: hotelData.postal_code,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ AddCompetitor: Nearby hotels fetched:', data);
+        
+        // Auto-populate competitor fields with nearby hotels
+        if (data.nearby_hotels && data.nearby_hotels.length > 0) {
+          const nearbyHotels = data.nearby_hotels.slice(0, 5); // Limit to 5 suggestions
+          const suggestedCompetitors = nearbyHotels.map((hotel: any, index: number) => ({
+            id: `suggested-${index}`,
+            name: hotel.name || hotel.hotel_name || '',
+          }));
+          
+          setCompetitorHotels(suggestedCompetitors);
+        }
+      } else {
+        console.error('❌ AddCompetitor: Failed to fetch nearby hotels:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ AddCompetitor: Error fetching nearby hotels:', error);
+    } finally {
+      setIsLoadingNearbyHotels(false);
+    }
+  };
+
+  // Load hotel data from localStorage to fetch nearby competitors
   useEffect(() => {
-    // Clear Hotel Information form data
-    localStorage.removeItem('hotelInformationData');
-    
-    // Also clear the data that was prepared for PMS Integration step
-    localStorage.removeItem('hotelDataForPMS');
-    
-    console.log('🧹 AddCompetitor: Cleared hotel information data from localStorage');
+    const hotelDataString = localStorage.getItem('hotelDataForPMS');
+    if (hotelDataString) {
+      try {
+        const hotelData = JSON.parse(hotelDataString);
+        console.log('🏨 AddCompetitor: Loaded hotel data from localStorage:', hotelData);
+        
+        // Fetch nearby hotels based on the property location
+        fetchNearbyHotels(hotelData);
+      } catch (error) {
+        console.error('❌ AddCompetitor: Error parsing hotel data:', error);
+      }
+    } else {
+      console.log('⚠️ AddCompetitor: No hotel data found in localStorage');
+    }
   }, []);
 
   const handleContinue = async () => {
@@ -295,6 +344,12 @@ export default function AddCompetitor() {
               <span className="text-[16px] font-bold text-[#485567]">
                 Competitor Hotel Names
               </span>
+              {isLoadingNearbyHotels && (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#294758]"></div>
+                  <span className="text-[12px] text-[#485567]">Finding nearby hotels...</span>
+                </div>
+              )}
             </div>
 
             {/* Error Message */}
