@@ -289,4 +289,21 @@ export const dynamicPricingService = {
       url,
     });
   },
+
+  /**
+   * Fetches nearby hotels based on property location data.
+   * @param locationData The location data for the property
+   */
+  async getNearbyHotels(locationData: {
+    address: string;
+    city: string;
+    country?: string;
+    postal_code?: string;
+  }): Promise<string[]> {
+    return apiRequest<string[]>({
+      method: 'POST',
+      url: '/dynamic-pricing/nearby-hotels/',
+      data: locationData,
+    });
+  },
 };

@@ -27,7 +27,7 @@ export type HotelInformationData = {
   bookingUrl: string;
   streetAddress: string;
   city: string;
-  country: string;
+  country: string; // Country code (e.g., "EC" for Ecuador, "ES" for Spain)
   postalCode: string;
   phoneNumber: string;
   website: string;
@@ -55,4 +55,30 @@ export function getVivereConnection(): boolean {
 
 export function setVivereConnection(isConnected: boolean) {
   setLocalStorageItem(VIVERE_CONNECTION_KEY, isConnected);
+}
+
+// Hotel data format conversion utilities
+export function convertToSnakeCase(hotelInfo: HotelInformationData): any {
+  return {
+    hotel_name: hotelInfo.hotelName,
+    booking_url: hotelInfo.bookingUrl || undefined,
+    street_address: hotelInfo.streetAddress,
+    city: hotelInfo.city,
+    country: hotelInfo.country, // This will now be the country code (e.g., "EC")
+    postal_code: hotelInfo.postalCode,
+    phone_number: hotelInfo.phoneNumber,
+    website: hotelInfo.website || undefined,
+    cif: hotelInfo.cif || undefined,
+    number_of_rooms: parseInt(hotelInfo.numberOfRooms),
+    property_type: hotelInfo.propertyType,
+    is_onboarding: true,
+  };
+}
+
+export function getHotelDataForAPI(): any | null {
+  const hotelInfo = getHotelInformationData();
+  if (!hotelInfo) {
+    return null;
+  }
+  return convertToSnakeCase(hotelInfo);
 }

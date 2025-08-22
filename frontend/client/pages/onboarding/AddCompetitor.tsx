@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateBulkCompetitors } from "../../../shared/api/hooks";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { getHotelDataForAPI } from "../../../shared/localStorage";
 
 interface CompetitorHotel {
   id: string;
@@ -19,43 +21,49 @@ export default function AddCompetitor() {
   
   const createBulkCompetitors = useCreateBulkCompetitors();
 
+  // Utility function to clean hotel names
+  const cleanHotelName = (name: string): string => {
+    if (!name) return '';
+    
+    return name
+      .replace(/["""]/g, '') // Remove quotes
+      .replace(/[''']/g, '') // Remove single quotes
+      .replace(/[\/\\]/g, '') // Remove forward and backward slashes
+      .replace(/[<>]/g, '') // Remove angle brackets
+      .replace(/[{}]/g, '') // Remove curly braces
+      .replace(/[\[\]]/g, '') // Remove square brackets
+      .replace(/[|]/g, '') // Remove pipe
+      .replace(/[`~!@#$%^&*()_+=]/g, '') // Remove other special characters
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim(); // Remove leading/trailing spaces
+  };
+
   const fetchNearbyHotels = async (hotelData: any) => {
     setIsLoadingNearbyHotels(true);
     try {
-      console.log('🔍 AddCompetitor: Fetching nearby hotels for:', hotelData);
-      
-      const response = await fetch('/api/dynamic-pricing/nearby-hotels/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          address: hotelData.street_address,
-          city: hotelData.city,
-          country: hotelData.country,
-          postal_code: hotelData.postal_code,
-        }),
+      const hotelNames = await dynamicPricingService.getNearbyHotels({
+        address: hotelData.street_address,
+        city: hotelData.city,
+        country: hotelData.country,
+        postal_code: hotelData.postal_code,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ AddCompetitor: Nearby hotels fetched:', data);
+      
+      // Clean and process hotel names
+      if (hotelNames && Array.isArray(hotelNames) && hotelNames.length > 0) {
+        const cleanedHotels = hotelNames
+          .map(name => cleanHotelName(name))
+          .filter(name => name.length > 0) // Remove empty names after cleaning
+          .slice(0, 5); // Limit to 5 suggestions
         
-        // Auto-populate competitor fields with nearby hotels
-        if (data.nearby_hotels && data.nearby_hotels.length > 0) {
-          const nearbyHotels = data.nearby_hotels.slice(0, 5); // Limit to 5 suggestions
-          const suggestedCompetitors = nearbyHotels.map((hotel: any, index: number) => ({
-            id: `suggested-${index}`,
-            name: hotel.name || hotel.hotel_name || '',
-          }));
-          
-          setCompetitorHotels(suggestedCompetitors);
-        }
-      } else {
-        console.error('❌ AddCompetitor: Failed to fetch nearby hotels:', response.status);
+        const suggestedCompetitors = cleanedHotels.map((name: string, index: number) => ({
+          id: `suggested-${index}`,
+          name: name,
+        }));
+        
+        setCompetitorHotels(suggestedCompetitors);
       }
     } catch (error) {
-      console.error('❌ AddCompetitor: Error fetching nearby hotels:', error);
+      // Handle error silently or set error state if needed
     } finally {
       setIsLoadingNearbyHotels(false);
     }
@@ -63,19 +71,28 @@ export default function AddCompetitor() {
 
   // Load hotel data from localStorage to fetch nearby competitors
   useEffect(() => {
-    const hotelDataString = localStorage.getItem('hotelDataForPMS');
-    if (hotelDataString) {
-      try {
-        const hotelData = JSON.parse(hotelDataString);
-        console.log('🏨 AddCompetitor: Loaded hotel data from localStorage:', hotelData);
-        
-        // Fetch nearby hotels based on the property location
+    try {
+      const hotelData = getHotelDataForAPI();
+      
+      if (hotelData && hotelData.street_address && hotelData.city) {
         fetchNearbyHotels(hotelData);
-      } catch (error) {
-        console.error('❌ AddCompetitor: Error parsing hotel data:', error);
       }
-    } else {
-      console.log('⚠️ AddCompetitor: No hotel data found in localStorage');
+    } catch (error) {
+      // Fallback to checking hotelDataForPMS for backward compatibility
+      try {
+        const hotelDataString = localStorage.getItem('hotelDataForPMS');
+        
+        if (hotelDataString) {
+          const hotelData = JSON.parse(hotelDataString);
+          
+          // Check if we have the required location data
+          if (hotelData.street_address && hotelData.city) {
+            fetchNearbyHotels(hotelData);
+          }
+        }
+      } catch (fallbackError) {
+        // Handle fallback error silently
+      }
     }
   }, []);
 
@@ -103,16 +120,11 @@ export default function AddCompetitor() {
       
       navigate("/msp");
     } catch (err: any) {
-      console.error("Error creating competitors:", err);
-      console.log("Error type:", typeof err);
-      console.log("Error keys:", err ? Object.keys(err) : 'no keys');
-      
       // Extract the actual error message from the backend response
       let errorMessage = "Failed to save competitors. Please try again.";
       
       if (err && typeof err === 'object') {
         if ('error' in err) {
-          console.log("Error.error:", err.error);
           // The API client returns errors in format "field: message"
           const errorText = err.error;
           if (typeof errorText === 'string' && errorText.includes(':')) {
@@ -127,10 +139,8 @@ export default function AddCompetitor() {
             errorMessage = errorText;
           }
         } else if ('message' in err) {
-          console.log("Error.message:", err.message);
           errorMessage = err.message;
         } else if ('errors' in err) {
-          console.log("Error.errors:", err.errors);
           // Handle structured error response from backend
           const errors = err.errors;
           if (typeof errors === 'object') {
@@ -144,11 +154,8 @@ export default function AddCompetitor() {
           }
         }
       } else if (err instanceof Error) {
-        console.log("Error.message:", err.message);
         errorMessage = err.message;
       }
-      
-      console.log("Final error message:", errorMessage);
       
       // Also check if this is a mutation error with a different format
       if (errorMessage.includes("Bulk competitor creation failed")) {
@@ -333,8 +340,9 @@ export default function AddCompetitor() {
               </span>
             </div>
             <p className="text-[14px] text-[#1E1E1E] leading-normal">
-              We'll soon recommend competitors using AI based on your property
-              location and characteristics.
+              We recommend competitors using AI based on your property location and characteristics. 
+              However, feel free to add and remove competitors so that this list matches your actual competition. 
+              You will be able to perfect it later.
             </p>
           </div>
 

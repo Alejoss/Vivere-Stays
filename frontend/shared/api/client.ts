@@ -141,10 +141,34 @@ export const apiClient = createAxiosInstance();
 export const apiRequest = async <T>(
   config: AxiosRequestConfig
 ): Promise<T> => {
+  console.log('🌐 apiRequest: Starting request');
+  console.log('🌐 apiRequest: Method:', config.method);
+  console.log('🌐 apiRequest: URL:', config.url);
+  console.log('🌐 apiRequest: Base URL:', API_CONFIG.baseURL);
+  console.log('🌐 apiRequest: Full URL:', `${API_CONFIG.baseURL}${config.url}`);
+  console.log('🌐 apiRequest: Data:', config.data);
+  console.log('🌐 apiRequest: Headers:', config.headers);
+  
   try {
+    console.log('🌐 apiRequest: Making request...');
     const response: AxiosResponse<T> = await apiClient(config);
+    console.log('✅ apiRequest: Request successful');
+    console.log('✅ apiRequest: Response status:', response.status);
+    console.log('✅ apiRequest: Response headers:', response.headers);
+    console.log('✅ apiRequest: Response data:', response.data);
+    console.log('✅ apiRequest: Response data type:', typeof response.data);
+    if (Array.isArray(response.data)) {
+      console.log('✅ apiRequest: Response data length:', response.data.length);
+    }
     return response.data;
   } catch (error) {
+    console.error('❌ apiRequest: Request failed');
+    console.error('❌ apiRequest: Error:', error);
+    console.error('❌ apiRequest: Error type:', typeof error);
+    if (error && typeof error === 'object' && 'response' in error) {
+      console.error('❌ apiRequest: Error response status:', error.response?.status);
+      console.error('❌ apiRequest: Error response data:', error.response?.data);
+    }
     throw error;
   }
 }; 

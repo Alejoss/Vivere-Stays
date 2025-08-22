@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import JSONParser
 from django.shortcuts import get_object_or_404
 import logging
 from datetime import datetime, timedelta
@@ -1377,6 +1378,7 @@ class NearbyHotelsView(APIView):
     API endpoint to fetch nearby hotels using external service
     """
     permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
 
     def post(self, request):
         """
@@ -1389,6 +1391,12 @@ class NearbyHotelsView(APIView):
         }
         """
         try:
+            # Ensure request.data is a dictionary
+            if not isinstance(request.data, dict):
+                return Response({
+                    'error': 'Invalid request format. Expected JSON object.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
             # Get location data from request
             address = request.data.get('address', '').strip()
             city = request.data.get('city', '').strip()
@@ -1403,15 +1411,19 @@ class NearbyHotelsView(APIView):
             # Build the query string
             query_params = []
             if address:
-                query_params.append(f"address={requests.utils.quote(address)}")
+                # URL encode the address (spaces become %20, special chars encoded)
+                encoded_address = requests.utils.quote(address)
+                query_params.append(f"address={encoded_address}")
             if city:
-                query_params.append(f"city={requests.utils.quote(city)}")
+                encoded_city = requests.utils.quote(city)
+                query_params.append(f"city={encoded_city}")
             if country:
-                query_params.append(f"country={requests.utils.quote(country)}")
-            if postal_code:
-                query_params.append(f"postal_code={requests.utils.quote(postal_code)}")
+                encoded_country = requests.utils.quote(country)
+                query_params.append(f"country={encoded_country}")
             
-            query_params.append("limit=10")
+            # Add limit at the end to match the working URL
+            query_params.append("limit=5")
+            
             query_string = "&".join(query_params)
             
             # Get API configuration from settings
@@ -1419,7 +1431,6 @@ class NearbyHotelsView(APIView):
             api_token = settings.HOTEL_COMPETITOR_SERVICE_TOKEN
             
             if not api_token:
-                logger.error("Hotel competitor service token not configured")
                 return Response({
                     'error': 'Hotel competitor service not properly configured'
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -1428,23 +1439,17 @@ class NearbyHotelsView(APIView):
             api_url = f"{api_base_url}?{query_string}"
             headers = {
                 'Authorization': f'Bearer {api_token}',
-                'Content-Type': 'application/json'
             }
-
-            logger.info(f"Calling external nearby hotels API: {api_url}")
-            logger.info(f"Request headers: {headers}")
 
             # Make the request to the external API
             response = requests.get(api_url, headers=headers, timeout=30)
             
             if response.status_code == 401:
-                logger.error("Authentication failed with external nearby hotels API")
                 return Response({
                     'error': 'Authentication failed with nearby hotels API'
                 }, status=status.HTTP_401_UNAUTHORIZED)
             
             if response.status_code == 404:
-                logger.warning(f"No nearby hotels found for location: {address}, {city}")
                 return Response({
                     'error': 'No nearby hotels found for the provided location'
                 }, status=status.HTTP_404_NOT_FOUND)
@@ -1452,64 +1457,32 @@ class NearbyHotelsView(APIView):
             try:
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
-                logger.error(f"HTTP Error from nearby hotels API: {e}")
-                logger.error(f"Response content: {response.text}")
                 raise
             
             # Parse the response
             try:
                 api_response = response.json()
-                logger.info(f"External nearby hotels API response: {api_response}")
             except Exception as e:
-                logger.error(f"Error parsing JSON response from nearby hotels API: {e}")
-                logger.error(f"Raw response text: {response.text}")
                 raise
             
-            # Extract the nearby hotels from the response
-            nearby_hotels = api_response.get('hotels', [])
-            
-            logger.info(f"Found {len(nearby_hotels)} nearby hotels")
-            
-            # Process and return the nearby hotels
-            processed_hotels = []
-            for hotel in nearby_hotels:
-                processed_hotel = {
-                    'name': hotel.get('name', 'Unknown Hotel'),
-                    'address': hotel.get('address'),
-                    'city': hotel.get('city'),
-                    'country': hotel.get('country'),
-                    'distance_km': hotel.get('distance_km'),
-                    'rating': hotel.get('rating'),
-                    'price_range': hotel.get('price_range'),
-                    'amenities': hotel.get('amenities', [])
-                }
-                processed_hotels.append(processed_hotel)
+            # The API always returns a list of hotel names
+            hotel_names = []
+            if isinstance(api_response, list):
+                hotel_names = [name.strip() for name in api_response if name and name.strip()]
 
-            return Response({
-                'message': f'Successfully found {len(processed_hotels)} nearby hotels',
-                'nearby_hotels': processed_hotels,
-                'query_location': {
-                    'address': address,
-                    'city': city,
-                    'country': country,
-                    'postal_code': postal_code
-                }
-            }, status=status.HTTP_200_OK)
+            return Response(hotel_names, status=status.HTTP_200_OK)
             
         except requests.exceptions.Timeout:
-            logger.error("Timeout while calling external nearby hotels API")
             return Response({
                 'error': 'Request to nearby hotels API timed out'
             }, status=status.HTTP_504_GATEWAY_TIMEOUT)
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error calling external nearby hotels API: {str(e)}")
             return Response({
                 'error': f'Failed to call nearby hotels API: {str(e)}'
             }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
         except Exception as e:
-            logger.error(f"Unexpected error in NearbyHotelsView: {str(e)}")
             return Response({
                 'error': 'An unexpected error occurred while fetching nearby hotels'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

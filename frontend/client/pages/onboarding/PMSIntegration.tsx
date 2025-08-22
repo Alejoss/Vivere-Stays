@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreatePMSIntegration, useCreateHotel, usePMSList } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { getHotelDataForAPI } from "../../../shared/localStorage";
 
 type PMSOption = "mews" | "cloudbeds" | "opera" | "other" | "none" | null;
 
@@ -11,42 +12,31 @@ export default function PMSIntegration() {
   const [customPMSName, setCustomPMSName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [hotelData, setHotelData] = useState<any>({});
 
   const createPMSIntegration = useCreatePMSIntegration();
   const createHotelMutation = useCreateHotel();
   const { data: pmsListData, isLoading: pmsListLoading, error: pmsListError } = usePMSList();
 
-  // Add authentication check on component mount
+  // Load hotel data from localStorage
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('access_token');
-    console.log('🔐 PMSIntegration - Access token exists:', !!token);
-    
-    if (token) {
-      try {
-        // Decode token to check expiration
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const currentTime = Date.now() / 1000;
-        const isExpired = payload.exp < currentTime;
-        
-        console.log('🔐 PMSIntegration - Token expiration check:');
-        console.log('  - Token expires at:', new Date(payload.exp * 1000));
-        console.log('  - Current time:', new Date(currentTime * 1000));
-        console.log('  - Token is expired:', isExpired);
-        console.log('  - User ID:', payload.user_id);
-        console.log('  - Username:', payload.username);
-        console.log('  - Email:', payload.email);
-        
-        if (isExpired) {
-          console.warn('⚠️ PMSIntegration - Token is expired!');
-        } else {
-          console.log('✅ PMSIntegration - User is authenticated and token is valid');
-        }
-      } catch (error) {
-        console.error('❌ PMSIntegration - Error decoding token:', error);
+    try {
+      const hotelData = getHotelDataForAPI();
+      if (hotelData) {
+        setHotelData(hotelData);
       }
-    } else {
-      console.warn('⚠️ PMSIntegration - No access token found in localStorage');
+    } catch (error) {
+      console.error('Error loading hotel data:', error);
+      // Fallback to checking hotelDataForPMS for backward compatibility
+      try {
+        const hotelDataString = localStorage.getItem('hotelDataForPMS');
+        if (hotelDataString) {
+          const hotelData = JSON.parse(hotelDataString);
+          setHotelData(hotelData);
+        }
+      } catch (fallbackError) {
+        console.error('Error loading fallback hotel data:', fallbackError);
+      }
     }
   }, []);
 
@@ -69,14 +59,11 @@ export default function PMSIntegration() {
     setIsLoading(true);
 
     try {
-      // Get hotel data from localStorage only when user clicks Continue
-      const hotelDataString = localStorage.getItem('hotelDataForPMS');
-      if (!hotelDataString) {
+      // Use the hotelData from state (loaded from hotelInformationData)
+      if (!hotelData || !hotelData.hotel_name) {
         setError("Hotel data not found. Please go back and fill in hotel information.");
         return;
       }
-
-      const hotelData = JSON.parse(hotelDataString);
 
       // Step 1: Create the Property
       console.log("🏨 PMSIntegration - Creating property...");
@@ -486,7 +473,7 @@ export default function PMSIntegration() {
                 fill="url(#paint0_linear_74_60625)"
               />
               <path
-                d="M0.0854482 9.87721C0.0849055 11.6181 0.539712 13.3175 1.40436 14.8155L0.00250244 19.9339L5.24056 18.5605C6.68382 19.3474 8.30878 19.7622 9.96227 19.7629H9.96653C15.4121 19.7629 19.8451 15.3312 19.8475 9.88512C19.8484 7.24574 18.8214 4.7638 16.956 2.89674C15.0903 1.02992 12.6097 0.00108527 9.96653 0C4.52002 0 0.0876187 4.43101 0.0854482 9.87721ZM3.20491 14.5575L3.00932 14.2471C2.18715 12.9398 1.7532 11.4291 1.75382 9.87783C1.75553 5.35109 5.43956 1.66822 9.96963 1.66822C12.1634 1.66915 14.2251 2.52434 15.7758 4.07597C17.3265 5.62775 18.1797 7.69054 18.1792 9.8845C18.1772 14.4112 14.493 18.0946 9.96653 18.0946H9.96328C8.4894 18.0938 7.0439 17.698 5.78328 16.95L5.48328 16.7721L2.37491 17.5871L3.20491 14.5575Z"
+                d="M0.0854482 9.87721C0.0849055 11.6181 0.539712 13.3175 1.40436 14.8155L0.00250244 19.9339L5.24056 18.5605C6.68382 19.3474 8.30878 19.7622 9.96227 19.7629H9.96653C15.4121 19.7629 19.8451 15.3312 19.8475 9.88512C19.8484 7.24574 18.8214 4.7638 16.956 2.89674C15.0903 1.02992 12.6097 0.00108527 9.96653 0C4.52002 0 0.0876187 4.43101 0.0854482 9.87721"
                 fill="url(#paint1_linear_74_60625)"
               />
               <path
