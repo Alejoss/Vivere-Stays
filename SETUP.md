@@ -178,7 +178,7 @@ docker-compose exec vivere_backend python manage.py shell
 docker-compose exec vivere_backend python manage.py migrate
 
 # Create superuser
-docker-compose exec vivere_backend python manage.py createsuperuser
+docker-compose exec vivere_backend python manage.py create_admin
 
 # Collect static files
 docker-compose exec vivere_backend python manage.py collectstatic
@@ -232,6 +232,12 @@ docker-compose logs vivere_backend
 # Restart backend
 docker-compose restart vivere_backend
 ```
+
+#### 6. Email Verification Development Bypass
+During development, you can bypass email verification by using the test code:
+- **Verification Code**: `19391`
+
+This bypass is hardcoded in the `email_service.py` file and will work for any email address during development. This is useful for testing the onboarding flow without having to set up actual email delivery.
 
 ### Reset Everything
 
