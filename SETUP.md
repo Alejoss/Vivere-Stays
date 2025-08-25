@@ -116,7 +116,48 @@ In a new terminal window, run the migrations:
 docker-compose exec vivere_backend python manage.py migrate
 ```
 
-#### 6. Start the Frontend Development Server
+#### 6. Create Initial Data
+
+**Create Property Management Systems:**
+```bash
+docker-compose exec vivere_backend python manage.py create_pms_systems
+```
+
+This will create the 4 Property Management Systems: MrPlan, Apaleo, RoomRaccoon, and Avirato.
+
+**Create Admin User:**
+```bash
+docker-compose exec vivere_backend python manage.py create_admin
+```
+
+This creates a superuser account for accessing the Django admin interface.
+
+#### 7. (Optional) Populate Sample Data
+
+For development and testing purposes, you can populate the database with sample data:
+
+**Populate Price History:**
+```bash
+docker-compose exec vivere_backend python manage.py populate_price_history
+```
+
+This creates dummy price history data for the past 100 days and future 100 days for all properties.
+
+**Populate Daily Performance Analytics:**
+```bash
+docker-compose exec vivere_backend python manage.py populate_daily_performance
+```
+
+This seeds the analytics system with sample performance data.
+
+**Populate Competitor Prices:**
+```bash
+docker-compose exec vivere_backend python manage.py populate_competitor_prices
+```
+
+This creates dummy competitor price data for dynamic pricing analysis.
+
+#### 8. Start the Frontend Development Server
 
 In another terminal window, start the frontend:
 
@@ -125,7 +166,7 @@ cd frontend
 npm run dev
 ```
 
-#### 7. Access the Application
+#### 9. Access the Application
 
 Once all services are running, you can access:
 
@@ -182,6 +223,34 @@ docker-compose exec vivere_backend python manage.py create_admin
 
 # Collect static files
 docker-compose exec vivere_backend python manage.py collectstatic
+```
+
+### Management Commands Reference
+
+The following Django management commands are available:
+
+**User Management:**
+- `create_admin` - Create a superuser account
+- `create_pms_systems` - Create Property Management Systems (MrPlan, Apaleo, RoomRaccoon, Avirato)
+
+**Data Population (Development/Testing):**
+- `populate_price_history` - Create dummy price history data for properties
+- `populate_daily_performance` - Seed analytics with sample performance data
+- `populate_competitor_prices` - Create dummy competitor price data
+
+**Usage Examples:**
+```bash
+# Create admin with custom options
+docker-compose exec vivere_backend python manage.py create_admin
+
+# Populate data with dry-run to see what would be created
+docker-compose exec vivere_backend python manage.py populate_price_history --dry-run
+
+# Populate data and delete existing records first
+docker-compose exec vivere_backend python manage.py populate_competitor_prices --delete-existing
+
+# Populate analytics for specific property
+docker-compose exec vivere_backend python manage.py populate_daily_performance --property-id 123 --start 2025-01-01 --days 30
 ```
 
 ## 🐛 Troubleshooting
@@ -278,6 +347,7 @@ Vivere Stays/
 │   ├── profiles/           # User profiles and authentication
 │   ├── booking/            # Booking system
 │   ├── dynamic_pricing/    # Dynamic pricing system
+│   ├── analytics/          # Analytics and reporting
 │   ├── requirements.txt    # Python dependencies
 │   ├── Dockerfile         # Backend container
 │   └── .env               # Backend environment variables

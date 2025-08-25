@@ -53,14 +53,14 @@ const generateCalendarData = (
     currentWeek.push(null);
   }
 
-  // Add all days of the month
+      // Add all days of the month
   for (let day = 1; day <= daysInMonth; day++) {
     // Find price data for this day
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     const priceData = priceHistory.find(item => item.checkin_date === dateStr);
     currentWeek.push({
       day,
-      price: priceData ? `$${priceData.price}` : "$200", // Default price if no data
+      price: priceData ? `$${priceData.price}` : "$0", // Default price if no data
       occupancy: priceData ? priceData.occupancy_level : "medium", // Default occupancy if no data
       overwrite: priceData ? priceData.overwrite : false,
     });
