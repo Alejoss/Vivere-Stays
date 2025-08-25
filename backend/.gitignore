@@ -15,6 +15,7 @@ staticfiles/
 # Local settings
 local_settings.py
 .env
+venv/*
 
 # Test/coverage
 .coverage

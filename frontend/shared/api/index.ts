@@ -7,6 +7,7 @@ export { apiClient, apiRequest, API_CONFIG } from './client';
 // Export services
 export { authService } from './auth';
 export { profilesService } from './profiles';
+export { analyticsService } from './analytics';
 
 // Export React Query hooks
 export * from './hooks';

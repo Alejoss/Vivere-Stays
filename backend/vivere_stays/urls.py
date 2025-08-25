@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/profiles/', include('profiles.urls')),
     path('api/dynamic-pricing/', include('dynamic_pricing.urls')),
     path('api/booking/', include('booking.urls')),
+    path('api/analytics/', include('analytics.urls')),
     # Allauth URLs for authentication
     path('accounts/', include('allauth.urls')),
     # API Documentation
