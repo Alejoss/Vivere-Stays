@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'profiles',
     'dynamic_pricing',
     'booking',
+    'analytics',
 ]
 
 SITE_ID = 1
