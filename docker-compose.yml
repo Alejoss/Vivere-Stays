@@ -1,5 +1,4 @@
 
-
 services:
   # Django Backend
   vivere_backend:
@@ -22,7 +21,7 @@ services:
 
   # PostgreSQL Database
   postgres:
-    image: postgres
+    image: postgres:16-bookworm
     container_name: vivere_postgres
     env_file:
       - .env
