@@ -9,14 +9,15 @@ import {
   HelpCircle,
   LogOut,
   Building2,
+  ChevronDown,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import * as React from "react";
 
 const navigationItems = [
   { id: "daily-prices", label: "Daily Prices", icon: Calendar, path: "/dashboard/change-prices" },
-  { id: "analytics", label: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
+  // Analytics handled as a submenu below
   { id: "ota", label: "OTA", icon: Globe, path: "/dashboard/ota" },
-  { id: "pick-up", label: "Pick Up", icon: TrendingUp, path: "/dashboard/pickup" },
   { id: "forecast", label: "Forecast", icon: Activity, path: "/dashboard/forecast" },
 ];
 
@@ -29,6 +30,7 @@ const accountItems = [
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -50,6 +52,7 @@ export default function Sidebar() {
 
       {/* Main Navigation */}
       <div className="flex flex-col gap-[2px] px-[10px]">
+        {/* Daily Prices and others (excluding Analytics) */}
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -57,18 +60,59 @@ export default function Sidebar() {
               key={item.id}
               onClick={() => handleNavigation(item.path)}
               className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
-                isActive
-                  ? "bg-hotel-brand-dark text-white"
-                  : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
+                isActive ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
               }`}
             >
               <item.icon size={18} color={isActive ? "white" : "black"} />
-              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">
-                {item.label}
-              </span>
+              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">{item.label}</span>
             </button>
           );
         })}
+
+        {/* Analytics submenu */}
+        <div className="mt-[2px]">
+          <button
+            onClick={() => setAnalyticsOpen((o) => !o)}
+            aria-expanded={analyticsOpen}
+            className={`w-full flex items-center justify-between px-[11px] py-[10px] rounded border-0 transition-colors ${
+              location.pathname.startsWith("/dashboard/analytics") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <BarChart3 size={18} color={location.pathname.startsWith("/dashboard/analytics") ? "white" : "black"} />
+              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">Analytics</span>
+            </span>
+            <ChevronDown
+              size={18}
+              className={`transition-transform duration-200 ${analyticsOpen ? "rotate-180" : "rotate-0"}`}
+              color={location.pathname.startsWith("/dashboard/analytics") ? "white" : "black"}
+            />
+          </button>
+          {analyticsOpen && (
+            <div className="mt-1 pl-9 pr-2 flex flex-col gap-1">
+              {/* Performance */}
+              <button
+                onClick={() => handleNavigation("/dashboard/analytics/performance")}
+                className={`flex items-center gap-2 px-2 py-2 rounded transition-colors text-sm ${
+                  location.pathname === "/dashboard/analytics/performance" ? "bg-blue-600 text-white" : "hover:bg-gray-100 text-black"
+                }`}
+              >
+                <BarChart3 size={16} color={location.pathname === "/dashboard/analytics/performance" ? "white" : "black"} />
+                <span className="sm:hidden md:block">Performance</span>
+              </button>
+              {/* Pickup */}
+              <button
+                onClick={() => handleNavigation("/dashboard/analytics/pickup")}
+                className={`flex items-center gap-2 px-2 py-2 rounded transition-colors text-sm ${
+                  location.pathname === "/dashboard/analytics/pickup" ? "bg-blue-600 text-white" : "hover:bg-gray-100 text-black"
+                }`}
+              >
+                <TrendingUp size={16} color={location.pathname === "/dashboard/analytics/pickup" ? "white" : "black"} />
+                <span className="sm:hidden md:block">Pickup</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Divider */}

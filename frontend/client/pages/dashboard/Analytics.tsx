@@ -1,19 +1,11 @@
-      import { Calendar as CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { ChartContainer } from "@/components/ui/chart";
-import {
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-} from "recharts";
+import { Calendar as CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { ChartContainer } from "@/components/ui/chart";
 import * as React from "react";
 import { format } from "date-fns";
 import { profilesService } from "../../../shared/api/profiles";
@@ -49,7 +41,7 @@ const Gauge = ({
             {centerText ?? `${value}%`}
           </div>
           {subText ? (
-            <div className="text-sm mt-0.5" style={{ color: subTextColor ?? innerColor }}>
+            <div className="text-base font-bold mt-0.5" style={{ color: subTextColor ?? innerColor }}>
               {subText}
             </div>
           ) : null}
@@ -117,21 +109,23 @@ const Gauge = ({
   );
 };
 
-export default function Analytics() {
+export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performance' | 'pickup' } = {}) {
   const [open, setOpen] = React.useState(false);
-  const [range, setRange] = React.useState<DateRange | undefined>({
-    from: undefined,
-    to: undefined,
+  const [range, setRange] = React.useState<DateRange | undefined>(() => {
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    return {
+      from: lastMonth,
+      to: today,
+    };
   });
-  const [days, setDays] = React.useState<"7" | "3" | "1">("7");
+  const [days, setDays] = React.useState<"3" | "7" | "15">("7");
   const [propertyId, setPropertyId] = React.useState<string | null>(null);
-  const [pickupSeries, setPickupSeries] = React.useState<Array<{ name: string; value: number }>>([]);
-  const [pickupSeriesAll, setPickupSeriesAll] = React.useState<Array<{ name: string; room_nights: number; bookings: number }>>([]);
+  const [pickupSeries, setPickupSeries] = React.useState<Array<{ name: string; value: number; stly: number }>>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [pickupTotals, setPickupTotals] = React.useState<{ current: number; stly: number; delta_pct: number | null }>({ current: 0, stly: 0, delta_pct: null });
-  const [pickupTotalsAll, setPickupTotalsAll] = React.useState<{ room_nights: { current: number; stly: number; delta_pct: number | null }; bookings: { current: number; stly: number; delta_pct: number | null } }>({ room_nights: { current: 0, stly: 0, delta_pct: null }, bookings: { current: 0, stly: 0, delta_pct: null } });
-  const [metric, setMetric] = React.useState<'all' | 'bookings' | 'room_nights'>('all');
+  const [metric, setMetric] = React.useState<'bookings' | 'room_nights'>('room_nights');
   // Occupancy state from backend (left = period-to-date, right = forecast/Bob)
   const [mtd, setMtd] = React.useState<{ value: number; inner: number; benchmark: number; delta: number | null }>({ value: 0, inner: 0, benchmark: 0, delta: null });
   const [forecast, setForecast] = React.useState<{ value: number; inner: number; benchmark: number; delta: number | null }>({ value: 0, inner: 0, benchmark: 0, delta: null });
@@ -199,6 +193,19 @@ export default function Analytics() {
     fetchAnalytics();
   }, []);
 
+  // Auto-fetch when date range changes (debounced)
+  React.useEffect(() => {
+    if (!range?.from || !range?.to) return;
+    const id = setTimeout(() => {
+      const params = {
+        from: format(range.from, 'yyyy-MM-dd'),
+        to: format(range.to, 'yyyy-MM-dd'),
+      };
+      fetchAnalytics(params);
+    }, 250);
+    return () => clearTimeout(id);
+  }, [range?.from, range?.to]);
+
   // Load first available property once
   React.useEffect(() => {
     let active = true;
@@ -221,57 +228,26 @@ export default function Analytics() {
       setLoading(true);
       setError(null);
       try {
-        if (metric === 'all') {
-          const [rn, bk] = await Promise.all([
-            analyticsService.getPickup({ days: parseInt(days, 10), value: 'room_nights' }),
-            analyticsService.getPickup({ days: parseInt(days, 10), value: 'bookings' }),
-          ]);
-          if (!cancelled) {
-            const byName: Record<string, { name: string; room_nights: number; bookings: number }> = {};
-            rn.series.forEach((p: any) => { byName[p.name] = { name: p.name, room_nights: p.rooms_sold ?? 0, bookings: 0 }; });
-            bk.series.forEach(p => {
-              const existing = byName[p.name];
-              if (existing) existing.bookings = (p as any).bookings_made ?? 0; else byName[p.name] = { name: p.name, room_nights: 0, bookings: (p as any).bookings_made ?? 0 };
+        const value = metric === 'bookings' ? 'bookings' : 'room_nights';
+        const resp = await analyticsService.getPickup({ days: parseInt(days, 10), value });
+        if (!cancelled) {
+          // Transform: drop D-0, remap D-x -> D-(x+1), sort ascending
+          const series = resp.series
+            // Keep D-0 when days === 1 so the single data point renders
+            .filter((p: any) => !(resp.days > 1 && p.name === 'D-0'))
+            .map((p: any) => {
+              const idx = parseInt((p.name.split('-')[1] || '0'), 10);
+              const val = metric === 'bookings' ? (p.bookings_made ?? 0) : (p.rooms_sold ?? 0);
+              const stlyVal = p.stly ?? 0;
+              return { name: `D-${idx + 1}`, value: val, stly: stlyVal };
+            })
+            .sort((a, b) => {
+              const ai = parseInt(a.name.split('-')[1] || '0', 10);
+              const bi = parseInt(b.name.split('-')[1] || '0', 10);
+              return ai - bi;
             });
-            // Transform: drop D-0, remap D-x -> D-(x+1), sort ascending
-            const transformed = Object.values(byName)
-              .filter(p => p.name !== 'D-0')
-              .map(p => {
-                const idx = parseInt(p.name.split('-')[1] || '0', 10);
-                return { ...p, name: `D-${idx + 1}` };
-              })
-              .sort((a, b) => {
-                const ai = parseInt(a.name.split('-')[1] || '0', 10);
-                const bi = parseInt(b.name.split('-')[1] || '0', 10);
-                return ai - bi;
-              });
-            setPickupSeriesAll(transformed);
-            setPickupSeries([]);
-            setPickupTotalsAll({ room_nights: rn.totals, bookings: bk.totals });
-          }
-        } else {
-          const value = metric === 'bookings' ? 'bookings' : 'room_nights';
-          const resp = await analyticsService.getPickup({ days: parseInt(days, 10), value });
-          if (!cancelled) {
-            // Transform: drop D-0, remap D-x -> D-(x+1), sort ascending
-            const series = resp.series
-              .filter((p: any) => p.name !== 'D-0')
-              .map((p: any) => {
-                const idx = parseInt((p.name.split('-')[1] || '0'), 10);
-                const val = metric === 'bookings' ? (p.bookings_made ?? 0) : (p.rooms_sold ?? 0);
-                return { name: `D-${idx + 1}`, value: val };
-              })
-              .sort((a, b) => {
-                const ai = parseInt(a.name.split('-')[1] || '0', 10);
-                const bi = parseInt(b.name.split('-')[1] || '0', 10);
-                return ai - bi;
-              });
-            setPickupSeries(series);
-            setPickupSeriesAll([]);
-            setPickupTotals(resp.totals);
-            // Reset combined totals when in single mode
-            setPickupTotalsAll({ room_nights: { current: 0, stly: 0, delta_pct: null }, bookings: { current: 0, stly: 0, delta_pct: null } });
-          }
+          setPickupSeries(series);
+          setPickupTotals(resp.totals);
         }
       } catch (e: any) {
         console.error("Failed to load pickup", e);
@@ -286,6 +262,90 @@ export default function Analytics() {
 
   const positive = "text-green-600";
   const negative = "text-red-600";
+
+  // Pickup-only view: render just the Pickup card/controls
+  if (mode === 'pickup') {
+    return (
+      <div className="p-6 pt-12">
+        <div className="grid gap-6 grid-cols-1">
+          <Card className="bg-white rounded-2xl border-0 w-full mt-0 shadow-[0_10px_30px_rgba(2,8,23,0.08),0_2px_8px_rgba(2,8,23,0.06)]">
+            <CardContent className="p-5 space-y-4">
+              {/* Header */}
+              <div className="text-[20px] font-semibold text-gray-700">Pickup</div>
+              <div className="h-[1px] bg-gray-300" />
+
+              {/* Sub header */}
+              <div className="text-[#5E8DA0] text-sm">Pickup last {days} days {metric === 'bookings' ? '(Bookings)' : '(Room nights)'}</div>
+
+              {/* Controls */}
+              <div className="flex items-center gap-3">
+                <Select value={metric} onValueChange={(v) => setMetric(v as typeof metric)}>
+                  <SelectTrigger className="w-40 h-8 rounded-full text-sm">
+                    <SelectValue placeholder="Metric" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bookings">Bookings</SelectItem>
+                    <SelectItem value="room_nights">Room nights</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={days} onValueChange={(v) => setDays(v as typeof days)}>
+                  <SelectTrigger className="w-32 h-8 rounded-full text-sm">
+                    <SelectValue placeholder="7 days" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3">3 days</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="15">15 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="h-[1px] bg-gray-300" />
+
+              {/* Line chart */}
+              <ChartContainer config={{}} className="w-full h-44">
+                <LineChart data={pickupSeries} margin={{ top: 8, right: 12, left: 40, bottom: 0 }}>
+                  <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                  <YAxis 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    tickFormatter={(value) => value.toString()}
+                    domain={[0, (dataMax) => Math.max(dataMax, 5)]}
+                  />
+                  {/* Current */}
+                  {/* Enlarge dot for single-point series so a zero value is still visible */}
+                  <Line type="monotone" dataKey="value" stroke="#4B86A1" strokeWidth={2} dot={{ r: pickupSeries.length === 1 ? 5 : 4, fill: "#4B86A1" }} connectNulls={false} />
+                  {/* STLY */}
+                  <Line type="monotone" dataKey="stly" stroke="#C9D7DD" strokeWidth={2} dot={{ r: pickupSeries.length === 1 ? 5 : 4, fill: "#C9D7DD" }} connectNulls={false} />
+                </LineChart>
+              </ChartContainer>
+
+              {/* Metrics */}
+              <div className="space-y-4">
+                {error ? (
+                  <div className="text-red-600 text-sm">{error}</div>
+                ) : null}
+                {loading ? (
+                  <div className="text-gray-500 text-sm">Loading...</div>
+                ) : (
+                  <div>
+                    <div className="text-gray-600">{metric === 'bookings' ? 'Bookings made' : 'Room nights sold'}</div>
+                    <div className="text-[#2E8BC0] text-[22px] font-semibold leading-tight">{pickupTotals.current}</div>
+                    <div className={`${getDeltaClass(pickupTotals.delta_pct)} text-sm font-semibold flex items-center gap-1`}>
+                      {pickupTotals.delta_pct !== null ? `${pickupTotals.delta_pct > 0 ? "+" : ""}${pickupTotals.delta_pct}%` : "-"}
+                      <span className="font-normal text-gray-600">vs STLY</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 pt-12">
@@ -308,21 +368,6 @@ export default function Analytics() {
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {range?.to ? format(range.to, "MMM d, yyyy") : "To"}
-              </Button>
-              <Button
-                variant="default"
-                className="ml-2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const params: { from?: string; to?: string } = {};
-                  if (range?.from && range?.to) {
-                    params.from = format(range.from, 'yyyy-MM-dd');
-                    params.to = format(range.to, 'yyyy-MM-dd');
-                  }
-                  fetchAnalytics(params);
-                }}
-              >
-                Fetch
               </Button>
             </div>
           </PopoverTrigger>
@@ -419,7 +464,7 @@ export default function Analytics() {
           <div>
             <div className="flex items-center justify-between text-gray-600 mb-2">
               <div className="leading-tight">
-                <div>Monthly-to-date vs</div>
+                <div>Period to Date vs</div>
                 <div>STLY</div>
               </div>
               <div className={`flex items-center gap-1 ${getDeltaClass(charts.revenue.top.delta_pct)} font-semibold`}>
@@ -438,14 +483,14 @@ export default function Analytics() {
             </div>
             {/* Benchmark bar */}
             <div
-              className="mt-2 bg-[#EDEFF1] h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
-              style={{ width: `${getStaticWidths(charts.revenue.top.first, charts.revenue.top.second).bWidth}%` }}
+              className="mt-2 h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
+              style={{ width: `${getStaticWidths(charts.revenue.top.first, charts.revenue.top.second).bWidth}%`, backgroundColor: '#C9D7DD' }}
             >
               {charts.revenue.top.second.toFixed(1)}
             </div>
           </div>
 
-          {/* Row 2: Forecast vs LY Actuals */}
+          {/* Row 2: Forecast vs STLY */}
           <div className="pt-2">
             <div className="flex items-center justify-between text-gray-600 mb-2">
               <div className="leading-tight">
@@ -468,8 +513,8 @@ export default function Analytics() {
             </div>
             {/* Benchmark bar */}
             <div
-              className="mt-2 bg-[#EDEFF1] h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
-              style={{ width: `${getStaticWidths(charts.revenue.bottom.first, charts.revenue.bottom.second).bWidth}%` }}
+              className="mt-2 h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
+              style={{ width: `${getStaticWidths(charts.revenue.bottom.first, charts.revenue.bottom.second).bWidth}%`, backgroundColor: '#C9D7DD' }}
             >
               {charts.revenue.bottom.second.toFixed(1)}
             </div>
@@ -490,7 +535,7 @@ export default function Analytics() {
           <div>
             <div className="flex items-center justify-between text-gray-600 mb-2">
               <div className="leading-tight">
-                <div>Monthly-to-date vs</div>
+                <div>Period to Date vs</div>
                 <div>STLY</div>
               </div>
               <div className={`flex items-center gap-1 ${getDeltaClass(charts.adr.top.delta_pct)} font-semibold`}>
@@ -509,19 +554,19 @@ export default function Analytics() {
             </div>
             {/* Benchmark bar */}
             <div
-              className="mt-2 bg-[#EDEFF1] h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
-              style={{ width: `${getStaticWidths(charts.adr.top.first, charts.adr.top.second).bWidth}%` }}
+              className="mt-2 h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
+              style={{ width: `${getStaticWidths(charts.adr.top.first, charts.adr.top.second).bWidth}%`, backgroundColor: '#C9D7DD' }}
             >
               {charts.adr.top.second.toFixed(1)}
             </div>
           </div>
 
-          {/* Row 2: Forecast vs LY Actuals */}
+          {/* Row 2: Business on Books vs STLY */}
           <div className="pt-2">
             <div className="flex items-center justify-between text-gray-600 mb-2">
               <div className="leading-tight">
-                <div>Monthly forecast vs</div>
-                <div>LY Actuals</div>
+                <div>Business on Books vs</div>
+                <div>STLY</div>
               </div>
               <div className={`flex items-center gap-1 ${getDeltaClass(charts.adr.bottom.delta_pct)} font-semibold`}>
                 {((charts.adr.bottom.delta_pct ?? 0) < 0) ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -539,8 +584,8 @@ export default function Analytics() {
             </div>
             {/* Benchmark bar */}
             <div
-              className="mt-2 bg-[#EDEFF1] h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
-              style={{ width: `${getStaticWidths(charts.adr.bottom.first, charts.adr.bottom.second).bWidth}%` }}
+              className="mt-2 h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
+              style={{ width: `${getStaticWidths(charts.adr.bottom.first, charts.adr.bottom.second).bWidth}%`, backgroundColor: '#C9D7DD' }}
             >
               {charts.adr.bottom.second.toFixed(1)}
             </div>
@@ -561,7 +606,7 @@ export default function Analytics() {
           <div>
             <div className="flex items-center justify-between text-gray-600 mb-2">
               <div className="leading-tight">
-                <div>Monthly-to-date vs</div>
+                <div>Period to Date vs</div>
                 <div>STLY</div>
               </div>
               <div className={`flex items-center gap-1 ${getDeltaClass(charts.revpar.top.delta_pct)} font-semibold`}>
@@ -580,19 +625,19 @@ export default function Analytics() {
             </div>
             {/* Benchmark bar */}
             <div
-              className="mt-2 bg-[#EDEFF1] h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
-              style={{ width: `${getStaticWidths(charts.revpar.top.first, charts.revpar.top.second).bWidth}%` }}
+              className="mt-2 h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
+              style={{ width: `${getStaticWidths(charts.revpar.top.first, charts.revpar.top.second).bWidth}%`, backgroundColor: '#C9D7DD' }}
             >
               {charts.revpar.top.second.toFixed(1)}
             </div>
           </div>
 
-          {/* Row 2: Forecast vs LY Actuals */}
+          {/* Row 2: Forecast vs STLY */}
           <div className="pt-2">
             <div className="flex items-center justify-between text-gray-600 mb-2">
               <div className="leading-tight">
-                <div>Monthly forecast vs</div>
-                <div>LY Actuals</div>
+                <div>Business on Books vs</div>
+                <div>STLY</div>
               </div>
               <div className={`flex items-center gap-1 ${getDeltaClass(charts.revpar.bottom.delta_pct)} font-semibold`}>
                 {((charts.revpar.bottom.delta_pct ?? 0) < 0) ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -610,113 +655,95 @@ export default function Analytics() {
             </div>
             {/* Benchmark bar */}
             <div
-              className="mt-2 bg-[#EDEFF1] h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
-              style={{ width: `${getStaticWidths(charts.revpar.bottom.first, charts.revpar.bottom.second).bWidth}%` }}
+              className="mt-2 h-5 rounded-sm flex items-center justify-end pr-4 text-gray-700 font-semibold"
+              style={{ width: `${getStaticWidths(charts.revpar.bottom.first, charts.revpar.bottom.second).bWidth}%`, backgroundColor: '#C9D7DD' }}
             >
               {charts.revpar.bottom.second.toFixed(1)}
             </div>
           </div>
         </CardContent>
           </Card>
-        </div>
 
-        {/* Pickup Card (Full-width new row) */}
+        {mode !== 'performance' && (
         <Card className="bg-white rounded-2xl border-0 w-full mt-6 col-span-1 md:col-span-2 2xl:col-span-5 shadow-[0_10px_30px_rgba(2,8,23,0.08),0_2px_8px_rgba(2,8,23,0.06)]">
-        <CardContent className="p-5 space-y-4">
-          {/* Header */}
-          <div className="text-[20px] font-semibold text-gray-700">Pickup</div>
-          <div className="h-[1px] bg-gray-300" />
+          <CardContent className="p-5 space-y-4">
+            {/* Header */}
+            <div className="text-[20px] font-semibold text-gray-700">Pickup</div>
+            <div className="h-[1px] bg-gray-300" />
 
-          {/* Sub header */}
-          <div className="text-[#5E8DA0] text-sm">Pickup last {days === "7" ? "7" : days === "3" ? "3" : "1"} {days === "1" ? "day" : "days"} {metric === 'all' ? '(All)' : metric === 'bookings' ? '(Bookings)' : '(Room nights)'}</div>
+            {/* Sub header */}
+            <div className="text-[#5E8DA0] text-sm">Pickup last {days} days {metric === 'bookings' ? '(Bookings)' : '(Room nights)'}</div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            <Select value={metric} onValueChange={(v) => setMetric(v as typeof metric)}>
-              <SelectTrigger className="w-40 h-8 rounded-full text-sm">
-                <SelectValue placeholder="Metric" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="bookings">Bookings</SelectItem>
-                <SelectItem value="room_nights">Room nights</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={days} onValueChange={(v) => setDays(v as typeof days)}>
-              <SelectTrigger className="w-32 h-8 rounded-full text-sm">
-                <SelectValue placeholder="7 days" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 days</SelectItem>
-                <SelectItem value="3">3 days</SelectItem>
-                <SelectItem value="1">1 day</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Controls */}
+            <div className="flex items-center gap-3">
+              <Select value={metric} onValueChange={(v) => setMetric(v as typeof metric)}>
+                <SelectTrigger className="w-40 h-8 rounded-full text-sm">
+                  <SelectValue placeholder="Metric" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bookings">Bookings</SelectItem>
+                  <SelectItem value="room_nights">Room nights</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={days} onValueChange={(v) => setDays(v as typeof days)}>
+                <SelectTrigger className="w-32 h-8 rounded-full text-sm">
+                  <SelectValue placeholder="7 days" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 days</SelectItem>
+                  <SelectItem value="7">7 days</SelectItem>
+                  <SelectItem value="15">15 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="h-[1px] bg-gray-300" />
+            <div className="h-[1px] bg-gray-300" />
 
-          {/* Line chart */}
-          <ChartContainer config={{}} className="w-full h-44">
-            {metric === 'all' ? (
-              <LineChart data={pickupSeriesAll} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+            {/* Line chart */}
+            <ChartContainer config={{}} className="w-full h-44">
+              <LineChart data={pickupSeries} margin={{ top: 8, right: 12, left: 40, bottom: 0 }}>
                 <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                {/* Room nights current (blue) */}
-                <Line type="monotone" dataKey="room_nights" name="Room nights" stroke="#4B86A1" strokeWidth={2} dot={{ r: 3 }} />
-                {/* Bookings current (orange) */}
-                <Line type="monotone" dataKey="bookings" name="Bookings" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                <YAxis 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
+                  tickFormatter={(value) => value.toString()}
+                  domain={[0, (dataMax) => Math.max(dataMax, 5)]}
+                />
+                {/* Current (blue) */}
+                {/* Enlarge dot for single-point series so a zero value is still visible */}
+                <Line type="monotone" dataKey="value" stroke="#4B86A1" strokeWidth={2} dot={{ r: pickupSeries.length === 1 ? 5 : 4, fill: "#4B86A1" }} connectNulls={false} />
+                {/* STLY (gray) */}
+                <Line type="monotone" dataKey="stly" stroke="#C9D7DD" strokeWidth={2} dot={{ r: pickupSeries.length === 1 ? 5 : 4, fill: "#C9D7DD" }} connectNulls={false} />
               </LineChart>
-            ) : (
-              <LineChart data={pickupSeries} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                {/* single series (blue) */}
-                <Line type="monotone" dataKey="value" stroke="#4B86A1" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            )}
-          </ChartContainer>
+            </ChartContainer>
 
-          {/* Metrics */}
-          <div className="space-y-4">
-            {error ? (
-              <div className="text-red-600 text-sm">{error}</div>
-            ) : null}
-            {loading ? (
-              <div className="text-gray-500 text-sm">Loading...</div>
-            ) : metric === 'all' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Metrics */}
+            <div className="space-y-4">
+              {error ? (
+                <div className="text-red-600 text-sm">{error}</div>
+              ) : null}
+              {loading ? (
+                <div className="text-gray-500 text-sm">Loading...</div>
+              ) : (
                 <div>
-                  <div className="text-gray-600">Room nights sold</div>
-                  <div className="text-[#2E8BC0] text-[22px] font-semibold leading-tight">{pickupTotalsAll.room_nights.current}</div>
-                  <div className={`${getDeltaClass(pickupTotalsAll.room_nights.delta_pct)} text-sm font-semibold flex items-center gap-1`}>
-                    {pickupTotalsAll.room_nights.delta_pct !== null ? `${pickupTotalsAll.room_nights.delta_pct > 0 ? "+" : ""}${pickupTotalsAll.room_nights.delta_pct}%` : "—"}
+                  <div className="text-gray-600">{metric === 'bookings' ? 'Bookings made' : 'Room nights sold'}</div>
+                  <div className="text-[#2E8BC0] text-[22px] font-semibold leading-tight">{pickupTotals.current}</div>
+                  <div className={`${getDeltaClass(pickupTotals.delta_pct)} text-sm font-semibold flex items-center gap-1`}>
+                    {pickupTotals.delta_pct !== null ? `${pickupTotals.delta_pct > 0 ? "+" : ""}${pickupTotals.delta_pct}%` : "—"}
                     <span className="font-normal text-gray-600">vs STLY</span>
                   </div>
                 </div>
-                <div>
-                  <div className="text-gray-600">Bookings made</div>
-                  <div className="text-[#2E8BC0] text-[22px] font-semibold leading-tight">{pickupTotalsAll.bookings.current}</div>
-                  <div className={`${getDeltaClass(pickupTotalsAll.bookings.delta_pct)} text-sm font-semibold flex items-center gap-1`}>
-                    {pickupTotalsAll.bookings.delta_pct !== null ? `${pickupTotalsAll.bookings.delta_pct > 0 ? "+" : ""}${pickupTotalsAll.bookings.delta_pct}%` : "—"}
-                    <span className="font-normal text-gray-600">vs STLY</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="text-gray-600">{metric === 'bookings' ? 'Bookings made' : 'Room nights sold'}</div>
-                <div className="text-[#2E8BC0] text-[22px] font-semibold leading-tight">{pickupTotals.current}</div>
-                <div className={`${getDeltaClass(pickupTotals.delta_pct)} text-sm font-semibold flex items-center gap-1`}>
-                  {pickupTotals.delta_pct !== null ? `${pickupTotals.delta_pct > 0 ? "+" : ""}${pickupTotals.delta_pct}%` : "—"}
-                  <span className="font-normal text-gray-600">vs STLY</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
+              )}
+            </div>
+          </CardContent>
         </Card>
+        )}
       </div>
+    </div>
     </div>
   );
 }
+
+ 
