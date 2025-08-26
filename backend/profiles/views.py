@@ -86,54 +86,78 @@ class CreateCheckoutSession(APIView):
  
 @csrf_exempt
 def stripe_webhook(request):
+    print("🔔 Stripe webhook received!")
+    print(f"Request method: {request.method}")
+    print(f"Request headers: {dict(request.META)}")
+    
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
     endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+    
+    print(f"Payload length: {len(payload)}")
+    print(f"Signature header: {sig_header}")
+    print(f"Endpoint secret configured: {bool(endpoint_secret)}")
 
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, endpoint_secret
         )
-        logger.info(f"✅ Verified event: {event['id']}")
+        print(f"✅ Verified event: {event['id']}")
+        print(f"Event type: {event['type']}")
     except ValueError as e:
-        logger.error(f"❌ Invalid payload: {e}")
+        print(f"❌ Invalid payload: {e}")
         return JsonResponse({"error": "Invalid payload"}, status=400)
     except stripe.error.SignatureVerificationError as e:
-        logger.error(f"❌ Invalid signature: {e}")
+        print(f"❌ Invalid signature: {e}")
         return JsonResponse({"error": "Invalid signature"}, status=400)
 
     
     if event["type"] == "checkout.session.completed":
+        print("💳 Processing checkout.session.completed event")
         session = event["data"]["object"]
         user_id = session["metadata"].get("user_id")
-        user = User.objects.get(id=user_id)
-        logger.info(f"💳 Checkout session completed: {session['id']}")
+        print(f"User ID from metadata: {user_id}")
+        
+        try:
+            user = User.objects.get(id=user_id)
+            print(f"Found user: {user.username} ({user.email})")
+        except User.DoesNotExist:
+            print(f"❌ User with ID {user_id} not found!")
+            return JsonResponse({"error": "User not found"}, status=404)
+        
         print('payment done')
-        print(session)
+        print(f"Session data: {session}")
+        
         # You can access details here
         customer_id = session.get("customer")
         subscription_id = session.get("subscription")
         client_email = session.get("customer_details", {}).get("email")
 
-        logger.info(f"Customer: {customer_id}, Email: {client_email}, Subscription: {subscription_id}")
+        print(f"Customer: {customer_id}, Email: {client_email}, Subscription: {subscription_id}")
 
-        Payment.objects.create(
-            user=user, 
-            stripe_customer_id=session.get("customer"),
-            stripe_subscription_id=session.get("subscription"),
-            stripe_session_id=session["id"],
-            amount_total=session["amount_total"],
-            currency=session["currency"],
-            payment_status=session["payment_status"],
-            status=session["status"],
-            email=session["customer_details"]["email"],
-            invoice_id=session.get("invoice"),
-            raw_response=session,  # optional
-        )
+        try:
+            payment = Payment.objects.create(
+                user=user, 
+                stripe_customer_id=session.get("customer"),
+                stripe_subscription_id=session.get("subscription"),
+                stripe_session_id=session["id"],
+                amount_total=session["amount_total"],
+                currency=session["currency"],
+                payment_status=session["payment_status"],
+                status=session["status"],
+                email=session["customer_details"]["email"],
+                invoice_id=session.get("invoice"),
+                raw_response=session,  # optional
+            )
+            print(f"✅ Payment record created: {payment.id}")
+        except Exception as e:
+            print(f"❌ Error creating payment record: {e}")
+            return JsonResponse({"error": "Failed to create payment record"}, status=500)
 
     else:
-        pass
+        print(f"⚠️ Unhandled event type: {event['type']}")
 
+    print("✅ Webhook processed successfully")
     return JsonResponse({"status": "success"}, status=200)
 class CheckAuth(APIView):
     permission_classes = [AllowAny]

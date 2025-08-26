@@ -46,26 +46,20 @@ const createAxiosInstance = (): AxiosInstance => {
 
       // Handle 401 errors (unauthorized) - try to refresh token
       if (error.response?.status === 401 && !originalRequest._retry) {
-        console.log('🔄 Axios Interceptor - 401 error detected, attempting token refresh...');
         originalRequest._retry = true;
 
         try {
           // Try to refresh the token
-          console.log('🔄 Axios Interceptor - Calling refresh token endpoint...');
           const refreshResponse = await instance.post('/profiles/refresh-token/');
           const { access } = refreshResponse.data;
           
-          console.log('✅ Axios Interceptor - Token refresh successful, storing new token');
           // Store new access token
           localStorage.setItem('access_token', access);
           
           // Retry original request with new token
-          console.log('🔄 Axios Interceptor - Retrying original request with new token');
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return instance(originalRequest);
         } catch (refreshError) {
-          console.error('❌ Axios Interceptor - Token refresh failed:', refreshError);
-          console.log('🔄 Axios Interceptor - Redirecting to login page');
           // Refresh failed, redirect to login
           localStorage.removeItem('access_token');
           window.location.href = '/';
@@ -145,34 +139,10 @@ export const apiClient = createAxiosInstance();
 export const apiRequest = async <T>(
   config: AxiosRequestConfig
 ): Promise<T> => {
-  console.log('🌐 apiRequest: Starting request');
-  console.log('🌐 apiRequest: Method:', config.method);
-  console.log('🌐 apiRequest: URL:', config.url);
-  console.log('🌐 apiRequest: Base URL:', API_CONFIG.baseURL);
-  console.log('🌐 apiRequest: Full URL:', `${API_CONFIG.baseURL}${config.url}`);
-  console.log('🌐 apiRequest: Data:', config.data);
-  console.log('🌐 apiRequest: Headers:', config.headers);
-  
   try {
-    console.log('🌐 apiRequest: Making request...');
     const response: AxiosResponse<T> = await apiClient(config);
-    console.log('✅ apiRequest: Request successful');
-    console.log('✅ apiRequest: Response status:', response.status);
-    console.log('✅ apiRequest: Response headers:', response.headers);
-    console.log('✅ apiRequest: Response data:', response.data);
-    console.log('✅ apiRequest: Response data type:', typeof response.data);
-    if (Array.isArray(response.data)) {
-      console.log('✅ apiRequest: Response data length:', response.data.length);
-    }
     return response.data;
   } catch (error) {
-    console.error('❌ apiRequest: Request failed');
-    console.error('❌ apiRequest: Error:', error);
-    console.error('❌ apiRequest: Error type:', typeof error);
-    if (error && typeof error === 'object' && 'response' in error) {
-      console.error('❌ apiRequest: Error response status:', error.response?.status);
-      console.error('❌ apiRequest: Error response data:', error.response?.data);
-    }
     throw error;
   }
 }; 
