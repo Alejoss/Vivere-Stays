@@ -173,6 +173,16 @@ class PickupView(APIView):
     - pms_source: string (optional)
     - metric_type: string (optional)
     - value: 'room_nights' | 'bookings' (optional, default 'room_nights')
+    
+    Response shape:
+    {
+      "days": 7,
+      "series": [
+        { "name": "D-6", "rooms_sold"|"bookings_made": <current>, "stly": <stly>, "date": "YYYY-MM-DD" },
+        ...
+      ],
+      "totals": { "current": <sum current>, "stly": <sum stly>, "delta_pct": <pct or null> }
+    }
     """
 
     permission_classes = [IsAuthenticated]
@@ -210,22 +220,20 @@ class PickupView(APIView):
             base_qs = DailyPerformance.objects.filter(property=prop)
             if pms_source:
                 base_qs = base_qs.filter(pms_source=pms_source)
-            if metric_type:
-                base_qs = base_qs.filter(metric_type=metric_type)
 
             # Current period map
             cur_qs = (
                 base_qs
-                .filter(kpi_date__gte=start, kpi_date__lte=today)
+                .filter(metric_type="actual", kpi_date__gte=start, kpi_date__lte=today)
                 .values("kpi_date")
                 .annotate(val=Sum(agg_field))
             )
             cur_map = {row["kpi_date"]: int(row["val"] or 0) for row in cur_qs}
 
-            # STLY map for same relative calendar days (kept for totals parity, not returned per-point)
+            # STLY map - use prev_year_actual metric_type for current date range
             stly_qs = (
                 base_qs
-                .filter(kpi_date__gte=start_stly, kpi_date__lte=end_stly)
+                .filter(metric_type="prev_year_actual", kpi_date__gte=start, kpi_date__lte=today)
                 .values("kpi_date")
                 .annotate(val=Sum(agg_field))
             )
@@ -236,22 +244,18 @@ class PickupView(APIView):
             out_key = "rooms_sold" if value == "room_nights" else "bookings_made"
             for i in range(days):
                 d_cur = start + timedelta(days=i)
-                d_stly = d_cur.replace(year=d_cur.year - 1)
                 label = f"D-{days - 1 - i}" if i < days - 1 else "D-0"
                 point = {
                     "name": label,
                     out_key: cur_map.get(d_cur, 0),
+                    "stly": stly_map.get(d_cur, 0),
                     "date": str(d_cur),
                 }
                 data.append(point)
 
             # Also provide aggregates handy for tiles (compute from maps)
             total_current = sum(cur_map.get(start + timedelta(days=i), 0) for i in range(days))
-            total_stly = 0
-            for i in range(days):
-                d_cur = start + timedelta(days=i)
-                d_stly = d_cur.replace(year=d_cur.year - 1)
-                total_stly += stly_map.get(d_stly, 0)
+            total_stly = sum(stly_map.get(start + timedelta(days=i), 0) for i in range(days))
 
             return Response({
                 "days": days,

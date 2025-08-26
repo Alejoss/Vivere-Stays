@@ -28,6 +28,8 @@ import PropertyList from "./pages/dashboard/PropertyList";
 import PropertyDashboard from "./pages/dashboard/PropertyDashboard";
 import ChangePrices from "./pages/dashboard/ChangePrices";
 import Analytics from "./pages/dashboard/Analytics";
+import AnalyticsPerformance from "./pages/dashboard/AnalyticsPerformance";
+import AnalyticsPickup from "./pages/dashboard/AnalyticsPickup";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +66,8 @@ const App = () => (
             <Route path="/dashboard/change-prices/:propertyId" element={<DashboardLayout><ChangePrices /></DashboardLayout>} />
             {/* <Route path="/dashboard/change-prices" element={<DashboardLayout><ChangePrices /></DashboardLayout>} /> */}
             <Route path="/dashboard/analytics" element={<DashboardLayout><Analytics /></DashboardLayout>} />
+            <Route path="/dashboard/analytics/performance" element={<DashboardLayout><AnalyticsPerformance /></DashboardLayout>} />
+            <Route path="/dashboard/analytics/pickup" element={<DashboardLayout><AnalyticsPickup /></DashboardLayout>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
