@@ -1224,8 +1224,7 @@ class FetchCompetitorsView(APIView):
 
             # Get API configuration from settings and environment
             api_base_url = settings.COMPETITOR_API_BASE_URL
-            api_token = config('COMPETITOR_API_TOKEN', default='')
-            api_token = 'Op6fVIu%'
+            api_token = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='')
             
             print(f"[FetchCompetitorsView] API Base URL: {api_base_url}")
             print(f"[FetchCompetitorsView] API Token: {api_token[:10]}..." if api_token else "None")

@@ -93,11 +93,11 @@ WSGI_APPLICATION = 'vivere_stays.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='vivere_stays'),
-        'USER': config('DB_USER', default='vivere_user'),
-        'PASSWORD': config('DB_PASSWORD', default='vivere_password'),
-        'HOST': config('DB_HOST', default='postgres'),
-        'PORT': config('DB_PORT', default='5432'),
+        'NAME': config('POSTGRES_DB', default='vivere_stays'),
+        'USER': config('POSTGRES_USER', default='vivere_user'),
+        'PASSWORD': config('POSTGRES_PASSWORD', default='vivere_password'),
+        'HOST': config('POSTGRES_HOST', default='postgres'),
+        'PORT': config('POSTGRES_PORT', default='5432'),
         'OPTIONS': {
             # Remove SSL requirement for local development
             # 'sslmode': 'require',  # Required for Aiven PostgreSQL
@@ -266,8 +266,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 
 # External Competitor API Settings
-COMPETITOR_API_BASE_URL = 'https://hotel-competitor-service-e3keqismia-ew.a.run.app/'  # Update this with the actual API URL
-COMPETITOR_API_TOKEN = config('COMPETITOR_API_TOKEN', default='')
+COMPETITOR_API_BASE_URL = config('COMPETITOR_API_BASE_URL', default='https://hotel-competitor-service-e3keqismia-ew.a.run.app/')
 
 # Hotel Competitor Service Settings
 HOTEL_COMPETITOR_SERVICE_TOKEN = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='')

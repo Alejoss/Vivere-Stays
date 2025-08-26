@@ -258,5 +258,7 @@ docker run -p 8000:8000 vivere-stays-backend
 4. Submit pull requests
 
 ---
+Connect to mvp server: ssh root@46.62.171.162 
+
 
 **Backend Team** - Building robust APIs for amazing experiences! 🚀 
