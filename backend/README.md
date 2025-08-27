@@ -10,6 +10,10 @@ docker-compose exec vivere_backend python manage.py startapp booking
 docker-compose exec vivere_backend python manage.py populate_price_history --delete-existing
 docker-compose exec vivere_backend python manage.py populate_competitor_prices --delete-existing
 
+# Server commands
+./deploy-all.sh
+docker-compose logs vivere_backend
+
 Django REST API backend for the Vivere Stays vacation rental platform.
 
 ## 🏗️ Architecture
