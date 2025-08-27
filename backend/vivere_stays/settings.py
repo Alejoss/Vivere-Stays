@@ -180,10 +180,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:\d+$",
     r"^http://127.0.0.1:\d+$",
 ]
-CSRF_TRUSTED_ORIGINS = [
-    "https://2e7dbb700b79.ngrok-free.app/",
-    "http://2e7dbb700b79.ngrok-free.app/",
-]
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://vivere-stays.algobeat.com/').split(',')
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
