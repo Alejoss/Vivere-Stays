@@ -13,9 +13,11 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as React from "react";
+import { useContext } from "react";
+import { PropertyContext } from "../../../shared/PropertyContext";
 
 const navigationItems = [
-  { id: "daily-prices", label: "Daily Prices", icon: Calendar, path: "/dashboard/change-prices" },
+  { id: "daily-prices", label: "Daily Prices", icon: Calendar, path: "/dashboard/property" },
   // Analytics handled as a submenu below
   { id: "ota", label: "OTA", icon: Globe, path: "/dashboard/ota" },
   { id: "forecast", label: "Forecast", icon: Activity, path: "/dashboard/forecast" },
@@ -31,9 +33,17 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
+  
+  // Get property from context
+  const { property } = useContext(PropertyContext) ?? {};
 
   const handleNavigation = (path: string) => {
-    navigate(path);
+    // For "Daily Prices", include the property ID if available
+    if (path === "/dashboard/property" && property?.id) {
+      navigate(`/dashboard/property/${property.id}`);
+    } else {
+      navigate(path);
+    }
   };
 
   return (
@@ -54,7 +64,10 @@ export default function Sidebar() {
       <div className="flex flex-col gap-[2px] px-[10px]">
         {/* Daily Prices and others (excluding Analytics) */}
         {navigationItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          // Special handling for Daily Prices to check both exact path and paths with property ID
+          const isActive = item.id === "daily-prices" 
+            ? location.pathname === item.path || location.pathname.startsWith("/dashboard/property/")
+            : location.pathname === item.path;
           return (
             <button
               key={item.id}

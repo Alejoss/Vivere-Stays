@@ -24,22 +24,26 @@ export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps
   const [property, setProperty] = useState<PropertyDetailResponse | null>(null);
 
   useEffect(() => {
-    let selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
-    console.log('[PropertyContext] Loaded selectedPropertyId from localStorage:', selectedPropertyId);
-    // If not in localStorage, use propertyId from props
-    if (!selectedPropertyId && propertyId) {
-      selectedPropertyId = propertyId;
-      setLocalStorageItem("selectedPropertyId", propertyId);
-      console.log('[PropertyContext] Set selectedPropertyId in localStorage from URL:', propertyId);
+    // Prioritize propertyId from URL over localStorage
+    let selectedPropertyId = propertyId;
+    if (!selectedPropertyId) {
+      selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
+      console.log('[PropertyContext] No propertyId in URL, using from localStorage:', selectedPropertyId);
+    } else {
+      console.log('[PropertyContext] Using propertyId from URL:', selectedPropertyId);
+      setLocalStorageItem("selectedPropertyId", selectedPropertyId);
     }
+    
     if (selectedPropertyId) {
       const propertyData = getLocalStorageItem<any>(PROPERTY_DATA_KEY);
       console.log('[PropertyContext] Loaded propertyData from localStorage:', propertyData, 'Type:', typeof propertyData);
-      if (isValidProperty(propertyData)) {
+      
+      // Only use localStorage data if it matches the current propertyId
+      if (isValidProperty(propertyData) && propertyData.id === selectedPropertyId) {
         setProperty(propertyData);
         console.log('[PropertyContext] setProperty called with (from localStorage):', propertyData);
       } else {
-        // Fetch from backend if not in localStorage or invalid
+        // Fetch from backend if not in localStorage, invalid, or different property
         (async () => {
           try {
             console.log('[PropertyContext] Fetching property from backend for id:', selectedPropertyId);
