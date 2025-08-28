@@ -53,6 +53,10 @@ class CreateCheckoutSession(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        print("🔔 CreateCheckoutSession: Request received!")
+        print(f"🔔 CreateCheckoutSession: User: {request.user.username} (ID: {request.user.id})")
+        print(f"🔔 CreateCheckoutSession: Request data: {request.data}")
+        
         user = request.user
         data = request.data
 
@@ -60,29 +64,48 @@ class CreateCheckoutSession(APIView):
         number_of_rooms = data.get("numberOfRooms")
         calculated_price = data.get("calculatedPrice")
 
+        print(f"🔔 CreateCheckoutSession: Plan type: {plan_type}")
+        print(f"🔔 CreateCheckoutSession: Number of rooms: {number_of_rooms}")
+        print(f"🔔 CreateCheckoutSession: Calculated price: {calculated_price}")
+
         unit_amount = int(calculated_price * 100)
+        print(f"🔔 CreateCheckoutSession: Unit amount (cents): {unit_amount}")
 
-        price = stripe.Price.create(
-            unit_amount=unit_amount,
-            currency="usd",
-            recurring={"interval": "month"},
-            product_data={"name": f"{plan_type.title()} Plan"},
-        )
+        try:
+            print("🔔 CreateCheckoutSession: Creating Stripe price...")
+            price = stripe.Price.create(
+                unit_amount=unit_amount,
+                currency="usd",
+                recurring={"interval": "month"},
+                product_data={"name": f"{plan_type.title()} Plan"},
+            )
+            print(f"🔔 CreateCheckoutSession: Stripe price created successfully! Price ID: {price.id}")
 
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{"price": price.id, "quantity": 1}],
-            mode="subscription",
-            success_url="http://localhost:8080/add-competitor/",
-            cancel_url="http://localhost:8080/select-plan/",
-            metadata={
-                "user_id": str(user.id),
-                "plan_type": plan_type,
-                "number_of_rooms": str(number_of_rooms),
-            },
-        )
+            print("🔔 CreateCheckoutSession: Creating Stripe checkout session...")
+            session = stripe.checkout.Session.create(
+                payment_method_types=["card"],
+                line_items=[{"price": price.id, "quantity": 1}],
+                mode="subscription",
+                success_url=f"{settings.FRONTEND_URL}/add-competitor/",
+                cancel_url=f"{settings.FRONTEND_URL}/select-plan/",
+                metadata={
+                    "user_id": str(user.id),
+                    "plan_type": plan_type,
+                    "number_of_rooms": str(number_of_rooms),
+                },
+            )
+            print(f"🔔 CreateCheckoutSession: Stripe session created successfully! Session ID: {session.id}")
+            print(f"🔔 CreateCheckoutSession: Session URL: {session.url}")
 
-        return Response({"sessionId": session.id})
+            return Response({"sessionId": session.id})
+            
+        except Exception as e:
+            print(f"❌ CreateCheckoutSession: Error creating Stripe session: {str(e)}")
+            print(f"❌ CreateCheckoutSession: Error type: {type(e).__name__}")
+            return Response(
+                {"error": f"Failed to create checkout session: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
  
 @csrf_exempt
 def stripe_webhook(request):

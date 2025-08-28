@@ -9,10 +9,15 @@ docker-compose exec vivere_backend python manage.py startapp booking
 # Populate Database
 docker-compose exec vivere_backend python manage.py populate_price_history --delete-existing
 docker-compose exec vivere_backend python manage.py populate_competitor_prices --delete-existing
+docker-compose exec vivere_backend python manage.py populate_daily_performance
 
 # Server commands
+https://vivere-fe.algobeat.com/
+https://vivere-stays.algobeat.com/
+ssh root@46.62.171.162
 ./deploy-all.sh
-docker-compose logs vivere_backend
+docker-compose logs -f vivere_backend
+populate 
 
 Django REST API backend for the Vivere Stays vacation rental platform.
 
@@ -262,7 +267,7 @@ docker run -p 8000:8000 vivere-stays-backend
 4. Submit pull requests
 
 ---
-Connect to mvp server: ssh root@46.62.171.162 
+
 
 
 **Backend Team** - Building robust APIs for amazing experiences! 🚀 

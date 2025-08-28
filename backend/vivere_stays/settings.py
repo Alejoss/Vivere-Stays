@@ -252,9 +252,12 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='analytics@viverestays
 EMAIL_VERIFICATION_EXPIRY_MINUTES = 10
 EMAIL_VERIFICATION_CODE_LENGTH = 5
 
+# Frontend URL for Stripe redirects and company settings
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:8080')
+
 # Company-wide settings for emails
 COMPANY_LOGO_URL = 'https://viverestays.com/wp-content/uploads/2022/06/VS_sticky.png'
-COMPANY_WEBSITE = 'https://viverestays.com'
+COMPANY_WEBSITE = FRONTEND_URL
 COMPANY_UNSUBSCRIBE_URL = f'{COMPANY_WEBSITE}/unsubscribe'
 
 STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
@@ -266,4 +269,4 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 COMPETITOR_API_BASE_URL = config('COMPETITOR_API_BASE_URL', default='https://hotel-competitor-service-e3keqismia-ew.a.run.app/')
 
 # Hotel Competitor Service Settings
-HOTEL_COMPETITOR_SERVICE_TOKEN = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='')
+HOTEL_COMPETITOR_SERVICE_TOKEN = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='na')

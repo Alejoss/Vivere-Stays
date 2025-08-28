@@ -454,62 +454,72 @@ export default function SelectPlan() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center items-center gap-[13px]">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 px-[70px] py-[18px] border border-[#D9D9D9] bg-white rounded-[10px] text-[16px] font-bold text-[#294758] hover:bg-gray-50 transition-colors"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+        <div className="flex flex-col items-center gap-[13px]">
+          <div className="flex justify-center items-center gap-[13px]">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 px-[70px] py-[18px] border border-[#D9D9D9] bg-white rounded-[10px] text-[16px] font-bold text-[#294758] hover:bg-gray-50 transition-colors"
             >
-              <path
-                d="M15.8333 10L4.16658 10M4.16658 10L9.16658 5M4.16658 10L9.16658 15"
-                stroke="#294758"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Back
-          </button>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M15.8333 10L4.16658 10M4.16658 10L9.16658 5M4.16658 10L9.16658 15"
+                  stroke="#294758"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Back
+            </button>
+            <button
+              onClick={handleContinue}
+              disabled={isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending}
+              className={`flex items-center gap-2 px-[36px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors ${
+                isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending 
+                  ? "bg-gray-400 cursor-not-allowed" 
+                  : "bg-[#294758] text-white hover:bg-[#234149]"
+              }`}
+            >
+              {isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Continue to Payment
+                  <svg
+                    width="21"
+                    height="20"
+                    viewBox="0 0 21 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M4.66669 10H16.3334M16.3334 10L11.3334 15M16.3334 10L11.3334 5"
+                      stroke="white"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
+          
+          {/* Temporary Skip Payment Button */}
           <button
-            onClick={handleContinue}
-            disabled={isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending}
-            className={`flex items-center gap-2 px-[36px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors ${
-              isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending 
-                ? "bg-gray-400 cursor-not-allowed" 
-                : "bg-[#294758] text-white hover:bg-[#234149]"
-            }`}
+            onClick={() => navigate("/add-competitor")}
+            className="flex items-center gap-2 px-[36px] py-[12px] rounded-[10px] text-[14px] font-medium text-[#64748B] border border-[#E2E8F0] bg-white hover:bg-gray-50 transition-colors"
           >
-            {isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                Continue to Payment
-                <svg
-                  width="21"
-                  height="20"
-                  viewBox="0 0 21 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M4.66669 10H16.3334M16.3334 10L11.3334 15M16.3334 10L11.3334 5"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </>
-            )}
+            Skip Payment (Temporary)
           </button>
         </div>
       </div>
