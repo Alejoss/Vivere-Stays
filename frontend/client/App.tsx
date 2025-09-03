@@ -30,6 +30,12 @@ import ChangePrices from "./pages/dashboard/ChangePrices";
 import Analytics from "./pages/dashboard/Analytics";
 import AnalyticsPerformance from "./pages/dashboard/AnalyticsPerformance";
 import AnalyticsPickup from "./pages/dashboard/AnalyticsPickup";
+import HotelManagement from "./pages/dashboard/HotelInformation";
+import Competitors from "./pages/dashboard/Competitors";
+import SpecialOffers from "./pages/dashboard/SpecialOffers";
+import DynamicSetup from "./pages/dashboard/DynamicSetup";
+import LengthOfStay from "./pages/dashboard/LengthOfStay";
+import AvailableRates from "./pages/dashboard/AvailableRates";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +74,14 @@ const App = () => (
             <Route path="/dashboard/analytics" element={<DashboardLayout><Analytics /></DashboardLayout>} />
             <Route path="/dashboard/analytics/performance" element={<DashboardLayout><AnalyticsPerformance /></DashboardLayout>} />
             <Route path="/dashboard/analytics/pickup" element={<DashboardLayout><AnalyticsPickup /></DashboardLayout>} />
+            
+            {/* Hotel Management Routes */}
+            <Route path="/dashboard/hotel-information" element={<DashboardLayout><HotelManagement /></DashboardLayout>} />
+            <Route path="/dashboard/competitors" element={<DashboardLayout><Competitors /></DashboardLayout>} />
+            <Route path="/dashboard/special-offers" element={<DashboardLayout><SpecialOffers /></DashboardLayout>} />
+            <Route path="/dashboard/dynamic-setup" element={<DashboardLayout><DynamicSetup /></DashboardLayout>} />
+            <Route path="/dashboard/length-of-stay" element={<DashboardLayout><LengthOfStay /></DashboardLayout>} />
+            <Route path="/dashboard/available-rates" element={<DashboardLayout><AvailableRates /></DashboardLayout>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

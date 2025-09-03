@@ -81,6 +81,13 @@ export default {
           "warning-blue": "#3b82f6",
           "warning-blue-border": "#bfdbfe",
           "warning-blue-bg": "#eff6ff",
+          // Additional colors from vivere_prices for enhanced hotel management
+          "brand-alt": "#294758", // Alternative brand color for variety
+          "brand-alt-dark": "#294859", // Alternative dark brand color
+          "sidebar-bg-alt": "#FAFAFA", // Alternative sidebar background
+          "sidebar-border-alt": "#EEEEF0", // Alternative sidebar border
+          "divider-alt": "#D7DFE8", // Alternative divider color
+          "border-light-alt": "#E4E4E7", // Alternative light border
         },
       },
       borderRadius: {

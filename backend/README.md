@@ -19,6 +19,9 @@ ssh root@46.62.171.162
 docker-compose logs -f vivere_backend
 populate 
 
+test@user.com
+Test12345
+
 Django REST API backend for the Vivere Stays vacation rental platform.
 
 ## 🏗️ Architecture

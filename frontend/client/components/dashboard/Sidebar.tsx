@@ -10,6 +10,7 @@ import {
   LogOut,
   Building2,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as React from "react";
@@ -23,6 +24,15 @@ const navigationItems = [
   { id: "forecast", label: "Forecast", icon: Activity, path: "/dashboard/forecast" },
 ];
 
+const hotelManagementItems = [
+  { id: "hotel-information", label: "Hotel Information", path: "/dashboard/hotel-information" },
+  { id: "competitors", label: "Competitors", path: "/dashboard/competitors" },
+  { id: "special-offers", label: "Special Offers", path: "/dashboard/special-offers" },
+  { id: "dynamic-setup", label: "Dynamic Setup", path: "/dashboard/dynamic-setup" },
+  { id: "length-of-stay", label: "Length of Stay", path: "/dashboard/length-of-stay" },
+  { id: "available-rates", label: "Available Rates", path: "/dashboard/available-rates" },
+];
+
 const accountItems = [
   { id: "my-account", label: "My Account", icon: User, active: false },
   { id: "notifications", label: "Notifications", icon: Bell, active: false },
@@ -33,6 +43,7 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
+  const [hotelManagementOpen, setHotelManagementOpen] = React.useState(() => location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates"));
   
   // Get property from context
   const { property } = useContext(PropertyContext) ?? {};
@@ -123,6 +134,51 @@ export default function Sidebar() {
                 <TrendingUp size={16} color={location.pathname === "/dashboard/analytics/pickup" ? "white" : "black"} />
                 <span className="sm:hidden md:block">Pickup</span>
               </button>
+            </div>
+          )}
+        </div>
+
+        {/* Hotel Management Section */}
+        <div className="mt-[10px]">
+          <button
+            onClick={() => setHotelManagementOpen((o) => !o)}
+            aria-expanded={hotelManagementOpen}
+            className={`w-full flex items-center justify-between px-[11px] py-[10px] rounded border-0 transition-colors ${
+              location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <Settings size={18} color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") ? "white" : "black"} />
+              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">
+                Hotel Management
+              </span>
+            </span>
+            <ChevronDown
+              size={18}
+              className={`transition-transform duration-200 ${hotelManagementOpen ? "rotate-180" : "rotate-0"}`}
+              color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") ? "white" : "black"}
+            />
+          </button>
+          
+          {/* Hotel Management Sub-options */}
+          {hotelManagementOpen && (
+            <div className="mt-1 pl-9 pr-2 flex flex-col gap-1">
+              {hotelManagementItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavigation(item.path)}
+                    className={`flex items-center px-2 py-2 rounded transition-colors text-sm ${
+                      isActive
+                        ? "bg-blue-600 text-white"
+                        : "hover:bg-gray-100 text-black"
+                    }`}
+                  >
+                    <span className="sm:hidden md:block">{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
