@@ -2,6 +2,7 @@
 from django.db import models
 from profiles.models import Profile
 from booking.models import Competitor
+from django.contrib.auth.models import User
 
 class PropertyManagementSystem(models.Model):
     """
@@ -118,6 +119,8 @@ class DpPropertyCompetitor(models.Model):
     competitor_id = models.ForeignKey(Competitor, on_delete=models.CASCADE, db_column='competitor_id')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    only_follow = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('property_id', 'competitor_id')
@@ -221,11 +224,11 @@ class DpLosSetup(models.Model):
 class DpLosReduction(models.Model):
     """
     Dynamic pricing length of stay reduction
-    """
+    """    
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     lead_time_days = models.IntegerField()
     occupancy_level = models.CharField(max_length=255)  # "30", "50", "70", "200"
-    los_value = models.IntegerField()
+    los_value = models.IntegerField()       
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -388,3 +391,108 @@ class DpHistoricalCompetitorPrice(models.Model):
 
     def __str__(self):
         return f"{self.competitor.competitor_name} - {self.room_name} ({self.checkin_date})"
+
+
+class CompetitorCandidate(models.Model):
+    """
+    Competitor candidates for properties - stores suggested competitors before they become active
+    """
+    STATUS_CHOICES = [
+        ('processing', 'Processing'),
+        ('finished', 'Finished'),
+        ('error', 'Error'),
+    ]
+    
+    # Core fields
+    competitor_name = models.CharField(max_length=255, help_text="Name of the competitor hotel")
+    booking_link = models.URLField(null=True, blank=True, help_text="Booking.com URL for the competitor")
+    suggested_by_user = models.BooleanField(default=False, help_text="Whether this competitor was suggested by the user")
+    
+    # Relationships
+    property_instance = models.ForeignKey(
+        Property, 
+        on_delete=models.CASCADE, 
+        db_column='property_id',
+        related_name='competitor_candidates',
+        help_text="Property this competitor candidate belongs to"
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='competitor_candidates',
+        help_text="User who suggested or is processing this competitor"
+    )
+    
+    # Analysis fields
+    similarity_score = models.FloatField(
+        null=True, 
+        blank=True, 
+        help_text="AI-generated similarity score (0.0 to 1.0)"
+    )
+    
+    # Status and control fields
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='processing',
+        help_text="Current processing status of this competitor candidate"
+    )
+    only_follow = models.BooleanField(
+        default=False, 
+        help_text="Whether to only follow this competitor without creating a full competitor record"
+    )
+    deleted = models.BooleanField(
+        default=False, 
+        help_text="Soft delete flag"
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    processed_at = models.DateTimeField(null=True, blank=True, help_text="When the candidate was processed")
+    
+    # Error tracking
+    error_message = models.TextField(null=True, blank=True, help_text="Error message if status is 'error'")
+    
+    class Meta:
+        verbose_name = 'Competitor Candidate'
+        verbose_name_plural = 'Competitor Candidates'
+        unique_together = ('property_instance', 'competitor_name')
+        indexes = [
+            models.Index(fields=['property_instance', 'status']),
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['deleted', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.competitor_name} - {self.property_instance.name} ({self.get_status_display()})"
+    
+    def save(self, *args, **kwargs):
+        # Auto-update processed_at when status changes to finished or error
+        if self.status in ['finished', 'error'] and not self.processed_at:
+            from django.utils import timezone
+            self.processed_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_active(self):
+        """Check if this candidate is active (not deleted and not in error state)"""
+        return not self.deleted and self.status != 'error'
+    
+    def mark_as_finished(self):
+        """Mark the candidate as successfully processed"""
+        self.status = 'finished'
+        self.save()
+    
+    def mark_as_error(self, error_message=""):
+        """Mark the candidate as failed with an error message"""
+        self.status = 'error'
+        self.error_message = error_message
+        self.save()
+    
+    def soft_delete(self):
+        """Soft delete the candidate"""
+        self.deleted = True
+        self.save()

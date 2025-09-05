@@ -172,6 +172,13 @@ export const useCreateBulkCompetitors = () => {
   });
 };
 
+export const useCreateCompetitorCandidates = () => {
+  return useMutation({
+    mutationFn: (data: { competitor_names: string[] }) =>
+      dynamicPricingService.createCompetitorCandidates(data),
+  });
+};
+
 export const useUserProperties = () => {
   return useQuery({
     queryKey: ['user-properties'],

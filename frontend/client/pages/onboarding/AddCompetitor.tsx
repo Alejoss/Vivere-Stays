@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateBulkCompetitors } from "../../../shared/api/hooks";
+import { useCreateCompetitorCandidates } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelDataForAPI } from "../../../shared/localStorage";
@@ -19,7 +19,7 @@ export default function AddCompetitor() {
   const [isLoadingNearbyHotels, setIsLoadingNearbyHotels] = useState(false);
   const [error, setError] = useState("");
   
-  const createBulkCompetitors = useCreateBulkCompetitors();
+  const createCompetitorCandidates = useCreateCompetitorCandidates();
 
   // Utility function to clean hotel names
   const cleanHotelName = (name: string): string => {
@@ -114,14 +114,14 @@ export default function AddCompetitor() {
     setIsLoading(true);
     try {
       // Backend will automatically get the user's last created property
-      const response = await createBulkCompetitors.mutateAsync({
+      const response = await createCompetitorCandidates.mutateAsync({
         competitor_names: validHotelNames
       });
       
       navigate("/msp");
     } catch (err: any) {
       // Extract the actual error message from the backend response
-      let errorMessage = "Failed to save competitors. Please try again.";
+      let errorMessage = "Failed to save competitor candidates. Please try again.";
       
       if (err && typeof err === 'object') {
         if ('error' in err) {
@@ -158,7 +158,7 @@ export default function AddCompetitor() {
       }
       
       // Also check if this is a mutation error with a different format
-      if (errorMessage.includes("Bulk competitor creation failed")) {
+      if (errorMessage.includes("Bulk competitor candidate creation failed")) {
         // Try to extract the JSON part and parse it
         const jsonMatch = errorMessage.match(/\{.*\}/);
         if (jsonMatch) {
@@ -464,9 +464,9 @@ export default function AddCompetitor() {
               className={`flex items-center gap-2 px-[143px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors ${
                 isLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-[#294758] text-white hover:bg-[#234149]"
               }`}
-              disabled={isLoading || createBulkCompetitors.isPending}
+              disabled={isLoading || createCompetitorCandidates.isPending}
             >
-              {isLoading || createBulkCompetitors.isPending ? (
+              {isLoading || createCompetitorCandidates.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   Saving...

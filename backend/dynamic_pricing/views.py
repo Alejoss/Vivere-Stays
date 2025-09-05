@@ -15,14 +15,17 @@ import requests
 from decouple import config
 from django.conf import settings
 
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings
 from .serializers import (
     PropertyCreateSerializer, 
     PropertyDetailSerializer, 
     PropertyListSerializer,
     PropertyManagementSystemSerializer,
     MinimumSellingPriceSerializer,
-    PriceHistorySerializer
+    PriceHistorySerializer,
+    CompetitorCandidateSerializer,
+    BulkCompetitorCandidateSerializer,
+    PropertyCompetitorSerializer
 )
 
 from rest_framework.decorators import action
@@ -1434,6 +1437,13 @@ class NearbyHotelsView(APIView):
                     'error': 'Hotel competitor service not properly configured'
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
+            # Get number of competitors from request body (default to 5)
+            num_competitors = request.data.get('num_competitors', 5)
+            
+            # Add limit to query string
+            query_params.append(f"limit={num_competitors}")
+            query_string = "&".join(query_params)
+            
             # Prepare the request to the external API
             api_url = f"{api_base_url}?{query_string}"
             headers = {
@@ -1484,4 +1494,579 @@ class NearbyHotelsView(APIView):
         except Exception as e:
             return Response({
                 'error': 'An unexpected error occurred while fetching nearby hotels'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BulkCompetitorCandidateCreateView(APIView):
+    """
+    API endpoint for creating multiple competitor candidates at once
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Create multiple competitor candidates for a property
+        """
+        try:
+            serializer = BulkCompetitorCandidateSerializer(data=request.data, context={'request': request})
+            
+            if serializer.is_valid():
+                # Create the competitor candidates
+                result = serializer.save()
+                
+                # Prepare response data
+                created_candidates = result['created_candidates']
+                errors = result['errors']
+                property_id = result['property_id']
+                
+                # Serialize the created candidates
+                candidate_serializer = CompetitorCandidateSerializer(created_candidates, many=True)
+                
+                response_data = {
+                    'message': f'Successfully created {len(created_candidates)} competitor candidates',
+                    'property_id': property_id,
+                    'created_candidates': candidate_serializer.data,
+                    'total_created': len(created_candidates),
+                    'total_errors': len(errors)
+                }
+                
+                if errors:
+                    response_data['errors'] = errors
+                    response_data['message'] += f' with {len(errors)} errors'
+                
+                logger.info(f"Bulk competitor candidate creation completed: {len(created_candidates)} created, {len(errors)} errors")
+                
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            else:
+                logger.warning(f"Bulk competitor candidate creation failed - validation errors: {serializer.errors}")
+                return Response({
+                    'message': 'Bulk competitor candidate creation failed',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error in bulk competitor candidate creation: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the competitor candidates',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DpGeneralSettingsUpdateView(APIView):
+    """
+    API endpoint for updating DpGeneralSettings, specifically the comp_price_calculation field
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id):
+        """
+        Update the comp_price_calculation field for a property's general settings
+        """
+        print(f"🔍 DpGeneralSettingsUpdateView.patch called")
+        print(f"📊 Request data: {request.data}")
+        print(f"📊 Property ID: {property_id}")
+        print(f"📊 User: {request.user}")
+        
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            print(f"✅ Property found: {property_instance.name}")
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                print(f"❌ User {request.user} does not have access to property {property_id}")
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"✅ User has access to property")
+            
+            # Get or create the general settings for this property
+            settings, created = DpGeneralSettings.objects.get_or_create(
+                property_id=property_instance,
+                defaults={
+                    'comp_price_calculation': 'min',  # Default value
+                    'min_competitors': 2,
+                    'future_days_to_price': 365,
+                    'pricing_status': 'offline',
+                    'los_status': 'offline'
+                }
+            )
+            
+            print(f"📊 Settings {'created' if created else 'found'}: comp_price_calculation='{settings.comp_price_calculation}'")
+            
+            # Update the comp_price_calculation field
+            new_calculation = request.data.get('comp_price_calculation')
+            if new_calculation is None:
+                print(f"❌ Missing comp_price_calculation field in request")
+                return Response({
+                    'message': 'comp_price_calculation field is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate the new value
+            allowed_values = ['min', 'max', 'avg', 'median']
+            if new_calculation not in allowed_values:
+                print(f"❌ Invalid comp_price_calculation value: {new_calculation}")
+                return Response({
+                    'message': f'comp_price_calculation must be one of: {", ".join(allowed_values)}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Update the field
+            old_calculation = settings.comp_price_calculation
+            settings.comp_price_calculation = new_calculation
+            settings.save()
+            
+            print(f"📝 Updated comp_price_calculation: '{old_calculation}' -> '{new_calculation}'")
+            print(f"💾 Settings saved to database")
+            print(f"✅ Updated comp_price_calculation for property {property_id} to {new_calculation}")
+            
+            return Response({
+                'message': 'Competitor price calculation updated successfully',
+                'property_id': property_id,
+                'comp_price_calculation': new_calculation,
+                'updated_at': settings.updated_at
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"❌ Error updating comp_price_calculation: {str(e)}")
+            print(f"❌ Exception type: {type(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response({
+                'message': 'An error occurred while updating the competitor price calculation',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompetitorCandidatesListView(APIView):
+    """
+    API endpoint for listing competitor candidates for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve competitor candidates for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get competitor candidates for this property
+            from .models import CompetitorCandidate
+            candidates = CompetitorCandidate.objects.filter(
+                property_instance=property_instance,
+                deleted=False
+            ).order_by('-created_at')
+            
+            serializer = CompetitorCandidateSerializer(candidates, many=True)
+            
+            print(f"Retrieved {len(candidates)} competitor candidates for property {property_id}")
+            
+            return Response({
+                'candidates': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Error retrieving competitor candidates: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving competitor candidates',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PropertyCompetitorsListView(APIView):
+    """
+    API endpoint for listing processed competitors for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve processed competitors for a specific property
+        """
+        try:
+            property_instance = get_object_or_404(Property, id=property_id)
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            from .models import DpPropertyCompetitor
+            property_competitors = DpPropertyCompetitor.objects.filter(
+                property_id=property_instance,
+                deleted_at__isnull=True
+            ).select_related('competitor_id').order_by('-created_at')
+
+            serializer = PropertyCompetitorSerializer(property_competitors, many=True)
+
+            print(f"Retrieved {len(property_competitors)} processed competitors for property {property_id}")
+
+            return Response({
+                'competitors': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Error retrieving property competitors: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving property competitors',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompetitorCandidateUpdateView(APIView):
+    """
+    API endpoint for updating competitor candidates
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id, candidate_id):
+        """
+        Update a competitor candidate's name or URL
+        """
+        print(f"🔍 CompetitorCandidateUpdateView.patch called")
+        print(f"📊 Request data: {request.data}")
+        print(f"📊 Property ID: {property_id}")
+        print(f"📊 Candidate ID: {candidate_id}")
+        print(f"📊 User: {request.user}")
+        
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            print(f"✅ Property found: {property_instance.name}")
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                print(f"❌ User {request.user} does not have access to property {property_id}")
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"✅ User has access to property")
+            
+            # Get the competitor candidate
+            from .models import CompetitorCandidate
+            candidate = get_object_or_404(CompetitorCandidate, 
+                                        id=candidate_id, 
+                                        property_instance=property_instance,
+                                        deleted=False)
+            
+            print(f"✅ Candidate found: {candidate.competitor_name}")
+            print(f"📊 Current candidate data: name='{candidate.competitor_name}', booking_link='{candidate.booking_link}'")
+            
+            # Update fields
+            if 'competitor_name' in request.data:
+                old_name = candidate.competitor_name
+                candidate.competitor_name = request.data['competitor_name']
+                print(f"📝 Updating competitor_name: '{old_name}' -> '{candidate.competitor_name}'")
+            
+            if 'booking_link' in request.data:
+                old_link = candidate.booking_link
+                candidate.booking_link = request.data['booking_link']
+                print(f"📝 Updating booking_link: '{old_link}' -> '{candidate.booking_link}'")
+            
+            candidate.save()
+            print(f"💾 Candidate saved to database")
+            
+            serializer = CompetitorCandidateSerializer(candidate)
+            
+            print(f"✅ Updated competitor candidate {candidate_id} for property {property_id}")
+            print(f"📊 Final candidate data: {serializer.data}")
+            
+            return Response({
+                'message': 'Competitor candidate updated successfully',
+                'candidate': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except CompetitorCandidate.DoesNotExist:
+            return Response({
+                'message': 'Competitor candidate not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"❌ Error updating competitor candidate: {str(e)}")
+            print(f"❌ Exception type: {type(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response({
+                'message': 'An error occurred while updating the competitor candidate',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PropertyCompetitorUpdateView(APIView):
+    """
+    API endpoint for updating processed competitors
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id, competitor_id):
+        """
+        Update a processed competitor's name, URL, or only_follow status
+        """
+        print(f"🔍 PropertyCompetitorUpdateView.patch called")
+        print(f"📊 Request data: {request.data}")
+        print(f"📊 Property ID: {property_id}")
+        print(f"📊 Competitor ID: {competitor_id}")
+        print(f"📊 User: {request.user}")
+        
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            print(f"✅ Property found: {property_instance.name}")
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                print(f"❌ User {request.user} does not have access to property {property_id}")
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"✅ User has access to property")
+            
+            # Get the property competitor relationship
+            from .models import DpPropertyCompetitor
+            property_competitor = get_object_or_404(DpPropertyCompetitor, 
+                                                  id=competitor_id, 
+                                                  property_id=property_instance,
+                                                  deleted_at__isnull=True)
+            
+            print(f"✅ Property competitor found: {property_competitor.id}")
+            
+            # Update only_follow if provided
+            if 'only_follow' in request.data:
+                old_only_follow = property_competitor.only_follow
+                property_competitor.only_follow = request.data['only_follow']
+                property_competitor.save()
+                print(f"📝 Updating only_follow: {old_only_follow} -> {property_competitor.only_follow}")
+            
+            # Update competitor details if provided
+            competitor = property_competitor.competitor_id
+            print(f"📊 Current competitor data: name='{competitor.competitor_name}', booking_link='{competitor.booking_link}'")
+            
+            if 'competitor_name' in request.data:
+                old_name = competitor.competitor_name
+                competitor.competitor_name = request.data['competitor_name']
+                competitor.save()
+                print(f"📝 Updating competitor_name: '{old_name}' -> '{competitor.competitor_name}'")
+            
+            if 'booking_link' in request.data:
+                old_link = competitor.booking_link
+                competitor.booking_link = request.data['booking_link']
+                competitor.save()
+                print(f"📝 Updating booking_link: '{old_link}' -> '{competitor.booking_link}'")
+            
+            print(f"💾 Competitor saved to database")
+            
+            serializer = PropertyCompetitorSerializer(property_competitor)
+            print(f"📊 Final competitor data: {serializer.data}")
+            
+            print(f"Updated property competitor {competitor_id} for property {property_id}")
+            
+            return Response({
+                'message': 'Property competitor updated successfully',
+                'competitor': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpPropertyCompetitor.DoesNotExist:
+            return Response({
+                'message': 'Property competitor not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"❌ Error updating property competitor: {str(e)}")
+            print(f"❌ Exception type: {type(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response({
+                'message': 'An error occurred while updating the property competitor',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompetitorCandidateDeleteView(APIView):
+    """
+    API endpoint for deleting competitor candidates (soft delete)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, property_id, candidate_id):
+        """
+        Soft delete a competitor candidate by setting deleted=True
+        """
+        print(f"🔍 CompetitorCandidateDeleteView.delete called")
+        print(f"📊 Property ID: {property_id}")
+        print(f"📊 Candidate ID: {candidate_id}")
+        print(f"📊 User: {request.user}")
+        
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            print(f"✅ Property found: {property_instance.name}")
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                print(f"❌ User {request.user} does not have access to property {property_id}")
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"✅ User has access to property")
+            
+            # Get the competitor candidate
+            from .models import CompetitorCandidate
+            candidate = get_object_or_404(CompetitorCandidate, 
+                                        id=candidate_id, 
+                                        property_instance=property_instance)
+            
+            print(f"✅ Candidate found: {candidate.competitor_name}")
+            print(f"📊 Current deleted status: {candidate.deleted}")
+            
+            # Soft delete the candidate
+            candidate.deleted = True
+            candidate.save()
+            
+            print(f"💾 Candidate soft deleted successfully")
+            
+            return Response({
+                'message': 'Competitor candidate deleted successfully',
+                'candidate_id': candidate_id,
+                'competitor_name': candidate.competitor_name
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except CompetitorCandidate.DoesNotExist:
+            return Response({
+                'message': 'Competitor candidate not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"❌ Error deleting competitor candidate: {str(e)}")
+            print(f"❌ Exception type: {type(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response({
+                'message': 'An error occurred while deleting the competitor candidate',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PropertyCompetitorDeleteView(APIView):
+    """
+    API endpoint for deleting processed competitors (soft delete)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, property_id, competitor_id):
+        """
+        Soft delete a processed competitor by setting deleted_at timestamp
+        """
+        print(f"🔍 PropertyCompetitorDeleteView.delete called")
+        print(f"📊 Property ID: {property_id}")
+        print(f"📊 Competitor ID: {competitor_id}")
+        print(f"📊 User: {request.user}")
+        
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            print(f"✅ Property found: {property_instance.name}")
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                print(f"❌ User {request.user} does not have access to property {property_id}")
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"✅ User has access to property")
+            
+            # Get the property competitor relationship
+            from .models import DpPropertyCompetitor
+            property_competitor = get_object_or_404(DpPropertyCompetitor, 
+                                                  id=competitor_id, 
+                                                  property_id=property_instance,
+                                                  deleted_at__isnull=True)
+            
+            print(f"✅ Property competitor found: {property_competitor.id}")
+            print(f"📊 Competitor name: {property_competitor.competitor_id.competitor_name}")
+            print(f"📊 Current deleted_at: {property_competitor.deleted_at}")
+            
+            # Soft delete the competitor by setting deleted_at timestamp
+            from django.utils import timezone
+            property_competitor.deleted_at = timezone.now()
+            property_competitor.save()
+            
+            print(f"💾 Property competitor soft deleted successfully")
+            
+            return Response({
+                'message': 'Property competitor deleted successfully',
+                'competitor_id': competitor_id,
+                'competitor_name': property_competitor.competitor_id.competitor_name
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpPropertyCompetitor.DoesNotExist:
+            return Response({
+                'message': 'Property competitor not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"❌ Error deleting property competitor: {str(e)}")
+            print(f"❌ Exception type: {type(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return Response({
+                'message': 'An error occurred while deleting the property competitor',
+                'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

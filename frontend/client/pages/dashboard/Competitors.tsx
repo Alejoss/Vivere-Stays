@@ -9,14 +9,63 @@ import {
   TrendingDown,
   BarChart3,
   Minus,
+  Clock,
+  AlertCircle,
+  X,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { PropertyContext } from "../../../shared/PropertyContext";
+import { dynamicPricingService, CompetitorCandidate, PropertyCompetitor } from "../../../shared/api/dynamic";
+import { toast } from "../../hooks/use-toast";
 
 export default function Competitors() {
+  const { property } = useContext(PropertyContext)!;
   const [selectedAggregation, setSelectedAggregation] = useState("Minimum");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [currentCalculation, setCurrentCalculation] = useState<string>("min");
+  
+  // New state for competitors
+  const [competitorCandidates, setCompetitorCandidates] = useState<CompetitorCandidate[]>([]);
+  const [processedCompetitors, setProcessedCompetitors] = useState<PropertyCompetitor[]>([]);
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
+  const [isLoadingProcessed, setIsLoadingProcessed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // AI suggestion state
+  const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false);
+  
+  // Editing state
+  const [editingField, setEditingField] = useState<{ type: 'candidate' | 'competitor', id: string, field: 'name' | 'url' } | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Local input values for editing
+  const [localInputValues, setLocalInputValues] = useState<{[key: string]: {name: string, url: string}}>({});
+  
+  // Add competitor form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newCompetitorName, setNewCompetitorName] = useState('');
+  const [newCompetitorUrl, setNewCompetitorUrl] = useState('');
+  const [isCreatingCompetitor, setIsCreatingCompetitor] = useState(false);
 
   const aggregationOptions = ["Maximum", "Average", "Median", "Minimum"];
+
+  // Mapping from frontend display names to backend values
+  const aggregationMapping = {
+    "Maximum": "max",
+    "Average": "avg", 
+    "Median": "median",
+    "Minimum": "min"
+  };
+
+  // Mapping from backend values to frontend display names
+  const reverseAggregationMapping = {
+    "max": "Maximum",
+    "avg": "Average",
+    "median": "Median", 
+    "min": "Minimum"
+  };
 
   // Function to get the appropriate icon for each aggregation method
   const getAggregationIcon = (aggregation: string) => {
@@ -34,6 +83,273 @@ export default function Competitors() {
     }
   };
 
+  // Function to get status icon for competitor candidates
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "processing":
+        return (
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <Clock size={20} className="text-blue-600" />
+          </div>
+        );
+      case "finished":
+        return (
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <Check size={20} className="text-green-600" />
+          </div>
+        );
+      case "error":
+        return (
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle size={20} className="text-red-600" />
+          </div>
+        );
+      default:
+        return (
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+            <Info size={20} className="text-gray-600" />
+          </div>
+        );
+    }
+  };
+
+  // Function to get status icon for processed competitors
+  const getProcessedStatusIcon = () => {
+    return (
+      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+        <Check size={20} className="text-green-600" />
+      </div>
+    );
+  };
+
+  // Handle aggregation change
+  const handleAggregationChange = async (newAggregation: string) => {
+    if (!property) {
+      toast({
+        title: "Error",
+        description: "No property selected. Please select a property first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const backendValue = aggregationMapping[newAggregation as keyof typeof aggregationMapping];
+    if (!backendValue) {
+      toast({
+        title: "Error",
+        description: "Invalid aggregation method selected.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await dynamicPricingService.updateCompPriceCalculation(property.id, {
+        comp_price_calculation: backendValue as 'min' | 'max' | 'avg' | 'median'
+      });
+      
+      setSelectedAggregation(newAggregation);
+      setCurrentCalculation(backendValue);
+      
+      toast({
+        title: "Success",
+        description: `Competitor price aggregation updated to ${newAggregation}`,
+      });
+    } catch (error: any) {
+      console.error("Error updating aggregation:", error);
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to update competitor price aggregation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+      setShowDropdown(false);
+    }
+  };
+
+  // Fetch competitor candidates
+  const fetchCompetitorCandidates = async () => {
+    if (!property) return;
+    
+    setIsLoadingCandidates(true);
+    setError(null);
+    
+    try {
+      const response = await dynamicPricingService.getCompetitorCandidates(property.id);
+      setCompetitorCandidates(response.candidates);
+    } catch (error: any) {
+      console.error("Error fetching competitor candidates:", error);
+      setError("Failed to fetch competitor candidates");
+      toast({
+        title: "Error",
+        description: "Failed to fetch competitor candidates",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCandidates(false);
+    }
+  };
+
+  // Fetch processed competitors
+  const fetchProcessedCompetitors = async () => {
+    if (!property) return;
+    
+    setIsLoadingProcessed(true);
+    setError(null);
+    
+    try {
+      const response = await dynamicPricingService.getPropertyCompetitors(property.id);
+      setProcessedCompetitors(response.competitors);
+    } catch (error: any) {
+      console.error("Error fetching processed competitors:", error);
+      setError("Failed to fetch processed competitors");
+      toast({
+        title: "Error",
+        description: "Failed to fetch processed competitors",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingProcessed(false);
+    }
+  };
+
+  // AI suggestion function
+  const handleAISuggestions = async () => {
+    if (!property) {
+      toast({
+        title: "Error",
+        description: "No property selected. Please select a property first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoadingAISuggestions(true);
+    setError(null);
+
+    try {
+      // Get property location data
+      const locationData = {
+        address: property.street_address || '',
+        city: property.city || '',
+        country: property.country || '',
+        postal_code: property.postal_code || ''
+      };
+
+      // Check if we have required location data
+      if (!locationData.address || !locationData.city) {
+        toast({
+          title: "Error",
+          description: "Property address and city are required for AI suggestions. Please update your property information.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('🤖 Fetching AI suggestions for property:', property.name);
+      console.log('📍 Location data:', locationData);
+
+      // Call the nearby hotels API with 3 competitors
+      const hotelNames = await dynamicPricingService.getNearbyHotels(locationData, 3);
+      
+      console.log('🏨 AI suggested hotels:', hotelNames);
+
+      if (hotelNames && Array.isArray(hotelNames) && hotelNames.length > 0) {
+        // Clean hotel names (similar to AddCompetitor component)
+        const cleanHotelName = (name: string): string => {
+          if (!name) return '';
+          
+          return name
+            .replace(/["""]/g, '') // Remove quotes
+            .replace(/[''']/g, '') // Remove single quotes
+            .replace(/[\/\\]/g, '') // Remove forward and backward slashes
+            .replace(/[<>]/g, '') // Remove angle brackets
+            .replace(/[{}]/g, '') // Remove curly braces
+            .replace(/[\[\]]/g, '') // Remove square brackets
+            .replace(/[|]/g, '') // Remove pipe
+            .replace(/[`~!@#$%^&*()_+=]/g, '') // Remove other special characters
+            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .trim(); // Remove leading/trailing spaces
+        };
+
+        const cleanedHotels = hotelNames
+          .map(name => cleanHotelName(name))
+          .filter(name => name.length > 0);
+
+        if (cleanedHotels.length > 0) {
+          // Create competitor candidates from AI suggestions
+          const response = await dynamicPricingService.createCompetitorCandidates({
+            competitor_names: cleanedHotels,
+            suggested_by_user: false  // Mark as AI-suggested
+          });
+
+          console.log('✅ AI suggestions created:', response);
+
+          // Refresh the competitor lists
+          await fetchCompetitorCandidates();
+          await fetchProcessedCompetitors();
+
+          // Show success message with details about created vs existing candidates
+          const totalCreated = response.total_created || 0;
+          const totalErrors = response.errors?.length || 0;
+          
+          if (totalCreated > 0 && totalErrors === 0) {
+            toast({
+              title: "Success",
+              description: `AI suggested ${totalCreated} new competitor(s) based on your property location`,
+            });
+          } else if (totalCreated > 0 && totalErrors > 0) {
+            toast({
+              title: "Partial Success",
+              description: `AI suggested ${totalCreated} competitor(s), ${totalErrors} were already added`,
+            });
+          } else if (totalCreated === 0 && totalErrors > 0) {
+            toast({
+              title: "Already Added",
+              description: `All ${totalErrors} suggested competitors were already in your list`,
+            });
+          } else {
+            toast({
+              title: "Success",
+              description: `AI suggested ${cleanedHotels.length} competitor(s) based on your property location`,
+            });
+          }
+        } else {
+          toast({
+            title: "No suggestions",
+            description: "AI couldn't find suitable competitors for your property location",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "No suggestions",
+          description: "AI couldn't find suitable competitors for your property location",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("❌ Error getting AI suggestions:", error);
+      toast({
+        title: "Error",
+        description: error?.response?.data?.error || "Failed to get AI suggestions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAISuggestions(false);
+    }
+  };
+
+  // Fetch all competitors when property changes
+  useEffect(() => {
+    if (property) {
+      fetchProcessedCompetitors();
+      fetchCompetitorCandidates();
+    }
+  }, [property]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
@@ -49,81 +365,578 @@ export default function Competitors() {
     };
   }, [showDropdown]);
 
-  const competitors = [
-    {
-      id: 1,
-      name: "Casa Batllo - Premium Suite",
-      url: "https://booking.com/hotel/luxury-apt",
-      status: "success",
-      onlyFollow: false,
-    },
-    {
-      id: 2,
-      name: "Modern Studio City Center",
-      url: "https://booking.com/hotel/modern-studio",
-      status: "loading",
-      onlyFollow: true,
-    },
-    {
-      id: 3,
-      name: "Cozy Flat Near Beach",
-      url: "https://booking.com/hotel/cozy-flat",
-      status: "error",
-      onlyFollow: false,
-    },
-  ];
-
-  const StatusIcon = ({ status }: { status: string }) => {
-    switch (status) {
-      case "success":
-        return (
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <Check size={23} className="text-green-600" />
-          </div>
-        );
-      case "loading":
-        return (
-          <div className="w-10 h-10 bg-[#B5D4E6] rounded-full flex items-center justify-center">
-            <img
-              src="https://api.builder.io/api/v1/image/assets/TEMP/17285f0c16a08fdae17008b23731660b66f9a5cb?width=140"
-              alt="Loading"
-              className="w-[70px] h-[70px] -ml-[15px] -mt-[17px]"
-            />
-          </div>
-        );
-      case "error":
-        return (
-          <div className="w-10 h-10 bg-red-200 rounded-full flex items-center justify-center">
-            <div className="w-6 h-6 text-red-500">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 22 22"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M11 15.582C11.2598 15.582 11.4776 15.494 11.6536 15.318C11.8296 15.142 11.9173 14.9245 11.9167 14.6654C11.9161 14.4063 11.8281 14.1887 11.6527 14.0127C11.4773 13.8367 11.2598 13.7487 11 13.7487C10.7403 13.7487 10.5228 13.8367 10.3474 14.0127C10.172 14.1887 10.084 14.4063 10.0834 14.6654C10.0828 14.9245 10.1708 15.1423 10.3474 15.3189C10.524 15.4956 10.7415 15.5833 11 15.582ZM11 11.9154C11.2598 11.9154 11.4776 11.8274 11.6536 11.6514C11.8296 11.4754 11.9173 11.2578 11.9167 10.9987V7.33203C11.9167 7.07231 11.8287 6.85475 11.6527 6.67936C11.4767 6.50398 11.2592 6.41598 11 6.41536C10.7409 6.41475 10.5234 6.50275 10.3474 6.67936C10.1714 6.85598 10.0834 7.07353 10.0834 7.33203V10.9987C10.0834 11.2584 10.1714 11.4763 10.3474 11.6523C10.5234 11.8283 10.7409 11.916 11 11.9154ZM11 20.1654C9.73199 20.1654 8.54032 19.9246 7.42504 19.443C6.30976 18.9615 5.33963 18.3085 4.51463 17.4841C3.68963 16.6597 3.03665 15.6896 2.55571 14.5737C2.07476 13.4578 1.83399 12.2661 1.83338 10.9987C1.83276 9.73125 2.07354 8.53959 2.55571 7.4237C3.03788 6.30781 3.69085 5.33767 4.51463 4.51328C5.3384 3.68889 6.30854 3.03592 7.42504 2.55436C8.54154 2.07281 9.73321 1.83203 11 1.83203C12.2669 1.83203 13.4585 2.07281 14.575 2.55436C15.6915 3.03592 16.6617 3.68889 17.4855 4.51328C18.3092 5.33767 18.9625 6.30781 19.4453 7.4237C19.9281 8.53959 20.1685 9.73125 20.1667 10.9987C20.1649 12.2661 19.9241 13.4578 19.4444 14.5737C18.9647 15.6896 18.3117 16.6597 17.4855 17.4841C16.6592 18.3085 15.6891 18.9618 14.575 19.4439C13.461 19.9261 12.2693 20.1666 11 20.1654ZM11 18.332C13.0473 18.332 14.7813 17.6216 16.2021 16.2008C17.623 14.7799 18.3334 13.0459 18.3334 10.9987C18.3334 8.95148 17.623 7.21745 16.2021 5.79661C14.7813 4.37578 13.0473 3.66536 11 3.66536C8.95282 3.66536 7.21879 4.37578 5.79796 5.79661C4.37713 7.21745 3.66671 8.95148 3.66671 10.9987C3.66671 13.0459 4.37713 14.7799 5.79796 16.2008C7.21879 17.6216 8.95282 18.332 11 18.332Z"
-                  fill="#EF4444"
-                />
-              </svg>
-            </div>
-          </div>
-        );
-      default:
-        return null;
+  // Initialize the selected aggregation based on current property settings
+  useEffect(() => {
+    if (property && currentCalculation) {
+      const frontendValue = reverseAggregationMapping[currentCalculation as keyof typeof reverseAggregationMapping];
+      if (frontendValue) {
+        setSelectedAggregation(frontendValue);
+      }
     }
-  };
+  }, [property, currentCalculation]);
 
-  const ToggleSwitch = ({ enabled }: { enabled: boolean }) => (
+  const ToggleSwitch = ({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) => (
     <div
-      className={`w-14 h-8 rounded-full flex items-center ${enabled ? "bg-[#2C4E60]" : "bg-gray-300"} transition-colors`}
+      className={`w-14 h-8 rounded-full flex items-center ${enabled ? "bg-[#2C4E60]" : "bg-gray-300"} transition-colors cursor-pointer`}
+      onClick={() => onChange(!enabled)}
     >
       <div
         className={`w-6 h-6 bg-white rounded-full transition-transform ${enabled ? "translate-x-7" : "translate-x-1"}`}
       />
     </div>
   );
+
+  // Handle only_follow toggle for processed competitors
+  const handleOnlyFollowToggle = async (competitorId: string, newValue: boolean) => {
+    if (!property) return;
+    
+    try {
+      await dynamicPricingService.updatePropertyCompetitor(property.id, competitorId, {
+        only_follow: newValue
+      });
+      
+      // Update local state
+      setProcessedCompetitors(prev => 
+        prev.map(comp => 
+          comp.id === competitorId 
+            ? { ...comp, only_follow: newValue }
+            : comp
+        )
+      );
+      
+      toast({
+        title: "Success",
+        description: `Competitor ${newValue ? 'set to' : 'removed from'} follow-only mode`,
+      });
+    } catch (error: any) {
+      console.error("Error updating only_follow:", error);
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to update competitor follow status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle delete competitor candidate
+  const handleDeleteCandidate = async (candidateId: string, competitorName: string) => {
+    if (!property) return;
+    
+    try {
+      await dynamicPricingService.deleteCompetitorCandidate(property.id, candidateId);
+      
+      // Remove from local state
+      setCompetitorCandidates(prev => 
+        prev.filter(candidate => candidate.id !== candidateId)
+      );
+      
+      toast({
+        title: "Success",
+        description: `Competitor candidate "${competitorName}" deleted successfully`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting competitor candidate:", error);
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to delete competitor candidate",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle delete processed competitor
+  const handleDeleteCompetitor = async (competitorId: string, competitorName: string) => {
+    if (!property) return;
+    
+    try {
+      await dynamicPricingService.deletePropertyCompetitor(property.id, competitorId);
+      
+      // Remove from local state
+      setProcessedCompetitors(prev => 
+        prev.filter(competitor => competitor.id !== competitorId)
+      );
+      
+      toast({
+        title: "Success",
+        description: `Competitor "${competitorName}" deleted successfully`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting competitor:", error);
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to delete competitor",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle adding new competitor
+  const handleAddCompetitor = async () => {
+    if (!property) return;
+    
+    // Validate input
+    if (!newCompetitorName.trim()) {
+      toast({
+        title: "Error",
+        description: "Competitor name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingCompetitor(true);
+    
+    try {
+      const response = await dynamicPricingService.createCompetitorCandidates({
+        competitor_names: [newCompetitorName.trim()],
+        suggested_by_user: true  // Mark as user-suggested
+      });
+
+      console.log('✅ New competitor created:', response);
+
+      // If URL was provided, update the competitor candidate with the URL
+      if (newCompetitorUrl.trim() && response.created_candidates && response.created_candidates.length > 0) {
+        const createdCandidate = response.created_candidates[0];
+        try {
+          await dynamicPricingService.updateCompetitorCandidate(property.id, createdCandidate.id, {
+            booking_link: newCompetitorUrl.trim()
+          });
+          console.log('✅ URL updated for new competitor');
+        } catch (urlError) {
+          console.warn('⚠️ Failed to update URL for new competitor:', urlError);
+          // Don't show error to user since the competitor was created successfully
+        }
+      }
+
+      // Clear form
+      setNewCompetitorName('');
+      setNewCompetitorUrl('');
+      setShowAddForm(false);
+
+      // Refresh the competitor lists
+      await fetchCompetitorCandidates();
+      await fetchProcessedCompetitors();
+
+      toast({
+        title: "Success",
+        description: `Competitor "${newCompetitorName.trim()}" added successfully`,
+      });
+    } catch (error: any) {
+      console.error("Error adding competitor:", error);
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to add competitor",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingCompetitor(false);
+    }
+  };
+
+  // Handle canceling add competitor form
+  const handleCancelAddCompetitor = () => {
+    setNewCompetitorName('');
+    setNewCompetitorUrl('');
+    setShowAddForm(false);
+  };
+
+  // Handle starting to edit a field
+  const startEditing = (type: 'candidate' | 'competitor', id: string, field: 'name' | 'url', currentValue: string) => {
+    setEditingField({ type, id, field });
+    setEditValue(currentValue || '');
+  };
+
+  // Handle saving edits
+  const saveEdit = async () => {
+    if (!editingField || !property) return;
+
+    setIsSaving(true);
+    try {
+      if (editingField.type === 'candidate') {
+        // Update competitor candidate
+        const data: any = {};
+        if (editingField.field === 'name') {
+          data.competitor_name = editValue;
+        } else if (editingField.field === 'url') {
+          data.booking_link = editValue;
+        }
+
+        await dynamicPricingService.updateCompetitorCandidate(property.id, editingField.id, data);
+        
+        // Update local state
+        setCompetitorCandidates(prev => 
+          prev.map(candidate => 
+            candidate.id === editingField.id 
+              ? { ...candidate, ...data }
+              : candidate
+          )
+        );
+
+        toast({
+          title: "Success",
+          description: "Competitor candidate updated successfully",
+        });
+      } else {
+        // Update processed competitor
+        const data: any = {};
+        if (editingField.field === 'name') {
+          data.competitor_name = editValue;
+        } else if (editingField.field === 'url') {
+          data.booking_link = editValue;
+        }
+
+        await dynamicPricingService.updatePropertyCompetitor(property.id, editingField.id, data);
+        
+        // Update local state
+        setProcessedCompetitors(prev => 
+          prev.map(competitor => 
+            competitor.id === editingField.id 
+              ? { ...competitor, ...data }
+              : competitor
+          )
+        );
+
+        toast({
+          title: "Success",
+          description: "Competitor updated successfully",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error updating competitor:", error);
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to update competitor",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+      setEditingField(null);
+      setEditValue('');
+    }
+  };
+
+  // Handle canceling edits
+  const cancelEdit = () => {
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  // Render competitor item
+  const renderCompetitorItem = (competitor: PropertyCompetitor | CompetitorCandidate, isProcessed: boolean) => {
+    const isCandidate = !isProcessed;
+    const candidate = isCandidate ? competitor as CompetitorCandidate : null;
+    const processed = isProcessed ? competitor as PropertyCompetitor : null;
+
+    // Get current values - use local input values if available, otherwise use original data
+    const localValues = localInputValues[competitor.id] || { name: '', url: '' };
+    const currentName = localValues.name || (isProcessed ? processed?.competitor_name : candidate?.competitor_name) || '';
+    const currentUrl = localValues.url || (isProcessed ? processed?.booking_link : candidate?.booking_link) || '';
+
+    // Handle field blur (save on focus out)
+    const handleFieldBlur = async (field: 'name' | 'url', value: string) => {
+      console.log('🔍 handleFieldBlur called:', { field, value, isProcessed, competitorId: competitor.id });
+      
+      if (!property) {
+        console.log('❌ No property selected');
+        return;
+      }
+      
+      // Get original values for comparison
+      const originalName = isProcessed ? processed?.competitor_name : candidate?.competitor_name;
+      const originalUrl = isProcessed ? processed?.booking_link : candidate?.booking_link;
+      
+      console.log('📊 Original vs New values:', {
+        field,
+        originalName,
+        originalUrl,
+        newValue: value,
+        nameChanged: field === 'name' && value !== originalName,
+        urlChanged: field === 'url' && value !== originalUrl
+      });
+      
+      // Don't save if value hasn't changed
+      if (field === 'name' && value === originalName) {
+        console.log('⏭️ Name unchanged, skipping API call');
+        // Clear local input values since no change was made
+        setLocalInputValues(prev => {
+          const newValues = { ...prev };
+          delete newValues[competitor.id];
+          return newValues;
+        });
+        return;
+      }
+      if (field === 'url' && value === originalUrl) {
+        console.log('⏭️ URL unchanged, skipping API call');
+        // Clear local input values since no change was made
+        setLocalInputValues(prev => {
+          const newValues = { ...prev };
+          delete newValues[competitor.id];
+          return newValues;
+        });
+        return;
+      }
+      
+      try {
+        if (isCandidate) {
+          // Update competitor candidate
+          const data: any = {};
+          if (field === 'name') {
+            data.competitor_name = value;
+          } else if (field === 'url') {
+            data.booking_link = value;
+          }
+
+          console.log('🚀 Making API call for candidate:', {
+            propertyId: property.id,
+            competitorId: competitor.id,
+            data,
+            endpoint: 'updateCompetitorCandidate'
+          });
+
+          const response = await dynamicPricingService.updateCompetitorCandidate(property.id, competitor.id, data);
+          
+          console.log('✅ Candidate update successful:', response);
+          
+          // Update global state with the new data
+          setCompetitorCandidates(prev => 
+            prev.map(c => 
+              c.id === competitor.id 
+                ? { ...c, ...data }
+                : c
+            )
+          );
+          
+          // Clear local input values since the change was saved
+          setLocalInputValues(prev => {
+            const newValues = { ...prev };
+            delete newValues[competitor.id];
+            return newValues;
+          });
+
+          toast({
+            title: "Success",
+            description: "Competitor candidate updated successfully",
+          });
+        } else {
+          // Update processed competitor
+          const data: any = {};
+          if (field === 'name') {
+            data.competitor_name = value;
+          } else if (field === 'url') {
+            data.booking_link = value;
+          }
+
+          console.log('🚀 Making API call for processed competitor:', {
+            propertyId: property.id,
+            competitorId: competitor.id,
+            data,
+            endpoint: 'updatePropertyCompetitor'
+          });
+
+          const response = await dynamicPricingService.updatePropertyCompetitor(property.id, competitor.id, data);
+          
+          console.log('✅ Processed competitor update successful:', response);
+          
+          // Update global state with the new data
+          setProcessedCompetitors(prev => 
+            prev.map(c => 
+              c.id === competitor.id 
+                ? { ...c, ...data }
+                : c
+            )
+          );
+          
+          // Clear local input values since the change was saved
+          setLocalInputValues(prev => {
+            const newValues = { ...prev };
+            delete newValues[competitor.id];
+            return newValues;
+          });
+
+          toast({
+            title: "Success",
+            description: "Competitor updated successfully",
+          });
+        }
+      } catch (error: any) {
+        console.error("❌ Error updating competitor:", error);
+        console.error("❌ Error details:", {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+          url: error?.config?.url,
+          method: error?.config?.method
+        });
+        
+        // Revert local input values to original values on error
+        setLocalInputValues(prev => {
+          const newValues = { ...prev };
+          delete newValues[competitor.id];
+          return newValues;
+        });
+        
+        toast({
+          title: "Error",
+          description: error?.response?.data?.message || "Failed to update competitor",
+          variant: "destructive",
+        });
+      }
+    };
+
+    return (
+      <div
+        key={competitor.id}
+        className="border border-[#B6C4DA] rounded-lg p-6"
+      >
+        <div className="flex items-center gap-6">
+          {/* Status Icon */}
+          {isProcessed ? getProcessedStatusIcon() : getStatusIcon(candidate?.status || 'processing')}
+
+          {/* Competitor Details */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Name Field */}
+            <div className="space-y-2">
+              <label className="block text-[#70787C] font-bold text-lg">
+                Competitor Name
+              </label>
+              <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                <input
+                  type="text"
+                  value={currentName || ''}
+                  onChange={(e) => {
+                    console.log('📝 Name field onChange:', {
+                      competitorId: competitor.id,
+                      isCandidate,
+                      newValue: e.target.value,
+                      oldValue: currentName
+                    });
+                    
+                    // Update local input values only
+                    setLocalInputValues(prev => ({
+                      ...prev,
+                      [competitor.id]: {
+                        ...prev[competitor.id],
+                        name: e.target.value,
+                        url: prev[competitor.id]?.url || ''
+                      }
+                    }));
+                  }}
+                  onBlur={() => handleFieldBlur('name', currentName || '')}
+                  className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                  placeholder="Enter competitor name"
+                />
+              </div>
+            </div>
+
+            {/* URL Field */}
+            <div className="space-y-2">
+              <label className="block text-[#70787C] font-bold text-lg">
+                Link (URL)
+              </label>
+              <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                <input
+                  type="url"
+                  value={currentUrl || ''}
+                  onChange={(e) => {
+                    console.log('📝 URL field onChange:', {
+                      competitorId: competitor.id,
+                      isCandidate,
+                      newValue: e.target.value,
+                      oldValue: currentUrl
+                    });
+                    
+                    // Update local input values only
+                    setLocalInputValues(prev => ({
+                      ...prev,
+                      [competitor.id]: {
+                        ...prev[competitor.id],
+                        name: prev[competitor.id]?.name || '',
+                        url: e.target.value
+                      }
+                    }));
+                  }}
+                  onBlur={() => handleFieldBlur('url', currentUrl || '')}
+                  className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                  placeholder="Enter booking URL"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Controls - Only show for processed competitors */}
+          {isProcessed && (
+            <div className="flex flex-col items-center gap-3">
+              <ToggleSwitch 
+                enabled={processed?.only_follow || false} 
+                onChange={(enabled) => handleOnlyFollowToggle(processed?.id || '', enabled)}
+              />
+              <div className="text-center">
+                <span className="text-[#8D9094] font-bold text-sm">
+                  Only
+                </span>
+                <br />
+                <span className="text-[#8D9094] font-bold text-sm">
+                  Follow
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Action Icons */}
+          <div className="flex gap-3">
+            <button className="text-gray-500 hover:text-gray-700">
+              <Info size={20} />
+            </button>
+            <button 
+              onClick={() => {
+                if (isProcessed) {
+                  handleDeleteCompetitor(competitor.id, processed?.competitor_name || 'Unknown');
+                } else {
+                  handleDeleteCandidate(competitor.id, candidate?.competitor_name || 'Unknown');
+                }
+              }}
+              className="text-red-500 hover:text-red-700 transition-colors"
+              title={`Delete ${isProcessed ? 'competitor' : 'candidate'}`}
+            >
+              <Trash2 size={24} />
+            </button>
+          </div>
+        </div>
+
+        {/* Additional info for candidates */}
+        {isCandidate && candidate && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="font-semibold text-gray-600">Status: </span>
+                <span className={`capitalize ${
+                  candidate.status === 'finished' ? 'text-green-600' :
+                  candidate.status === 'error' ? 'text-red-600' :
+                  'text-blue-600'
+                }`}>
+                  {candidate.status}
+                </span>
+              </div>
+              {candidate.similarity_score && (
+                <div>
+                  <span className="font-semibold text-gray-600">Similarity: </span>
+                  <span className="text-gray-800">{(candidate.similarity_score * 100).toFixed(1)}%</span>
+                </div>
+              )}
+              <div>
+                <span className="font-semibold text-gray-600">Suggested by: </span>
+                <span className={`font-semibold ${
+                  candidate.suggested_by_user ? 'text-blue-600' : 'text-purple-600'
+                }`}>
+                  {candidate.suggested_by_user ? 'User' : 'AI'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -142,7 +955,7 @@ export default function Competitors() {
               >
                 <g clipPath="url(#clip0_251_4502)">
                   <path
-                    d="M5.24 9.375H23.4925M5.24 14.375H23.4925M10.625 3.5625V15.625M18.125 3.5625V15.625M23.0512 15.625L24.375 11.875L22.0675 5.33625L14.375 1.875L6.6825 5.33625L4.375 11.875L5.69875 15.625M6.875 23.125L4.375 24.375L1.875 23.125V20L4.375 18.75L6.875 20V23.125ZM8.125 29.375V26.875L4.375 25.625L0.625 26.875V29.375H8.125ZM18.125 29.375V26.875L14.375 25.625L10.625 26.875V29.375H18.125ZM28.125 29.375V26.875L24.375 25.625L20.625 26.875V29.375H28.125ZM16.875 23.125L14.375 24.375L11.875 23.125V20L14.375 18.75L16.875 20V23.125ZM26.875 23.125L24.375 24.375L21.875 23.125V20L24.375 18.75L26.875 20V23.125Z"
+                    d="M5.24 9.375H23.4925M5.24 14.375H23.4925M10.625 3.5625V15.625M18.125 3.5625V15.625M23.0512 15.625L24.375 11.875L22.0675 5.33625L14.375 1.875L6.6825 5.33625L4.375 11.875L5.69875 15.625M6.875 23.125L4.375 24.375L1.875 23.125V20L4.375 18.75L6.875 20V23.125ZM8.125 29.375V26.875L4.375 25.625L0.625 26.875V29.375H8.125ZM18.125 29.375V26.875L14.375 25.625L10.625 26.875V29.375H18.125ZM28.125 29.375V26.875L24.375 25.625L20.625 26.875V29.375H28.125ZM16.875 23.125L14.375 24.375L11.875 23.125V20L14.375 18.75L16.875 20V23.125ZM26.875 23.125L24.375 24.375L21.875 23.125V20L14.375 18.75L16.875 20V23.125Z"
                     stroke="#287CAC"
                     strokeWidth="1.66667"
                     strokeMiterlimit="10"
@@ -177,15 +990,25 @@ export default function Competitors() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowDropdown(!showDropdown);
+                    if (!isUpdating) {
+                      setShowDropdown(!showDropdown);
+                    }
                   }}
-                  className="flex items-center justify-between w-full px-8 py-3 border border-[#9CAABD] rounded-lg bg-white mb-3 hover:border-[#287CAC] transition-colors"
+                  disabled={isUpdating}
+                  className={`flex items-center justify-between w-full px-8 py-3 border border-[#9CAABD] rounded-lg bg-white mb-3 hover:border-[#287CAC] transition-colors ${
+                    isUpdating ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   <div className="flex items-center gap-5">
                     {getAggregationIcon(selectedAggregation)}
                     <span className="text-[#60615F] font-bold text-lg">
                       {selectedAggregation}
                     </span>
+                    {isUpdating && (
+                      <div className="ml-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#287CAC]"></div>
+                      </div>
+                    )}
                   </div>
                   <ChevronDown
                     size={16}
@@ -200,12 +1023,12 @@ export default function Competitors() {
                         key={option}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedAggregation(option);
-                          setShowDropdown(false);
+                          handleAggregationChange(option);
                         }}
+                        disabled={isUpdating}
                         className={`w-full px-8 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-5 ${
                           option === selectedAggregation ? "bg-blue-50" : ""
-                        }`}
+                        } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {getAggregationIcon(option)}
                         <span className="text-[#60615F] font-bold text-lg">
@@ -220,88 +1043,186 @@ export default function Competitors() {
                 Defines how to reference your prices compared to competitors
                 (Maximum, Average, Median, Minimum). Default: Minimum
               </p>
+              {!property && (
+                <p className="text-red-500 text-xs mt-2">
+                  Please select a property to configure competitor price aggregation.
+                </p>
+              )}
             </div>
           </div>
 
           {/* AI Suggestion Button */}
           <div className="flex justify-center mb-8">
-            <button className="flex items-center gap-4 px-5 py-3 bg-[#E7D7FE] border border-[#422C61] rounded-lg">
-              <Bot size={24} className="text-[#422C61]" />
-              <span className="text-[#422C61] font-bold text-lg">
-                Use AI to suggest competitors
-              </span>
+            <button 
+              onClick={handleAISuggestions}
+              disabled={isLoadingAISuggestions}
+              className={`flex items-center gap-4 px-5 py-3 border rounded-lg transition-colors ${
+                isLoadingAISuggestions 
+                  ? 'bg-gray-100 border-gray-300 cursor-not-allowed' 
+                  : 'bg-[#E7D7FE] border-[#422C61] hover:bg-[#DCC7FE]'
+              }`}
+            >
+              {isLoadingAISuggestions ? (
+                <>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#422C61]"></div>
+                  <span className="text-[#422C61] font-bold text-lg">
+                    Finding competitors...
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Bot size={24} className="text-[#422C61]" />
+                  <span className="text-[#422C61] font-bold text-lg">
+                    Use AI to suggest competitors
+                  </span>
+                </>
+              )}
             </button>
           </div>
 
+
           {/* Competitors List */}
           <div className="space-y-6 mb-8">
-            {competitors.map((competitor) => (
-              <div
-                key={competitor.id}
-                className="border border-[#B6C4DA] rounded-lg p-6"
-              >
-                <div className="flex items-center gap-6">
-                  {/* Status Icon */}
-                  <StatusIcon status={competitor.status} />
+            {/* Loading states */}
+            {(isLoadingProcessed || isLoadingCandidates) && (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#287CAC] mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading competitors...</p>
+              </div>
+            )}
 
-                  {/* Competitor Details */}
-                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Name Field */}
-                    <div className="space-y-2">
-                      <label className="block text-[#70787C] font-bold text-lg">
-                        Competitor Name
-                      </label>
-                      <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
-                        <span className="text-[#4C5155] font-bold text-lg">
-                          {competitor.name}
-                        </span>
-                      </div>
-                    </div>
+            {/* Error state */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-600">{error}</p>
+              </div>
+            )}
 
-                    {/* URL Field */}
-                    <div className="space-y-2">
-                      <label className="block text-[#70787C] font-bold text-lg">
-                        Link (URL)
-                      </label>
-                      <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
-                        <span className="text-[#4C5155] font-bold text-lg">
-                          {competitor.url}
-                        </span>
-                      </div>
-                    </div>
+            {/* Processed Competitors Section */}
+            {processedCompetitors.length > 0 && (
+              <div className="mb-8">
+                <div className="space-y-6">
+                  {processedCompetitors.map((competitor) => 
+                    renderCompetitorItem(competitor, true)
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Competitor Candidates Section */}
+            {competitorCandidates.length > 0 && (
+              <div>
+                <div className="space-y-6">
+                  {competitorCandidates.map((candidate) => 
+                    renderCompetitorItem(candidate, false)
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* No competitors message */}
+            {!isLoadingProcessed && !isLoadingCandidates && processedCompetitors.length === 0 && competitorCandidates.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No competitors found for this property.</p>
+                <p className="text-gray-400 text-sm mt-2">Use the AI suggestion button above to find competitors.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Add Competitor Form */}
+          {showAddForm && (
+            <div className="bg-white rounded-lg border border-black/10 p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-800">Add New Competitor</h3>
+                <button
+                  onClick={handleCancelAddCompetitor}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Competitor Name Field */}
+                <div className="space-y-2">
+                  <label className="block text-[#70787C] font-bold text-lg">
+                    Competitor Name *
+                  </label>
+                  <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                    <input
+                      type="text"
+                      value={newCompetitorName}
+                      onChange={(e) => setNewCompetitorName(e.target.value)}
+                      className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                      placeholder="Enter competitor name"
+                      disabled={isCreatingCompetitor}
+                    />
                   </div>
+                </div>
 
-                  {/* Controls */}
-                  <div className="flex flex-col items-center gap-3">
-                    <ToggleSwitch enabled={competitor.onlyFollow} />
-                    <div className="text-center">
-                      <span className="text-[#8D9094] font-bold text-sm">
-                        Only
-                      </span>
-                      <br />
-                      <span className="text-[#8D9094] font-bold text-sm">
-                        Follow
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Action Icons */}
-                  <div className="flex gap-3">
-                    <button className="text-gray-500 hover:text-gray-700">
-                      <Info size={20} />
-                    </button>
-                    <button className="text-red-500 hover:text-red-700">
-                      <Trash2 size={24} />
-                    </button>
+                {/* URL Field */}
+                <div className="space-y-2">
+                  <label className="block text-[#70787C] font-bold text-lg">
+                    Link (URL)
+                  </label>
+                  <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                    <input
+                      type="url"
+                      value={newCompetitorUrl}
+                      onChange={(e) => setNewCompetitorUrl(e.target.value)}
+                      className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                      placeholder="Enter booking URL (optional)"
+                      disabled={isCreatingCompetitor}
+                    />
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={handleCancelAddCompetitor}
+                  disabled={isCreatingCompetitor}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCompetitor}
+                  disabled={isCreatingCompetitor || !newCompetitorName.trim()}
+                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                    isCreatingCompetitor || !newCompetitorName.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#2B6CEE] text-white hover:bg-blue-600'
+                  }`}
+                >
+                  {isCreatingCompetitor ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} />
+                      Add Competitor
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Add Competitor Button */}
           <div className="flex justify-center mb-8">
-            <button className="flex items-center gap-3 px-5 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+            <button 
+              onClick={() => setShowAddForm(true)}
+              disabled={showAddForm}
+              className={`flex items-center gap-3 px-5 py-3 rounded-lg font-semibold transition-colors ${
+                showAddForm 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                  : 'bg-[#2B6CEE] text-white hover:bg-blue-600'
+              }`}
+            >
               <Plus size={24} />
               Add Competitor
             </button>

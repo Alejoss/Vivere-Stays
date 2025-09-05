@@ -1,5 +1,15 @@
 from rest_framework import serializers
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpHistoricalCompetitorPrice
+from .models import (
+    Property, 
+    PropertyManagementSystem, 
+    DpMinimumSellingPrice, 
+    DpPriceChangeHistory,
+    CompetitorCandidate,
+    DpGeneralSettings,
+    DpPropertyCompetitor,
+    DpHistoricalCompetitorPrice
+)
+from booking.models import Competitor
 
 
 class PropertyManagementSystemSerializer(serializers.ModelSerializer):
@@ -240,3 +250,211 @@ class HistoricalCompetitorPriceSerializer(serializers.ModelSerializer):
             'raw_price', 'currency', 'cancellation_type', 'max_persons', 'min_los', 'sold_out_message',
             'taking_reservations', 'scrape_date', 'is_available', 'num_days', 'price', 'update_tz'
         ] 
+
+
+class CompetitorCandidateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for CompetitorCandidate model
+    """
+    class Meta:
+        model = CompetitorCandidate
+        fields = [
+            'id', 'competitor_name', 'booking_link', 'suggested_by_user',
+            'property_instance', 'user', 'similarity_score', 'status', 'only_follow',
+            'deleted', 'created_at', 'updated_at', 'processed_at', 'error_message'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'processed_at', 'error_message']
+    
+    def create(self, validated_data):
+        """
+        Create a new competitor candidate
+        """
+        # Set the user from the request context
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        
+        # Set suggested_by_user to True since this comes from user input
+        validated_data['suggested_by_user'] = True
+        
+        # Set initial status to processing
+        validated_data['status'] = 'processing'
+        
+        return super().create(validated_data)
+
+
+class BulkCompetitorCandidateSerializer(serializers.Serializer):
+    """
+    Serializer for creating multiple competitor candidates at once
+    """
+    competitor_names = serializers.ListField(
+        child=serializers.CharField(max_length=255),
+        max_length=10,  # Limit to 10 competitors at once
+        help_text='List of competitor hotel names'
+    )
+    suggested_by_user = serializers.BooleanField(
+        default=True,
+        help_text='Whether these competitors were suggested by the user (True) or AI (False)'
+    )
+    
+    def validate_competitor_names(self, value):
+        """
+        Validate that all competitor names are valid
+        """
+        # Allow empty list - no competitors required
+        if not value:
+            return value
+            
+        for name in value:
+            if not name or not name.strip():
+                raise serializers.ValidationError("All competitor names must be provided.")
+            if len(name.strip()) < 2:
+                raise serializers.ValidationError("All competitor names must be at least 2 characters long.")
+        
+        return value
+
+    def create(self, validated_data):
+        """
+        Create multiple CompetitorCandidate instances
+        """
+        competitor_names = validated_data['competitor_names']
+        suggested_by_user = validated_data.get('suggested_by_user', True)
+        
+        # If no competitors provided, return success with empty results
+        if not competitor_names:
+            # Get the current user's last created property for consistency
+            request = self.context.get('request')
+            if not request or not request.user.is_authenticated:
+                raise serializers.ValidationError("User must be authenticated.")
+            
+            try:
+                property_instance = Property.objects.filter(
+                    profiles__user=request.user
+                ).order_by('-created_at').first()
+                
+                if not property_instance:
+                    raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                    
+            except Property.DoesNotExist:
+                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+            
+            return {
+                'created_candidates': [],
+                'errors': [],
+                'property_id': property_instance.id
+            }
+        
+        created_candidates = []
+        errors = []
+        
+        # Get the current user's last created property
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("User must be authenticated.")
+        
+        # Get the user's last created property
+        try:
+            property_instance = Property.objects.filter(
+                profiles__user=request.user
+            ).order_by('-created_at').first()
+            
+            if not property_instance:
+                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+        
+        for competitor_name in competitor_names:
+            try:
+                # Check if candidate already exists for this property (including deleted ones)
+                existing_candidate = CompetitorCandidate.objects.filter(
+                    property_instance=property_instance,
+                    competitor_name=competitor_name.strip()
+                ).first()
+                
+                if existing_candidate:
+                    # Update existing candidate if it was deleted
+                    if existing_candidate.deleted:
+                        existing_candidate.deleted = False
+                        existing_candidate.status = 'processing'
+                        existing_candidate.suggested_by_user = suggested_by_user  # Update suggestion source
+                        existing_candidate.save()
+                        created_candidates.append(existing_candidate)
+                    else:
+                        # Candidate already exists and is active - update suggestion source if different
+                        if existing_candidate.suggested_by_user != suggested_by_user:
+                            existing_candidate.suggested_by_user = suggested_by_user
+                            existing_candidate.save()
+                        created_candidates.append(existing_candidate)
+                else:
+                    # Create new candidate
+                    candidate = CompetitorCandidate.objects.create(
+                        competitor_name=competitor_name.strip(),
+                        property_instance=property_instance,
+                        user=request.user,
+                        suggested_by_user=suggested_by_user,
+                        status='processing'
+                    )
+                    created_candidates.append(candidate)
+                
+            except Exception as e:
+                errors.append({
+                    'name': competitor_name,
+                    'error': str(e)
+                })
+        
+        if errors and not created_candidates:
+            # If all candidates failed to create, raise an error
+            raise serializers.ValidationError(f"Failed to create any competitor candidates: {errors}")
+        
+        return {
+            'created_candidates': created_candidates,
+            'errors': errors,
+            'property_id': property_instance.id
+        } 
+
+
+class DpGeneralSettingsSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DpGeneralSettings
+    """
+    class Meta:
+        model = DpGeneralSettings
+        fields = [
+            'property_id', 'base_rate_code', 'is_base_in_pms', 'min_competitors',
+            'comp_price_calculation', 'competitor_excluded', 'competitors_excluded',
+            'msp_include_events_weekend_increments', 'future_days_to_price',
+            'pricing_status', 'los_status', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['property_id', 'created_at', 'updated_at']
+
+    def validate_comp_price_calculation(self, value):
+        """
+        Validate that comp_price_calculation is one of the allowed values
+        """
+        allowed_values = ['min', 'max', 'avg', 'median']
+        if value not in allowed_values:
+            raise serializers.ValidationError(
+                f"comp_price_calculation must be one of: {', '.join(allowed_values)}"
+            )
+        return value 
+
+
+class PropertyCompetitorSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DpPropertyCompetitor with competitor details
+    """
+    competitor_id = serializers.CharField(source='competitor_id.competitor_id')
+    competitor_name = serializers.CharField(source='competitor_id.competitor_name')
+    booking_link = serializers.URLField(source='competitor_id.booking_link')
+    only_follow = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+    
+    class Meta:
+        model = DpPropertyCompetitor
+        fields = [
+            'id', 'competitor_id', 'competitor_name', 'booking_link', 
+            'only_follow', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at'] 

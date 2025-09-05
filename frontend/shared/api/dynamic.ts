@@ -111,6 +111,71 @@ export interface PriceHistoryForDateRangeResponse {
   valid_days: number;
 }
 
+// Types for DpGeneralSettings
+export interface DpGeneralSettings {
+  property_id: string;
+  base_rate_code?: string;
+  is_base_in_pms?: boolean;
+  min_competitors: number;
+  comp_price_calculation: 'min' | 'max' | 'avg' | 'median';
+  competitor_excluded?: string;
+  competitors_excluded?: any[];
+  msp_include_events_weekend_increments: boolean;
+  future_days_to_price: number;
+  pricing_status: string;
+  los_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateCompPriceCalculationRequest {
+  comp_price_calculation: 'min' | 'max' | 'avg' | 'median';
+}
+
+export interface UpdateCompPriceCalculationResponse {
+  message: string;
+  property_id: string;
+  comp_price_calculation: 'min' | 'max' | 'avg' | 'median';
+  updated_at: string;
+}
+
+// Types for Competitor Candidates
+export interface CompetitorCandidate {
+  id: string;
+  competitor_name: string;
+  booking_link?: string;
+  suggested_by_user: boolean;
+  similarity_score?: number;
+  status: 'processing' | 'finished' | 'error';
+  only_follow: boolean;
+  deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  processed_at?: string;
+  error_message?: string;
+}
+
+export interface CompetitorCandidatesResponse {
+  candidates: CompetitorCandidate[];
+  count: number;
+}
+
+// Types for Property Competitors
+export interface PropertyCompetitor {
+  id: string;
+  competitor_id: string;
+  competitor_name: string;
+  booking_link?: string;
+  only_follow: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PropertyCompetitorsResponse {
+  competitors: PropertyCompetitor[];
+  count: number;
+}
+
 export const dynamicPricingService = {
   // Price History endpoints
   async getPriceHistory(
@@ -293,17 +358,136 @@ export const dynamicPricingService = {
   /**
    * Fetches nearby hotels based on property location data.
    * @param locationData The location data for the property
+   * @param numCompetitors Number of competitors to return (default: 5)
    */
   async getNearbyHotels(locationData: {
     address: string;
     city: string;
     country?: string;
     postal_code?: string;
-  }): Promise<string[]> {
+  }, numCompetitors: number = 5): Promise<string[]> {
     return apiRequest<string[]>({
       method: 'POST',
-      url: '/dynamic-pricing/nearby-hotels/',
-      data: locationData,
+      url: '/dynamic-pricing/competitors/nearby/',
+      data: {
+        ...locationData,
+        num_competitors: numCompetitors
+      },
+    });
+  },
+
+  async createCompetitorCandidates(data: { 
+    competitor_names: string[];
+    suggested_by_user?: boolean;
+  }): Promise<{
+    message: string;
+    property_id: string;
+    created_candidates: Array<{
+      id: string;
+      competitor_name: string;
+      status: string;
+      created_at: string;
+    }>;
+    total_created: number;
+    total_errors: number;
+    errors?: Array<{ name: string; error: string }>;
+  }> {
+    return apiRequest<{
+      message: string;
+      property_id: string;
+      created_candidates: Array<{
+        id: string;
+        competitor_name: string;
+        status: string;
+        created_at: string;
+      }>;
+      total_created: number;
+      total_errors: number;
+      errors?: Array<{ name: string; error: string }>;
+    }>({
+      method: 'POST',
+      url: '/dynamic-pricing/competitors/candidates/bulk-create/',
+      data,
+    });
+  },
+
+  // General Settings endpoints
+  async getGeneralSettings(propertyId: string): Promise<DpGeneralSettings> {
+    return apiRequest<DpGeneralSettings>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/general-settings/`,
+    });
+  },
+
+  async updateCompPriceCalculation(
+    propertyId: string, 
+    data: UpdateCompPriceCalculationRequest
+  ): Promise<UpdateCompPriceCalculationResponse> {
+    return apiRequest<UpdateCompPriceCalculationResponse>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/general-settings/`,
+      data,
+    });
+  },
+
+  // Competitor endpoints
+  async getCompetitorCandidates(propertyId: string): Promise<CompetitorCandidatesResponse> {
+    return apiRequest<CompetitorCandidatesResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/competitor-candidates/`,
+    });
+  },
+
+  async getPropertyCompetitors(propertyId: string): Promise<PropertyCompetitorsResponse> {
+    return apiRequest<PropertyCompetitorsResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/competitors/`,
+    });
+  },
+
+  // Update competitor endpoints
+  async updateCompetitorCandidate(
+    propertyId: string, 
+    candidateId: string, 
+    data: { competitor_name?: string; booking_link?: string }
+  ): Promise<{ message: string; candidate: CompetitorCandidate }> {
+    return apiRequest<{ message: string; candidate: CompetitorCandidate }>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/competitor-candidates/${candidateId}/`,
+      data,
+    });
+  },
+
+  async updatePropertyCompetitor(
+    propertyId: string, 
+    competitorId: string, 
+    data: { competitor_name?: string; booking_link?: string; only_follow?: boolean }
+  ): Promise<{ message: string; competitor: PropertyCompetitor }> {
+    return apiRequest<{ message: string; competitor: PropertyCompetitor }>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/competitors/${competitorId}/`,
+      data,
+    });
+  },
+
+  // Delete competitor endpoints
+  async deleteCompetitorCandidate(
+    propertyId: string, 
+    candidateId: string
+  ): Promise<{ message: string; candidate_id: string; competitor_name: string }> {
+    return apiRequest<{ message: string; candidate_id: string; competitor_name: string }>({
+      method: 'DELETE',
+      url: `/dynamic-pricing/properties/${propertyId}/competitor-candidates/${candidateId}/delete/`,
+    });
+  },
+
+  async deletePropertyCompetitor(
+    propertyId: string, 
+    competitorId: string
+  ): Promise<{ message: string; competitor_id: string; competitor_name: string }> {
+    return apiRequest<{ message: string; competitor_id: string; competitor_name: string }>({
+      method: 'DELETE',
+      url: `/dynamic-pricing/properties/${propertyId}/competitors/${competitorId}/delete/`,
     });
   },
 };

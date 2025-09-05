@@ -1,21 +1,29 @@
 from django.urls import path
 from .views import (
-    PropertyCreateView, 
-    PropertyDetailView, 
-    PropertyListView, 
-    PropertyPMSUpdateView,
     PropertyManagementSystemListView,
+    PropertyCreateView,
+    PropertyPMSUpdateView,
+    PropertyDetailView,
+    PropertyListView,
     MinimumSellingPriceView,
     PriceHistoryView,
     OverwritePriceView,
+    OverwritePriceRangeView,
+    FetchCompetitorsView,
+    NearbyHotelsView,
+    BulkCompetitorCandidateCreateView,
+    DpGeneralSettingsUpdateView,
+    CompetitorCandidatesListView,
+    PropertyCompetitorsListView,
     property_msp_for_date,  # <-- add import
-    OverwritePriceRangeView,  # <-- new import
     lowest_competitor_prices,  # <-- new import
     competitor_prices_weekly_chart,  # <-- new import
     competitor_prices_for_date,  # <-- new import
-    FetchCompetitorsView,  # <-- new import
     price_history_for_date_range,  # <-- new import
-    NearbyHotelsView,  # <-- new import
+    CompetitorCandidateUpdateView,
+    PropertyCompetitorUpdateView,
+    CompetitorCandidateDeleteView,
+    PropertyCompetitorDeleteView,
 )
 
 app_name = 'dynamic_pricing'
@@ -30,22 +38,36 @@ urlpatterns = [
     path('properties/<str:property_id>/', PropertyDetailView.as_view(), name='property-detail'),
     path('properties/<str:property_id>/pms/', PropertyPMSUpdateView.as_view(), name='property-pms-update'),
     
+    # General Settings endpoints
+    path('properties/<str:property_id>/general-settings/', DpGeneralSettingsUpdateView.as_view(), name='general-settings-update'),
+    
+    # Competitor endpoints
+    path('properties/<str:property_id>/competitor-candidates/', CompetitorCandidatesListView.as_view(), name='competitor-candidates'),
+    path('properties/<str:property_id>/competitor-candidates/<str:candidate_id>/', CompetitorCandidateUpdateView.as_view(), name='competitor-candidate-update'),
+    path('properties/<str:property_id>/competitor-candidates/<str:candidate_id>/delete/', CompetitorCandidateDeleteView.as_view(), name='competitor-candidate-delete'),
+    path('properties/<str:property_id>/competitors/', PropertyCompetitorsListView.as_view(), name='property-competitors'),
+    path('properties/<str:property_id>/competitors/<str:competitor_id>/', PropertyCompetitorUpdateView.as_view(), name='property-competitor-update'),
+    path('properties/<str:property_id>/competitors/<str:competitor_id>/delete/', PropertyCompetitorDeleteView.as_view(), name='property-competitor-delete'),
+    path('competitors/fetch/', FetchCompetitorsView.as_view(), name='fetch-competitors'),
+    path('competitors/nearby/', NearbyHotelsView.as_view(), name='nearby-hotels'),
+    path('competitors/candidates/bulk-create/', BulkCompetitorCandidateCreateView.as_view(), name='bulk-create-competitor-candidates'),
+    
     # Minimum Selling Price endpoints
-    path('msp/', MinimumSellingPriceView.as_view(), name='msp-create'),
-    path('properties/<str:property_id>/msp-for-date/', property_msp_for_date, name='property-msp-for-date'),
+    path('msp/', MinimumSellingPriceView.as_view(), name='msp'),
     
     # Price History endpoints
     path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),
     path('properties/<str:property_id>/price-history/<str:checkin_date>/overwrite/', OverwritePriceView.as_view(), name='overwrite-price'),
     path('properties/<str:property_id>/price-history/overwrite-range/', OverwritePriceRangeView.as_view(), name='overwrite-price-range'),
-    path('properties/<str:property_id>/price-history/for-date-range/', price_history_for_date_range, name='price-history-for-date-range'),
-    path('historical-competitor-prices/lowest/', lowest_competitor_prices, name='lowest-competitor-prices'),
-    path('properties/<str:property_id>/competitor-prices/week/', competitor_prices_weekly_chart, name='competitor-prices-weekly-chart'),
-    path('properties/<str:property_id>/competitor-prices/for-date/', competitor_prices_for_date, name='competitor-prices-for-date'),
     
-    # External Competitor API endpoint
-    path('fetch-competitors/', FetchCompetitorsView.as_view(), name='fetch-competitors'),
+    # Date range price history
+    path('properties/<str:property_id>/price-history/range/', price_history_for_date_range, name='price-history-range'),
     
-    # Nearby Hotels API endpoint
-    path('nearby-hotels/', NearbyHotelsView.as_view(), name='nearby-hotels'),
+    # MSP for specific date
+    path('properties/<str:property_id>/msp/date/', property_msp_for_date, name='property-msp-date'),
+    
+    # Competitor price endpoints
+    path('competitors/lowest-prices/', lowest_competitor_prices, name='lowest-competitor-prices'),
+    path('properties/<str:property_id>/competitors/weekly-chart/', competitor_prices_weekly_chart, name='competitor-prices-weekly-chart'),
+    path('properties/<str:property_id>/competitors/date/', competitor_prices_for_date, name='competitor-prices-for-date'),
 ] 
