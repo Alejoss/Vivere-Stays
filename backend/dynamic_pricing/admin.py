@@ -25,22 +25,10 @@ class PropertyAdmin(admin.ModelAdmin):
 
 @admin.register(DpGeneralSettings)
 class DpGeneralSettingsAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'pricing_status', 'los_status', 'min_competitors', 'future_days_to_price')
-    list_filter = ('pricing_status', 'los_status', 'min_competitors')
+    list_display = ('property_id', 'base_rate_code', 'min_competitors', 'comp_price_calculation', 'pricing_status', 'los_status')
+    list_filter = ('pricing_status', 'los_status', 'min_competitors', 'created_at')
+    search_fields = ('property_id__name', 'base_rate_code')
     readonly_fields = ('created_at', 'updated_at')
-    fieldsets = (
-        ('Property', {'fields': ('property_id',)}),
-        ('Pricing Settings', {
-            'fields': ('base_rate_code', 'is_base_in_pms', 'pricing_status', 'los_status')
-        }),
-        ('Competitor Settings', {
-            'fields': ('min_competitors', 'comp_price_calculation', 'competitor_excluded')
-        }),
-        ('Configuration', {
-            'fields': ('msp_include_events_weekend_increments', 'future_days_to_price')
-        }),
-        ('Timestamps', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
-    )
 
 
 @admin.register(DpPropertyCompetitor)
@@ -60,11 +48,17 @@ class DpDynamicIncrementsV1Admin(admin.ModelAdmin):
 
 
 class DpDynamicIncrementsV2Admin(admin.ModelAdmin):
-    list_display = ('property_id', 'occupancy_level', 'lead_time_days', 'increment_type', 'increment_value')
-    list_filter = ('increment_type', 'occupancy_level', 'lead_time_days')
-    search_fields = ('property_id__name',)
+    list_display = ('property_id', 'occupancy_category', 'lead_time_category', 'increment_type', 'increment_value', 'user')
+    list_filter = ('increment_type', 'occupancy_category', 'lead_time_category', 'created_at')
+    search_fields = ('property_id__name', 'user__username')
     readonly_fields = ('created_at', 'updated_at')
-    ordering = ('property_id', 'occupancy_level', 'lead_time_days')
+    ordering = ('property_id', 'occupancy_category', 'lead_time_category')
+    fieldsets = (
+        ('Property & User', {'fields': ('property_id', 'user')}),
+        ('Categories', {'fields': ('occupancy_category', 'lead_time_category')}),
+        ('Increment Settings', {'fields': ('increment_type', 'increment_value')}),
+        ('Timestamps', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(DpOfferIncrements)
@@ -78,20 +72,18 @@ class DpOfferIncrementsAdmin(admin.ModelAdmin):
 
 @admin.register(DpLosSetup)
 class DpLosSetupAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'day_of_week', 'valid_from', 'valid_until', 'los_value', 'num_competitors')
-    list_filter = ('day_of_week', 'valid_from', 'valid_until', 'num_competitors')
+    list_display = ('property_id', 'valid_from', 'valid_until', 'day_of_week', 'los_value', 'num_competitors', 'los_aggregation')
+    list_filter = ('day_of_week', 'valid_from', 'num_competitors', 'created_at')
     search_fields = ('property_id__name',)
-    readonly_fields = ('created_at', 'updated_at')
-    date_hierarchy = 'valid_from'
+    ordering = ('property_id', 'valid_from', 'day_of_week')
 
 
 @admin.register(DpLosReduction)
 class DpLosReductionAdmin(admin.ModelAdmin):
     list_display = ('property_id', 'lead_time_days', 'occupancy_level', 'los_value')
-    list_filter = ('lead_time_days', 'occupancy_level')
+    list_filter = ('lead_time_days', 'occupancy_level', 'created_at')
     search_fields = ('property_id__name',)
-    readonly_fields = ('created_at', 'updated_at')
-    ordering = ('property_id', 'lead_time_days')
+    ordering = ('property_id', 'lead_time_days', 'occupancy_level')
 
 
 @admin.register(DpMinimumSellingPrice)

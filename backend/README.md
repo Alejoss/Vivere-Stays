@@ -17,7 +17,7 @@ https://vivere-stays.algobeat.com/
 ssh root@46.62.171.162
 ./deploy-all.sh
 docker-compose logs -f vivere_backend
-populate 
+populate do
 
 test@user.com
 Test12345

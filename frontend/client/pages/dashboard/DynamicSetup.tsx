@@ -1,3 +1,4 @@
+import { useState, useEffect, useContext } from "react";
 import {
   Plus,
   Save,
@@ -9,98 +10,216 @@ import {
   Clock,
   Trash2,
 } from "lucide-react";
+import { PropertyContext } from "../../../shared/PropertyContext";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
+
+// Category definitions matching the backend model
+const OCCUPANCY_CATEGORIES = [
+  { value: '0-30', label: '0-30%' },
+  { value: '30-50', label: '30-50%' },
+  { value: '50-70', label: '50-70%' },
+  { value: '70-80', label: '70-80%' },
+  { value: '80-90', label: '80-90%' },
+  { value: '90-100', label: '90-100%' },
+  { value: '100+', label: '100%+' },
+];
+
+const LEAD_TIME_CATEGORIES = [
+  { value: '0-1', label: '0-1 days' },
+  { value: '1-3', label: '1-3 days' },
+  { value: '3-7', label: '3-7 days' },
+  { value: '7-14', label: '7-14 days' },
+  { value: '14-30', label: '14-30 days' },
+  { value: '30-45', label: '30-45 days' },
+  { value: '45-60', label: '45-60 days' },
+  { value: '60+', label: '60+ days' },
+];
+
+interface DynamicRule {
+  id?: number;
+  occupancy_category: string;
+  lead_time_category: string;
+  increment_type: 'Percentage' | 'Additional';
+  increment_value: number;
+  isNew?: boolean;
+}
 
 export default function DynamicSetup() {
-  const rules = [
-    {
-      id: 1,
-      incrementType: "Percentage",
-      occupancyLevel: ">100% (70%+)",
-      leadTime: ">60 days (60+ days)",
-      value: "135",
-      incrementIcon: Percent,
-    },
-    {
-      id: 2,
-      incrementType: "Percentage",
-      occupancyLevel: "50% (30-50%)",
-      leadTime: "14 days (7-14 days)",
-      value: "50",
-      incrementIcon: Percent,
-    },
-    {
-      id: 3,
-      incrementType: "Percentage",
-      occupancyLevel: "30% (0-30%)",
-      leadTime: "7 days (3-7 days)",
-      value: "20",
-      incrementIcon: Percent,
-    },
-    {
-      id: 4,
-      incrementType: "Additional",
-      occupancyLevel: "Select occupacy",
-      leadTime: "Select lead time",
-      value: "0",
-      incrementIcon: DollarSign,
-      isPlaceholder: true,
-    },
-  ];
+  const { property } = useContext(PropertyContext) ?? {};
+  const [rules, setRules] = useState<DynamicRule[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Load existing rules on component mount
+  useEffect(() => {
+    if (property?.id) {
+      loadRules();
+    }
+  }, [property?.id]);
+
+  const loadRules = async () => {
+    if (!property?.id) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await dynamicPricingService.getDynamicRules(property.id);
+      setRules(response.rules.map(rule => ({ ...rule, isNew: false })));
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dynamic rules');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper functions
+  const addNewRule = () => {
+    const newRule: DynamicRule = {
+      occupancy_category: '',
+      lead_time_category: '',
+      increment_type: 'Percentage',
+      increment_value: 0,
+      isNew: true
+    };
+    setRules([...rules, newRule]);
+  };
+
+  const updateRule = (index: number, field: keyof DynamicRule, value: any) => {
+    const updatedRules = [...rules];
+    updatedRules[index] = { ...updatedRules[index], [field]: value };
+    setRules(updatedRules);
+  };
+
+  const removeRule = async (index: number) => {
+    const rule = rules[index];
+    
+    // If it's an existing rule, delete it from the server
+    if (rule.id && !rule.isNew) {
+      if (!property?.id) return;
+      
+      try {
+        await dynamicPricingService.deleteDynamicRule(property.id, rule.id);
+        setSuccess('Rule deleted successfully');
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete rule');
+        return;
+      }
+    }
+    
+    // Remove from local state
+    const updatedRules = rules.filter((_, i) => i !== index);
+    setRules(updatedRules);
+  };
+
+  const saveRules = async () => {
+    if (!property?.id) return;
+    
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const newRules = rules.filter(rule => rule.isNew);
+      const existingRules = rules.filter(rule => !rule.isNew);
+      
+      // Update existing rules
+      for (const rule of existingRules) {
+        if (rule.id) {
+          await dynamicPricingService.updateDynamicRule(property.id, rule.id, {
+            occupancy_category: rule.occupancy_category,
+            lead_time_category: rule.lead_time_category,
+            increment_type: rule.increment_type,
+            increment_value: rule.increment_value
+          });
+        }
+      }
+      
+      // Create new rules
+      if (newRules.length > 0) {
+        const validNewRules = newRules.filter(rule => 
+          rule.occupancy_category && rule.lead_time_category
+        );
+        
+        if (validNewRules.length > 0) {
+          await dynamicPricingService.bulkCreateDynamicRules(property.id, {
+            rules: validNewRules.map(rule => ({
+              occupancy_category: rule.occupancy_category,
+              lead_time_category: rule.lead_time_category,
+              increment_type: rule.increment_type,
+              increment_value: rule.increment_value
+            }))
+          });
+        }
+      }
+      
+      setSuccess('Dynamic rules saved successfully');
+      loadRules(); // Reload to get updated data
+    } catch (err: any) {
+      setError(err.message || 'Failed to save dynamic rules');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const IncrementTypeSelector = ({
-    type,
-    icon: Icon,
+    value,
+    onChange
   }: {
-    type: string;
-    icon: any;
+    value: 'Percentage' | 'Additional';
+    onChange: (value: 'Percentage' | 'Additional') => void;
   }) => (
-    <div className="flex items-center justify-between px-3 py-[10px] border border-gray-300 rounded bg-white min-w-[140px]">
-      <div className="flex items-center gap-[10px]">
-        <Icon size={16} className="text-black" />
-        <span className="text-xs text-black">{type}</span>
-      </div>
-      <ChevronDown size={16} className="text-black rotate-90" />
-    </div>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
+      className="w-full px-3 py-[10px] text-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
+    >
+      <option value="Percentage">Percentage</option>
+      <option value="Additional">Additional</option>
+    </select>
   );
 
   const OccupancySelector = ({
-    level,
-    isPlaceholder,
+    value,
+    onChange
   }: {
-    level: string;
-    isPlaceholder?: boolean;
+    value: string;
+    onChange: (value: string) => void;
   }) => (
-    <div className="flex items-center justify-between px-3 py-[9px] border border-gray-300 rounded bg-white min-w-[177px]">
-      <div className="flex items-center gap-2">
-        <Users size={18} className="text-black" />
-        <span
-          className={`text-xs ${isPlaceholder ? "text-black" : "text-black"}`}
-        >
-          {level}
-        </span>
-      </div>
-      <ChevronDown size={16} className="text-black rotate-90" />
-    </div>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-3 py-[9px] text-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[177px]"
+    >
+      <option value="">Select occupancy</option>
+      {OCCUPANCY_CATEGORIES.map(category => (
+        <option key={category.value} value={category.value}>
+          {category.label}
+        </option>
+      ))}
+    </select>
   );
 
   const LeadTimeSelector = ({
-    time,
-    isPlaceholder,
+    value,
+    onChange
   }: {
-    time: string;
-    isPlaceholder?: boolean;
+    value: string;
+    onChange: (value: string) => void;
   }) => (
-    <div className="flex items-center justify-between px-3 py-[9px] border border-gray-300 rounded bg-white min-w-[217px]">
-      <div className="flex items-center gap-2">
-        <Clock size={18} className="text-black" />
-        <span
-          className={`text-xs ${isPlaceholder ? "text-black" : "text-black"}`}
-        >
-          {time}
-        </span>
-      </div>
-      <ChevronDown size={16} className="text-black rotate-90" />
-    </div>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-3 py-[9px] text-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[217px]"
+    >
+      <option value="">Select lead time</option>
+      {LEAD_TIME_CATEGORIES.map(category => (
+        <option key={category.value} value={category.value}>
+          {category.label}
+        </option>
+      ))}
+    </select>
   );
 
   return (
@@ -116,13 +235,25 @@ export default function DynamicSetup() {
             </h2>
           </div>
 
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-600 text-sm">{success}</p>
+            </div>
+          )}
+
           {/* Rules Table */}
           <div className="mb-8">
             {/* Table Headers */}
             <div className="grid grid-cols-5 gap-6 mb-4 text-[#494951] font-semibold text-base">
+              <div>Occupancy</div>
+              <div>Lead Time</div>
               <div>Increment Type</div>
-              <div>Occupancy Level</div>
-              <div>Lead Time - Until</div>
               <div>Increment Value</div>
               <div></div>
             </div>
@@ -132,67 +263,90 @@ export default function DynamicSetup() {
 
             {/* Table Rows */}
             <div className="space-y-5">
-              {rules.map((rule, index) => (
-                <div
-                  key={rule.id}
-                  className="grid grid-cols-5 gap-6 items-center"
-                >
-                  {/* Increment Type */}
-                  <div>
-                    <IncrementTypeSelector
-                      type={rule.incrementType}
-                      icon={rule.incrementIcon}
-                    />
-                  </div>
-
-                  {/* Occupancy Level */}
-                  <div>
-                    <OccupancySelector
-                      level={rule.occupancyLevel}
-                      isPlaceholder={rule.isPlaceholder}
-                    />
-                  </div>
-
-                  {/* Lead Time */}
-                  <div>
-                    <LeadTimeSelector
-                      time={rule.leadTime}
-                      isPlaceholder={rule.isPlaceholder}
-                    />
-                  </div>
-
-                  {/* Increment Value */}
-                  <div>
-                    <input
-                      type="text"
-                      value={rule.value}
-                      className={`w-full px-3 py-[11px] text-xs border border-gray-300 rounded bg-white ${
-                        rule.isPlaceholder ? "text-black" : "text-black"
-                      } min-w-[234px]`}
-                      readOnly
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div>
-                    <button className="px-3 py-[10px] border border-gray-300 rounded bg-white text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors min-w-[80px] flex items-center justify-center">
-                      <Trash2 size={20} className="text-red-500" />
-                    </button>
-                  </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading dynamic rules...</p>
                 </div>
-              ))}
+              ) : rules.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No dynamic rules found. Click "Add Rule" to create your first dynamic pricing rule.</p>
+                </div>
+              ) : (
+                rules.map((rule, index) => (
+                  <div
+                    key={rule.id || `new-${index}`}
+                    className={`grid grid-cols-5 gap-6 items-center p-3 rounded-lg ${
+                      rule.isNew ? 'bg-blue-50 border border-blue-200' : 'bg-white'
+                    }`}
+                  >
+                    {/* Occupancy */}
+                    <div>
+                      <OccupancySelector
+                        value={rule.occupancy_category}
+                        onChange={(value) => updateRule(index, 'occupancy_category', value)}
+                      />
+                    </div>
+
+                    {/* Lead Time */}
+                    <div>
+                      <LeadTimeSelector
+                        value={rule.lead_time_category}
+                        onChange={(value) => updateRule(index, 'lead_time_category', value)}
+                      />
+                    </div>
+
+                    {/* Increment Type */}
+                    <div>
+                      <IncrementTypeSelector
+                        value={rule.increment_type}
+                        onChange={(value) => updateRule(index, 'increment_type', value)}
+                      />
+                    </div>
+
+                    {/* Increment Value */}
+                    <div>
+                      <input
+                        type="number"
+                        value={rule.increment_value}
+                        onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-3 py-[11px] text-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div>
+                      <button 
+                        onClick={() => removeRule(index)}
+                        className="px-3 py-[10px] border border-gray-300 rounded bg-white text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors min-w-[80px] flex items-center justify-center"
+                        title="Delete rule"
+                      >
+                        <Trash2 size={20} className="text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex justify-between items-center mb-8">
-            <button className="flex items-center gap-3 px-7 py-3 bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors">
+            <button 
+              onClick={addNewRule}
+              className="flex items-center gap-3 px-7 py-3 bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors"
+            >
               <Plus size={24} />
               Add Rule
             </button>
-            <button className="flex items-center gap-5 px-9 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+            <button 
+              onClick={saveRules}
+              disabled={saving || rules.length === 0}
+              className="flex items-center gap-5 px-9 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Save size={24} />
-              Save Rule
+              {saving ? 'Saving...' : 'Save Rules'}
             </button>
           </div>
         </div>

@@ -1,7 +1,41 @@
 import { Plus, Save, ChevronDown, Calendar, Info, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 export default function LengthOfStay() {
-  const setupRules = [
+  // Lead time categories from DpDynamicIncrementsV2
+  const leadTimeCategories = [
+    { value: '0-1', label: '0-1 days' },
+    { value: '1-3', label: '1-3 days' },
+    { value: '3-7', label: '3-7 days' },
+    { value: '7-14', label: '7-14 days' },
+    { value: '14-30', label: '14-30 days' },
+    { value: '30-45', label: '30-45 days' },
+    { value: '45-60', label: '45-60 days' },
+    { value: '60+', label: '60+ days' },
+  ];
+
+  // Occupancy categories from DpDynamicIncrementsV2
+  const occupancyCategories = [
+    { value: '0-30', label: '0-30%' },
+    { value: '30-50', label: '30-50%' },
+    { value: '50-70', label: '50-70%' },
+    { value: '70-80', label: '70-80%' },
+    { value: '80-90', label: '80-90%' },
+    { value: '90-100', label: '90-100%' },
+    { value: '100+', label: '100%+' },
+  ];
+
+  // Weekday options
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  // LOS aggregation methods
+  const aggregationMethods = [
+    { value: 'min', label: 'Minimum' },
+    { value: 'max', label: 'Maximum' },
+  ];
+
+  // State management
+  const [setupRules, setSetupRules] = useState([
     {
       id: 1,
       from: "08/16/2025",
@@ -30,56 +64,90 @@ export default function LengthOfStay() {
       restrictionDay: "Saturday",
       losValue: "2",
     },
-  ];
+  ]);
 
-  const reductionRules = [
+  const [reductionRules, setReductionRules] = useState([
     {
       id: 1,
-      leadTime: ">60 days (60+ days)",
-      occupancy: "30% (0-30%)",
+      leadTime: "60+",
+      occupancy: "0-30",
       losFrom: "4",
     },
     {
       id: 2,
-      leadTime: "14 days (7-14 days)",
-      occupancy: "50% (30-50%)",
+      leadTime: "7-14",
+      occupancy: "30-50",
       losFrom: "3",
     },
     {
       id: 3,
-      leadTime: "7 days (3-7 days)",
-      occupancy: ">100% (70%+)",
+      leadTime: "3-7",
+      occupancy: "100+",
       losFrom: "2",
     },
     {
       id: 4,
-      leadTime: "7 days (3-7 days)",
-      occupancy: ">100% (70%+)",
+      leadTime: "3-7",
+      occupancy: "100+",
       losFrom: "2",
     },
-  ];
+  ]);
 
-  const DateInput = ({ value }: { value: string }) => (
-    <div className="flex items-center justify-between px-4 py-2 border border-gray-300 rounded bg-white min-w-[228px]">
-      <span className="text-xs text-black">{value}</span>
-      <Calendar size={17} className="text-black" />
-    </div>
-  );
+  const [competitorCount, setCompetitorCount] = useState("2");
+  const [aggregationMethod, setAggregationMethod] = useState("min");
 
-  const WeekdaySelector = ({
-    day,
-    hasDropdown = false,
-  }: {
-    day: string;
-    hasDropdown?: boolean;
-  }) => (
-    <div className="flex items-center justify-between px-4 py-2 border border-hotel-divider rounded bg-white min-w-[150px]">
-      <span className="text-sm font-semibold text-gray-900">{day}</span>
-      {hasDropdown && (
-        <ChevronDown size={16} className="text-black rotate-90" />
-      )}
-    </div>
-  );
+  // Helper functions
+  const addSetupRule = () => {
+    const newRule = {
+      id: Math.max(...setupRules.map(r => r.id)) + 1,
+      from: "08/16/2025",
+      to: "08/16/2025",
+      restrictionDay: "Monday",
+      losValue: "1",
+    };
+    setSetupRules([...setupRules, newRule]);
+  };
+
+  const removeSetupRule = (id: number) => {
+    setSetupRules(setupRules.filter(rule => rule.id !== id));
+  };
+
+  const updateSetupRule = (id: number, field: string, value: string) => {
+    setSetupRules(setupRules.map(rule => 
+      rule.id === id ? { ...rule, [field]: value } : rule
+    ));
+  };
+
+  const addReductionRule = () => {
+    const newRule = {
+      id: Math.max(...reductionRules.map(r => r.id)) + 1,
+      leadTime: "0-1",
+      occupancy: "0-30",
+      losFrom: "1",
+    };
+    setReductionRules([...reductionRules, newRule]);
+  };
+
+  const removeReductionRule = (id: number) => {
+    setReductionRules(reductionRules.filter(rule => rule.id !== id));
+  };
+
+  const updateReductionRule = (id: number, field: string, value: string) => {
+    setReductionRules(reductionRules.map(rule => 
+      rule.id === id ? { ...rule, [field]: value } : rule
+    ));
+  };
+
+  const handleSave = () => {
+    // TODO: Implement save functionality
+    console.log('Saving LOS configuration:', {
+      competitorCount,
+      aggregationMethod,
+      setupRules,
+      reductionRules
+    });
+  };
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -164,10 +232,11 @@ export default function LengthOfStay() {
                 </div>
                 <div className="bg-[#EFF6FF] p-4 border-t border-[#D0DFE6]">
                   <input
-                    type="text"
-                    value="2"
+                    type="number"
+                    value={competitorCount}
+                    onChange={(e) => setCompetitorCount(e.target.value)}
                     className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
-                    readOnly
+                    min="1"
                   />
                 </div>
               </div>
@@ -180,12 +249,17 @@ export default function LengthOfStay() {
                   <Info size={24} className="text-white" />
                 </div>
                 <div className="bg-[#EFF6FF] p-4 border-t border-[#D0DFE6]">
-                  <div className="flex items-center justify-between px-4 py-2 border border-hotel-divider rounded bg-white">
-                    <span className="text-sm font-semibold text-gray-900">
-                      Minimum
-                    </span>
-                    <ChevronDown size={16} className="text-black rotate-90" />
-                  </div>
+                  <select
+                    value={aggregationMethod}
+                    onChange={(e) => setAggregationMethod(e.target.value)}
+                    className="w-full px-4 py-2 border border-hotel-divider rounded bg-white text-sm font-semibold text-gray-900"
+                  >
+                    {aggregationMethods.map((method) => (
+                      <option key={method.value} value={method.value}>
+                        {method.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -215,7 +289,7 @@ export default function LengthOfStay() {
                   <Info size={24} className="text-white" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4">
-                  <span className="text-base font-semibold text-center"></span>
+                  <span className="text-base font-semibold text-center">Actions</span>
                 </div>
               </div>
 
@@ -223,33 +297,60 @@ export default function LengthOfStay() {
               {setupRules.map((rule, index) => (
                 <div key={rule.id} className="grid grid-cols-5 gap-0">
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
-                    <DateInput value={rule.from} />
-                  </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
-                    <DateInput value={rule.to} />
-                  </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
-                    <WeekdaySelector
-                      day={rule.restrictionDay}
-                      hasDropdown={index < 2}
+                    <input
+                      type="date"
+                      value={rule.from}
+                      onChange={(e) => updateSetupRule(rule.id, 'from', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
                     />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
-                      type="text"
+                      type="date"
+                      value={rule.to}
+                      onChange={(e) => updateSetupRule(rule.id, 'to', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                    />
+                  </div>
+                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                    <select
+                      value={rule.restrictionDay}
+                      onChange={(e) => updateSetupRule(rule.id, 'restrictionDay', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                    >
+                      {weekdays.map((day) => (
+                        <option key={day} value={day}>
+                          {day}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                    <input
+                      type="number"
                       value={rule.losValue}
+                      onChange={(e) => updateSetupRule(rule.id, 'losValue', e.target.value)}
                       className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
-                      readOnly
+                      min="1"
                     />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6] flex justify-center">
-                    <Trash2 size={24} className="text-red-500" />
+                    <button
+                      onClick={() => removeSetupRule(rule.id)}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      <Trash2 size={24} />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
 
-            <button className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+            <button 
+              onClick={addSetupRule}
+              className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            >
+              <Plus size={20} />
               Add LOS Set Up Rule
             </button>
           </div>
@@ -284,19 +385,19 @@ export default function LengthOfStay() {
               <div className="grid grid-cols-4 gap-0">
                 <div className="bg-hotel-brand-dark text-white p-4">
                   <span className="text-base font-semibold">
-                    Lead Time - Until
+                    Lead Time
                   </span>
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4">
                   <span className="text-base font-semibold">
-                    Occupancy - Until
+                    Occupancy
                   </span>
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4">
-                  <span className="text-base font-semibold">LOS - From</span>
+                  <span className="text-base font-semibold">LOS</span>
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4">
-                  <span className="text-base font-semibold text-center"></span>
+                  <span className="text-base font-semibold text-center">Actions</span>
                 </div>
               </div>
 
@@ -304,41 +405,65 @@ export default function LengthOfStay() {
               {reductionRules.map((rule) => (
                 <div key={rule.id} className="grid grid-cols-4 gap-0">
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
-                    <input
-                      type="text"
+                    <select
                       value={rule.leadTime}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
-                      readOnly
-                    />
+                      onChange={(e) => updateReductionRule(rule.id, 'leadTime', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                    >
+                      {leadTimeCategories.map((category) => (
+                        <option key={category.value} value={category.value}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
-                    <input
-                      type="text"
+                    <select
                       value={rule.occupancy}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
-                      readOnly
-                    />
+                      onChange={(e) => updateReductionRule(rule.id, 'occupancy', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                    >
+                      {occupancyCategories.map((category) => (
+                        <option key={category.value} value={category.value}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
-                      type="text"
+                      type="number"
                       value={rule.losFrom}
+                      onChange={(e) => updateReductionRule(rule.id, 'losFrom', e.target.value)}
                       className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
-                      readOnly
+                      min="1"
                     />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6] flex justify-center">
-                    <Trash2 size={24} className="text-red-500" />
+                    <button
+                      onClick={() => removeReductionRule(rule.id)}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      <Trash2 size={24} />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
 
             <div className="flex justify-between items-center">
-              <button className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+              <button 
+                onClick={addReductionRule}
+                className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+              >
+                <Plus size={20} />
                 Add Reduction Rule
               </button>
-              <button className="flex items-center gap-2 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+              <button 
+                onClick={handleSave}
+                className="flex items-center gap-2 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+              >
+                <Save size={20} />
                 Save
               </button>
             </div>

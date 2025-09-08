@@ -15,7 +15,7 @@ import requests
 from decouple import config
 from django.conf import settings
 
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings, DpOfferIncrements, DpDynamicIncrementsV2, DpLosReduction, DpLosSetup
 from .serializers import (
     PropertyCreateSerializer, 
     PropertyDetailSerializer, 
@@ -25,7 +25,15 @@ from .serializers import (
     PriceHistorySerializer,
     CompetitorCandidateSerializer,
     BulkCompetitorCandidateSerializer,
-    PropertyCompetitorSerializer
+    PropertyCompetitorSerializer,
+    OfferIncrementsSerializer,
+    BulkOfferIncrementsSerializer,
+    DynamicIncrementsV2Serializer,
+    BulkDynamicIncrementsV2Serializer,
+    DpLosReductionSerializer,
+    BulkDpLosReductionSerializer,
+    DpLosSetupSerializer,
+    BulkDpLosSetupSerializer
 )
 
 from rest_framework.decorators import action
@@ -2068,5 +2076,1014 @@ class PropertyCompetitorDeleteView(APIView):
             print(f"❌ Traceback: {traceback.format_exc()}")
             return Response({
                 'message': 'An error occurred while deleting the property competitor',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OfferIncrementsListView(APIView):
+    """
+    API endpoint for listing offer increments (special offers) for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve all offer increments for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get all offer increments for this property
+            offer_increments = DpOfferIncrements.objects.filter(
+                property_id=property_instance
+            ).order_by('-created_at')
+            
+            serializer = OfferIncrementsSerializer(offer_increments, many=True)
+            
+            return Response({
+                'offers': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error retrieving offer increments: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving offer increments',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OfferIncrementsCreateView(APIView):
+    """
+    API endpoint for creating offer increments (special offers)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, property_id):
+        """
+        Create new offer increments for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if this is a bulk create request
+            if 'offers' in request.data:
+                # Bulk create multiple offers
+                serializer = BulkOfferIncrementsSerializer(
+                    data=request.data, 
+                    context={'request': request}
+                )
+                
+                if serializer.is_valid():
+                    result = serializer.save()
+                    
+                    # Serialize the created offers for response
+                    created_offers_data = OfferIncrementsSerializer(
+                        result['created_offers'], 
+                        many=True
+                    ).data
+                    
+                    return Response({
+                        'message': f"Successfully created {len(result['created_offers'])} offer increments",
+                        'created_offers': created_offers_data,
+                        'errors': result.get('errors', []),
+                        'property_id': result['property_id']
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Single offer create
+                data = request.data.copy()
+                data['property_id'] = property_instance.id
+                
+                serializer = OfferIncrementsSerializer(data=data, context={'request': request})
+                
+                if serializer.is_valid():
+                    offer_increment = serializer.save()
+                    
+                    return Response({
+                        'message': 'Offer increment created successfully',
+                        'offer': OfferIncrementsSerializer(offer_increment).data
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error creating offer increment: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the offer increment',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OfferIncrementsUpdateView(APIView):
+    """
+    API endpoint for updating offer increments (special offers)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id, offer_id):
+        """
+        Update an existing offer increment
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the offer increment
+            offer_increment = get_object_or_404(
+                DpOfferIncrements, 
+                id=offer_id, 
+                property_id=property_instance
+            )
+            
+            serializer = OfferIncrementsSerializer(
+                offer_increment, 
+                data=request.data, 
+                partial=True,
+                context={'request': request}
+            )
+            
+            if serializer.is_valid():
+                updated_offer = serializer.save()
+                
+                return Response({
+                    'message': 'Offer increment updated successfully',
+                    'offer': OfferIncrementsSerializer(updated_offer).data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'message': 'Validation error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpOfferIncrements.DoesNotExist:
+            return Response({
+                'message': 'Offer increment not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error updating offer increment: {str(e)}")
+            return Response({
+                'message': 'An error occurred while updating the offer increment',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OfferIncrementsDeleteView(APIView):
+    """
+    API endpoint for deleting offer increments (special offers)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, property_id, offer_id):
+        """
+        Delete an offer increment
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the offer increment
+            offer_increment = get_object_or_404(
+                DpOfferIncrements, 
+                id=offer_id, 
+                property_id=property_instance
+            )
+            
+            offer_name = offer_increment.offer_name
+            offer_increment.delete()
+            
+            return Response({
+                'message': 'Offer increment deleted successfully',
+                'offer_id': offer_id,
+                'offer_name': offer_name
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpOfferIncrements.DoesNotExist:
+            return Response({
+                'message': 'Offer increment not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error deleting offer increment: {str(e)}")
+            return Response({
+                'message': 'An error occurred while deleting the offer increment',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DynamicIncrementsV2ListView(APIView):
+    """
+    API endpoint for listing dynamic increments v2 (dynamic setup) for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve all dynamic increments for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get all dynamic increments for this property
+            dynamic_increments = DpDynamicIncrementsV2.objects.filter(
+                property_id=property_instance
+            ).order_by('-created_at')
+            
+            serializer = DynamicIncrementsV2Serializer(dynamic_increments, many=True)
+            
+            return Response({
+                'rules': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error retrieving dynamic increments: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving dynamic increments',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DynamicIncrementsV2CreateView(APIView):
+    """
+    API endpoint for creating dynamic increments v2 (dynamic setup)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, property_id):
+        """
+        Create new dynamic increments for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if this is a bulk create request
+            if 'rules' in request.data:
+                # Bulk create multiple rules
+                serializer = BulkDynamicIncrementsV2Serializer(
+                    data=request.data, 
+                    context={'request': request}
+                )
+                
+                if serializer.is_valid():
+                    result = serializer.save()
+                    
+                    # Serialize the created rules for response
+                    created_rules_data = DynamicIncrementsV2Serializer(
+                        result['created_rules'], 
+                        many=True
+                    ).data
+                    
+                    return Response({
+                        'message': f"Successfully created {len(result['created_rules'])} dynamic increments",
+                        'created_rules': created_rules_data,
+                        'errors': result.get('errors', []),
+                        'property_id': result['property_id']
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Single rule create
+                data = request.data.copy()
+                data['property_id'] = property_instance.id
+                
+                serializer = DynamicIncrementsV2Serializer(data=data, context={'request': request})
+                
+                if serializer.is_valid():
+                    dynamic_increment = serializer.save()
+                    
+                    return Response({
+                        'message': 'Dynamic increment created successfully',
+                        'rule': DynamicIncrementsV2Serializer(dynamic_increment).data
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error creating dynamic increment: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the dynamic increment',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DynamicIncrementsV2UpdateView(APIView):
+    """
+    API endpoint for updating dynamic increments v2 (dynamic setup)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id, rule_id):
+        """
+        Update an existing dynamic increment
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the dynamic increment
+            dynamic_increment = get_object_or_404(
+                DpDynamicIncrementsV2, 
+                id=rule_id, 
+                property_id=property_instance
+            )
+            
+            serializer = DynamicIncrementsV2Serializer(
+                dynamic_increment, 
+                data=request.data, 
+                partial=True,
+                context={'request': request}
+            )
+            
+            if serializer.is_valid():
+                updated_rule = serializer.save()
+                
+                return Response({
+                    'message': 'Dynamic increment updated successfully',
+                    'rule': DynamicIncrementsV2Serializer(updated_rule).data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'message': 'Validation error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpDynamicIncrementsV2.DoesNotExist:
+            return Response({
+                'message': 'Dynamic increment not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error updating dynamic increment: {str(e)}")
+            return Response({
+                'message': 'An error occurred while updating the dynamic increment',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DynamicIncrementsV2DeleteView(APIView):
+    """
+    API endpoint for deleting dynamic increments v2 (dynamic setup)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, property_id, rule_id):
+        """
+        Delete a dynamic increment
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the dynamic increment
+            dynamic_increment = get_object_or_404(
+                DpDynamicIncrementsV2, 
+                id=rule_id, 
+                property_id=property_instance
+            )
+            
+            occupancy_category = dynamic_increment.get_occupancy_category_display()
+            lead_time_category = dynamic_increment.get_lead_time_category_display()
+            dynamic_increment.delete()
+            
+            return Response({
+                'message': 'Dynamic increment deleted successfully',
+                'rule_id': rule_id,
+                'occupancy_category': occupancy_category,
+                'lead_time_category': lead_time_category
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpDynamicIncrementsV2.DoesNotExist:
+            return Response({
+                'message': 'Dynamic increment not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error deleting dynamic increment: {str(e)}")
+            return Response({
+                'message': 'An error occurred while deleting the dynamic increment',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosReductionListView(APIView):
+    """
+    API endpoint for listing LOS reduction rules for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve all LOS reduction rules for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get all LOS reduction rules for this property
+            los_reductions = DpLosReduction.objects.filter(
+                property_id=property_instance
+            ).order_by('-created_at')
+            
+            serializer = DpLosReductionSerializer(los_reductions, many=True)
+            
+            return Response({
+                'reductions': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error retrieving LOS reduction rules: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving LOS reduction rules',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosReductionCreateView(APIView):
+    """
+    API endpoint for creating LOS reduction rules
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, property_id):
+        """
+        Create new LOS reduction rules for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if this is a bulk create request
+            if 'reductions' in request.data:
+                # Bulk create multiple rules
+                serializer = BulkDpLosReductionSerializer(
+                    data=request.data, 
+                    context={'property': property_instance, 'user': request.user}
+                )
+                
+                if serializer.is_valid():
+                    result = serializer.save()
+                    
+                    # Serialize the created rules for response
+                    created_reductions_data = DpLosReductionSerializer(
+                        result['created_reductions'], 
+                        many=True
+                    ).data
+                    
+                    return Response({
+                        'message': f"Successfully created {len(result['created_reductions'])} LOS reduction rules",
+                        'created_reductions': created_reductions_data,
+                        'errors': result.get('errors', []),
+                        'property_id': result['property_id']
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Single rule create
+                data = request.data.copy()
+                data['property_id'] = property_instance.id
+                data['user'] = request.user.id
+                
+                serializer = DpLosReductionSerializer(data=data)
+                
+                if serializer.is_valid():
+                    los_reduction = serializer.save()
+                    
+                    return Response({
+                        'message': 'LOS reduction rule created successfully',
+                        'reduction': DpLosReductionSerializer(los_reduction).data
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error creating LOS reduction rule: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the LOS reduction rule',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosReductionUpdateView(APIView):
+    """
+    API endpoint for updating LOS reduction rules
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id, reduction_id):
+        """
+        Update an existing LOS reduction rule
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the LOS reduction rule
+            los_reduction = get_object_or_404(
+                DpLosReduction, 
+                id=reduction_id, 
+                property_id=property_instance
+            )
+            
+            serializer = DpLosReductionSerializer(
+                los_reduction, 
+                data=request.data, 
+                partial=True
+            )
+            
+            if serializer.is_valid():
+                updated_reduction = serializer.save()
+                
+                return Response({
+                    'message': 'LOS reduction rule updated successfully',
+                    'reduction': DpLosReductionSerializer(updated_reduction).data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'message': 'Validation error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpLosReduction.DoesNotExist:
+            return Response({
+                'message': 'LOS reduction rule not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error updating LOS reduction rule: {str(e)}")
+            return Response({
+                'message': 'An error occurred while updating the LOS reduction rule',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosReductionDeleteView(APIView):
+    """
+    API endpoint for deleting LOS reduction rules
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, property_id, reduction_id):
+        """
+        Delete a LOS reduction rule
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the LOS reduction rule
+            los_reduction = get_object_or_404(
+                DpLosReduction, 
+                id=reduction_id, 
+                property_id=property_instance
+            )
+            
+            lead_time_category = los_reduction.get_lead_time_category_display()
+            occupancy_category = los_reduction.get_occupancy_category_display()
+            los_reduction.delete()
+            
+            return Response({
+                'message': 'LOS reduction rule deleted successfully',
+                'reduction_id': reduction_id,
+                'lead_time_category': lead_time_category,
+                'occupancy_category': occupancy_category
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpLosReduction.DoesNotExist:
+            return Response({
+                'message': 'LOS reduction rule not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error deleting LOS reduction rule: {str(e)}")
+            return Response({
+                'message': 'An error occurred while deleting the LOS reduction rule',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosSetupListView(APIView):
+    """
+    API endpoint for listing LOS setup rules for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve all LOS setup rules for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get all LOS setup rules for this property
+            los_setups = DpLosSetup.objects.filter(
+                property_id=property_instance
+            ).order_by('-created_at')
+            
+            serializer = DpLosSetupSerializer(los_setups, many=True)
+            
+            return Response({
+                'setups': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error retrieving LOS setup rules: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving LOS setup rules',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosSetupCreateView(APIView):
+    """
+    API endpoint for creating LOS setup rules
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, property_id):
+        """
+        Create new LOS setup rules for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Check if this is a bulk create request
+            if 'setups' in request.data:
+                # Bulk create multiple rules
+                serializer = BulkDpLosSetupSerializer(
+                    data=request.data, 
+                    context={'property': property_instance, 'user': request.user}
+                )
+                
+                if serializer.is_valid():
+                    result = serializer.save()
+                    
+                    # Serialize the created rules for response
+                    created_setups_data = DpLosSetupSerializer(
+                        result['created_setups'], 
+                        many=True
+                    ).data
+                    
+                    return Response({
+                        'message': f"Successfully created {len(result['created_setups'])} LOS setup rules",
+                        'created_setups': created_setups_data,
+                        'errors': result.get('errors', []),
+                        'property_id': result['property_id']
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Single rule create
+                data = request.data.copy()
+                data['property_id'] = property_instance.id
+                
+                serializer = DpLosSetupSerializer(data=data)
+                
+                if serializer.is_valid():
+                    los_setup = serializer.save()
+                    
+                    return Response({
+                        'message': 'LOS setup rule created successfully',
+                        'setup': DpLosSetupSerializer(los_setup).data
+                    }, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({
+                        'message': 'Validation error',
+                        'errors': serializer.errors
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error creating LOS setup rule: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the LOS setup rule',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosSetupUpdateView(APIView):
+    """
+    API endpoint for updating LOS setup rules
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id, setup_id):
+        """
+        Update an existing LOS setup rule
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the LOS setup rule
+            los_setup = get_object_or_404(
+                DpLosSetup, 
+                id=setup_id, 
+                property_id=property_instance
+            )
+            
+            serializer = DpLosSetupSerializer(
+                los_setup, 
+                data=request.data, 
+                partial=True
+            )
+            
+            if serializer.is_valid():
+                updated_setup = serializer.save()
+                
+                return Response({
+                    'message': 'LOS setup rule updated successfully',
+                    'setup': DpLosSetupSerializer(updated_setup).data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'message': 'Validation error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpLosSetup.DoesNotExist:
+            return Response({
+                'message': 'LOS setup rule not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error updating LOS setup rule: {str(e)}")
+            return Response({
+                'message': 'An error occurred while updating the LOS setup rule',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LosSetupDeleteView(APIView):
+    """
+    API endpoint for deleting LOS setup rules
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, property_id, setup_id):
+        """
+        Delete a LOS setup rule
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the LOS setup rule
+            los_setup = get_object_or_404(
+                DpLosSetup, 
+                id=setup_id, 
+                property_id=property_instance
+            )
+            
+            day_of_week = los_setup.day_of_week
+            valid_from = los_setup.valid_from
+            los_setup.delete()
+            
+            return Response({
+                'message': 'LOS setup rule deleted successfully',
+                'setup_id': setup_id,
+                'day_of_week': day_of_week,
+                'valid_from': valid_from
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpLosSetup.DoesNotExist:
+            return Response({
+                'message': 'LOS setup rule not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error deleting LOS setup rule: {str(e)}")
+            return Response({
+                'message': 'An error occurred while deleting the LOS setup rule',
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -141,8 +141,9 @@ class DpDynamicIncrementsV2ModelTest(TestCase):
         )
         self.increment = DpDynamicIncrementsV2.objects.create(
             property_id=self.property,
-            occupancy_level=75.0,
-            lead_time_days=7,
+            user=self.user,
+            occupancy_category='70-80',
+            lead_time_category='3-7',
             increment_type='Additional',
             increment_value=15.0
         )
@@ -150,12 +151,12 @@ class DpDynamicIncrementsV2ModelTest(TestCase):
     def test_increment_creation(self):
         """Test that an increment can be created"""
         self.assertEqual(self.increment.property_id, self.property)
-        self.assertEqual(self.increment.occupancy_level, 75.0)
-        self.assertEqual(self.increment.lead_time_days, 7)
+        self.assertEqual(self.increment.occupancy_category, '70-80')
+        self.assertEqual(self.increment.lead_time_category, '3-7')
 
     def test_increment_str_representation(self):
         """Test the string representation of DpDynamicIncrementsV2"""
-        expected = 'Test Hotel - Occupancy 75.0, Lead 7 days'
+        expected = 'Test Hotel - Occupancy 70-80%, Lead 3-7 days'
         self.assertEqual(str(self.increment), expected)
 
 

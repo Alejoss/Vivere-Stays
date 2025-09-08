@@ -7,7 +7,11 @@ from .models import (
     CompetitorCandidate,
     DpGeneralSettings,
     DpPropertyCompetitor,
-    DpHistoricalCompetitorPrice
+    DpHistoricalCompetitorPrice,
+    DpOfferIncrements,
+    DpDynamicIncrementsV2,
+    DpLosSetup,
+    DpLosReduction
 )
 from booking.models import Competitor
 
@@ -457,4 +461,458 @@ class PropertyCompetitorSerializer(serializers.ModelSerializer):
             'id', 'competitor_id', 'competitor_name', 'booking_link', 
             'only_follow', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at'] 
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class OfferIncrementsSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DpOfferIncrements model (Special Offers)
+    """
+    class Meta:
+        model = DpOfferIncrements
+        fields = [
+            'id', 'property_id', 'user', 'offer_name', 'valid_from', 'valid_until',
+            'applied_from_days', 'applied_until_days', 'increment_type', 
+            'increment_value', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """
+        Custom validation for offer increments data
+        """
+        valid_from = data.get('valid_from')
+        valid_until = data.get('valid_until')
+        applied_from_days = data.get('applied_from_days')
+        applied_until_days = data.get('applied_until_days')
+        increment_value = data.get('increment_value')
+
+        # Validate date range
+        if valid_from and valid_until and valid_from >= valid_until:
+            raise serializers.ValidationError(
+                "valid_until must be after valid_from"
+            )
+
+        # Validate applied days range
+        if (applied_from_days is not None and applied_until_days is not None and 
+            applied_from_days > applied_until_days):
+            raise serializers.ValidationError(
+                "applied_until_days must be greater than or equal to applied_from_days"
+            )
+
+        # Validate increment value
+        if increment_value is not None and increment_value < 0:
+            raise serializers.ValidationError(
+                "increment_value cannot be negative"
+            )
+
+        # Validate increment type
+        allowed_types = ['Percentage', 'Additional']
+        increment_type = data.get('increment_type')
+        if increment_type and increment_type not in allowed_types:
+            raise serializers.ValidationError(
+                f"increment_type must be one of: {', '.join(allowed_types)}"
+            )
+
+        return data
+
+    def create(self, validated_data):
+        """
+        Create offer increment with additional logging and user assignment
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Set the user from the request context
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        
+        logger.info(f"Creating offer increment with validated data: {validated_data}")
+        
+        try:
+            offer_increment = super().create(validated_data)
+            logger.info(f"Offer increment created successfully with ID: {offer_increment.id}")
+            return offer_increment
+        except Exception as e:
+            logger.error(f"Error creating offer increment: {str(e)}", exc_info=True)
+            raise
+
+
+class BulkOfferIncrementsSerializer(serializers.Serializer):
+    """
+    Serializer for creating multiple offer increments at once
+    """
+    offers = serializers.ListField(
+        child=serializers.DictField(),
+        max_length=20,  # Limit to 20 offers at once
+        help_text='List of offer increment objects'
+    )
+    
+    def validate_offers(self, value):
+        """
+        Validate that all offers are valid
+        """
+        if not value:
+            return value
+            
+        for i, offer in enumerate(value):
+            # Validate required fields
+            required_fields = ['offer_name', 'valid_from', 'valid_until', 'increment_type', 'increment_value']
+            for field in required_fields:
+                if field not in offer or offer[field] is None or offer[field] == '':
+                    raise serializers.ValidationError(f"Offer {i+1}: {field} is required.")
+            
+            # Validate increment type
+            if offer['increment_type'] not in ['Percentage', 'Additional']:
+                raise serializers.ValidationError(f"Offer {i+1}: increment_type must be 'Percentage' or 'Additional'.")
+            
+            # Validate increment value
+            try:
+                increment_value = int(offer['increment_value'])
+                if increment_value < 0:
+                    raise serializers.ValidationError(f"Offer {i+1}: increment_value cannot be negative.")
+            except (ValueError, TypeError):
+                raise serializers.ValidationError(f"Offer {i+1}: increment_value must be a valid number.")
+        
+        return value
+
+    def create(self, validated_data):
+        """
+        Create multiple OfferIncrements instances
+        """
+        offers = validated_data['offers']
+        created_offers = []
+        errors = []
+        
+        # Get the current user's last created property
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("User must be authenticated.")
+        
+        # Get the user's last created property
+        try:
+            property_instance = Property.objects.filter(
+                profiles__user=request.user
+            ).order_by('-created_at').first()
+            
+            if not property_instance:
+                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+        
+        for i, offer_data in enumerate(offers):
+            try:
+                # Add property_id and user to the offer data
+                offer_data['property_id'] = property_instance
+                offer_data['user'] = request.user
+                
+                # Create the offer increment
+                offer_increment = DpOfferIncrements.objects.create(**offer_data)
+                created_offers.append(offer_increment)
+                
+            except Exception as e:
+                errors.append({
+                    'offer_index': i + 1,
+                    'offer_name': offer_data.get('offer_name', 'Unknown'),
+                    'error': str(e)
+                })
+        
+        if errors and not created_offers:
+            # If all offers failed to create, raise an error
+            raise serializers.ValidationError(f"Failed to create any offer increments: {errors}")
+        
+        return {
+            'created_offers': created_offers,
+            'errors': errors,
+            'property_id': property_instance.id
+        }
+
+
+class DynamicIncrementsV2Serializer(serializers.ModelSerializer):
+    """
+    Serializer for DpDynamicIncrementsV2 model (Dynamic Setup)
+    """
+    class Meta:
+        model = DpDynamicIncrementsV2
+        fields = [
+            'id', 'property_id', 'user', 'occupancy_category', 'lead_time_category',
+            'increment_type', 'increment_value', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """
+        Custom validation for dynamic increments data
+        """
+        occupancy_category = data.get('occupancy_category')
+        lead_time_category = data.get('lead_time_category')
+        increment_value = data.get('increment_value')
+
+        # Validate occupancy category
+        valid_occupancy_categories = [choice[0] for choice in DpDynamicIncrementsV2.OCCUPANCY_CATEGORIES]
+        if occupancy_category and occupancy_category not in valid_occupancy_categories:
+            raise serializers.ValidationError(
+                f"occupancy_category must be one of: {', '.join(valid_occupancy_categories)}"
+            )
+
+        # Validate lead time category
+        valid_lead_time_categories = [choice[0] for choice in DpDynamicIncrementsV2.LEAD_TIME_CATEGORIES]
+        if lead_time_category and lead_time_category not in valid_lead_time_categories:
+            raise serializers.ValidationError(
+                f"lead_time_category must be one of: {', '.join(valid_lead_time_categories)}"
+            )
+
+        # Validate increment value
+        if increment_value is not None and increment_value < 0:
+            raise serializers.ValidationError(
+                "increment_value cannot be negative"
+            )
+
+        # Validate increment type
+        allowed_types = ['Percentage', 'Additional']
+        increment_type = data.get('increment_type')
+        if increment_type and increment_type not in allowed_types:
+            raise serializers.ValidationError(
+                f"increment_type must be one of: {', '.join(allowed_types)}"
+            )
+
+        return data
+
+    def create(self, validated_data):
+        """
+        Create dynamic increment with additional logging and user assignment
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Set the user from the request context
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        
+        logger.info(f"Creating dynamic increment with validated data: {validated_data}")
+        
+        try:
+            dynamic_increment = super().create(validated_data)
+            logger.info(f"Dynamic increment created successfully with ID: {dynamic_increment.id}")
+            return dynamic_increment
+        except Exception as e:
+            logger.error(f"Error creating dynamic increment: {str(e)}", exc_info=True)
+            raise
+
+
+class BulkDynamicIncrementsV2Serializer(serializers.Serializer):
+    """
+    Serializer for creating multiple dynamic increments at once
+    """
+    rules = serializers.ListField(
+        child=serializers.DictField(),
+        max_length=20,  # Limit to 20 rules at once
+        help_text='List of dynamic increment objects'
+    )
+    
+    def validate_rules(self, value):
+        """
+        Validate that all rules are valid
+        """
+        if not value:
+            return value
+            
+        for i, rule in enumerate(value):
+            # Validate required fields
+            required_fields = ['occupancy_category', 'lead_time_category', 'increment_type', 'increment_value']
+            for field in required_fields:
+                if field not in rule or rule[field] is None or rule[field] == '':
+                    raise serializers.ValidationError(f"Rule {i+1}: {field} is required.")
+            
+            # Validate occupancy category
+            valid_occupancy_categories = [choice[0] for choice in DpDynamicIncrementsV2.OCCUPANCY_CATEGORIES]
+            if rule['occupancy_category'] not in valid_occupancy_categories:
+                raise serializers.ValidationError(f"Rule {i+1}: occupancy_category must be one of: {', '.join(valid_occupancy_categories)}.")
+            
+            # Validate lead time category
+            valid_lead_time_categories = [choice[0] for choice in DpDynamicIncrementsV2.LEAD_TIME_CATEGORIES]
+            if rule['lead_time_category'] not in valid_lead_time_categories:
+                raise serializers.ValidationError(f"Rule {i+1}: lead_time_category must be one of: {', '.join(valid_lead_time_categories)}.")
+            
+            # Validate increment type
+            if rule['increment_type'] not in ['Percentage', 'Additional']:
+                raise serializers.ValidationError(f"Rule {i+1}: increment_type must be 'Percentage' or 'Additional'.")
+            
+            # Validate increment value
+            try:
+                increment_value = float(rule['increment_value'])
+                if increment_value < 0:
+                    raise serializers.ValidationError(f"Rule {i+1}: increment_value cannot be negative.")
+            except (ValueError, TypeError):
+                raise serializers.ValidationError(f"Rule {i+1}: increment_value must be a valid number.")
+        
+        return value
+
+    def create(self, validated_data):
+        """
+        Create multiple DynamicIncrementsV2 instances
+        """
+        rules = validated_data['rules']
+        created_rules = []
+        errors = []
+        
+        # Get the current user's last created property
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("User must be authenticated.")
+        
+        # Get the user's last created property
+        try:
+            property_instance = Property.objects.filter(
+                profiles__user=request.user
+            ).order_by('-created_at').first()
+            
+            if not property_instance:
+                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+        
+        for i, rule_data in enumerate(rules):
+            try:
+                # Add property_id and user to the rule data
+                rule_data['property_id'] = property_instance
+                rule_data['user'] = request.user
+                
+                # Create the dynamic increment
+                dynamic_increment = DpDynamicIncrementsV2.objects.create(**rule_data)
+                created_rules.append(dynamic_increment)
+                
+            except Exception as e:
+                errors.append({
+                    'rule_index': i + 1,
+                    'occupancy_category': rule_data.get('occupancy_category', 'Unknown'),
+                    'lead_time_category': rule_data.get('lead_time_category', 'Unknown'),
+                    'error': str(e)
+                })
+        
+        if errors and not created_rules:
+            # If all rules failed to create, raise an error
+            raise serializers.ValidationError(f"Failed to create any dynamic increments: {errors}")
+        
+        return {
+            'created_rules': created_rules,
+            'errors': errors,
+            'property_id': property_instance.id
+        }
+
+
+class DpLosSetupSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DpLosSetup model
+    """
+    class Meta:
+        model = DpLosSetup
+        fields = [
+            'id', 'property_id', 'valid_from', 'valid_until', 
+            'day_of_week', 'los_value', 'num_competitors', 
+            'los_aggregation', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """
+        Validate that valid_from is before valid_until
+        """
+        if data['valid_from'] >= data['valid_until']:
+            raise serializers.ValidationError("valid_from must be before valid_until")
+        return data
+
+
+class DpLosReductionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for DpLosReduction model
+    """
+    class Meta:
+        model = DpLosReduction
+        fields = [
+            'id', 'property_id', 'user', 'lead_time_category', 
+            'occupancy_category', 'los_value', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_los_value(self, value):
+        """
+        Validate that los_value is positive
+        """
+        if value <= 0:
+            raise serializers.ValidationError("LOS value must be greater than 0")
+        return value
+
+
+class BulkDpLosSetupSerializer(serializers.Serializer):
+    """
+    Serializer for bulk creating DpLosSetup entries
+    """
+    setups = DpLosSetupSerializer(many=True)
+
+    def create(self, validated_data):
+        setups_data = validated_data['setups']
+        property_instance = self.context['property']
+        user = self.context['user']
+        
+        created_setups = []
+        errors = []
+        
+        for i, setup_data in enumerate(setups_data):
+            try:
+                setup_data['property_id'] = property_instance
+                setup = DpLosSetup.objects.create(**setup_data)
+                created_setups.append(DpLosSetupSerializer(setup).data)
+            except Exception as e:
+                errors.append({
+                    'setup_index': i,
+                    'day_of_week': setup_data.get('day_of_week', 'Unknown'),
+                    'error': str(e)
+                })
+        
+        return {
+            'message': f'Successfully created {len(created_setups)} LOS setup rules',
+            'created_setups': created_setups,
+            'errors': errors,
+            'property_id': property_instance.id
+        }
+
+
+class BulkDpLosReductionSerializer(serializers.Serializer):
+    """
+    Serializer for bulk creating DpLosReduction entries
+    """
+    reductions = DpLosReductionSerializer(many=True)
+
+    def create(self, validated_data):
+        reductions_data = validated_data['reductions']
+        property_instance = self.context['property']
+        user = self.context['user']
+        
+        created_reductions = []
+        errors = []
+        
+        for i, reduction_data in enumerate(reductions_data):
+            try:
+                reduction_data['property_id'] = property_instance
+                reduction_data['user'] = user
+                reduction = DpLosReduction.objects.create(**reduction_data)
+                created_reductions.append(DpLosReductionSerializer(reduction).data)
+            except Exception as e:
+                errors.append({
+                    'reduction_index': i,
+                    'lead_time_category': reduction_data.get('lead_time_category', 'Unknown'),
+                    'occupancy_category': reduction_data.get('occupancy_category', 'Unknown'),
+                    'error': str(e)
+                })
+        
+        return {
+            'message': f'Successfully created {len(created_reductions)} LOS reduction rules',
+            'created_reductions': created_reductions,
+            'errors': errors,
+            'property_id': property_instance.id
+        } 

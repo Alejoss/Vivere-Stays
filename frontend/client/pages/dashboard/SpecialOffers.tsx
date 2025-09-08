@@ -1,3 +1,4 @@
+import { useState, useEffect, useContext } from "react";
 import {
   Plus,
   Save,
@@ -6,68 +7,197 @@ import {
   Trash2,
   Info,
   Percent,
+  DollarSign,
 } from "lucide-react";
+import { dynamicPricingService, SpecialOffer, CreateSpecialOfferRequest } from "../../../shared/api/dynamic";
+import { PropertyContext } from "../../../shared/PropertyContext";
+
+interface OfferFormData {
+  id?: number;
+  offer_name: string;
+  valid_from: string;
+  valid_until: string;
+  applied_from_days: number | null;
+  applied_until_days: number | null;
+  increment_type: 'Percentage' | 'Additional';
+  increment_value: number;
+  isNew?: boolean;
+}
 
 export default function SpecialOffers() {
-  const offers = [
-    {
-      id: 1,
-      name: "10% SUPL.OTAS",
-      validFrom: "08/16/2025",
-      validUntil: "09/16/2025",
-      availableFromDays: "15",
-      availableUntilDays: "30",
-      type: "Percentage",
-      value: "30",
-    },
-    {
-      id: 2,
-      name: "Summer Discount",
-      validFrom: "08/18/2025",
-      validUntil: "09/18/2025",
-      availableFromDays: "30",
-      availableUntilDays: "30",
-      type: "Percentage",
-      value: "30",
-    },
-    {
-      id: 3,
-      name: "",
-      validFrom: "MM/DD/YYYY",
-      validUntil: "MM/DD/YYYY",
-      availableFromDays: "0",
-      availableUntilDays: "0",
-      type: "Percentage",
-      value: "0",
-      isPlaceholder: true,
-    },
-  ];
+  const { property } = useContext(PropertyContext) ?? {};
+  const [offers, setOffers] = useState<OfferFormData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Load existing offers on component mount
+  useEffect(() => {
+    if (property?.id) {
+      loadOffers();
+    }
+  }, [property?.id]);
+
+  const loadOffers = async () => {
+    if (!property?.id) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await dynamicPricingService.getSpecialOffers(property.id);
+      setOffers(response.offers.map(offer => ({
+        id: offer.id,
+        offer_name: offer.offer_name,
+        valid_from: offer.valid_from,
+        valid_until: offer.valid_until,
+        applied_from_days: offer.applied_from_days,
+        applied_until_days: offer.applied_until_days,
+        increment_type: offer.increment_type,
+        increment_value: offer.increment_value,
+        isNew: false
+      })));
+    } catch (err: any) {
+      setError(err.message || 'Failed to load offers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper functions
+  const addNewOffer = () => {
+    const newOffer: OfferFormData = {
+      offer_name: "",
+      valid_from: "",
+      valid_until: "",
+      applied_from_days: null,
+      applied_until_days: null,
+      increment_type: 'Percentage',
+      increment_value: 0,
+      isNew: true
+    };
+    setOffers([...offers, newOffer]);
+  };
+
+  const updateOffer = (index: number, field: keyof OfferFormData, value: any) => {
+    const updatedOffers = [...offers];
+    updatedOffers[index] = { ...updatedOffers[index], [field]: value };
+    setOffers(updatedOffers);
+  };
+
+  const removeOffer = async (index: number) => {
+    const offer = offers[index];
+    
+    // If it's an existing offer, delete it from the server
+    if (offer.id && !offer.isNew) {
+      if (!property?.id) return;
+      
+      try {
+        await dynamicPricingService.deleteSpecialOffer(property.id, offer.id);
+        setSuccess('Offer deleted successfully');
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete offer');
+        return;
+      }
+    }
+    
+    // Remove from local state
+    const updatedOffers = offers.filter((_, i) => i !== index);
+    setOffers(updatedOffers);
+  };
+
+  const saveOffers = async () => {
+    if (!property?.id) return;
+    
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const newOffers = offers.filter(offer => offer.isNew);
+      const existingOffers = offers.filter(offer => !offer.isNew);
+      
+      // Update existing offers
+      for (const offer of existingOffers) {
+        if (offer.id) {
+          await dynamicPricingService.updateSpecialOffer(property.id, offer.id, {
+            offer_name: offer.offer_name,
+            valid_from: offer.valid_from,
+            valid_until: offer.valid_until,
+            applied_from_days: offer.applied_from_days,
+            applied_until_days: offer.applied_until_days,
+            increment_type: offer.increment_type,
+            increment_value: offer.increment_value
+          });
+        }
+      }
+      
+      // Create new offers
+      if (newOffers.length > 0) {
+        const validNewOffers = newOffers.filter(offer => 
+          offer.offer_name.trim() && offer.valid_from && offer.valid_until
+        );
+        
+        if (validNewOffers.length > 0) {
+          await dynamicPricingService.bulkCreateSpecialOffers(property.id, {
+            offers: validNewOffers.map(offer => ({
+              offer_name: offer.offer_name,
+              valid_from: offer.valid_from,
+              valid_until: offer.valid_until,
+              applied_from_days: offer.applied_from_days,
+              applied_until_days: offer.applied_until_days,
+              increment_type: offer.increment_type,
+              increment_value: offer.increment_value
+            }))
+          });
+        }
+      }
+      
+      setSuccess('Offers saved successfully');
+      loadOffers(); // Reload to get updated data
+    } catch (err: any) {
+      setError(err.message || 'Failed to save offers');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const DateInput = ({
     value,
-    placeholder,
+    onChange,
+    placeholder = "Select date"
   }: {
     value: string;
-    placeholder?: boolean;
+    onChange: (value: string) => void;
+    placeholder?: string;
   }) => (
-    <div className="flex items-center justify-between px-4 py-2 border border-gray-300 rounded bg-white">
-      <span
-        className={`text-xs ${placeholder ? "text-gray-400" : "text-black"}`}
-      >
-        {value}
-      </span>
-      <Calendar size={17} className="text-black" />
+    <div className="relative">
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
+        placeholder={placeholder}
+      />
+      <Calendar size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
     </div>
   );
 
-  const TypeSelector = () => (
-    <div className="flex items-center justify-between px-3 py-2 border border-gray-300 rounded bg-white">
-      <div className="flex items-center gap-2">
-        <Percent size={16} className="text-black" />
-        <span className="text-xs text-black">Percentage</span>
-      </div>
-      <ChevronDown size={16} className="text-black" />
-    </div>
+  const TypeSelector = ({
+    value,
+    onChange
+  }: {
+    value: 'Percentage' | 'Additional';
+    onChange: (value: 'Percentage' | 'Additional') => void;
+  }) => (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
+      className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black appearance-none"
+    >
+      <option value="Percentage">Percentage</option>
+      <option value="Additional">Additional</option>
+    </select>
   );
 
   return (
@@ -118,6 +248,18 @@ export default function SpecialOffers() {
             </div>
           </div>
 
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-600 text-sm">{success}</p>
+            </div>
+          )}
+
           {/* Offers Table */}
           <div className="mb-8">
             {/* Table Headers */}
@@ -144,126 +286,155 @@ export default function SpecialOffers() {
 
             {/* Table Rows */}
             <div className="space-y-2">
-              {offers.map((offer, index) => (
-                <div
-                  key={offer.id}
-                  className="grid grid-cols-8 gap-4 items-center"
-                >
-                  {/* Offer Name */}
-                  <div>
-                    <input
-                      type="text"
-                      value={offer.name}
-                      placeholder={offer.isPlaceholder ? "Discount Name" : ""}
-                      className={`w-full px-3 py-2 text-xs border border-gray-300 rounded ${
-                        offer.isPlaceholder
-                          ? "text-gray-400 placeholder-gray-400"
-                          : "text-black"
-                      }`}
-                      readOnly
-                    />
-                  </div>
-
-                  {/* Valid From */}
-                  <div>
-                    <DateInput
-                      value={offer.validFrom}
-                      placeholder={offer.isPlaceholder}
-                    />
-                  </div>
-
-                  {/* Valid Until */}
-                  <div>
-                    <DateInput
-                      value={offer.validUntil}
-                      placeholder={offer.isPlaceholder}
-                    />
-                  </div>
-
-                  {/* Available From Days */}
-                  <div>
-                    <input
-                      type="text"
-                      value={offer.availableFromDays}
-                      className={`w-full px-3 py-2 text-xs text-center border border-gray-300 rounded ${
-                        offer.isPlaceholder ? "text-gray-400" : "text-black"
-                      }`}
-                      readOnly
-                    />
-                  </div>
-
-                  {/* Available Until Days */}
-                  <div>
-                    <input
-                      type="text"
-                      value={offer.availableUntilDays}
-                      className={`w-full px-3 py-2 text-xs text-center border border-gray-300 rounded ${
-                        offer.isPlaceholder ? "text-gray-400" : "text-black"
-                      }`}
-                      readOnly
-                    />
-                  </div>
-
-                  {/* Type */}
-                  <div>
-                    <TypeSelector />
-                  </div>
-
-                  {/* Value */}
-                  <div>
-                    <input
-                      type="text"
-                      value={offer.value}
-                      className={`w-full px-3 py-2 text-xs text-center border border-gray-300 rounded ${
-                        offer.isPlaceholder ? "text-gray-400" : "text-black"
-                      }`}
-                      readOnly
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div>
-                    <button className="w-full px-5 py-2 border border-red-500 bg-red-50 rounded flex items-center justify-center">
-                      <Trash2 size={24} className="text-red-500" />
-                    </button>
-                  </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading offers...</p>
                 </div>
-              ))}
+              ) : offers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No offers found. Click "Add Offer" to create your first special offer.</p>
+                </div>
+              ) : (
+                offers.map((offer, index) => (
+                  <div
+                    key={offer.id || `new-${index}`}
+                    className={`grid grid-cols-8 gap-4 items-center p-3 rounded-lg ${
+                      offer.isNew ? 'bg-blue-50 border border-blue-200' : 'bg-white'
+                    }`}
+                  >
+                    {/* Offer Name */}
+                    <div>
+                      <input
+                        type="text"
+                        value={offer.offer_name}
+                        onChange={(e) => updateOffer(index, 'offer_name', e.target.value)}
+                        placeholder="Discount Name"
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Valid From */}
+                    <div>
+                      <DateInput
+                        value={offer.valid_from}
+                        onChange={(value) => updateOffer(index, 'valid_from', value)}
+                        placeholder="Select start date"
+                      />
+                    </div>
+
+                    {/* Valid Until */}
+                    <div>
+                      <DateInput
+                        value={offer.valid_until}
+                        onChange={(value) => updateOffer(index, 'valid_until', value)}
+                        placeholder="Select end date"
+                      />
+                    </div>
+
+                    {/* Available From Days */}
+                    <div>
+                      <input
+                        type="number"
+                        value={offer.applied_from_days || ''}
+                        onChange={(e) => updateOffer(index, 'applied_from_days', e.target.value ? parseInt(e.target.value) : null)}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Available Until Days */}
+                    <div>
+                      <input
+                        type="number"
+                        value={offer.applied_until_days || ''}
+                        onChange={(e) => updateOffer(index, 'applied_until_days', e.target.value ? parseInt(e.target.value) : null)}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Type */}
+                    <div>
+                      <TypeSelector
+                        value={offer.increment_type}
+                        onChange={(value) => updateOffer(index, 'increment_type', value)}
+                      />
+                    </div>
+
+                    {/* Value */}
+                    <div>
+                      <input
+                        type="number"
+                        value={offer.increment_value}
+                        onChange={(e) => updateOffer(index, 'increment_value', parseInt(e.target.value) || 0)}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div>
+                      <button 
+                        onClick={() => removeOffer(index)}
+                        className="w-full px-5 py-2 border border-red-500 bg-red-50 rounded flex items-center justify-center hover:bg-red-100 transition-colors"
+                        title="Delete offer"
+                      >
+                        <Trash2 size={20} className="text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex justify-between items-center mb-8">
-            <button className="flex items-center gap-3 px-5 py-3 bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors">
+            <button 
+              onClick={addNewOffer}
+              className="flex items-center gap-3 px-5 py-3 bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors"
+            >
               <Plus size={24} />
               Add Offer
             </button>
-            <button className="flex items-center gap-4 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+            <button 
+              onClick={saveOffers}
+              disabled={saving || offers.length === 0}
+              className="flex items-center gap-4 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Save size={24} />
-              Save Special Offers
+              {saving ? 'Saving...' : 'Save Special Offers'}
             </button>
           </div>
 
           {/* Created Offers Summary */}
-          <div className="bg-[#F9FAFB] border border-[#EBEDF0] rounded-lg p-4 mb-8">
-            <h3 className="text-base font-bold text-gray-900 mb-4">
-              Created Offers Summary
-            </h3>
-            <div className="space-y-2 text-sm">
-              <p>
-                <span className="text-gray-900 font-medium">10% SUPL.OTAS</span>
-                <span className="text-gray-500"> — available from</span>
-                <span className="text-gray-900"> 01/14/2025 to 02/13/2025</span>
-              </p>
-              <p>
-                <span className="text-gray-900 font-medium">
-                  Summer Discount
-                </span>
-                <span className="text-gray-500"> — available from</span>
-                <span className="text-gray-900"> 05/31/2025 to 08/30/2025</span>
-              </p>
+          {offers.length > 0 && (
+            <div className="bg-[#F9FAFB] border border-[#EBEDF0] rounded-lg p-4 mb-8">
+              <h3 className="text-base font-bold text-gray-900 mb-4">
+                Created Offers Summary
+              </h3>
+              <div className="space-y-2 text-sm">
+                {offers.filter(offer => !offer.isNew).map((offer, index) => (
+                  <p key={offer.id || index}>
+                    <span className="text-gray-900 font-medium">{offer.offer_name || 'Unnamed Offer'}</span>
+                    <span className="text-gray-500"> — valid from</span>
+                    <span className="text-gray-900"> {offer.valid_from} to {offer.valid_until}</span>
+                    {offer.applied_from_days !== null && offer.applied_until_days !== null && (
+                      <span className="text-gray-500"> (applied {offer.applied_from_days}-{offer.applied_until_days} days before)</span>
+                    )}
+                  </p>
+                ))}
+                {offers.filter(offer => offer.isNew).length > 0 && (
+                  <p className="text-blue-600 font-medium">
+                    {offers.filter(offer => offer.isNew).length} new offer(s) pending save
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Tips Section */}

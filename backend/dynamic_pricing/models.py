@@ -155,23 +155,47 @@ class DpDynamicIncrementsV1(models.Model):
 
 class DpDynamicIncrementsV2(models.Model):
     """
-    Dynamic pricing increments v2 (point-based format)
+    Dynamic pricing increments v2 (category-based format)
     """
+    # Occupancy categories: 0-30, 30-50, 50-70, 70-80, 80-90, 90-100, 100+
+    OCCUPANCY_CATEGORIES = [
+        ('0-30', '0-30%'),
+        ('30-50', '30-50%'),
+        ('50-70', '50-70%'),
+        ('70-80', '70-80%'),
+        ('80-90', '80-90%'),
+        ('90-100', '90-100%'),
+        ('100+', '100%+'),
+    ]
+    
+    # Lead time categories: 0-1, 1-3, 3-7, 7-14, 14-30, 30-45, 45-60, 60+
+    LEAD_TIME_CATEGORIES = [
+        ('0-1', '0-1 days'),
+        ('1-3', '1-3 days'),
+        ('3-7', '3-7 days'),
+        ('7-14', '7-14 days'),
+        ('14-30', '14-30 days'),
+        ('30-45', '30-45 days'),
+        ('45-60', '45-60 days'),
+        ('60+', '60+ days'),
+    ]
+    
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    occupancy_level = models.FloatField()
-    lead_time_days = models.IntegerField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dynamic_increments_v2', help_text="User who created this dynamic increment")
+    occupancy_category = models.CharField(max_length=10, choices=OCCUPANCY_CATEGORIES, default='50-70', help_text="Occupancy level category")
+    lead_time_category = models.CharField(max_length=10, choices=LEAD_TIME_CATEGORIES, default='3-7', help_text="Lead time category")
     increment_type = models.CharField(max_length=255, default='Additional')  # "Percentage" or "Additional"
     increment_value = models.FloatField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('property_id', 'occupancy_level', 'lead_time_days')
+        unique_together = ('property_id', 'occupancy_category', 'lead_time_category')
         verbose_name = 'Dynamic Increment V2'
         verbose_name_plural = 'Dynamic Increments V2'
 
     def __str__(self):
-        return f"{self.property_id.name} - Occupancy {self.occupancy_level}, Lead {self.lead_time_days} days"
+        return f"{self.property_id.name} - Occupancy {self.get_occupancy_category_display()}, Lead {self.get_lead_time_category_display()}"
 
 
 class DpOfferIncrements(models.Model):
@@ -179,6 +203,7 @@ class DpOfferIncrements(models.Model):
     Dynamic pricing offer increments
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offer_increments', help_text="User who created this offer increment")
     offer_name = models.CharField(max_length=255, null=True, blank=True)
     valid_from = models.DateField()
     valid_until = models.DateField()
@@ -205,10 +230,10 @@ class DpLosSetup(models.Model):
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     valid_from = models.DateField()
     valid_until = models.DateField()
-    day_of_week = models.CharField(max_length=255)  # "mon", "tue", "wed", "thu", "fri", "sat", "sun"
-    los_value = models.IntegerField()
+    day_of_week = models.CharField(max_length=255, default='Monday')  # "mon", "tue", "wed", "thu", "fri", "sat", "sun"
+    los_value = models.IntegerField(default=1)
     num_competitors = models.IntegerField(default=2)
-    los_aggregation = models.CharField(max_length=255, default='min')        
+    los_aggregation = models.CharField(max_length=255, default='min')    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -224,21 +249,21 @@ class DpLosSetup(models.Model):
 class DpLosReduction(models.Model):
     """
     Dynamic pricing length of stay reduction
-    """    
+    """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    lead_time_days = models.IntegerField()
-    occupancy_level = models.CharField(max_length=255)  # "30", "50", "70", "200"
-    los_value = models.IntegerField()       
+    lead_time_days = models.IntegerField(default=7)
+    occupancy_level = models.CharField(max_length=255, default='50-70')
+    los_value = models.IntegerField(default=1)       
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('property_id', 'lead_time_days')
+        unique_together = ('property_id', 'occupancy_level', 'lead_time_days')
         verbose_name = 'LOS Reduction'
         verbose_name_plural = 'LOS Reductions'
 
     def __str__(self):
-        return f"{self.property_id.name} - Lead {self.lead_time_days} days, Occupancy {self.occupancy_level}%"
+        return f"{self.property_id.name} - Lead {self.lead_time_days} days, Occupancy {self.occupancy_level}"
 
 
 class DpMinimumSellingPrice(models.Model):

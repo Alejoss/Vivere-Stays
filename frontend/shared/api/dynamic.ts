@@ -176,6 +176,274 @@ export interface PropertyCompetitorsResponse {
   count: number;
 }
 
+// Types for Special Offers (Offer Increments)
+export interface SpecialOffer {
+  id: number;
+  property_id: string;
+  user: number;
+  offer_name: string;
+  valid_from: string;
+  valid_until: string;
+  applied_from_days: number | null;
+  applied_until_days: number | null;
+  increment_type: 'Percentage' | 'Additional';
+  increment_value: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpecialOffersResponse {
+  offers: SpecialOffer[];
+  count: number;
+}
+
+export interface CreateSpecialOfferRequest {
+  offer_name: string;
+  valid_from: string;
+  valid_until: string;
+  applied_from_days?: number;
+  applied_until_days?: number;
+  increment_type: 'Percentage' | 'Additional';
+  increment_value: number;
+}
+
+export interface BulkCreateSpecialOffersRequest {
+  offers: CreateSpecialOfferRequest[];
+}
+
+export interface CreateSpecialOfferResponse {
+  message: string;
+  offer: SpecialOffer;
+}
+
+export interface BulkCreateSpecialOffersResponse {
+  message: string;
+  created_offers: SpecialOffer[];
+  errors: Array<{
+    offer_index: number;
+    offer_name: string;
+    error: string;
+  }>;
+  property_id: string;
+}
+
+export interface UpdateSpecialOfferRequest {
+  offer_name?: string;
+  valid_from?: string;
+  valid_until?: string;
+  applied_from_days?: number;
+  applied_until_days?: number;
+  increment_type?: 'Percentage' | 'Additional';
+  increment_value?: number;
+}
+
+export interface UpdateSpecialOfferResponse {
+  message: string;
+  offer: SpecialOffer;
+}
+
+export interface DeleteSpecialOfferResponse {
+  message: string;
+  offer_id: number;
+  offer_name: string;
+}
+
+// Types for Dynamic Setup (Dynamic Increments V2)
+export interface DynamicRule {
+  id: number;
+  property_id: string;
+  user: number;
+  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  increment_type: 'Percentage' | 'Additional';
+  increment_value: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DynamicRulesResponse {
+  rules: DynamicRule[];
+  count: number;
+}
+
+export interface CreateDynamicRuleRequest {
+  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  increment_type: 'Percentage' | 'Additional';
+  increment_value: number;
+}
+
+export interface BulkCreateDynamicRulesRequest {
+  rules: CreateDynamicRuleRequest[];
+}
+
+export interface CreateDynamicRuleResponse {
+  message: string;
+  rule: DynamicRule;
+}
+
+export interface BulkCreateDynamicRulesResponse {
+  message: string;
+  created_rules: DynamicRule[];
+  errors: Array<{
+    rule_index: number;
+    occupancy_category: string;
+    lead_time_category: string;
+    error: string;
+  }>;
+  property_id: string;
+}
+
+export interface UpdateDynamicRuleRequest {
+  occupancy_category?: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  lead_time_category?: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  increment_type?: 'Percentage' | 'Additional';
+  increment_value?: number;
+}
+
+export interface UpdateDynamicRuleResponse {
+  message: string;
+  rule: DynamicRule;
+}
+
+export interface DeleteDynamicRuleResponse {
+  message: string;
+  rule_id: number;
+  occupancy_category: string;
+  lead_time_category: string;
+}
+
+// Types for LOS Reduction Rules
+export interface LosReductionRule {
+  id: number;
+  property_id: string;
+  user: number;
+  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  los_value: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LosReductionRulesResponse {
+  reductions: LosReductionRule[];
+  count: number;
+}
+
+export interface CreateLosReductionRuleRequest {
+  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  los_value: number;
+}
+
+export interface BulkCreateLosReductionRulesRequest {
+  reductions: CreateLosReductionRuleRequest[];
+}
+
+export interface CreateLosReductionRuleResponse {
+  message: string;
+  reduction: LosReductionRule;
+}
+
+export interface BulkCreateLosReductionRulesResponse {
+  message: string;
+  created_reductions: LosReductionRule[];
+  errors: Array<{
+    reduction_index: number;
+    lead_time_category: string;
+    occupancy_category: string;
+    error: string;
+  }>;
+  property_id: string;
+}
+
+export interface UpdateLosReductionRuleRequest {
+  lead_time_category?: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  occupancy_category?: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  los_value?: number;
+}
+
+export interface UpdateLosReductionRuleResponse {
+  message: string;
+  reduction: LosReductionRule;
+}
+
+export interface DeleteLosReductionRuleResponse {
+  message: string;
+  reduction_id: number;
+  lead_time_category: string;
+  occupancy_category: string;
+}
+
+// Types for LOS Setup Rules
+export interface LosSetupRule {
+  id: number;
+  property_id: string;
+  valid_from: string;
+  valid_until: string;
+  day_of_week: string;
+  los_value: number;
+  num_competitors: number;
+  los_aggregation: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LosSetupRulesResponse {
+  setups: LosSetupRule[];
+  count: number;
+}
+
+export interface CreateLosSetupRuleRequest {
+  valid_from: string;
+  valid_until: string;
+  day_of_week: string;
+  los_value: number;
+  num_competitors?: number;
+  los_aggregation?: string;
+}
+
+export interface BulkCreateLosSetupRulesRequest {
+  setups: CreateLosSetupRuleRequest[];
+}
+
+export interface CreateLosSetupRuleResponse {
+  message: string;
+  setup: LosSetupRule;
+}
+
+export interface BulkCreateLosSetupRulesResponse {
+  message: string;
+  created_setups: LosSetupRule[];
+  errors: Array<{
+    setup_index: number;
+    day_of_week: string;
+    error: string;
+  }>;
+  property_id: string;
+}
+
+export interface UpdateLosSetupRuleRequest {
+  valid_from?: string;
+  valid_until?: string;
+  day_of_week?: string;
+  los_value?: number;
+  num_competitors?: number;
+  los_aggregation?: string;
+}
+
+export interface UpdateLosSetupRuleResponse {
+  message: string;
+  setup: LosSetupRule;
+}
+
+export interface DeleteLosSetupRuleResponse {
+  message: string;
+  setup_id: number;
+  day_of_week: string;
+  valid_from: string;
+}
+
 export const dynamicPricingService = {
   // Price History endpoints
   async getPriceHistory(
@@ -488,6 +756,214 @@ export const dynamicPricingService = {
     return apiRequest<{ message: string; competitor_id: string; competitor_name: string }>({
       method: 'DELETE',
       url: `/dynamic-pricing/properties/${propertyId}/competitors/${competitorId}/delete/`,
+    });
+  },
+
+  // Special Offers (Offer Increments) endpoints
+  async getSpecialOffers(propertyId: string): Promise<SpecialOffersResponse> {
+    return apiRequest<SpecialOffersResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/special-offers/`,
+    });
+  },
+
+  async createSpecialOffer(
+    propertyId: string, 
+    data: CreateSpecialOfferRequest
+  ): Promise<CreateSpecialOfferResponse> {
+    return apiRequest<CreateSpecialOfferResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/special-offers/create/`,
+      data,
+    });
+  },
+
+  async bulkCreateSpecialOffers(
+    propertyId: string, 
+    data: BulkCreateSpecialOffersRequest
+  ): Promise<BulkCreateSpecialOffersResponse> {
+    return apiRequest<BulkCreateSpecialOffersResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/special-offers/create/`,
+      data,
+    });
+  },
+
+  async updateSpecialOffer(
+    propertyId: string, 
+    offerId: number, 
+    data: UpdateSpecialOfferRequest
+  ): Promise<UpdateSpecialOfferResponse> {
+    return apiRequest<UpdateSpecialOfferResponse>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/special-offers/${offerId}/`,
+      data,
+    });
+  },
+
+  async deleteSpecialOffer(
+    propertyId: string, 
+    offerId: number
+  ): Promise<DeleteSpecialOfferResponse> {
+    return apiRequest<DeleteSpecialOfferResponse>({
+      method: 'DELETE',
+      url: `/dynamic-pricing/properties/${propertyId}/special-offers/${offerId}/delete/`,
+    });
+  },
+
+  // Dynamic Setup (Dynamic Increments V2) endpoints
+  async getDynamicRules(propertyId: string): Promise<DynamicRulesResponse> {
+    return apiRequest<DynamicRulesResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/dynamic-setup/`,
+    });
+  },
+
+  async createDynamicRule(
+    propertyId: string, 
+    data: CreateDynamicRuleRequest
+  ): Promise<CreateDynamicRuleResponse> {
+    return apiRequest<CreateDynamicRuleResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/dynamic-setup/create/`,
+      data,
+    });
+  },
+
+  async bulkCreateDynamicRules(
+    propertyId: string, 
+    data: BulkCreateDynamicRulesRequest
+  ): Promise<BulkCreateDynamicRulesResponse> {
+    return apiRequest<BulkCreateDynamicRulesResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/dynamic-setup/create/`,
+      data,
+    });
+  },
+
+  async updateDynamicRule(
+    propertyId: string, 
+    ruleId: number, 
+    data: UpdateDynamicRuleRequest
+  ): Promise<UpdateDynamicRuleResponse> {
+    return apiRequest<UpdateDynamicRuleResponse>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/dynamic-setup/${ruleId}/`,
+      data,
+    });
+  },
+
+  async deleteDynamicRule(
+    propertyId: string, 
+    ruleId: number
+  ): Promise<DeleteDynamicRuleResponse> {
+    return apiRequest<DeleteDynamicRuleResponse>({
+      method: 'DELETE',
+      url: `/dynamic-pricing/properties/${propertyId}/dynamic-setup/${ruleId}/delete/`,
+    });
+  },
+
+  // LOS Reduction Rules endpoints
+  async getLosReductionRules(propertyId: string): Promise<LosReductionRulesResponse> {
+    return apiRequest<LosReductionRulesResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/los-reduction/`,
+    });
+  },
+
+  async createLosReductionRule(
+    propertyId: string, 
+    data: CreateLosReductionRuleRequest
+  ): Promise<CreateLosReductionRuleResponse> {
+    return apiRequest<CreateLosReductionRuleResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/los-reduction/create/`,
+      data,
+    });
+  },
+
+  async bulkCreateLosReductionRules(
+    propertyId: string, 
+    data: BulkCreateLosReductionRulesRequest
+  ): Promise<BulkCreateLosReductionRulesResponse> {
+    return apiRequest<BulkCreateLosReductionRulesResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/los-reduction/create/`,
+      data,
+    });
+  },
+
+  async updateLosReductionRule(
+    propertyId: string, 
+    reductionId: number, 
+    data: UpdateLosReductionRuleRequest
+  ): Promise<UpdateLosReductionRuleResponse> {
+    return apiRequest<UpdateLosReductionRuleResponse>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/los-reduction/${reductionId}/`,
+      data,
+    });
+  },
+
+  async deleteLosReductionRule(
+    propertyId: string, 
+    reductionId: number
+  ): Promise<DeleteLosReductionRuleResponse> {
+    return apiRequest<DeleteLosReductionRuleResponse>({
+      method: 'DELETE',
+      url: `/dynamic-pricing/properties/${propertyId}/los-reduction/${reductionId}/delete/`,
+    });
+  },
+
+  // LOS Setup Rules endpoints
+  async getLosSetupRules(propertyId: string): Promise<LosSetupRulesResponse> {
+    return apiRequest<LosSetupRulesResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/los-setup/`,
+    });
+  },
+
+  async createLosSetupRule(
+    propertyId: string, 
+    data: CreateLosSetupRuleRequest
+  ): Promise<CreateLosSetupRuleResponse> {
+    return apiRequest<CreateLosSetupRuleResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/los-setup/create/`,
+      data,
+    });
+  },
+
+  async bulkCreateLosSetupRules(
+    propertyId: string, 
+    data: BulkCreateLosSetupRulesRequest
+  ): Promise<BulkCreateLosSetupRulesResponse> {
+    return apiRequest<BulkCreateLosSetupRulesResponse>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/los-setup/create/`,
+      data,
+    });
+  },
+
+  async updateLosSetupRule(
+    propertyId: string, 
+    setupId: number, 
+    data: UpdateLosSetupRuleRequest
+  ): Promise<UpdateLosSetupRuleResponse> {
+    return apiRequest<UpdateLosSetupRuleResponse>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/los-setup/${setupId}/`,
+      data,
+    });
+  },
+
+  async deleteLosSetupRule(
+    propertyId: string, 
+    setupId: number
+  ): Promise<DeleteLosSetupRuleResponse> {
+    return apiRequest<DeleteLosSetupRuleResponse>({
+      method: 'DELETE',
+      url: `/dynamic-pricing/properties/${propertyId}/los-setup/${setupId}/delete/`,
     });
   },
 };

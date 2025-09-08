@@ -24,6 +24,22 @@ from .views import (
     PropertyCompetitorUpdateView,
     CompetitorCandidateDeleteView,
     PropertyCompetitorDeleteView,
+    OfferIncrementsListView,
+    OfferIncrementsCreateView,
+    OfferIncrementsUpdateView,
+    OfferIncrementsDeleteView,
+    DynamicIncrementsV2ListView,
+    DynamicIncrementsV2CreateView,
+    DynamicIncrementsV2UpdateView,
+    DynamicIncrementsV2DeleteView,
+    LosReductionListView,
+    LosReductionCreateView,
+    LosReductionUpdateView,
+    LosReductionDeleteView,
+    LosSetupListView,
+    LosSetupCreateView,
+    LosSetupUpdateView,
+    LosSetupDeleteView,
 )
 
 app_name = 'dynamic_pricing'
@@ -70,4 +86,28 @@ urlpatterns = [
     path('competitors/lowest-prices/', lowest_competitor_prices, name='lowest-competitor-prices'),
     path('properties/<str:property_id>/competitors/weekly-chart/', competitor_prices_weekly_chart, name='competitor-prices-weekly-chart'),
     path('properties/<str:property_id>/competitors/date/', competitor_prices_for_date, name='competitor-prices-for-date'),
+    
+    # Special Offers (Offer Increments) endpoints
+    path('properties/<str:property_id>/special-offers/', OfferIncrementsListView.as_view(), name='special-offers-list'),
+    path('properties/<str:property_id>/special-offers/create/', OfferIncrementsCreateView.as_view(), name='special-offers-create'),
+    path('properties/<str:property_id>/special-offers/<int:offer_id>/', OfferIncrementsUpdateView.as_view(), name='special-offers-update'),
+    path('properties/<str:property_id>/special-offers/<int:offer_id>/delete/', OfferIncrementsDeleteView.as_view(), name='special-offers-delete'),
+    
+    # Dynamic Setup (Dynamic Increments V2) endpoints
+    path('properties/<str:property_id>/dynamic-setup/', DynamicIncrementsV2ListView.as_view(), name='dynamic-setup-list'),
+    path('properties/<str:property_id>/dynamic-setup/create/', DynamicIncrementsV2CreateView.as_view(), name='dynamic-setup-create'),
+    path('properties/<str:property_id>/dynamic-setup/<int:rule_id>/', DynamicIncrementsV2UpdateView.as_view(), name='dynamic-setup-update'),
+    path('properties/<str:property_id>/dynamic-setup/<int:rule_id>/delete/', DynamicIncrementsV2DeleteView.as_view(), name='dynamic-setup-delete'),
+    
+    # LOS Reduction Rules endpoints
+    path('properties/<str:property_id>/los-reduction/', LosReductionListView.as_view(), name='los-reduction-list'),
+    path('properties/<str:property_id>/los-reduction/create/', LosReductionCreateView.as_view(), name='los-reduction-create'),
+    path('properties/<str:property_id>/los-reduction/<int:reduction_id>/', LosReductionUpdateView.as_view(), name='los-reduction-update'),
+    path('properties/<str:property_id>/los-reduction/<int:reduction_id>/delete/', LosReductionDeleteView.as_view(), name='los-reduction-delete'),
+    
+    # LOS Setup Rules endpoints
+    path('properties/<str:property_id>/los-setup/', LosSetupListView.as_view(), name='los-setup-list'),
+    path('properties/<str:property_id>/los-setup/create/', LosSetupCreateView.as_view(), name='los-setup-create'),
+    path('properties/<str:property_id>/los-setup/<int:setup_id>/', LosSetupUpdateView.as_view(), name='los-setup-update'),
+    path('properties/<str:property_id>/los-setup/<int:setup_id>/delete/', LosSetupDeleteView.as_view(), name='los-setup-delete'),
 ] 
