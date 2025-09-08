@@ -1673,7 +1673,7 @@ class CompetitorCandidatesListView(APIView):
             candidates = CompetitorCandidate.objects.filter(
                 property_instance=property_instance,
                 deleted=False
-            ).order_by('-created_at')
+            ).order_by('created_at')
             
             serializer = CompetitorCandidateSerializer(candidates, many=True)
             
@@ -1720,7 +1720,7 @@ class PropertyCompetitorsListView(APIView):
             property_competitors = DpPropertyCompetitor.objects.filter(
                 property_id=property_instance,
                 deleted_at__isnull=True
-            ).select_related('competitor_id').order_by('-created_at')
+            ).select_related('competitor_id').order_by('created_at')
 
             serializer = PropertyCompetitorSerializer(property_competitors, many=True)
 
