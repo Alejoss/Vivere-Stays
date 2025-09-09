@@ -566,7 +566,7 @@ export const dynamicPricingService = {
    */
   async getMSPForDate(propertyId: string, date: string): Promise<MSPEntry | null> {
     try {
-      const url = `/dynamic-pricing/properties/${propertyId}/msp-for-date/?date=${date}`;
+      const url = `/dynamic-pricing/properties/${propertyId}/msp/date/?date=${date}`;
       return await apiRequest<MSPEntry>({
         method: 'GET',
         url,
@@ -598,7 +598,7 @@ export const dynamicPricingService = {
    * @param date The date (YYYY-MM-DD)
    */
   async getCompetitorPricesForDate(propertyId: string, date: string): Promise<CompetitorPriceForDate[]> {
-    const url = `/dynamic-pricing/properties/${propertyId}/competitor-prices/for-date/?date=${date}`;
+    const url = `/dynamic-pricing/properties/${propertyId}/competitors/date/?date=${date}`;
     return apiRequest<CompetitorPriceForDate[]>({
       method: 'GET',
       url,

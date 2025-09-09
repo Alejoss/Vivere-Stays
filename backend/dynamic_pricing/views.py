@@ -1174,18 +1174,29 @@ def competitor_prices_for_date(request, property_id):
     from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice
     from booking.models import Competitor
 
+    print(f"[DEBUG] competitor_prices_for_date called with property_id={property_id}")
+    print(f"[DEBUG] request.path: {request.path}")
+    print(f"[DEBUG] request.query_params: {request.query_params}")
+    
     # Parse date
     date_str = request.query_params.get('date')
+    print(f"[DEBUG] date_str from query params: {date_str}")
     if not date_str:
+        print("[DEBUG] Missing date parameter")
         return Response({'error': 'date query parameter is required (YYYY-MM-DD)'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+        print(f"[DEBUG] parsed date_obj: {date_obj}")
     except ValueError:
+        print(f"[DEBUG] Invalid date format: {date_str}")
         return Response({'error': 'Invalid date format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
     # Get competitors for the property
     competitor_links = DpPropertyCompetitor.objects.filter(property_id=property_id)
+    print(f"[DEBUG] competitor_links found: {competitor_links.count()}")
     competitor_ids = list(competitor_links.values_list('competitor_id', flat=True))
+    print(f"[DEBUG] competitor_ids: {competitor_ids}")
     competitors = Competitor.objects.filter(id__in=competitor_ids)
+    print(f"[DEBUG] competitors found: {competitors.count()}")
     # Get lowest prices for these competitors for the date
     price_qs = DpHistoricalCompetitorPrice.objects.filter(
         competitor_id__in=competitor_ids,

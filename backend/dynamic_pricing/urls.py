@@ -61,6 +61,10 @@ urlpatterns = [
     path('properties/<str:property_id>/competitor-candidates/', CompetitorCandidatesListView.as_view(), name='competitor-candidates'),
     path('properties/<str:property_id>/competitor-candidates/<str:candidate_id>/', CompetitorCandidateUpdateView.as_view(), name='competitor-candidate-update'),
     path('properties/<str:property_id>/competitor-candidates/<str:candidate_id>/delete/', CompetitorCandidateDeleteView.as_view(), name='competitor-candidate-delete'),
+    # More specific competitor patterns first
+    path('properties/<str:property_id>/competitors/date/', competitor_prices_for_date, name='competitor-prices-for-date'),
+    path('properties/<str:property_id>/competitors/weekly-chart/', competitor_prices_weekly_chart, name='competitor-prices-weekly-chart'),
+    # General competitor patterns after specific ones
     path('properties/<str:property_id>/competitors/', PropertyCompetitorsListView.as_view(), name='property-competitors'),
     path('properties/<str:property_id>/competitors/<str:competitor_id>/', PropertyCompetitorUpdateView.as_view(), name='property-competitor-update'),
     path('properties/<str:property_id>/competitors/<str:competitor_id>/delete/', PropertyCompetitorDeleteView.as_view(), name='property-competitor-delete'),
@@ -84,8 +88,6 @@ urlpatterns = [
     
     # Competitor price endpoints
     path('competitors/lowest-prices/', lowest_competitor_prices, name='lowest-competitor-prices'),
-    path('properties/<str:property_id>/competitors/weekly-chart/', competitor_prices_weekly_chart, name='competitor-prices-weekly-chart'),
-    path('properties/<str:property_id>/competitors/date/', competitor_prices_for_date, name='competitor-prices-for-date'),
     
     # Special Offers (Offer Increments) endpoints
     path('properties/<str:property_id>/special-offers/', OfferIncrementsListView.as_view(), name='special-offers-list'),
