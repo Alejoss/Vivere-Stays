@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Calendar, ArrowLeft } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { useParams } from "react-router-dom";
 import { useUserProperties, usePriceHistory } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { CompetitorWeeklyPricesResponse } from '../../../shared/api/dynamic';
@@ -815,24 +815,13 @@ export default function ChangePrices() {
     <div className="min-h-screen bg-white">
       {/* Header Section */}
       <div className="px-6 py-6 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-[28px] font-bold text-hotel-brand mb-2">
-              Change Prices
-            </h1>
-            <p className="text-[16px] text-gray-600">
-              Adjust your pricing strategy based on competitor analysis
-            </p>
-          </div>
-          <Link
-            to={propertyId ? `/dashboard/property/${propertyId}` : "/dashboard"}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-hotel-brand hover:bg-gray-50 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="text-[14px] font-medium">
-              Back to Price Calendar
-            </span>
-          </Link>
+        <div className="mb-4">
+          <h1 className="text-[28px] font-bold text-hotel-brand mb-2">
+            Change Prices
+          </h1>
+          <p className="text-[16px] text-gray-600">
+            Adjust your pricing strategy based on competitor analysis
+          </p>
         </div>
       </div>
       {/* Main Content */}

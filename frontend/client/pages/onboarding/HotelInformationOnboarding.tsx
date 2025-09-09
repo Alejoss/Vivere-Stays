@@ -207,7 +207,7 @@ const getCountryName = (countryCode: string): string => {
   return country ? country.name : countryCode;
 };
 
-export default function HotelInformation() {
+export default function HotelInformationOnboarding() {
   const navigate = useNavigate();
   
   // Add authentication check on component mount

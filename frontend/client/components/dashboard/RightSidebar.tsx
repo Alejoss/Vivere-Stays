@@ -72,17 +72,6 @@ export default function RightSidebar({ selectedDate, propertyId, onPriceUpdate, 
 
   return (
     <div className="w-full lg:w-[378px] flex flex-col gap-6 p-4 lg:pl-6 lg:pr-6 lg:mr-6">
-      {/* Change Prices Button */}
-      <div className="flex justify-end">
-        <Link
-          to={propertyId ? `/dashboard/change-prices/${propertyId}` : "/dashboard/change-prices"}
-          className="px-[22px] py-[13px] bg-hotel-brand rounded-lg text-white text-[14px] font-medium hover:bg-hotel-brand-dark transition-colors"
-          style={!propertyId ? { pointerEvents: 'none', opacity: 0.5 } : {}}
-        >
-          Change Prices
-        </Link>
-      </div>
-
       {/* Price Type Dropdown */}
       <div className="relative">
         <button

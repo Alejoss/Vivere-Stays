@@ -11,6 +11,7 @@ import {
   Building2,
   ChevronDown,
   Settings,
+  Edit3,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as React from "react";
@@ -73,12 +74,45 @@ export default function Sidebar() {
 
       {/* Main Navigation */}
       <div className="flex flex-col gap-[2px] px-[10px]">
-        {/* Daily Prices and others (excluding Analytics) */}
-        {navigationItems.map((item) => {
-          // Special handling for Daily Prices to check both exact path and paths with property ID
-          const isActive = item.id === "daily-prices" 
-            ? location.pathname === item.path || location.pathname.startsWith("/dashboard/property/")
-            : location.pathname === item.path;
+        {/* Daily Prices */}
+        {navigationItems.filter(item => item.id === "daily-prices").map((item) => {
+          const isActive = location.pathname === item.path || location.pathname.startsWith("/dashboard/property/");
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavigation(item.path)}
+              className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
+                isActive ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
+              }`}
+            >
+              <item.icon size={18} color={isActive ? "white" : "black"} />
+              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">{item.label}</span>
+            </button>
+          );
+        })}
+
+        {/* Change Prices Button - Right below Daily Prices */}
+        <button
+          onClick={() => {
+            if (property?.id) {
+              navigate(`/dashboard/change-prices/${property.id}`);
+            } else {
+              navigate("/dashboard/change-prices");
+            }
+          }}
+          className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
+            location.pathname.startsWith("/dashboard/change-prices") 
+              ? "bg-hotel-brand-dark text-white" 
+              : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
+          }`}
+        >
+          <Edit3 size={18} color={location.pathname.startsWith("/dashboard/change-prices") ? "white" : "black"} />
+          <span className="text-[15px] font-semibold leading-none sm:hidden md:block">Change Prices</span>
+        </button>
+
+        {/* Other navigation items (OTA, Forecast) */}
+        {navigationItems.filter(item => item.id !== "daily-prices").map((item) => {
+          const isActive = location.pathname === item.path;
           return (
             <button
               key={item.id}
