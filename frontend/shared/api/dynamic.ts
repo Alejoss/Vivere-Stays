@@ -585,7 +585,7 @@ export const dynamicPricingService = {
    * @param startDate The Monday of the week (YYYY-MM-DD)
    */
   async getCompetitorWeeklyPrices(propertyId: string, startDate: string): Promise<CompetitorWeeklyPricesResponse> {
-    const url = `/dynamic-pricing/properties/${propertyId}/competitor-prices/week/?start_date=${startDate}`;
+    const url = `/dynamic-pricing/properties/${propertyId}/competitors/weekly-chart/?start_date=${startDate}`;
     return apiRequest<CompetitorWeeklyPricesResponse>({
       method: 'GET',
       url,
@@ -616,7 +616,7 @@ export const dynamicPricingService = {
     startDate: string,
     endDate: string
   ): Promise<PriceHistoryForDateRangeResponse> {
-    const url = `/dynamic-pricing/properties/${propertyId}/price-history/for-date-range/?start_date=${startDate}&end_date=${endDate}`;
+    const url = `/dynamic-pricing/properties/${propertyId}/price-history/range/?start_date=${startDate}&end_date=${endDate}`;
     return apiRequest<PriceHistoryForDateRangeResponse>({
       method: 'GET',
       url,
