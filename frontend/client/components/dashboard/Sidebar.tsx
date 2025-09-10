@@ -34,9 +34,9 @@ const hotelManagementItems = [
 ];
 
 const accountItems = [
-  { id: "my-account", label: "My Account", icon: User, active: false },
-  { id: "notifications", label: "Notifications", icon: Bell, active: false },
-  { id: "support", label: "Support", icon: HelpCircle, active: false },
+  { id: "my-account", label: "My Account", icon: User, path: "/dashboard/my-account" },
+  { id: "notifications", label: "Notifications", icon: Bell, path: "/dashboard/notifications" },
+  { id: "support", label: "Support", icon: HelpCircle, path: "/dashboard/support" },
 ];
 
 export default function Sidebar() {
@@ -222,17 +222,23 @@ export default function Sidebar() {
 
       {/* Account Navigation */}
       <div className="flex flex-col gap-[2px] px-[10px]">
-        {accountItems.map((item) => (
-          <button
-            key={item.id}
-            className="flex items-center gap-3 px-[11px] py-[10px] rounded bg-hotel-sidebar-bg text-black hover:bg-gray-100 transition-colors"
-          >
-            <item.icon size={18} color="black" />
-            <span className="text-[15px] font-normal leading-none sm:hidden md:block">
-              {item.label}
-            </span>
-          </button>
-        ))}
+        {accountItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleNavigation(item.path)}
+              className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
+                isActive ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
+              }`}
+            >
+              <item.icon size={18} color={isActive ? "white" : "black"} />
+              <span className="text-[15px] font-normal leading-none sm:hidden md:block">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Spacer */}
