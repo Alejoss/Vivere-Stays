@@ -859,10 +859,14 @@ class BulkDpLosSetupSerializer(serializers.Serializer):
         
         for i, setup_data in enumerate(setups_data):
             try:
+                # Remove property_id from setup_data since it's provided as a string from frontend
+                # but we need to use the Property instance from context
+                setup_data.pop('property_id', None)
                 setup_data['property_id'] = property_instance
                 print(f"🔧 DEBUG: Creating DpLosSetup with data: {setup_data}")
                 setup = DpLosSetup.objects.create(**setup_data)
-                created_setups.append(DpLosSetupSerializer(setup).data)
+                # Don't serialize here - just store the model instance
+                created_setups.append(setup)
             except Exception as e:
                 error_message = str(e)
                 # Check for unique constraint violation
@@ -877,7 +881,7 @@ class BulkDpLosSetupSerializer(serializers.Serializer):
         
         return {
             'message': f'Successfully created {len(created_setups)} LOS setup rules',
-            'created_setups': created_setups,
+            'created_setups': created_setups,  # Return model instances, not serialized data
             'errors': errors,
             'property_id': property_instance.id
         }
@@ -898,13 +902,16 @@ class BulkDpLosReductionSerializer(serializers.Serializer):
         
         for i, reduction_data in enumerate(reductions_data):
             try:
-                # Set the property_id to the property instance (ForeignKey expects the instance)
+                # Remove property_id from reduction_data since it's provided as a string from frontend
+                # but we need to use the Property instance from context
+                reduction_data.pop('property_id', None)
                 reduction_data['property_id'] = property_instance
                 # Remove user field since it doesn't exist in the model
                 reduction_data.pop('user', None)
                 print(f"🔧 DEBUG: Creating DpLosReduction with data: {reduction_data}")
                 reduction = DpLosReduction.objects.create(**reduction_data)
-                created_reductions.append(DpLosReductionSerializer(reduction).data)
+                # Don't serialize here - just store the model instance
+                created_reductions.append(reduction)
             except Exception as e:
                 error_message = str(e)
                 # Check for unique constraint violation
@@ -920,7 +927,7 @@ class BulkDpLosReductionSerializer(serializers.Serializer):
         
         return {
             'message': f'Successfully created {len(created_reductions)} LOS reduction rules',
-            'created_reductions': created_reductions,
+            'created_reductions': created_reductions,  # Return model instances, not serialized data
             'errors': errors,
             'property_id': property_instance.id
         } 

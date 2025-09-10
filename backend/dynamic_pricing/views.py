@@ -2742,103 +2742,53 @@ class LosReductionListView(APIView):
 
 class LosReductionCreateView(APIView):
     """
-    API endpoint for creating LOS reduction rules
+    API endpoint for creating a single LOS reduction rule
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request, property_id):
         """
-        Create new LOS reduction rules for a specific property
+        Create a new LOS reduction rule for a specific property
         """
-        print(f"🔧 DEBUG: POST request received for LOS reduction creation")
-        print(f"🔧 DEBUG: Property ID: {property_id}")
-        print(f"🔧 DEBUG: Request data: {request.data}")
-        print(f"🔧 DEBUG: User: {request.user}")
-        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
-            print(f"🔧 DEBUG: Property found: {property_instance.name}")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
-            print(f"🔧 DEBUG: User has access to {user_properties.count()} properties")
             
             if not user_properties.filter(id=property_id).exists():
-                print(f"🔧 DEBUG: User does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            print(f"🔧 DEBUG: User has access to property {property_id}")
+            # Prepare data for single rule creation
+            data = request.data.copy()
+            data['property_id'] = property_instance.id
+            # Remove user field since it doesn't exist in the model
+            data.pop('user', None)
             
-            # Check if this is a bulk create request
-            if 'reductions' in request.data:
-                print(f"🔧 DEBUG: Bulk create request detected")
-                print(f"🔧 DEBUG: Reductions data: {request.data['reductions']}")
-                # Bulk create multiple rules
-                print(f"🔧 DEBUG: Creating BulkDpLosReductionSerializer with context: property={property_instance.id}, user={request.user.id}")
-                serializer = BulkDpLosReductionSerializer(
-                    data=request.data, 
-                    context={'property': property_instance, 'user': request.user}
-                )
+            serializer = DpLosReductionSerializer(data=data)
+            
+            if serializer.is_valid():
+                los_reduction = serializer.save()
                 
-                print(f"🔧 DEBUG: Serializer created, checking validity...")
-                print(f"🔧 DEBUG: Serializer is_valid(): {serializer.is_valid()}")
-                
-                if serializer.is_valid():
-                    print(f"🔧 DEBUG: Serializer is valid, calling save()...")
-                    result = serializer.save()
-                    print(f"🔧 DEBUG: Save completed successfully")
-                    
-                    # Serialize the created rules for response
-                    created_reductions_data = DpLosReductionSerializer(
-                        result['created_reductions'], 
-                        many=True
-                    ).data
-                    
-                    return Response({
-                        'message': f"Successfully created {len(result['created_reductions'])} LOS reduction rules",
-                        'created_reductions': created_reductions_data,
-                        'errors': result.get('errors', []),
-                        'property_id': result['property_id']
-                    }, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({
-                        'message': 'Validation error',
-                        'errors': serializer.errors
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'message': 'LOS reduction rule created successfully',
+                    'reduction': DpLosReductionSerializer(los_reduction).data
+                }, status=status.HTTP_201_CREATED)
             else:
-                # Single rule create
-                data = request.data.copy()
-                data['property_id'] = property_instance.id
-                # Remove user field since it doesn't exist in the model
-                data.pop('user', None)
-                
-                serializer = DpLosReductionSerializer(data=data)
-                
-                if serializer.is_valid():
-                    los_reduction = serializer.save()
-                    
-                    return Response({
-                        'message': 'LOS reduction rule created successfully',
-                        'reduction': DpLosReductionSerializer(los_reduction).data
-                    }, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({
-                        'message': 'Validation error',
-                        'errors': serializer.errors
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'message': 'Validation error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
             
         except Property.DoesNotExist:
             return Response({
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(f"🔧 DEBUG: Exception occurred: {str(e)}")
-            import traceback
-            print(f"🔧 DEBUG: Traceback: {traceback.format_exc()}")
             logger.error(f"Error creating LOS reduction rule: {str(e)}")
             return Response({
                 'message': 'An error occurred while creating the LOS reduction rule',
@@ -3018,13 +2968,13 @@ class LosSetupListView(APIView):
 
 class LosSetupCreateView(APIView):
     """
-    API endpoint for creating LOS setup rules
+    API endpoint for creating a single LOS setup rule
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request, property_id):
         """
-        Create new LOS setup rules for a specific property
+        Create a new LOS setup rule for a specific property
         """
         try:
             # Get the property and ensure it exists
@@ -3039,53 +2989,24 @@ class LosSetupCreateView(APIView):
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Check if this is a bulk create request
-            if 'setups' in request.data:
-                # Bulk create multiple rules
-                serializer = BulkDpLosSetupSerializer(
-                    data=request.data, 
-                    context={'property': property_instance, 'user': request.user}
-                )
+            # Prepare data for single rule creation
+            data = request.data.copy()
+            data['property_id'] = property_instance.id
+            
+            serializer = DpLosSetupSerializer(data=data)
+            
+            if serializer.is_valid():
+                los_setup = serializer.save()
                 
-                if serializer.is_valid():
-                    result = serializer.save()
-                    
-                    # Serialize the created rules for response
-                    created_setups_data = DpLosSetupSerializer(
-                        result['created_setups'], 
-                        many=True
-                    ).data
-                    
-                    return Response({
-                        'message': f"Successfully created {len(result['created_setups'])} LOS setup rules",
-                        'created_setups': created_setups_data,
-                        'errors': result.get('errors', []),
-                        'property_id': result['property_id']
-                    }, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({
-                        'message': 'Validation error',
-                        'errors': serializer.errors
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'message': 'LOS setup rule created successfully',
+                    'setup': DpLosSetupSerializer(los_setup).data
+                }, status=status.HTTP_201_CREATED)
             else:
-                # Single rule create
-                data = request.data.copy()
-                data['property_id'] = property_instance.id
-                
-                serializer = DpLosSetupSerializer(data=data)
-                
-                if serializer.is_valid():
-                    los_setup = serializer.save()
-                    
-                    return Response({
-                        'message': 'LOS setup rule created successfully',
-                        'setup': DpLosSetupSerializer(los_setup).data
-                    }, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({
-                        'message': 'Validation error',
-                        'errors': serializer.errors
-                    }, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'message': 'Validation error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
             
         except Property.DoesNotExist:
             return Response({
