@@ -1573,41 +1573,32 @@ class BulkCompetitorCandidateCreateView(APIView):
 
 class DpGeneralSettingsUpdateView(APIView):
     """
-    API endpoint for updating DpGeneralSettings, specifically the comp_price_calculation field
+    API endpoint for getting and updating DpGeneralSettings
     """
     permission_classes = [IsAuthenticated]
     
-    def patch(self, request, property_id):
+    def get(self, request, property_id):
         """
-        Update the comp_price_calculation field for a property's general settings
+        Get the general settings for a property
         """
-        print(f"🔍 DpGeneralSettingsUpdateView.patch called")
-        print(f"📊 Request data: {request.data}")
-        print(f"📊 Property ID: {property_id}")
-        print(f"📊 User: {request.user}")
-        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
-            print(f"✅ Property found: {property_instance.name}")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
             
             if not user_properties.filter(id=property_id).exists():
-                print(f"❌ User {request.user} does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
-            
-            print(f"✅ User has access to property")
             
             # Get or create the general settings for this property
             settings, created = DpGeneralSettings.objects.get_or_create(
                 property_id=property_instance,
                 defaults={
-                    'comp_price_calculation': 'min',  # Default value
+                    'comp_price_calculation': 'min',
                     'min_competitors': 2,
                     'future_days_to_price': 365,
                     'pricing_status': 'offline',
@@ -1615,37 +1606,18 @@ class DpGeneralSettingsUpdateView(APIView):
                 }
             )
             
-            print(f"📊 Settings {'created' if created else 'found'}: comp_price_calculation='{settings.comp_price_calculation}'")
-            
-            # Update the comp_price_calculation field
-            new_calculation = request.data.get('comp_price_calculation')
-            if new_calculation is None:
-                print(f"❌ Missing comp_price_calculation field in request")
-                return Response({
-                    'message': 'comp_price_calculation field is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Validate the new value
-            allowed_values = ['min', 'max', 'avg', 'median']
-            if new_calculation not in allowed_values:
-                print(f"❌ Invalid comp_price_calculation value: {new_calculation}")
-                return Response({
-                    'message': f'comp_price_calculation must be one of: {", ".join(allowed_values)}'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Update the field
-            old_calculation = settings.comp_price_calculation
-            settings.comp_price_calculation = new_calculation
-            settings.save()
-            
-            print(f"📝 Updated comp_price_calculation: '{old_calculation}' -> '{new_calculation}'")
-            print(f"💾 Settings saved to database")
-            print(f"✅ Updated comp_price_calculation for property {property_id} to {new_calculation}")
-            
             return Response({
-                'message': 'Competitor price calculation updated successfully',
                 'property_id': property_id,
-                'comp_price_calculation': new_calculation,
+                'base_rate_code': settings.base_rate_code,
+                'is_base_in_pms': settings.is_base_in_pms,
+                'min_competitors': settings.min_competitors,
+                'comp_price_calculation': settings.comp_price_calculation,
+                'competitor_excluded': settings.competitor_excluded,
+                'msp_include_events_weekend_increments': settings.msp_include_events_weekend_increments,
+                'future_days_to_price': settings.future_days_to_price,
+                'pricing_status': settings.pricing_status,
+                'los_status': settings.los_status,
+                'created_at': settings.created_at,
                 'updated_at': settings.updated_at
             }, status=status.HTTP_200_OK)
             
@@ -1654,12 +1626,114 @@ class DpGeneralSettingsUpdateView(APIView):
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(f"❌ Error updating comp_price_calculation: {str(e)}")
-            print(f"❌ Exception type: {type(e)}")
-            import traceback
-            print(f"❌ Traceback: {traceback.format_exc()}")
             return Response({
-                'message': 'An error occurred while updating the competitor price calculation',
+                'message': 'An error occurred while retrieving general settings',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request, property_id):
+        """
+        Update the general settings for a property (comp_price_calculation and min_competitors)
+        """
+        print(f"🔧 DEBUG: PATCH request received for property_id: {property_id}")
+        print(f"🔧 DEBUG: Request data: {request.data}")
+        print(f"🔧 DEBUG: User: {request.user}")
+        
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            print(f"🔧 DEBUG: Property found: {property_instance.name}")
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            print(f"🔧 DEBUG: User has access to {user_properties.count()} properties")
+            
+            if not user_properties.filter(id=property_id).exists():
+                print(f"🔧 DEBUG: User does NOT have access to property {property_id}")
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"🔧 DEBUG: User has access to property {property_id}")
+            
+            # Get or create the general settings for this property
+            settings, created = DpGeneralSettings.objects.get_or_create(
+                property_id=property_instance,
+                defaults={
+                    'comp_price_calculation': 'min',
+                    'min_competitors': 2,
+                    'future_days_to_price': 365,
+                    'pricing_status': 'offline',
+                    'los_status': 'offline'
+                }
+            )
+            print(f"🔧 DEBUG: Settings {'created' if created else 'retrieved'}: comp_price_calculation={settings.comp_price_calculation}")
+            
+            # Track what fields are being updated
+            updated_fields = []
+            
+            # Update comp_price_calculation if provided
+            if 'comp_price_calculation' in request.data:
+                new_calculation = request.data.get('comp_price_calculation')
+                print(f"🔧 DEBUG: Updating comp_price_calculation to: {new_calculation}")
+                allowed_values = ['min', 'max', 'avg', 'median']
+                if new_calculation not in allowed_values:
+                    print(f"🔧 DEBUG: Invalid comp_price_calculation value: {new_calculation}")
+                    return Response({
+                        'message': f'comp_price_calculation must be one of: {", ".join(allowed_values)}'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                old_calculation = settings.comp_price_calculation
+                print(f"🔧 DEBUG: Changing comp_price_calculation from '{old_calculation}' to '{new_calculation}'")
+                settings.comp_price_calculation = new_calculation
+                updated_fields.append(f'comp_price_calculation: {old_calculation} -> {new_calculation}')
+            else:
+                print(f"🔧 DEBUG: No comp_price_calculation in request data")
+            
+            # Update min_competitors if provided
+            if 'min_competitors' in request.data:
+                new_min_competitors = request.data.get('min_competitors')
+                if not isinstance(new_min_competitors, int) or new_min_competitors < 1:
+                    return Response({
+                        'message': 'min_competitors must be a positive integer'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                old_min_competitors = settings.min_competitors
+                settings.min_competitors = new_min_competitors
+                updated_fields.append(f'min_competitors: {old_min_competitors} -> {new_min_competitors}')
+            
+            # Save if any fields were updated
+            if updated_fields:
+                print(f"🔧 DEBUG: Saving settings with updated fields: {updated_fields}")
+                settings.save()
+                print(f"🔧 DEBUG: Settings saved successfully. New comp_price_calculation: {settings.comp_price_calculation}")
+                return Response({
+                    'message': 'General settings updated successfully',
+                    'property_id': property_id,
+                    'updated_fields': updated_fields,
+                    'comp_price_calculation': settings.comp_price_calculation,
+                    'min_competitors': settings.min_competitors,
+                    'updated_at': settings.updated_at
+                }, status=status.HTTP_200_OK)
+            else:
+                print(f"🔧 DEBUG: No fields to update")
+                return Response({
+                    'message': 'No fields to update',
+                    'property_id': property_id
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            print(f"🔧 DEBUG: Property not found: {property_id}")
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"🔧 DEBUG: Exception occurred: {str(e)}")
+            import traceback
+            print(f"🔧 DEBUG: Traceback: {traceback.format_exc()}")
+            return Response({
+                'message': 'An error occurred while updating general settings',
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -2231,18 +2305,29 @@ class OfferIncrementsUpdateView(APIView):
         """
         Update an existing offer increment
         """
+        print(f"🔧 DEBUG: PATCH request received for special offer update")
+        print(f"🔧 DEBUG: Property ID: {property_id}")
+        print(f"🔧 DEBUG: Offer ID: {offer_id}")
+        print(f"🔧 DEBUG: Request data: {request.data}")
+        print(f"🔧 DEBUG: User: {request.user}")
+        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
+            print(f"🔧 DEBUG: Property found: {property_instance.name}")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
+            print(f"🔧 DEBUG: User has access to {user_properties.count()} properties")
             
             if not user_properties.filter(id=property_id).exists():
+                print(f"🔧 DEBUG: User does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
+            
+            print(f"🔧 DEBUG: User has access to property {property_id}")
             
             # Get the offer increment
             offer_increment = get_object_or_404(
@@ -2250,6 +2335,7 @@ class OfferIncrementsUpdateView(APIView):
                 id=offer_id, 
                 property_id=property_instance
             )
+            print(f"🔧 DEBUG: Offer increment found: ID {offer_increment.id}, Name: {offer_increment.offer_name}")
             
             serializer = OfferIncrementsSerializer(
                 offer_increment, 
@@ -2258,28 +2344,40 @@ class OfferIncrementsUpdateView(APIView):
                 context={'request': request}
             )
             
+            print(f"🔧 DEBUG: Serializer created with data: {request.data}")
+            print(f"🔧 DEBUG: Serializer is_valid(): {serializer.is_valid()}")
+            
             if serializer.is_valid():
+                print(f"🔧 DEBUG: Serializer is valid, saving...")
                 updated_offer = serializer.save()
+                print(f"🔧 DEBUG: Offer saved successfully: {updated_offer.id}")
                 
                 return Response({
                     'message': 'Offer increment updated successfully',
                     'offer': OfferIncrementsSerializer(updated_offer).data
                 }, status=status.HTTP_200_OK)
             else:
+                print(f"🔧 DEBUG: Serializer validation failed")
+                print(f"🔧 DEBUG: Serializer errors: {serializer.errors}")
                 return Response({
                     'message': 'Validation error',
                     'errors': serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
             
         except Property.DoesNotExist:
+            print(f"🔧 DEBUG: Property not found: {property_id}")
             return Response({
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except DpOfferIncrements.DoesNotExist:
+            print(f"🔧 DEBUG: Offer increment not found: {offer_id}")
             return Response({
                 'message': 'Offer increment not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            print(f"🔧 DEBUG: Exception occurred: {str(e)}")
+            import traceback
+            print(f"🔧 DEBUG: Traceback: {traceback.format_exc()}")
             logger.error(f"Error updating offer increment: {str(e)}")
             return Response({
                 'message': 'An error occurred while updating the offer increment',
@@ -2652,29 +2750,47 @@ class LosReductionCreateView(APIView):
         """
         Create new LOS reduction rules for a specific property
         """
+        print(f"🔧 DEBUG: POST request received for LOS reduction creation")
+        print(f"🔧 DEBUG: Property ID: {property_id}")
+        print(f"🔧 DEBUG: Request data: {request.data}")
+        print(f"🔧 DEBUG: User: {request.user}")
+        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
+            print(f"🔧 DEBUG: Property found: {property_instance.name}")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
+            print(f"🔧 DEBUG: User has access to {user_properties.count()} properties")
             
             if not user_properties.filter(id=property_id).exists():
+                print(f"🔧 DEBUG: User does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
+            print(f"🔧 DEBUG: User has access to property {property_id}")
+            
             # Check if this is a bulk create request
             if 'reductions' in request.data:
+                print(f"🔧 DEBUG: Bulk create request detected")
+                print(f"🔧 DEBUG: Reductions data: {request.data['reductions']}")
                 # Bulk create multiple rules
+                print(f"🔧 DEBUG: Creating BulkDpLosReductionSerializer with context: property={property_instance.id}, user={request.user.id}")
                 serializer = BulkDpLosReductionSerializer(
                     data=request.data, 
                     context={'property': property_instance, 'user': request.user}
                 )
                 
+                print(f"🔧 DEBUG: Serializer created, checking validity...")
+                print(f"🔧 DEBUG: Serializer is_valid(): {serializer.is_valid()}")
+                
                 if serializer.is_valid():
+                    print(f"🔧 DEBUG: Serializer is valid, calling save()...")
                     result = serializer.save()
+                    print(f"🔧 DEBUG: Save completed successfully")
                     
                     # Serialize the created rules for response
                     created_reductions_data = DpLosReductionSerializer(
@@ -2697,7 +2813,8 @@ class LosReductionCreateView(APIView):
                 # Single rule create
                 data = request.data.copy()
                 data['property_id'] = property_instance.id
-                data['user'] = request.user.id
+                # Remove user field since it doesn't exist in the model
+                data.pop('user', None)
                 
                 serializer = DpLosReductionSerializer(data=data)
                 
@@ -2719,6 +2836,9 @@ class LosReductionCreateView(APIView):
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            print(f"🔧 DEBUG: Exception occurred: {str(e)}")
+            import traceback
+            print(f"🔧 DEBUG: Traceback: {traceback.format_exc()}")
             logger.error(f"Error creating LOS reduction rule: {str(e)}")
             return Response({
                 'message': 'An error occurred while creating the LOS reduction rule',
@@ -2821,15 +2941,16 @@ class LosReductionDeleteView(APIView):
                 property_id=property_instance
             )
             
-            lead_time_category = los_reduction.get_lead_time_category_display()
-            occupancy_category = los_reduction.get_occupancy_category_display()
+            # Get the values before deleting
+            lead_time_days = los_reduction.lead_time_days
+            occupancy_level = los_reduction.occupancy_level
             los_reduction.delete()
             
             return Response({
                 'message': 'LOS reduction rule deleted successfully',
                 'reduction_id': reduction_id,
-                'lead_time_category': lead_time_category,
-                'occupancy_category': occupancy_category
+                'lead_time_days': lead_time_days,
+                'occupancy_level': occupancy_level
             }, status=status.HTTP_200_OK)
             
         except Property.DoesNotExist:

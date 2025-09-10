@@ -493,12 +493,7 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
                 "valid_until must be after valid_from"
             )
 
-        # Validate applied days range
-        if (applied_from_days is not None and applied_until_days is not None and 
-            applied_from_days > applied_until_days):
-            raise serializers.ValidationError(
-                "applied_until_days must be greater than or equal to applied_from_days"
-            )
+        # Note: Removed applied days range validation to allow more flexible configurations
 
         # Validate increment value
         if increment_value is not None and increment_value < 0:
@@ -834,8 +829,8 @@ class DpLosReductionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpLosReduction
         fields = [
-            'id', 'property_id', 'user', 'lead_time_category', 
-            'occupancy_category', 'los_value', 'created_at', 'updated_at'
+            'id', 'property_id', 'lead_time_days', 
+            'occupancy_level', 'los_value', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -865,13 +860,19 @@ class BulkDpLosSetupSerializer(serializers.Serializer):
         for i, setup_data in enumerate(setups_data):
             try:
                 setup_data['property_id'] = property_instance
+                print(f"🔧 DEBUG: Creating DpLosSetup with data: {setup_data}")
                 setup = DpLosSetup.objects.create(**setup_data)
                 created_setups.append(DpLosSetupSerializer(setup).data)
             except Exception as e:
+                error_message = str(e)
+                # Check for unique constraint violation
+                if 'unique constraint' in error_message.lower() or 'duplicate key' in error_message.lower():
+                    error_message = f"A rule with date range {setup_data.get('valid_from', 'Unknown')} to {setup_data.get('valid_until', 'Unknown')} and weekday {setup_data.get('day_of_week', 'Unknown')} already exists for this property."
+                
                 errors.append({
                     'setup_index': i,
                     'day_of_week': setup_data.get('day_of_week', 'Unknown'),
-                    'error': str(e)
+                    'error': error_message
                 })
         
         return {
@@ -891,23 +892,30 @@ class BulkDpLosReductionSerializer(serializers.Serializer):
     def create(self, validated_data):
         reductions_data = validated_data['reductions']
         property_instance = self.context['property']
-        user = self.context['user']
         
         created_reductions = []
         errors = []
         
         for i, reduction_data in enumerate(reductions_data):
             try:
+                # Set the property_id to the property instance (ForeignKey expects the instance)
                 reduction_data['property_id'] = property_instance
-                reduction_data['user'] = user
+                # Remove user field since it doesn't exist in the model
+                reduction_data.pop('user', None)
+                print(f"🔧 DEBUG: Creating DpLosReduction with data: {reduction_data}")
                 reduction = DpLosReduction.objects.create(**reduction_data)
                 created_reductions.append(DpLosReductionSerializer(reduction).data)
             except Exception as e:
+                error_message = str(e)
+                # Check for unique constraint violation
+                if 'unique constraint' in error_message.lower() or 'duplicate key' in error_message.lower():
+                    error_message = f"A rule with lead time {reduction_data.get('lead_time_days', 'Unknown')} days and occupancy {reduction_data.get('occupancy_level', 'Unknown')} already exists for this property."
+                
                 errors.append({
                     'reduction_index': i,
-                    'lead_time_category': reduction_data.get('lead_time_category', 'Unknown'),
-                    'occupancy_category': reduction_data.get('occupancy_category', 'Unknown'),
-                    'error': str(e)
+                    'lead_time_days': reduction_data.get('lead_time_days', 'Unknown'),
+                    'occupancy_level': reduction_data.get('occupancy_level', 'Unknown'),
+                    'error': error_message
                 })
         
         return {

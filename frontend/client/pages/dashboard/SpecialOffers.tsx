@@ -113,6 +113,29 @@ export default function SpecialOffers() {
     setError(null);
     setSuccess(null);
     
+    // Client-side validation for required fields only
+    const validationErrors = [];
+    for (let i = 0; i < offers.length; i++) {
+      const offer = offers[i];
+      
+      // Check required fields
+      if (!offer.offer_name?.trim()) {
+        validationErrors.push(`Offer in row ${i + 1}: Offer name is required`);
+      }
+      if (!offer.valid_from) {
+        validationErrors.push(`Offer "${offer.offer_name || 'Unnamed'}" (row ${i + 1}): Valid from date is required`);
+      }
+      if (!offer.valid_until) {
+        validationErrors.push(`Offer "${offer.offer_name || 'Unnamed'}" (row ${i + 1}): Valid until date is required`);
+      }
+    }
+    
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join('; '));
+      setSaving(false);
+      return;
+    }
+    
     try {
       const newOffers = offers.filter(offer => offer.isNew);
       const existingOffers = offers.filter(offer => !offer.isNew);
@@ -120,6 +143,20 @@ export default function SpecialOffers() {
       // Update existing offers
       for (const offer of existingOffers) {
         if (offer.id) {
+          console.log('🔧 FRONTEND DEBUG: Updating existing offer:', {
+            propertyId: property.id,
+            offerId: offer.id,
+            offerData: {
+              offer_name: offer.offer_name,
+              valid_from: offer.valid_from,
+              valid_until: offer.valid_until,
+              applied_from_days: offer.applied_from_days,
+              applied_until_days: offer.applied_until_days,
+              increment_type: offer.increment_type,
+              increment_value: offer.increment_value
+            }
+          });
+          
           await dynamicPricingService.updateSpecialOffer(property.id, offer.id, {
             offer_name: offer.offer_name,
             valid_from: offer.valid_from,
@@ -129,6 +166,8 @@ export default function SpecialOffers() {
             increment_type: offer.increment_type,
             increment_value: offer.increment_value
           });
+          
+          console.log('🔧 FRONTEND DEBUG: Offer updated successfully');
         }
       }
       
@@ -156,7 +195,36 @@ export default function SpecialOffers() {
       setSuccess('Offers saved successfully');
       loadOffers(); // Reload to get updated data
     } catch (err: any) {
-      setError(err.message || 'Failed to save offers');
+      console.error('🔧 FRONTEND DEBUG: Error saving offers:', err);
+      console.error('🔧 FRONTEND DEBUG: Error details:', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        url: err?.config?.url,
+        method: err?.config?.method
+      });
+      
+      // Extract detailed error message from backend response
+      let errorMessage = 'Failed to save offers';
+      if (err?.response?.data?.errors) {
+        // Handle validation errors
+        const errors = err.response.data.errors;
+        if (errors.non_field_errors && errors.non_field_errors.length > 0) {
+          errorMessage = errors.non_field_errors[0];
+        } else {
+          // Handle field-specific errors
+          const fieldErrors = Object.entries(errors).map(([field, messages]) => 
+            `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`
+          ).join('; ');
+          errorMessage = fieldErrors;
+        }
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }

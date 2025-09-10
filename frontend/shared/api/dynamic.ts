@@ -317,9 +317,8 @@ export interface DeleteDynamicRuleResponse {
 export interface LosReductionRule {
   id: number;
   property_id: string;
-  user: number;
-  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
-  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  lead_time_days: number;
+  occupancy_level: string;
   los_value: number;
   created_at: string;
   updated_at: string;
@@ -331,8 +330,9 @@ export interface LosReductionRulesResponse {
 }
 
 export interface CreateLosReductionRuleRequest {
-  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
-  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  property_id: string;
+  lead_time_days: number;
+  occupancy_level: string;
   los_value: number;
 }
 
@@ -358,8 +358,8 @@ export interface BulkCreateLosReductionRulesResponse {
 }
 
 export interface UpdateLosReductionRuleRequest {
-  lead_time_category?: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
-  occupancy_category?: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+  lead_time_days?: number;
+  occupancy_level?: string;
   los_value?: number;
 }
 
@@ -395,6 +395,7 @@ export interface LosSetupRulesResponse {
 }
 
 export interface CreateLosSetupRuleRequest {
+  property_id: string;
   valid_from: string;
   valid_until: string;
   day_of_week: string;
@@ -482,6 +483,14 @@ export const dynamicPricingService = {
     return apiRequest<{ message: string; property: PropertyDetailResponse; action: 'created' | 'updated' }>({
       method: 'POST',
       url: '/dynamic-pricing/properties/create/',
+      data,
+    });
+  },
+
+  async updateProperty(propertyId: string, data: any): Promise<{ message: string; property: PropertyDetailResponse }> {
+    return apiRequest<{ message: string; property: PropertyDetailResponse }>({
+      method: 'PUT',
+      url: `/dynamic-pricing/properties/${propertyId}/`,
       data,
     });
   },
@@ -692,6 +701,17 @@ export const dynamicPricingService = {
     data: UpdateCompPriceCalculationRequest
   ): Promise<UpdateCompPriceCalculationResponse> {
     return apiRequest<UpdateCompPriceCalculationResponse>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/general-settings/`,
+      data,
+    });
+  },
+
+  async updateGeneralSettings(
+    propertyId: string, 
+    data: { comp_price_calculation?: string; min_competitors?: number }
+  ): Promise<{ message: string; property_id: string; updated_fields: string[]; comp_price_calculation: string; min_competitors: number; updated_at: string }> {
+    return apiRequest({
       method: 'PATCH',
       url: `/dynamic-pricing/properties/${propertyId}/general-settings/`,
       data,

@@ -124,7 +124,10 @@ export default function Competitors() {
 
   // Handle aggregation change
   const handleAggregationChange = async (newAggregation: string) => {
+    console.log('🔧 FRONTEND DEBUG: handleAggregationChange called with:', newAggregation);
+    
     if (!property) {
+      console.log('🔧 FRONTEND DEBUG: No property selected');
       toast({
         title: "Error",
         description: "No property selected. Please select a property first.",
@@ -134,7 +137,10 @@ export default function Competitors() {
     }
 
     const backendValue = aggregationMapping[newAggregation as keyof typeof aggregationMapping];
+    console.log('🔧 FRONTEND DEBUG: Mapped to backend value:', backendValue);
+    
     if (!backendValue) {
+      console.log('🔧 FRONTEND DEBUG: Invalid aggregation method');
       toast({
         title: "Error",
         description: "Invalid aggregation method selected.",
@@ -143,11 +149,17 @@ export default function Competitors() {
       return;
     }
 
+    console.log('🔧 FRONTEND DEBUG: Making API call to update comp_price_calculation');
+    console.log('🔧 FRONTEND DEBUG: Property ID:', property.id);
+    console.log('🔧 FRONTEND DEBUG: Data being sent:', { comp_price_calculation: backendValue });
+    
     setIsUpdating(true);
     try {
-      await dynamicPricingService.updateCompPriceCalculation(property.id, {
+      const response = await dynamicPricingService.updateCompPriceCalculation(property.id, {
         comp_price_calculation: backendValue as 'min' | 'max' | 'avg' | 'median'
       });
+      
+      console.log('🔧 FRONTEND DEBUG: API response:', response);
       
       setSelectedAggregation(newAggregation);
       setCurrentCalculation(backendValue);
@@ -157,7 +169,14 @@ export default function Competitors() {
         description: `Competitor price aggregation updated to ${newAggregation}`,
       });
     } catch (error: any) {
-      console.error("Error updating aggregation:", error);
+      console.error("🔧 FRONTEND DEBUG: Error updating aggregation:", error);
+      console.error("🔧 FRONTEND DEBUG: Error details:", {
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        url: error?.config?.url,
+        method: error?.config?.method
+      });
       toast({
         title: "Error",
         description: error?.response?.data?.message || "Failed to update competitor price aggregation",
@@ -342,9 +361,33 @@ export default function Competitors() {
     }
   };
 
+  // Fetch general settings to load current comp_price_calculation
+  const fetchGeneralSettings = async () => {
+    if (!property) return;
+    
+    try {
+      console.log('🔧 FRONTEND DEBUG: Fetching general settings for property:', property.id);
+      const generalSettings = await dynamicPricingService.getGeneralSettings(property.id);
+      console.log('🔧 FRONTEND DEBUG: Loaded general settings:', generalSettings);
+      
+      // Set the current calculation and selected aggregation
+      setCurrentCalculation(generalSettings.comp_price_calculation);
+      const frontendValue = reverseAggregationMapping[generalSettings.comp_price_calculation as keyof typeof reverseAggregationMapping];
+      if (frontendValue) {
+        setSelectedAggregation(frontendValue);
+        console.log('🔧 FRONTEND DEBUG: Set selectedAggregation to:', frontendValue);
+      }
+      
+    } catch (error) {
+      console.error("Error loading general settings:", error);
+      // Don't show error to user since it's not critical
+    }
+  };
+
   // Fetch all competitors when property changes
   useEffect(() => {
     if (property) {
+      fetchGeneralSettings();
       fetchProcessedCompetitors();
       fetchCompetitorCandidates();
     }
@@ -365,15 +408,7 @@ export default function Competitors() {
     };
   }, [showDropdown]);
 
-  // Initialize the selected aggregation based on current property settings
-  useEffect(() => {
-    if (property && currentCalculation) {
-      const frontendValue = reverseAggregationMapping[currentCalculation as keyof typeof reverseAggregationMapping];
-      if (frontendValue) {
-        setSelectedAggregation(frontendValue);
-      }
-    }
-  }, [property, currentCalculation]);
+  // Note: selectedAggregation is now set in fetchGeneralSettings() when property loads
 
   const ToggleSwitch = ({ enabled, onChange }: { enabled: boolean; onChange: (enabled: boolean) => void }) => (
     <div

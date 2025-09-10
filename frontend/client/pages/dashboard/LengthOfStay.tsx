@@ -1,7 +1,26 @@
 import { Plus, Save, ChevronDown, Calendar, Info, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useContext } from "react";
+import { PropertyContext } from "../../../shared/PropertyContext";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
+import type { 
+  LosSetupRule, 
+  LosReductionRule, 
+  CreateLosSetupRuleRequest,
+  CreateLosReductionRuleRequest,
+  UpdateLosSetupRuleRequest,
+  UpdateLosReductionRuleRequest
+} from "../../../shared/api/dynamic";
 
 export default function LengthOfStay() {
+  const { property } = useContext(PropertyContext) ?? {};
+  
+  // Loading and error states
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingGeneralSettings, setIsUpdatingGeneralSettings] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
   // Lead time categories from DpDynamicIncrementsV2
   const leadTimeCategories = [
     { value: '0-1', label: '0-1 days' },
@@ -34,120 +53,303 @@ export default function LengthOfStay() {
     { value: 'max', label: 'Maximum' },
   ];
 
-  // State management
-  const [setupRules, setSetupRules] = useState([
-    {
-      id: 1,
-      from: "08/16/2025",
-      to: "08/16/2025",
-      restrictionDay: "Monday",
-      losValue: "2",
-    },
-    {
-      id: 2,
-      from: "08/16/2025",
-      to: "08/16/2025",
-      restrictionDay: "Tuesday",
-      losValue: "2",
-    },
-    {
-      id: 3,
-      from: "08/16/2025",
-      to: "08/16/2025",
-      restrictionDay: "Wednesday",
-      losValue: "1",
-    },
-    {
-      id: 4,
-      from: "08/16/2025",
-      to: "08/16/2025",
-      restrictionDay: "Saturday",
-      losValue: "2",
-    },
-  ]);
-
-  const [reductionRules, setReductionRules] = useState([
-    {
-      id: 1,
-      leadTime: "60+",
-      occupancy: "0-30",
-      losFrom: "4",
-    },
-    {
-      id: 2,
-      leadTime: "7-14",
-      occupancy: "30-50",
-      losFrom: "3",
-    },
-    {
-      id: 3,
-      leadTime: "3-7",
-      occupancy: "100+",
-      losFrom: "2",
-    },
-    {
-      id: 4,
-      leadTime: "3-7",
-      occupancy: "100+",
-      losFrom: "2",
-    },
-  ]);
-
+  // State management - using proper types
+  const [setupRules, setSetupRules] = useState<LosSetupRule[]>([]);
+  const [reductionRules, setReductionRules] = useState<LosReductionRule[]>([]);
   const [competitorCount, setCompetitorCount] = useState("2");
   const [aggregationMethod, setAggregationMethod] = useState("min");
 
+  // Load existing data on component mount
+  useEffect(() => {
+    if (property?.id) {
+      loadExistingData();
+      loadGeneralSettings();
+    }
+  }, [property?.id]);
+
+  const loadGeneralSettings = async () => {
+    if (!property?.id) return;
+    
+    try {
+      console.log('Loading general settings for property:', property.id);
+      const generalSettings = await dynamicPricingService.getGeneralSettings(property.id);
+      
+      console.log('Loaded general settings:', generalSettings);
+      
+      // Set competitor count and aggregation method from general settings
+      setCompetitorCount(generalSettings.min_competitors?.toString() || "2");
+      setAggregationMethod(generalSettings.comp_price_calculation || "min");
+      
+      console.log('Set competitor count to:', generalSettings.min_competitors, 'and aggregation to:', generalSettings.comp_price_calculation);
+      
+    } catch (error) {
+      console.error("Error loading general settings:", error);
+      // Don't set error message for general settings as it's not critical
+    }
+  };
+
+  const loadExistingData = async () => {
+    if (!property?.id) return;
+    
+    console.log('Loading existing LOS data for property:', property.id);
+    setIsLoading(true);
+    setErrorMessage("");
+    
+    try {
+      // Load both setup and reduction rules in parallel
+      const [setupResponse, reductionResponse] = await Promise.all([
+        dynamicPricingService.getLosSetupRules(property.id),
+        dynamicPricingService.getLosReductionRules(property.id)
+      ]);
+      
+      console.log('Loaded setup rules:', setupResponse.setups);
+      console.log('Loaded reduction rules:', reductionResponse.reductions);
+      
+      setSetupRules(setupResponse.setups);
+      setReductionRules(reductionResponse.reductions);
+      
+    } catch (error) {
+      console.error("Error loading LOS data:", error);
+      setErrorMessage("Failed to load existing LOS configuration");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper functions to update general settings
+  const updateCompetitorCount = async (newCount: string) => {
+    setCompetitorCount(newCount);
+    
+    if (!property?.id) return;
+    
+    setIsUpdatingGeneralSettings(true);
+    try {
+      const countValue = parseInt(newCount);
+      if (countValue >= 1) {
+        await dynamicPricingService.updateGeneralSettings(property.id, {
+          min_competitors: countValue
+        });
+        console.log('Updated min_competitors to:', countValue);
+      }
+    } catch (error) {
+      console.error('Error updating competitor count:', error);
+      // Revert the state on error
+      setCompetitorCount(competitorCount);
+    } finally {
+      setIsUpdatingGeneralSettings(false);
+    }
+  };
+
+  const updateAggregationMethod = async (newMethod: string) => {
+    setAggregationMethod(newMethod);
+    
+    if (!property?.id) return;
+    
+    setIsUpdatingGeneralSettings(true);
+    try {
+      await dynamicPricingService.updateGeneralSettings(property.id, {
+        comp_price_calculation: newMethod
+      });
+      console.log('Updated comp_price_calculation to:', newMethod);
+    } catch (error) {
+      console.error('Error updating aggregation method:', error);
+      // Revert the state on error
+      setAggregationMethod(aggregationMethod);
+    } finally {
+      setIsUpdatingGeneralSettings(false);
+    }
+  };
+
   // Helper functions
   const addSetupRule = () => {
-    const newRule = {
-      id: Math.max(...setupRules.map(r => r.id)) + 1,
-      from: "08/16/2025",
-      to: "08/16/2025",
-      restrictionDay: "Monday",
-      losValue: "1",
+    const newRule: Partial<LosSetupRule> = {
+      // No ID - this is a new rule that doesn't exist in database yet
+      // Use temporary key for UI purposes only
+      id: `temp_${Date.now()}` as any,
+      property_id: property?.id || "",
+      valid_from: new Date().toISOString().split('T')[0],
+      valid_until: new Date().toISOString().split('T')[0],
+      day_of_week: "Monday",
+      los_value: 1,
+      num_competitors: parseInt(competitorCount),
+      los_aggregation: aggregationMethod,
     };
-    setSetupRules([...setupRules, newRule]);
+    setSetupRules([...setupRules, newRule as LosSetupRule]);
   };
 
   const removeSetupRule = (id: number) => {
     setSetupRules(setupRules.filter(rule => rule.id !== id));
   };
 
-  const updateSetupRule = (id: number, field: string, value: string) => {
+  const updateSetupRule = (id: number, field: string, value: string | number) => {
     setSetupRules(setupRules.map(rule => 
       rule.id === id ? { ...rule, [field]: value } : rule
     ));
   };
 
   const addReductionRule = () => {
-    const newRule = {
-      id: Math.max(...reductionRules.map(r => r.id)) + 1,
-      leadTime: "0-1",
-      occupancy: "0-30",
-      losFrom: "1",
+    const newRule: Partial<LosReductionRule> = {
+      // No ID - this is a new rule that doesn't exist in database yet
+      // Use temporary key for UI purposes only
+      id: `temp_${Date.now()}` as any,
+      property_id: property?.id || "",
+      lead_time_days: 7, // Default to 7 days
+      occupancy_level: "50-70", // Default occupancy level
+      los_value: 1,
     };
-    setReductionRules([...reductionRules, newRule]);
+    setReductionRules([...reductionRules, newRule as LosReductionRule]);
   };
 
   const removeReductionRule = (id: number) => {
     setReductionRules(reductionRules.filter(rule => rule.id !== id));
   };
 
-  const updateReductionRule = (id: number, field: string, value: string) => {
+  const updateReductionRule = (id: number, field: string, value: string | number) => {
     setReductionRules(reductionRules.map(rule => 
       rule.id === id ? { ...rule, [field]: value } : rule
     ));
   };
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Saving LOS configuration:', {
-      competitorCount,
-      aggregationMethod,
-      setupRules,
-      reductionRules
-    });
+  const handleSave = async () => {
+    if (!property?.id) {
+      setErrorMessage("No property selected");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage("");
+    setErrorMessage("");
+
+    try {
+      // Save setup rules
+      await saveSetupRules();
+      
+      // Save reduction rules
+      await saveReductionRules();
+      
+      setSaveMessage("LOS configuration saved successfully!");
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage("");
+      }, 3000);
+      
+    } catch (error) {
+      console.error("Error saving LOS configuration:", error);
+      setErrorMessage("Failed to save LOS configuration. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
+  const saveSetupRules = async () => {
+    if (!property?.id) return;
+
+    // Separate existing rules (numeric IDs from database) from new rules (string temp IDs)
+    const existingRules = setupRules.filter(rule => typeof rule.id === 'number');
+    const newRules = setupRules.filter(rule => typeof rule.id === 'string');
+    
+    console.log('Saving setup rules:', {
+      total: setupRules.length,
+      existing: existingRules.length,
+      new: newRules.length,
+      existingIds: existingRules.map(r => r.id)
+    });
+
+    // Update existing rules
+    for (const rule of existingRules) {
+      const updateData: UpdateLosSetupRuleRequest = {
+        valid_from: rule.valid_from,
+        valid_until: rule.valid_until,
+        day_of_week: rule.day_of_week,
+        los_value: rule.los_value,
+        num_competitors: parseInt(competitorCount),
+        los_aggregation: aggregationMethod,
+      };
+      
+      await dynamicPricingService.updateLosSetupRule(property.id, rule.id, updateData);
+    }
+
+    // Create new rules
+    if (newRules.length > 0) {
+      const createRequests: CreateLosSetupRuleRequest[] = newRules.map(rule => ({
+        property_id: property.id, // Include property_id as required by backend
+        valid_from: rule.valid_from,
+        valid_until: rule.valid_until,
+        day_of_week: rule.day_of_week,
+        los_value: rule.los_value,
+        num_competitors: parseInt(competitorCount),
+        los_aggregation: aggregationMethod,
+      }));
+
+      console.log('Creating setup rules with data:', createRequests);
+
+      const response = await dynamicPricingService.bulkCreateLosSetupRules(property.id, {
+        setups: createRequests
+      });
+      
+      // Reload data to get the new rules with proper IDs
+      await loadExistingData();
+    }
+  };
+
+  const saveReductionRules = async () => {
+    if (!property?.id) return;
+
+    // Separate existing rules (numeric IDs from database) from new rules (string temp IDs)
+    const existingRules = reductionRules.filter(rule => typeof rule.id === 'number');
+    const newRules = reductionRules.filter(rule => typeof rule.id === 'string');
+    
+    console.log('Saving reduction rules:', {
+      total: reductionRules.length,
+      existing: existingRules.length,
+      new: newRules.length,
+      existingIds: existingRules.map(r => r.id)
+    });
+
+    // Update existing rules
+    for (const rule of existingRules) {
+      const updateData: UpdateLosReductionRuleRequest = {
+        lead_time_days: rule.lead_time_days,
+        occupancy_level: rule.occupancy_level,
+        los_value: rule.los_value,
+      };
+      
+      await dynamicPricingService.updateLosReductionRule(property.id, rule.id, updateData);
+    }
+
+    // Create new rules
+    if (newRules.length > 0) {
+      const createRequests: CreateLosReductionRuleRequest[] = newRules.map(rule => ({
+        property_id: property.id, // Include property_id as required by backend
+        lead_time_days: rule.lead_time_days,
+        occupancy_level: rule.occupancy_level,
+        los_value: rule.los_value,
+      }));
+
+      console.log('Creating reduction rules with data:', createRequests);
+
+      const response = await dynamicPricingService.bulkCreateLosReductionRules(property.id, {
+        reductions: createRequests
+      });
+      
+      // Reload data to get the new rules with proper IDs
+      await loadExistingData();
+    }
+  };
+
+
+  // Show loading state if no property is available
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg text-gray-600 mb-4">No property selected</div>
+          <div className="text-sm text-gray-500">Please select a property to configure LOS settings</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -166,6 +368,40 @@ export default function LengthOfStay() {
               </p>
             </div>
           </div>
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <span className="text-blue-800 font-medium">Loading LOS configuration...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {saveMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
+                  <span className="text-white text-xs">✓</span>
+                </div>
+                <span className="text-green-800 font-medium">{saveMessage}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center">
+                  <span className="text-white text-xs">✕</span>
+                </div>
+                <span className="text-red-800 font-medium">{errorMessage}</span>
+              </div>
+            </div>
+          )}
 
           {/* Algorithm Info Section */}
           <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6 mb-8">
@@ -206,9 +442,26 @@ export default function LengthOfStay() {
 
           {/* LOS Setup Rules */}
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-black mb-6">
-              LOS Setup Rules
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-black">
+                LOS Setup Rules
+              </h3>
+              {setupRules.length > 0 && (
+                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                  {setupRules.length} existing rule{setupRules.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+
+            {/* General Settings Update Indicator */}
+            {isUpdatingGeneralSettings && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-blue-800 text-sm font-medium">Updating general settings...</span>
+                </div>
+              </div>
+            )}
 
             {/* Competitors LOS Section */}
             <div className="mb-6 overflow-hidden rounded-lg border border-[#D0DFE6] max-w-2xl">
@@ -234,8 +487,9 @@ export default function LengthOfStay() {
                   <input
                     type="number"
                     value={competitorCount}
-                    onChange={(e) => setCompetitorCount(e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
+                    onChange={(e) => updateCompetitorCount(e.target.value)}
+                    disabled={isLoading || isSaving || isUpdatingGeneralSettings}
+                    className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     min="1"
                   />
                 </div>
@@ -251,8 +505,9 @@ export default function LengthOfStay() {
                 <div className="bg-[#EFF6FF] p-4 border-t border-[#D0DFE6]">
                   <select
                     value={aggregationMethod}
-                    onChange={(e) => setAggregationMethod(e.target.value)}
-                    className="w-full px-4 py-2 border border-hotel-divider rounded bg-white text-sm font-semibold text-gray-900"
+                    onChange={(e) => updateAggregationMethod(e.target.value)}
+                    disabled={isLoading || isSaving || isUpdatingGeneralSettings}
+                    className="w-full px-4 py-2 border border-hotel-divider rounded bg-white text-sm font-semibold text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {aggregationMethods.map((method) => (
                       <option key={method.value} value={method.value}>
@@ -295,28 +550,31 @@ export default function LengthOfStay() {
 
               {/* Table Rows */}
               {setupRules.map((rule, index) => (
-                <div key={rule.id} className="grid grid-cols-5 gap-0">
+                <div key={rule.id || index} className="grid grid-cols-5 gap-0">
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
                       type="date"
-                      value={rule.from}
-                      onChange={(e) => updateSetupRule(rule.id, 'from', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                      value={rule.valid_from}
+                      onChange={(e) => updateSetupRule(rule.id, 'valid_from', e.target.value)}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
                       type="date"
-                      value={rule.to}
-                      onChange={(e) => updateSetupRule(rule.id, 'to', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                      value={rule.valid_until}
+                      onChange={(e) => updateSetupRule(rule.id, 'valid_until', e.target.value)}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <select
-                      value={rule.restrictionDay}
-                      onChange={(e) => updateSetupRule(rule.id, 'restrictionDay', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                      value={rule.day_of_week}
+                      onChange={(e) => updateSetupRule(rule.id, 'day_of_week', e.target.value)}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {weekdays.map((day) => (
                         <option key={day} value={day}>
@@ -328,16 +586,18 @@ export default function LengthOfStay() {
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
                       type="number"
-                      value={rule.losValue}
-                      onChange={(e) => updateSetupRule(rule.id, 'losValue', e.target.value)}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
+                      value={rule.los_value}
+                      onChange={(e) => updateSetupRule(rule.id, 'los_value', parseInt(e.target.value))}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       min="1"
                     />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6] flex justify-center">
                     <button
                       onClick={() => removeSetupRule(rule.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
+                      disabled={isLoading || isSaving}
+                      className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 size={24} />
                     </button>
@@ -348,7 +608,8 @@ export default function LengthOfStay() {
 
             <button 
               onClick={addSetupRule}
-              className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+              disabled={isLoading || isSaving}
+              className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus size={20} />
               Add LOS Set Up Rule
@@ -375,9 +636,16 @@ export default function LengthOfStay() {
 
           {/* LOS Reduction Rules */}
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-black mb-6">
-              LOS Reduction Rules
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-black">
+                LOS Reduction Rules
+              </h3>
+              {reductionRules.length > 0 && (
+                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                  {reductionRules.length} existing rule{reductionRules.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
 
             {/* Reduction Rules Table */}
             <div className="overflow-hidden rounded-lg border border-[#D0DFE6] mb-6">
@@ -394,34 +662,33 @@ export default function LengthOfStay() {
                   </span>
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4">
-                  <span className="text-base font-semibold">LOS</span>
+                  <span className="text-base font-semibold">Length of Stay</span>
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4">
-                  <span className="text-base font-semibold text-center">Actions</span>
+                  <span className="text-base font-semibold text-center"></span>
                 </div>
               </div>
 
               {/* Table Rows */}
-              {reductionRules.map((rule) => (
-                <div key={rule.id} className="grid grid-cols-4 gap-0">
+              {reductionRules.map((rule, index) => (
+                <div key={rule.id || index} className="grid grid-cols-4 gap-0">
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
-                    <select
-                      value={rule.leadTime}
-                      onChange={(e) => updateReductionRule(rule.id, 'leadTime', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
-                    >
-                      {leadTimeCategories.map((category) => (
-                        <option key={category.value} value={category.value}>
-                          {category.label}
-                        </option>
-                      ))}
-                    </select>
+                    <input
+                      type="number"
+                      value={rule.lead_time_days}
+                      onChange={(e) => updateReductionRule(rule.id, 'lead_time_days', parseInt(e.target.value))}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      min="1"
+                      placeholder="Days"
+                    />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <select
-                      value={rule.occupancy}
-                      onChange={(e) => updateReductionRule(rule.id, 'occupancy', e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white"
+                      value={rule.occupancy_level}
+                      onChange={(e) => updateReductionRule(rule.id, 'occupancy_level', e.target.value)}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {occupancyCategories.map((category) => (
                         <option key={category.value} value={category.value}>
@@ -433,16 +700,18 @@ export default function LengthOfStay() {
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
                       type="number"
-                      value={rule.losFrom}
-                      onChange={(e) => updateReductionRule(rule.id, 'losFrom', e.target.value)}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white"
+                      value={rule.los_value}
+                      onChange={(e) => updateReductionRule(rule.id, 'los_value', parseInt(e.target.value))}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       min="1"
                     />
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6] flex justify-center">
                     <button
                       onClick={() => removeReductionRule(rule.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
+                      disabled={isLoading || isSaving}
+                      className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 size={24} />
                     </button>
@@ -454,17 +723,28 @@ export default function LengthOfStay() {
             <div className="flex justify-between items-center">
               <button 
                 onClick={addReductionRule}
-                className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                disabled={isLoading || isSaving}
+                className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus size={20} />
                 Add Reduction Rule
               </button>
               <button 
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+                disabled={isSaving || isLoading}
+                className="flex items-center gap-2 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Save size={20} />
-                Save
+                {isSaving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={20} />
+                    Save
+                  </>
+                )}
               </button>
             </div>
           </div>

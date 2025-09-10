@@ -7,7 +7,6 @@ import {
   User,
   Bell,
   HelpCircle,
-  LogOut,
   Building2,
   ChevronDown,
   Settings,
@@ -239,25 +238,6 @@ export default function Sidebar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Profile Section */}
-      <div className="mx-[11px] mb-[11px]">
-        <div className="h-px bg-hotel-divider mb-[10px]" />
-        <div className="flex items-center justify-between p-[13px] rounded bg-hotel-sidebar-bg">
-          <div className="flex items-center gap-3">
-            <img
-              src="https://api.builder.io/api/v1/image/assets/TEMP/8186a75627731622327c05369d792a258acfccea?width=90"
-              alt="Juan Pérez"
-              className="w-[45px] h-[45px] rounded-full"
-            />
-            <span className="text-[15px] font-normal text-black">
-              Juan Pérez
-            </span>
-          </div>
-          <button className="text-red-500 hover:text-red-600 transition-colors">
-            <LogOut size={25} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
