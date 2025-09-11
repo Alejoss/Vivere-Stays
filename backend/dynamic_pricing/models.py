@@ -1,5 +1,6 @@
 # Django models for the dynamic pricing schema
 from django.db import models
+from django.utils import timezone
 from profiles.models import Profile
 from booking.models import Competitor
 from django.contrib.auth.models import User
@@ -31,7 +32,6 @@ class Property(models.Model):
         ('guesthouse', 'Guesthouse'),
         ('other', 'Other'),
     ]
-    # id = models.CharField(max_length=255, primary_key=True)
     id = models.CharField(max_length=255, primary_key=True)
     profiles = models.ManyToManyField(Profile, related_name='properties', blank=True)
     pms = models.ForeignKey(PropertyManagementSystem, on_delete=models.CASCADE, null=True, blank=True)
@@ -521,3 +521,160 @@ class CompetitorCandidate(models.Model):
         """Soft delete the candidate"""
         self.deleted = True
         self.save()
+
+
+class UnifiedRoomsAndRates(models.Model):
+    """
+    Unified rooms and rates consolidated across PMSs.
+    Mirrors SQL table core.unified_rooms_and_rates.
+    """
+
+    PMS_SOURCE_CHOICES = [
+        ('apaleo', 'Apaleo'),
+        ('mrplan', 'MrPlan'),
+        ('avirato', 'Avirato'),
+    ]
+
+    # Primary identifiers
+    property_id = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        db_column='property_id',
+        help_text='Internal property ID (unique across all PMSs)'
+    )
+    pms_source = models.CharField(max_length=50, choices=PMS_SOURCE_CHOICES)
+    pms_hotel_id = models.CharField(max_length=255)
+    room_id = models.CharField(max_length=255)
+    rate_id = models.CharField(max_length=255)
+
+    # Room and rate information
+    room_name = models.CharField(max_length=255)
+    room_description = models.TextField(null=True, blank=True)
+    rate_name = models.CharField(max_length=255)
+    rate_description = models.TextField(null=True, blank=True)
+
+    # Data tracking
+    last_updated = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        managed = False  # Table is created/managed via SQL in the core schema
+        db_table = 'core.unified_rooms_and_rates'
+        verbose_name = 'Unified Room and Rate'
+        verbose_name_plural = 'Unified Rooms and Rates'
+        unique_together = (
+            ('property_id', 'room_id', 'rate_id'),
+        )
+        indexes = [
+            models.Index(fields=['property_id'], name='idx_unified_rooms_rates_property'),
+            models.Index(fields=['property_id', 'pms_source'], name='idx_unified_rooms_rates_pms_source'),
+            models.Index(fields=['property_id', 'room_id'], name='idx_unified_rooms_rates_room'),
+        ]
+
+    def __str__(self):
+        return f"{self.property_id_id} - Room {self.room_id} / Rate {self.rate_id}"
+
+
+class DpRoomRatesExternal(models.Model):
+    """
+    Mirror of SQL table dynamic.dp_room_rates (unmanaged).
+    """
+
+    INCREMENT_TYPE_CHOICES = [
+        ('Percentage', 'Percentage'),
+        ('Additional', 'Additional'),
+    ]
+
+    property_id = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        db_column='property_id',
+        help_text='Foreign key reference to the property (part of composite primary key)'
+    )
+    rate_id = models.CharField(
+        max_length=255,
+        help_text='Rate ID (e.g., "2105839", "2133289") (part of composite primary key)'
+    )
+    increment_type = models.CharField(
+        max_length=50,
+        default='Additional',
+        choices=INCREMENT_TYPE_CHOICES,
+        help_text='Type of increment: "Percentage" or "Additional" (defaults to "Additional")'
+    )
+    increment_value = models.IntegerField(
+        default=0,
+        help_text='Increment value (defaults to 0 if no value)'
+    )
+    is_base_rate = models.BooleanField(
+        default=False,
+        help_text='Flag indicating if this rate is the base rate for the property (defaults to FALSE)'
+    )
+    created_at = models.DateTimeField(
+        default=timezone.now,
+        help_text='Timestamp when the record was created'
+    )
+    updated_at = models.DateTimeField(
+        default=timezone.now,
+        help_text='Timestamp when the record was last updated'
+    )
+
+    class Meta:
+        managed = False
+        db_table = 'dynamic.dp_room_rates'
+        verbose_name = 'DP Room Rate (external)'
+        verbose_name_plural = 'DP Room Rates (external)'
+        unique_together = (
+            ('property_id', 'rate_id'),
+        )
+
+    def __str__(self):
+        return f"{self.property_id_id} - Rate {self.rate_id}"
+
+
+class DpPriceChangeHistoryExternal(models.Model):
+    """
+    Mirror of SQL table dynamic.dp_price_change_history (unmanaged).
+    """
+
+    property_id = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        db_column='property_id',
+        help_text='Foreign key reference to the property (part of composite primary key)'
+    )
+    pms_hotel_id = models.CharField(
+        max_length=255,
+        help_text='PMS hotel ID for the property'
+    )
+    checkin_date = models.DateField(
+        help_text='Date for which the price change was calculated (part of composite primary key)'
+    )
+    as_of = models.DateTimeField(
+        default=timezone.now,
+        help_text='Timestamp when the data was captured (part of composite primary key)'
+    )
+
+    # Key pricing data
+    occupancy = models.FloatField(null=True, blank=True, help_text='Occupancy level')
+    msp = models.IntegerField(help_text='Minimum Selling Price')
+    recom_price = models.IntegerField(help_text='Recommended price')
+    overwrite_price = models.IntegerField(null=True, blank=True, help_text='Overwrite price (from RM)')
+    recom_los = models.IntegerField(help_text='Recommended LOS')
+    overwrite_los = models.IntegerField(null=True, blank=True, help_text='Overwrite LOS (from RM)')
+    base_price = models.IntegerField(help_text='Base price used in calculation')
+    base_price_choice = models.CharField(max_length=50, help_text='Source of base price: "competitor" or "manual"')
+
+    class Meta:
+        managed = False
+        db_table = 'dynamic.dp_price_change_history'
+        verbose_name = 'DP Price Change History (external)'
+        verbose_name_plural = 'DP Price Change Histories (external)'
+        unique_together = (
+            ('property_id', 'checkin_date', 'as_of'),
+        )
+        indexes = [
+            models.Index(fields=['property_id', 'checkin_date', 'as_of'], name='idx_dp_price_change_history_latest'),
+            models.Index(fields=['checkin_date'], name='idx_dp_price_change_history_date'),
+        ]
+
+    def __str__(self):
+        return f"{self.property_id_id} - {self.checkin_date} at {self.as_of}"
