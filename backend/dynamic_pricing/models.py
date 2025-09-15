@@ -90,16 +90,14 @@ class DpGeneralSettings(models.Model):
     Dynamic pricing general settings for each property
     """
     property_id = models.OneToOneField(Property, on_delete=models.CASCADE, primary_key=True, db_column='property_id')
-    base_rate_code = models.CharField(max_length=255, null=True, blank=True)
-    is_base_in_pms = models.BooleanField(null=True, blank=True)  # For Apaleo only
     min_competitors = models.IntegerField(default=2)
     comp_price_calculation = models.CharField(max_length=255, default='min')  # Minimum, etc.
-    competitor_excluded = models.TextField(null=True, blank=True)
-    competitors_excluded = models.ManyToManyField(Competitor, related_name='properties_excluded', blank=True)
-    msp_include_events_weekend_increments = models.BooleanField(default=False)
     future_days_to_price = models.IntegerField(default=365)
     pricing_status = models.CharField(max_length=255, default='offline')
     los_status = models.CharField(max_length=255, default='offline')
+    # LOS-specific settings
+    los_num_competitors = models.IntegerField(default=2, help_text="Number of competitors required for LOS calculations")
+    los_aggregation = models.CharField(max_length=255, default='min', help_text="LOS aggregation method: min or max")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -129,28 +127,6 @@ class DpPropertyCompetitor(models.Model):
 
     def __str__(self):
         return f"{self.property_id.name} - Competitor {self.competitor_id}"
-
-
-class DpDynamicIncrementsV1(models.Model):
-    """
-    Dynamic pricing increments v1 (range-based format)
-    """
-    property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    var_name = models.CharField(max_length=255)  # "occupancy" or "leadtime"
-    var_from = models.FloatField()
-    var_to = models.FloatField()
-    increment_type = models.CharField(max_length=255, default='Additional')  # "Percentage" or "Additional"
-    increment_value = models.FloatField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ('property_id', 'var_name', 'var_from', 'var_to')
-        verbose_name = 'Dynamic Increment V1'
-        verbose_name_plural = 'Dynamic Increments V1'
-
-    def __str__(self):
-        return f"{self.property_id.name} - {self.var_name} ({self.var_from}-{self.var_to})"
 
 
 class DpDynamicIncrementsV2(models.Model):
@@ -232,8 +208,6 @@ class DpLosSetup(models.Model):
     valid_until = models.DateField()
     day_of_week = models.CharField(max_length=255, default='Monday')  # "mon", "tue", "wed", "thu", "fri", "sat", "sun"
     los_value = models.IntegerField(default=1)
-    num_competitors = models.IntegerField(default=2)
-    los_aggregation = models.CharField(max_length=255, default='min')    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -273,7 +247,6 @@ class DpMinimumSellingPrice(models.Model):
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     valid_from = models.DateField()
     valid_until = models.DateField()
-    manual_alternative_price = models.IntegerField(null=True, blank=True)
     msp = models.IntegerField()
     period_title = models.CharField(max_length=255, null=True, blank=True, help_text="Optional name for this MSP period")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -288,56 +261,20 @@ class DpMinimumSellingPrice(models.Model):
         return f"{self.property_id.name} - MSP {self.valid_from} to {self.valid_until}"
 
 
-class DpWeekdayIncrements(models.Model):
-    """
-    Weekday-specific increments
-    """
-    property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    weekday = models.CharField(max_length=255)  # "Monday", "Tuesday", etc.
-    increment_type = models.CharField(max_length=255, default='Additional')  # "Percentage" or "Additional"
-    increment_value = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ('property_id', 'weekday')
-        verbose_name = 'Weekday Increment'
-        verbose_name_plural = 'Weekday Increments'
-
-    def __str__(self):
-        return f"{self.property_id.name} - {self.weekday}"
-
-
-class DpEvents(models.Model):
-    """
-    Event-based increments
-    """
-    property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    valid_from = models.DateField()
-    valid_until = models.DateField()
-    event_name = models.CharField(max_length=255)
-    increment_type = models.CharField(max_length=255, default='Additional')  # "Percentage" or "Additional"
-    increment_value = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ('property_id', 'valid_from')
-        verbose_name = 'Event'
-        verbose_name_plural = 'Events'
-
-    def __str__(self):
-        return f"{self.property_id.name} - {self.event_name} ({self.valid_from} to {self.valid_until})"
-
 
 class DpRoomRates(models.Model):
     """
     Room rate configurations
     """
+    INCREMENT_TYPE_CHOICES = [
+        ('Percentage', 'Percentage'),
+        ('Additional', 'Additional'),
+    ]
+    
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     rate_id = models.CharField(max_length=255)
-    base_rate_id = models.CharField(max_length=255)
-    increment_type = models.CharField(max_length=255, default='Additional')  # "Percentage" or "Additional"
+    is_base_rate = models.BooleanField(default=False)
+    increment_type = models.CharField(max_length=255, choices=INCREMENT_TYPE_CHOICES, default='Percentage')
     increment_value = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -434,7 +371,7 @@ class CompetitorCandidate(models.Model):
     suggested_by_user = models.BooleanField(default=False, help_text="Whether this competitor was suggested by the user")
     
     # Relationships
-    property_instance = models.ForeignKey(
+    property_id = models.ForeignKey(
         Property, 
         on_delete=models.CASCADE, 
         db_column='property_id',
@@ -482,16 +419,16 @@ class CompetitorCandidate(models.Model):
     class Meta:
         verbose_name = 'Competitor Candidate'
         verbose_name_plural = 'Competitor Candidates'
-        unique_together = ('property_instance', 'competitor_name')
+        unique_together = ('property_id', 'competitor_name')
         indexes = [
-            models.Index(fields=['property_instance', 'status']),
+            models.Index(fields=['property_id', 'status']),
             models.Index(fields=['user', 'status']),
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['deleted', 'status']),
         ]
     
     def __str__(self):
-        return f"{self.competitor_name} - {self.property_instance.name} ({self.get_status_display()})"
+        return f"{self.competitor_name} - {self.property_id.name} ({self.get_status_display()})"
     
     def save(self, *args, **kwargs):
         # Auto-update processed_at when status changes to finished or error
@@ -552,12 +489,12 @@ class UnifiedRoomsAndRates(models.Model):
     room_description = models.TextField(null=True, blank=True)
     rate_name = models.CharField(max_length=255)
     rate_description = models.TextField(null=True, blank=True)
+    rate_category = models.CharField(max_length=255, null=True, blank=True)
 
     # Data tracking
     last_updated = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        managed = False  # Table is created/managed via SQL in the core schema
         db_table = 'core.unified_rooms_and_rates'
         verbose_name = 'Unified Room and Rate'
         verbose_name_plural = 'Unified Rooms and Rates'
@@ -565,9 +502,9 @@ class UnifiedRoomsAndRates(models.Model):
             ('property_id', 'room_id', 'rate_id'),
         )
         indexes = [
-            models.Index(fields=['property_id'], name='idx_unified_rooms_rates_property'),
-            models.Index(fields=['property_id', 'pms_source'], name='idx_unified_rooms_rates_pms_source'),
-            models.Index(fields=['property_id', 'room_id'], name='idx_unified_rooms_rates_room'),
+            models.Index(fields=['property_id'], name='idx_unified_rooms_prop'),
+            models.Index(fields=['property_id', 'pms_source'], name='idx_unified_rooms_pms'),
+            models.Index(fields=['property_id', 'room_id'], name='idx_unified_rooms_room'),
         ]
 
     def __str__(self):

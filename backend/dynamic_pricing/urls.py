@@ -40,6 +40,8 @@ from .views import (
     LosSetupCreateView,
     LosSetupUpdateView,
     LosSetupDeleteView,
+    PropertyAvailableRatesView,
+    PropertyAvailableRatesUpdateView,
 )
 
 app_name = 'dynamic_pricing'
@@ -112,4 +114,8 @@ urlpatterns = [
     path('properties/<str:property_id>/los-setup/create/', LosSetupCreateView.as_view(), name='los-setup-create'),
     path('properties/<str:property_id>/los-setup/<int:setup_id>/', LosSetupUpdateView.as_view(), name='los-setup-update'),
     path('properties/<str:property_id>/los-setup/<int:setup_id>/delete/', LosSetupDeleteView.as_view(), name='los-setup-delete'),
+    
+    # Available Rates (Unified Rooms and Rates) endpoints
+    path('properties/<str:property_id>/available-rates/', PropertyAvailableRatesView.as_view(), name='available-rates'),
+    path('properties/<str:property_id>/available-rates/update/', PropertyAvailableRatesUpdateView.as_view(), name='available-rates-update'),
 ] 

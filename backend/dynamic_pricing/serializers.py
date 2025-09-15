@@ -11,7 +11,9 @@ from .models import (
     DpOfferIncrements,
     DpDynamicIncrementsV2,
     DpLosSetup,
-    DpLosReduction
+    DpLosReduction,
+    DpRoomRates,
+    UnifiedRoomsAndRates
 )
 from booking.models import Competitor
 
@@ -159,7 +161,7 @@ class MinimumSellingPriceSerializer(serializers.ModelSerializer):
         model = DpMinimumSellingPrice
         fields = [
             'id', 'property_id', 'valid_from', 'valid_until', 
-            'manual_alternative_price', 'msp', 'period_title', 'created_at', 'updated_at'
+            'msp', 'period_title', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -264,7 +266,7 @@ class CompetitorCandidateSerializer(serializers.ModelSerializer):
         model = CompetitorCandidate
         fields = [
             'id', 'competitor_name', 'booking_link', 'suggested_by_user',
-            'property_instance', 'user', 'similarity_score', 'status', 'only_follow',
+            'property_id', 'user', 'similarity_score', 'status', 'only_follow',
             'deleted', 'created_at', 'updated_at', 'processed_at', 'error_message'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'processed_at', 'error_message']
@@ -372,7 +374,7 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
             try:
                 # Check if candidate already exists for this property (including deleted ones)
                 existing_candidate = CompetitorCandidate.objects.filter(
-                    property_instance=property_instance,
+                    property_id=property_instance,
                     competitor_name=competitor_name.strip()
                 ).first()
                 
@@ -394,7 +396,7 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
                     # Create new candidate
                     candidate = CompetitorCandidate.objects.create(
                         competitor_name=competitor_name.strip(),
-                        property_instance=property_instance,
+                        property_id=property_instance,
                         user=request.user,
                         suggested_by_user=suggested_by_user,
                         status='processing'
@@ -425,10 +427,9 @@ class DpGeneralSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpGeneralSettings
         fields = [
-            'property_id', 'base_rate_code', 'is_base_in_pms', 'min_competitors',
-            'comp_price_calculation', 'competitor_excluded', 'competitors_excluded',
-            'msp_include_events_weekend_increments', 'future_days_to_price',
-            'pricing_status', 'los_status', 'created_at', 'updated_at'
+            'property_id', 'min_competitors', 'comp_price_calculation', 
+            'future_days_to_price', 'pricing_status', 'los_status', 
+            'los_num_competitors', 'los_aggregation', 'created_at', 'updated_at'
         ]
         read_only_fields = ['property_id', 'created_at', 'updated_at']
 
@@ -440,6 +441,17 @@ class DpGeneralSettingsSerializer(serializers.ModelSerializer):
         if value not in allowed_values:
             raise serializers.ValidationError(
                 f"comp_price_calculation must be one of: {', '.join(allowed_values)}"
+            )
+        return value
+
+    def validate_los_aggregation(self, value):
+        """
+        Validate that los_aggregation is one of the allowed values
+        """
+        allowed_values = ['min', 'max']
+        if value not in allowed_values:
+            raise serializers.ValidationError(
+                f"los_aggregation must be one of: {', '.join(allowed_values)}"
             )
         return value 
 
@@ -808,8 +820,7 @@ class DpLosSetupSerializer(serializers.ModelSerializer):
         model = DpLosSetup
         fields = [
             'id', 'property_id', 'valid_from', 'valid_until', 
-            'day_of_week', 'los_value', 'num_competitors', 
-            'los_aggregation', 'created_at', 'updated_at'
+            'day_of_week', 'los_value', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -930,4 +941,102 @@ class BulkDpLosReductionSerializer(serializers.Serializer):
             'created_reductions': created_reductions,  # Return model instances, not serialized data
             'errors': errors,
             'property_id': property_instance.id
-        } 
+        }
+
+
+class UnifiedRoomsAndRatesSerializer(serializers.ModelSerializer):
+    """
+    Serializer for UnifiedRoomsAndRates model (Available Rates)
+    """
+    class Meta:
+        model = UnifiedRoomsAndRates
+        fields = [
+            'id', 'property_id', 'pms_source', 'pms_hotel_id', 'room_id', 'rate_id',
+            'room_name', 'room_description', 'rate_name', 'rate_description', 
+            'rate_category', 'last_updated'
+        ]
+        read_only_fields = ['id', 'last_updated']
+
+
+class AvailableRatesUnifiedSerializer(serializers.Serializer):
+    """
+    Unified serializer that combines UnifiedRoomsAndRates and DpRoomRates data
+    for the Available Rates frontend component
+    """
+    # Fields from UnifiedRoomsAndRates
+    id = serializers.IntegerField(read_only=True)
+    property_id = serializers.CharField(read_only=True)
+    pms_source = serializers.CharField(read_only=True)
+    pms_hotel_id = serializers.CharField(read_only=True)
+    room_id = serializers.CharField(read_only=True)
+    rate_id = serializers.CharField(read_only=True)
+    room_name = serializers.CharField(read_only=True)
+    room_description = serializers.CharField(read_only=True, allow_null=True)
+    rate_name = serializers.CharField(read_only=True)
+    rate_description = serializers.CharField(read_only=True, allow_null=True)
+    rate_category = serializers.CharField(read_only=True, allow_null=True)
+    last_updated = serializers.DateTimeField(read_only=True)
+    
+    # Fields from DpRoomRates (configuration)
+    increment_type = serializers.CharField(default='Percentage')
+    increment_value = serializers.IntegerField(default=0)
+    is_base_rate = serializers.BooleanField(default=False)
+    
+    def to_representation(self, instance):
+        """
+        Custom representation that combines data from both models
+        """
+        # Get the base data from UnifiedRoomsAndRates
+        data = super().to_representation(instance)
+        
+        # Try to get the corresponding DpRoomRates configuration
+        try:
+            room_rate_config = DpRoomRates.objects.get(
+                property_id=instance.property_id,
+                rate_id=instance.rate_id
+            )
+            # Override with actual configuration values
+            data['increment_type'] = room_rate_config.increment_type
+            data['increment_value'] = room_rate_config.increment_value
+            data['is_base_rate'] = room_rate_config.is_base_rate
+        except DpRoomRates.DoesNotExist:
+            # If no configuration exists, use defaults
+            data['increment_type'] = 'Percentage'
+            data['increment_value'] = 0
+            data['is_base_rate'] = False
+        
+        return data
+
+
+class AvailableRatesUpdateSerializer(serializers.Serializer):
+    """
+    Serializer for updating Available Rates configuration
+    """
+    rate_id = serializers.CharField()
+    increment_type = serializers.ChoiceField(choices=DpRoomRates.INCREMENT_TYPE_CHOICES)
+    increment_value = serializers.IntegerField()
+    is_base_rate = serializers.BooleanField()
+    
+    def validate_increment_value(self, value):
+        """
+        Validate increment value based on increment type
+        """
+        if value < 0:
+            raise serializers.ValidationError("Increment value cannot be negative")
+        return value
+
+
+class BulkAvailableRatesUpdateSerializer(serializers.Serializer):
+    """
+    Serializer for bulk updating multiple Available Rates configurations
+    """
+    rates = AvailableRatesUpdateSerializer(many=True)
+    
+    def validate_rates(self, value):
+        """
+        Validate that only one rate per property can be marked as base rate
+        """
+        base_rates = [rate for rate in value if rate.get('is_base_rate', False)]
+        if len(base_rates) > 1:
+            raise serializers.ValidationError("Only one rate can be marked as base rate")
+        return value 

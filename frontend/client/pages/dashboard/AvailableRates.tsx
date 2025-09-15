@@ -1,54 +1,147 @@
-import { Plus, Save, ChevronDown, Percent, Trash2 } from "lucide-react";
+import { useState, useEffect, useContext } from "react";
+import { Save, ChevronDown, Percent } from "lucide-react";
+import { dynamicPricingService, UnifiedRoomRate } from "../../../shared/api/dynamic";
+import { PropertyContext } from "../../../shared/PropertyContext";
 
 export default function AvailableRates() {
-  const rates = [
-    {
-      id: 1,
-      roomId: "ROOM001",
-      roomName: "Standard Double",
-      rateId: "RATE001",
-      rateName: "Flexible Rate",
-      rateCategory: "Flexible",
-      calculationType: "Percentage",
-      calculationValue: "0",
-      enabled: true,
-      featured: true,
-    },
-    {
-      id: 2,
-      roomId: "ROOM002",
-      roomName: "Deluxe Room",
-      rateId: "RATE002",
-      rateName: "Premium Rate",
-      rateCategory: "Non-refundable",
-      calculationType: "Percentage",
-      calculationValue: "20",
-      enabled: false,
-    },
-    {
-      id: 3,
-      roomId: "ROOM003",
-      roomName: "Suite",
-      rateId: "RATE003",
-      rateName: "Luxury Rate",
-      rateCategory: "Advance Purchase",
-      calculationType: "Percentage",
-      calculationValue: "25",
-      enabled: false,
-    },
-    {
-      id: 4,
-      roomId: "ROOM004",
-      roomName: "Room Name",
-      rateId: "RATE004",
-      rateName: "Rate Name",
-      rateCategory: "Advance Purchase",
-      calculationType: "Percentage",
-      calculationValue: "0",
-      enabled: false,
-      placeholder: true,
-    },
-  ];
+  const [rates, setRates] = useState<UnifiedRoomRate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const { property } = useContext(PropertyContext) ?? {};
+
+  // Local state for editable fields
+  const [editableRates, setEditableRates] = useState<UnifiedRoomRate[]>([]);
+
+  // Helper function to sort rates with base rate first
+  const sortRatesWithBaseFirst = (rates: UnifiedRoomRate[]): UnifiedRoomRate[] => {
+    return [...rates].sort((a, b) => {
+      // Base rate comes first
+      if (a.is_base_rate && !b.is_base_rate) return -1;
+      if (!a.is_base_rate && b.is_base_rate) return 1;
+      
+      // If both are base rates or both are not base rates, sort by room_id then rate_id
+      if (a.room_id !== b.room_id) {
+        return a.room_id.localeCompare(b.room_id);
+      }
+      return a.rate_id.localeCompare(b.rate_id);
+    });
+  };
+
+  useEffect(() => {
+    const fetchAvailableRates = async () => {
+      if (!property?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await dynamicPricingService.getAvailableRates(property.id);
+        setRates(response.rates);
+        // Sort rates so base rate appears first
+        const sortedRates = sortRatesWithBaseFirst(response.rates);
+        setEditableRates(sortedRates);
+      } catch (err) {
+        console.error('Error fetching available rates:', err);
+        setError('Failed to load available rates');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAvailableRates();
+  }, [property?.id]);
+
+  const handleSave = async () => {
+    if (!property?.id) {
+      setSaveMessage("No property selected");
+      return;
+    }
+
+    setSaving(true);
+    setSaveMessage(null);
+
+    try {
+      // Prepare the data for the API
+      const ratesData = editableRates.map(rate => ({
+        rate_id: rate.rate_id,
+        increment_type: rate.increment_type,
+        increment_value: rate.increment_value,
+        is_base_rate: rate.is_base_rate
+      }));
+
+      const response = await dynamicPricingService.updateAvailableRates(property.id, {
+        rates: ratesData
+      });
+
+      setSaveMessage(`Successfully updated ${response.updated_count} rates and created ${response.created_count} new configurations`);
+      
+      // Refresh the data to show updated values
+      const updatedResponse = await dynamicPricingService.getAvailableRates(property.id);
+      setRates(updatedResponse.rates);
+      // Sort rates so base rate appears first
+      const sortedRates = sortRatesWithBaseFirst(updatedResponse.rates);
+      setEditableRates(sortedRates);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage(null);
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Error saving available rates:', err);
+      setSaveMessage('Failed to save available rates. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateIncrementValue = (rateId: string, value: string) => {
+    const numericValue = parseInt(value) || 0;
+    setEditableRates(prev => 
+      prev.map(rate => 
+        rate.rate_id === rateId 
+          ? { ...rate, increment_value: numericValue }
+          : rate
+      )
+    );
+  };
+
+  const updateIncrementType = (rateId: string, type: 'Percentage' | 'Additional') => {
+    setEditableRates(prev => 
+      prev.map(rate => 
+        rate.rate_id === rateId 
+          ? { ...rate, increment_type: type }
+          : rate
+      )
+    );
+  };
+
+  const toggleBaseRate = (rateId: string) => {
+    setEditableRates(prev => {
+      const updatedRates = prev.map(rate => {
+        if (rate.rate_id === rateId) {
+          // If this rate is being set as base, set increment value to 0
+          return {
+            ...rate,
+            is_base_rate: !rate.is_base_rate,
+            increment_value: !rate.is_base_rate ? 0 : rate.increment_value
+          };
+        } else {
+          // Unset base rate for all other rates
+          return {
+            ...rate,
+            is_base_rate: false
+          };
+        }
+      });
+      // Re-sort to put the new base rate at the top
+      return sortRatesWithBaseFirst(updatedRates);
+    });
+  };
 
   const CategorySelector = ({
     category,
@@ -57,21 +150,31 @@ export default function AvailableRates() {
     category: string;
     hasDropdown?: boolean;
   }) => (
-    <div className="flex items-center justify-between px-4 py-2 border border-hotel-divider rounded bg-white">
-      <span className="text-sm font-normal text-black">{category}</span>
+    <div className="flex items-center justify-between px-4 py-2 border border-gray-200 rounded bg-gray-50 cursor-not-allowed">
+      <span className="text-sm font-normal text-gray-600">{category}</span>
       {hasDropdown && (
-        <ChevronDown size={16} className="text-black rotate-90" />
+        <ChevronDown size={16} className="text-gray-400 rotate-90" />
       )}
     </div>
   );
 
-  const CalculationTypeSelector = ({ type }: { type: string }) => (
-    <div className="flex items-center justify-between px-3 py-2 border border-gray-300 rounded bg-white">
-      <div className="flex items-center gap-2">
-        <Percent size={16} className="text-black" />
-        <span className="text-xs text-black">{type}</span>
-      </div>
-      <ChevronDown size={16} className="text-black rotate-90" />
+  const IncrementTypeSelector = ({ 
+    type, 
+    onChange 
+  }: { 
+    type: 'Percentage' | 'Additional';
+    onChange: (newType: 'Percentage' | 'Additional') => void;
+  }) => (
+    <div className="relative">
+      <select
+        value={type}
+        onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
+        className="w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE] appearance-none cursor-pointer"
+      >
+        <option value="Percentage">Percentage</option>
+        <option value="Additional">Additional</option>
+      </select>
+      <ChevronDown size={16} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" />
     </div>
   );
 
@@ -95,6 +198,7 @@ export default function AvailableRates() {
       />
     </div>
   );
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -120,7 +224,7 @@ export default function AvailableRates() {
                 Available Rates
               </h2>
               <p className="text-[#8A8E94] font-bold text-lg">
-                Price variations depending on room type.
+                Price variations depending on room type. {!loading && !error && `(${editableRates.length} rates)`}
               </p>
             </div>
           </div>
@@ -134,8 +238,8 @@ export default function AvailableRates() {
               <div>Rate ID</div>
               <div>Rate Name</div>
               <div>Rate Category</div>
-              <div>Calculation Type</div>
-              <div>Calculation Value</div>
+              <div>Increment Type</div>
+              <div>Increment Value</div>
               <div>Select as Base</div>
             </div>
 
@@ -144,130 +248,115 @@ export default function AvailableRates() {
 
             {/* Table Rows */}
             <div className="space-y-3">
-              {rates.map((rate) => (
-                <div
-                  key={rate.id}
-                  className="grid grid-cols-8 gap-4 items-center"
-                >
-                  {/* Room ID */}
-                  <div>
-                    <div
-                      className={`px-3 py-2 text-sm font-normal border rounded ${
-                        rate.featured
-                          ? "bg-hotel-brand-dark text-white border-hotel-brand-dark"
-                          : "bg-white text-black border-hotel-divider"
-                      } ${rate.placeholder ? "text-gray-500" : ""}`}
-                    >
-                      {rate.roomId}
-                    </div>
-                  </div>
-
-                  {/* Room Name */}
-                  <div>
-                    <div
-                      className={`px-3 py-2 text-sm font-normal border rounded ${
-                        rate.featured
-                          ? "bg-hotel-brand-dark text-white border-hotel-brand-dark"
-                          : "bg-white text-black border-hotel-divider"
-                      } ${rate.placeholder ? "text-gray-500" : ""}`}
-                    >
-                      {rate.roomName}
-                    </div>
-                  </div>
-
-                  {/* Rate ID */}
-                  <div>
-                    <div
-                      className={`px-3 py-2 text-sm font-normal border rounded ${
-                        rate.featured
-                          ? "bg-hotel-brand-dark text-white border-hotel-brand-dark"
-                          : "bg-white text-black border-hotel-divider"
-                      } ${rate.placeholder ? "text-gray-500" : ""}`}
-                    >
-                      {rate.rateId}
-                    </div>
-                  </div>
-
-                  {/* Rate Name */}
-                  <div>
-                    <div
-                      className={`px-3 py-2 text-sm font-normal border rounded ${
-                        rate.featured
-                          ? "bg-hotel-brand-dark text-white border-hotel-brand-dark"
-                          : "bg-white text-black border-hotel-divider"
-                      } ${rate.placeholder ? "text-gray-500" : ""}`}
-                    >
-                      {rate.rateName}
-                    </div>
-                  </div>
-
-                  {/* Rate Category */}
-                  <div>
-                    {rate.featured ? (
-                      <div className="flex items-center justify-between px-3 py-2 bg-hotel-brand-dark text-white border border-hotel-brand-dark rounded">
-                        <span className="text-sm font-normal">
-                          {rate.rateCategory}
-                        </span>
-                        <ChevronDown
-                          size={16}
-                          className="text-white rotate-90"
-                        />
-                      </div>
-                    ) : (
-                      <CategorySelector
-                        category={rate.rateCategory}
-                        hasDropdown={!rate.placeholder}
-                      />
-                    )}
-                  </div>
-
-                  {/* Calculation Type */}
-                  <div>
-                    {rate.featured ? (
-                      <div className="flex items-center justify-between px-3 py-2 bg-hotel-brand-dark text-white border border-hotel-brand-dark rounded">
-                        <div className="flex items-center gap-2">
-                          <Percent size={16} className="text-white" />
-                          <span className="text-xs">
-                            {rate.calculationType}
-                          </span>
-                        </div>
-                        <ChevronDown
-                          size={16}
-                          className="text-white rotate-90"
-                        />
-                      </div>
-                    ) : (
-                      <CalculationTypeSelector type={rate.calculationType} />
-                    )}
-                  </div>
-
-                  {/* Calculation Value */}
-                  <div>
-                    <input
-                      type="text"
-                      value={rate.calculationValue}
-                      className={`w-full px-3 py-2 text-sm text-center border rounded ${
-                        rate.featured
-                          ? "bg-hotel-brand-dark text-white border-hotel-brand-dark"
-                          : "bg-white text-black border-hotel-divider"
-                      } ${rate.placeholder ? "text-gray-500" : ""}`}
-                    />
-                  </div>
-
-                  {/* Select */}
-                  <div className="flex items-center justify-center">
-                    <ToggleSwitch enabled={rate.enabled} onChange={() => {}} />
-                  </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500">Loading available rates...</div>
                 </div>
-              ))}
+              ) : error ? (
+                <div className="text-center py-8">
+                  <div className="text-red-500">{error}</div>
+                </div>
+              ) : editableRates.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500">No available rates found</div>
+                </div>
+              ) : (
+                editableRates.map((rate) => (
+                  <div
+                    key={rate.id}
+                    className={`grid grid-cols-8 gap-4 items-center p-3 rounded-lg transition-colors ${
+                      rate.is_base_rate 
+                        ? 'bg-blue-50 border border-blue-200' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    {/* Room ID */}
+                    <div>
+                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                        {rate.room_id}
+                      </div>
+                    </div>
+
+                    {/* Room Name */}
+                    <div>
+                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                        {rate.room_name}
+                      </div>
+                    </div>
+
+                    {/* Rate ID */}
+                    <div>
+                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                        {rate.rate_id}
+                      </div>
+                    </div>
+
+                    {/* Rate Name */}
+                    <div>
+                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                        {rate.rate_name}
+                      </div>
+                    </div>
+
+                    {/* Rate Category */}
+                    <div>
+                      <CategorySelector
+                        category={rate.rate_category || 'Not specified'}
+                        hasDropdown={true}
+                      />
+                    </div>
+
+                    {/* Increment Type */}
+                    <div>
+                      <IncrementTypeSelector 
+                        type={rate.increment_type} 
+                        onChange={(newType) => updateIncrementType(rate.rate_id, newType)}
+                      />
+                    </div>
+
+                    {/* Increment Value */}
+                    <div>
+                      <input
+                        type="number"
+                        value={rate.increment_value}
+                        onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
+                        className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
+                        min="0"
+                      />
+                    </div>
+
+                    {/* Select as Base */}
+                    <div className="flex items-center justify-center">
+                      <ToggleSwitch enabled={rate.is_base_rate} onChange={() => toggleBaseRate(rate.rate_id)} />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end items-center mb-8">
-            <button className="flex items-center gap-5 px-7 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+          <div className="flex flex-col items-end mb-8 space-y-4">
+            {saveMessage && (
+              <div className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                saveMessage.includes("Successfully") 
+                  ? "bg-green-100 text-green-800" 
+                  : "bg-red-100 text-red-800"
+              }`}>
+                {saveMessage}
+              </div>
+            )}
+            <button 
+              onClick={handleSave}
+              disabled={saving || loading}
+              className={`flex items-center gap-5 px-7 py-3 rounded-lg font-semibold transition-colors ${
+                saving || loading
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed" 
+                  : "bg-[#2B6CEE] text-white hover:bg-blue-600"
+              }`}
+            >
               <Save size={24} />
-              Save
+              {saving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>

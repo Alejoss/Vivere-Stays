@@ -1,8 +1,9 @@
 from django.contrib import admin
 from .models import (
-    Property, PropertyManagementSystem, DpGeneralSettings, DpPropertyCompetitor, DpDynamicIncrementsV1,
+    Property, PropertyManagementSystem, DpGeneralSettings, DpPropertyCompetitor,
     DpDynamicIncrementsV2, DpOfferIncrements, DpLosSetup, DpLosReduction,
-    DpMinimumSellingPrice, DpWeekdayIncrements, DpEvents, DpRoomRates, DpPriceChangeHistory
+    DpMinimumSellingPrice, DpRoomRates, DpPriceChangeHistory,
+    UnifiedRoomsAndRates
 )
 
 
@@ -25,9 +26,9 @@ class PropertyAdmin(admin.ModelAdmin):
 
 @admin.register(DpGeneralSettings)
 class DpGeneralSettingsAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'base_rate_code', 'min_competitors', 'comp_price_calculation', 'pricing_status', 'los_status')
-    list_filter = ('pricing_status', 'los_status', 'min_competitors', 'created_at')
-    search_fields = ('property_id__name', 'base_rate_code')
+    list_display = ('property_id', 'min_competitors', 'comp_price_calculation', 'pricing_status', 'los_status', 'los_num_competitors', 'los_aggregation')
+    list_filter = ('pricing_status', 'los_status', 'min_competitors', 'los_num_competitors', 'los_aggregation', 'created_at')
+    search_fields = ('property_id__name',)
     readonly_fields = ('created_at', 'updated_at')
 
 
@@ -37,14 +38,6 @@ class DpPropertyCompetitorAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     search_fields = ('property_id__name', 'competitor_id')
     readonly_fields = ('created_at', 'updated_at')
-
-
-class DpDynamicIncrementsV1Admin(admin.ModelAdmin):
-    list_display = ('property_id', 'var_name', 'var_from', 'var_to', 'increment_type', 'increment_value')
-    list_filter = ('var_name', 'increment_type', 'created_at')
-    search_fields = ('property_id__name',)
-    readonly_fields = ('created_at', 'updated_at')
-    ordering = ('property_id', 'var_name', 'var_from')
 
 
 class DpDynamicIncrementsV2Admin(admin.ModelAdmin):
@@ -72,10 +65,11 @@ class DpOfferIncrementsAdmin(admin.ModelAdmin):
 
 @admin.register(DpLosSetup)
 class DpLosSetupAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'valid_from', 'valid_until', 'day_of_week', 'los_value', 'num_competitors', 'los_aggregation')
-    list_filter = ('day_of_week', 'valid_from', 'num_competitors', 'created_at')
+    list_display = ('property_id', 'valid_from', 'valid_until', 'day_of_week', 'los_value')
+    list_filter = ('day_of_week', 'valid_from', 'created_at')
     search_fields = ('property_id__name',)
     ordering = ('property_id', 'valid_from', 'day_of_week')
+    readonly_fields = ('created_at', 'updated_at')
 
 
 @admin.register(DpLosReduction)
@@ -88,41 +82,39 @@ class DpLosReductionAdmin(admin.ModelAdmin):
 
 @admin.register(DpMinimumSellingPrice)
 class DpMinimumSellingPriceAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'valid_from', 'valid_until', 'msp', 'manual_alternative_price')
+    list_display = ('property_id', 'valid_from', 'valid_until', 'msp', 'period_title')
     list_filter = ('valid_from', 'valid_until')
-    search_fields = ('property_id__name',)
+    search_fields = ('property_id__name', 'period_title')
     readonly_fields = ('created_at', 'updated_at')
     date_hierarchy = 'valid_from'
 
 
-@admin.register(DpWeekdayIncrements)
-class DpWeekdayIncrementsAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'weekday', 'increment_type', 'increment_value')
-    list_filter = ('weekday', 'increment_type')
-    search_fields = ('property_id__name',)
-    readonly_fields = ('created_at', 'updated_at')
-    ordering = ('property_id', 'weekday')
-
-
-@admin.register(DpEvents)
-class DpEventsAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'event_name', 'valid_from', 'valid_until', 'increment_type', 'increment_value')
-    list_filter = ('increment_type', 'valid_from', 'valid_until')
-    search_fields = ('property_id__name', 'event_name')
-    readonly_fields = ('created_at', 'updated_at')
-    date_hierarchy = 'valid_from'
 
 
 @admin.register(DpRoomRates)
 class DpRoomRatesAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'rate_id', 'base_rate_id', 'increment_type', 'increment_value')
-    list_filter = ('increment_type',)
-    search_fields = ('property_id__name', 'rate_id', 'base_rate_id')
+    list_display = ('property_id', 'rate_id', 'is_base_rate', 'increment_type', 'increment_value')
+    list_filter = ('increment_type', 'is_base_rate')
+    search_fields = ('property_id__name', 'rate_id')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('property_id', 'rate_id')
 
 
+@admin.register(UnifiedRoomsAndRates)
+class UnifiedRoomsAndRatesAdmin(admin.ModelAdmin):
+    list_display = ('property_id', 'pms_source', 'room_id', 'rate_id', 'room_name', 'rate_name', 'rate_category', 'last_updated')
+    list_filter = ('pms_source', 'rate_category', 'last_updated')
+    search_fields = ('property_id__name', 'room_id', 'rate_id', 'room_name', 'rate_name')
+    readonly_fields = ('last_updated',)
+    ordering = ('property_id', 'pms_source', 'room_id', 'rate_id')
+    fieldsets = (
+        ('Property & PMS', {'fields': ('property_id', 'pms_source', 'pms_hotel_id')}),
+        ('Room Information', {'fields': ('room_id', 'room_name', 'room_description')}),
+        ('Rate Information', {'fields': ('rate_id', 'rate_name', 'rate_description', 'rate_category')}),
+        ('Metadata', {'fields': ('last_updated',), 'classes': ('collapse',)}),
+    )
+
+
 # Register the models
-admin.site.register(DpDynamicIncrementsV1, DpDynamicIncrementsV1Admin)
 admin.site.register(DpDynamicIncrementsV2, DpDynamicIncrementsV2Admin)
 admin.site.register(DpPriceChangeHistory)

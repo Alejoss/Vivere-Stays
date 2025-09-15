@@ -4,9 +4,9 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from .models import (
-    Property, DpGeneralSettings, DpPropertyCompetitor, DpDynamicIncrementsV1,
+    Property, DpGeneralSettings, DpPropertyCompetitor,
     DpDynamicIncrementsV2, DpOfferIncrements, DpLosSetup, DpLosReduction,
-    DpMinimumSellingPrice, DpWeekdayIncrements, DpEvents, DpRoomRates
+    DpMinimumSellingPrice, DpRoomRates
 )
 
 

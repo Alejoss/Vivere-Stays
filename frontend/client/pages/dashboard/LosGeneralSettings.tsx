@@ -31,8 +31,8 @@ export default function LosGeneralSettings() {
     
     try {
       const generalSettings = await dynamicPricingService.getGeneralSettings(property.id);
-      setCompetitorCount(generalSettings.min_competitors?.toString() || "2");
-      setAggregationMethod(generalSettings.comp_price_calculation || "min");
+      setCompetitorCount(generalSettings.los_num_competitors?.toString() || "2");
+      setAggregationMethod(generalSettings.los_aggregation || "min");
     } catch (error) {
       console.error("Error loading general settings:", error);
       setErrorMessage("Failed to load general settings");
@@ -53,8 +53,8 @@ export default function LosGeneralSettings() {
 
     try {
       await dynamicPricingService.updateGeneralSettings(property.id, {
-        min_competitors: parseInt(competitorCount),
-        comp_price_calculation: aggregationMethod
+        los_num_competitors: parseInt(competitorCount),
+        los_aggregation: aggregationMethod
       });
       
       setSaveMessage("General settings saved successfully!");

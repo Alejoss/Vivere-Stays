@@ -124,6 +124,8 @@ export interface DpGeneralSettings {
   future_days_to_price: number;
   pricing_status: string;
   los_status: string;
+  los_num_competitors: number;
+  los_aggregation: 'min' | 'max';
   created_at: string;
   updated_at: string;
 }
@@ -445,6 +447,31 @@ export interface DeleteLosSetupRuleResponse {
   valid_from: string;
 }
 
+// Types for Unified Rooms and Rates (Available Rates)
+export interface UnifiedRoomRate {
+  id: number;
+  property_id: string;
+  pms_source: 'apaleo' | 'mrplan' | 'avirato';
+  pms_hotel_id: string;
+  room_id: string;
+  rate_id: string;
+  room_name: string;
+  room_description?: string;
+  rate_name: string;
+  rate_description?: string;
+  rate_category?: string;
+  last_updated: string;
+  // Configuration fields from DpRoomRates
+  increment_type: 'Percentage' | 'Additional';
+  increment_value: number;
+  is_base_rate: boolean;
+}
+
+export interface AvailableRatesResponse {
+  rates: UnifiedRoomRate[];
+  count: number;
+}
+
 export const dynamicPricingService = {
   // Price History endpoints
   async getPriceHistory(
@@ -709,8 +736,8 @@ export const dynamicPricingService = {
 
   async updateGeneralSettings(
     propertyId: string, 
-    data: { comp_price_calculation?: string; min_competitors?: number }
-  ): Promise<{ message: string; property_id: string; updated_fields: string[]; comp_price_calculation: string; min_competitors: number; updated_at: string }> {
+    data: { comp_price_calculation?: string; min_competitors?: number; los_num_competitors?: number; los_aggregation?: string }
+  ): Promise<{ message: string; property_id: string; updated_fields: string[]; comp_price_calculation: string; min_competitors: number; los_num_competitors: number; los_aggregation: string; updated_at: string }> {
     return apiRequest({
       method: 'PATCH',
       url: `/dynamic-pricing/properties/${propertyId}/general-settings/`,
@@ -984,6 +1011,39 @@ export const dynamicPricingService = {
     return apiRequest<DeleteLosSetupRuleResponse>({
       method: 'DELETE',
       url: `/dynamic-pricing/properties/${propertyId}/los-setup/${setupId}/delete/`,
+    });
+  },
+
+  // Available Rates (Unified Rooms and Rates) endpoints
+  async getAvailableRates(propertyId: string): Promise<AvailableRatesResponse> {
+    return apiRequest<AvailableRatesResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/available-rates/`,
+    });
+  },
+
+  async updateAvailableRates(
+    propertyId: string, 
+    data: { rates: Array<{ rate_id: string; increment_type: 'Percentage' | 'Additional'; increment_value: number; is_base_rate: boolean }> }
+  ): Promise<{
+    message: string;
+    property_id: string;
+    updated_count: number;
+    created_count: number;
+    total_processed: number;
+    errors: Array<{ rate_id: string; error: string }>;
+  }> {
+    return apiRequest<{
+      message: string;
+      property_id: string;
+      updated_count: number;
+      created_count: number;
+      total_processed: number;
+      errors: Array<{ rate_id: string; error: string }>;
+    }>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/available-rates/update/`,
+      data,
     });
   },
 };

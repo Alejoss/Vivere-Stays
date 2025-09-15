@@ -15,7 +15,7 @@ import requests
 from decouple import config
 from django.conf import settings
 
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings, DpOfferIncrements, DpDynamicIncrementsV2, DpLosReduction, DpLosSetup
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings, DpOfferIncrements, DpDynamicIncrementsV2, DpLosReduction, DpLosSetup, DpRoomRates, UnifiedRoomsAndRates
 from .serializers import (
     PropertyCreateSerializer, 
     PropertyDetailSerializer, 
@@ -33,7 +33,10 @@ from .serializers import (
     DpLosReductionSerializer,
     BulkDpLosReductionSerializer,
     DpLosSetupSerializer,
-    BulkDpLosSetupSerializer
+    BulkDpLosSetupSerializer,
+    UnifiedRoomsAndRatesSerializer,
+    AvailableRatesUnifiedSerializer,
+    BulkAvailableRatesUpdateSerializer
 )
 
 from rest_framework.decorators import action
@@ -1703,6 +1706,34 @@ class DpGeneralSettingsUpdateView(APIView):
                 settings.min_competitors = new_min_competitors
                 updated_fields.append(f'min_competitors: {old_min_competitors} -> {new_min_competitors}')
             
+            # Update los_num_competitors if provided
+            if 'los_num_competitors' in request.data:
+                new_los_num_competitors = request.data.get('los_num_competitors')
+                if not isinstance(new_los_num_competitors, int) or new_los_num_competitors < 1:
+                    return Response({
+                        'message': 'los_num_competitors must be a positive integer'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                old_los_num_competitors = settings.los_num_competitors
+                settings.los_num_competitors = new_los_num_competitors
+                updated_fields.append(f'los_num_competitors: {old_los_num_competitors} -> {new_los_num_competitors}')
+            
+            # Update los_aggregation if provided
+            if 'los_aggregation' in request.data:
+                new_los_aggregation = request.data.get('los_aggregation')
+                print(f"🔧 DEBUG: Updating los_aggregation to: {new_los_aggregation}")
+                allowed_values = ['min', 'max']
+                if new_los_aggregation not in allowed_values:
+                    print(f"🔧 DEBUG: Invalid los_aggregation value: {new_los_aggregation}")
+                    return Response({
+                        'message': f'los_aggregation must be one of: {", ".join(allowed_values)}'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                old_los_aggregation = settings.los_aggregation
+                print(f"🔧 DEBUG: Changing los_aggregation from '{old_los_aggregation}' to '{new_los_aggregation}'")
+                settings.los_aggregation = new_los_aggregation
+                updated_fields.append(f'los_aggregation: {old_los_aggregation} -> {new_los_aggregation}')
+            
             # Save if any fields were updated
             if updated_fields:
                 print(f"🔧 DEBUG: Saving settings with updated fields: {updated_fields}")
@@ -1714,6 +1745,8 @@ class DpGeneralSettingsUpdateView(APIView):
                     'updated_fields': updated_fields,
                     'comp_price_calculation': settings.comp_price_calculation,
                     'min_competitors': settings.min_competitors,
+                    'los_num_competitors': settings.los_num_competitors,
+                    'los_aggregation': settings.los_aggregation,
                     'updated_at': settings.updated_at
                 }, status=status.HTTP_200_OK)
             else:
@@ -3138,5 +3171,153 @@ class LosSetupDeleteView(APIView):
             logger.error(f"Error deleting LOS setup rule: {str(e)}")
             return Response({
                 'message': 'An error occurred while deleting the LOS setup rule',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PropertyAvailableRatesView(APIView):
+    """
+    API endpoint to get available rates (UnifiedRoomsAndRates) for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Get all available rates for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get all available rates for this property
+            available_rates = UnifiedRoomsAndRates.objects.filter(
+                property_id=property_instance
+            ).order_by('room_id', 'rate_id')
+            
+            # Serialize the data using the unified serializer
+            serializer = AvailableRatesUnifiedSerializer(available_rates, many=True)
+            
+            return Response({
+                'rates': serializer.data,
+                'count': available_rates.count()
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error fetching available rates: {str(e)}")
+            return Response({
+                'message': 'An error occurred while fetching available rates',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PropertyAvailableRatesUpdateView(APIView):
+    """
+    API endpoint to update available rates configuration (DpRoomRates) for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, property_id):
+        """
+        Update available rates configuration for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Validate the request data
+            serializer = BulkAvailableRatesUpdateSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response({
+                    'message': 'Invalid data provided',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            validated_data = serializer.validated_data
+            rates_data = validated_data['rates']
+            
+            updated_rates = []
+            created_rates = []
+            errors = []
+            
+            # Process each rate configuration
+            for rate_data in rates_data:
+                try:
+                    rate_id = rate_data['rate_id']
+                    increment_type = rate_data['increment_type']
+                    increment_value = rate_data['increment_value']
+                    is_base_rate = rate_data['is_base_rate']
+                    
+                    # If this rate is being set as base rate, unset all other base rates for this property
+                    if is_base_rate:
+                        DpRoomRates.objects.filter(
+                            property_id=property_instance
+                        ).update(is_base_rate=False)
+                    
+                    # Get or create the DpRoomRates object
+                    room_rate, created = DpRoomRates.objects.get_or_create(
+                        property_id=property_instance,
+                        rate_id=rate_id,
+                        defaults={
+                            'increment_type': increment_type,
+                            'increment_value': increment_value,
+                            'is_base_rate': is_base_rate
+                        }
+                    )
+                    
+                    if not created:
+                        # Update existing record
+                        room_rate.increment_type = increment_type
+                        room_rate.increment_value = increment_value
+                        room_rate.is_base_rate = is_base_rate
+                        room_rate.save()
+                        updated_rates.append(room_rate)
+                    else:
+                        created_rates.append(room_rate)
+                        
+                except Exception as e:
+                    errors.append({
+                        'rate_id': rate_data.get('rate_id', 'unknown'),
+                        'error': str(e)
+                    })
+            
+            return Response({
+                'message': 'Available rates configuration updated successfully',
+                'property_id': property_instance.id,
+                'updated_count': len(updated_rates),
+                'created_count': len(created_rates),
+                'total_processed': len(rates_data),
+                'errors': errors
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error updating available rates: {str(e)}")
+            return Response({
+                'message': 'An error occurred while updating available rates',
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

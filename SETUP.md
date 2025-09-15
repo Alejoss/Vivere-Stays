@@ -157,6 +157,13 @@ docker-compose exec vivere_backend python manage.py populate_competitor_prices
 
 This creates dummy competitor price data for dynamic pricing analysis.
 
+**Populate Unified Rooms and Rates:**
+```bash
+docker-compose exec vivere_backend python manage.py populate_unified_rooms_rates
+```
+
+This creates sample room and rate data that matches the frontend Available Rates interface, including different room types (Standard Double, Deluxe Room, Suite, etc.) with various rate categories (Flexible, Non-refundable, Advance Purchase).
+
 #### 8. Start the Frontend Development Server
 
 In another terminal window, start the frontend:
@@ -237,6 +244,7 @@ The following Django management commands are available:
 - `populate_price_history` - Create dummy price history data for properties
 - `populate_daily_performance` - Seed analytics with sample performance data
 - `populate_competitor_prices` - Create dummy competitor price data
+- `populate_unified_rooms_rates` - Create sample room and rate data for Available Rates interface
 
 **Usage Examples:**
 ```bash
@@ -251,6 +259,12 @@ docker-compose exec vivere_backend python manage.py populate_competitor_prices -
 
 # Populate analytics for specific property
 docker-compose exec vivere_backend python manage.py populate_daily_performance --property-id 123 --start 2025-01-01 --days 30
+
+# Populate unified rooms and rates with dry-run to see what would be created
+docker-compose exec vivere_backend python manage.py populate_unified_rooms_rates --dry-run
+
+# Populate unified rooms and rates and delete existing records first
+docker-compose exec vivere_backend python manage.py populate_unified_rooms_rates --delete-existing
 ```
 
 ## 🐛 Troubleshooting
