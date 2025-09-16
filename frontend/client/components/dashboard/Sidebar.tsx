@@ -1,9 +1,7 @@
 import {
   Calendar,
   BarChart3,
-  Globe,
   TrendingUp,
-  Activity,
   User,
   Bell,
   HelpCircle,
@@ -20,8 +18,6 @@ import { PropertyContext } from "../../../shared/PropertyContext";
 const navigationItems = [
   { id: "daily-prices", label: "Daily Prices", icon: Calendar, path: "/dashboard/property" },
   // Analytics handled as a submenu below
-  { id: "ota", label: "OTA", icon: Globe, path: "/dashboard/ota" },
-  { id: "forecast", label: "Forecast", icon: Activity, path: "/dashboard/forecast" },
 ];
 
 const hotelManagementItems = [
@@ -31,6 +27,7 @@ const hotelManagementItems = [
   { id: "dynamic-setup", label: "Dynamic Setup", path: "/dashboard/dynamic-setup" },
   { id: "length-of-stay", label: "Length of Stay", path: "/dashboard/length-of-stay" },
   { id: "available-rates", label: "Available Rates", path: "/dashboard/available-rates" },
+  { id: "msp-management", label: "MSP Management", path: "/dashboard/msp-management" },
 ];
 
 const accountItems = [
@@ -43,7 +40,7 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
-  const [hotelManagementOpen, setHotelManagementOpen] = React.useState(() => location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates"));
+  const [hotelManagementOpen, setHotelManagementOpen] = React.useState(() => location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management"));
   
   // Get property from context
   const { property } = useContext(PropertyContext) ?? {};
@@ -109,22 +106,6 @@ export default function Sidebar() {
           <span className="text-[15px] font-semibold leading-none sm:hidden md:block">Change Prices</span>
         </button>
 
-        {/* Other navigation items (OTA, Forecast) */}
-        {navigationItems.filter(item => item.id !== "daily-prices").map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavigation(item.path)}
-              className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
-                isActive ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
-              }`}
-            >
-              <item.icon size={18} color={isActive ? "white" : "black"} />
-              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">{item.label}</span>
-            </button>
-          );
-        })}
 
         {/* Analytics submenu */}
         <div className="mt-[2px]">
@@ -177,11 +158,11 @@ export default function Sidebar() {
             onClick={() => setHotelManagementOpen((o) => !o)}
             aria-expanded={hotelManagementOpen}
             className={`w-full flex items-center justify-between px-[11px] py-[10px] rounded border-0 transition-colors ${
-              location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
+              location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
             }`}
           >
             <span className="flex items-center gap-3">
-              <Settings size={18} color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") ? "white" : "black"} />
+              <Settings size={18} color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "white" : "black"} />
               <span className="text-[15px] font-semibold leading-none sm:hidden md:block">
                 Hotel Management
               </span>
@@ -189,7 +170,7 @@ export default function Sidebar() {
             <ChevronDown
               size={18}
               className={`transition-transform duration-200 ${hotelManagementOpen ? "rotate-180" : "rotate-0"}`}
-              color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") ? "white" : "black"}
+              color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "white" : "black"}
             />
           </button>
           

@@ -10,6 +10,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { dynamicPricingService, SpecialOffer, CreateSpecialOfferRequest } from "../../../shared/api/dynamic";
+import { toast } from "../../hooks/use-toast";
 import { PropertyContext } from "../../../shared/PropertyContext";
 
 interface OfferFormData {
@@ -58,7 +59,9 @@ export default function SpecialOffers() {
         isNew: false
       })));
     } catch (err: any) {
-      setError(err.message || 'Failed to load offers');
+      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load offers';
+      setError(backendMsg);
+      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -96,7 +99,9 @@ export default function SpecialOffers() {
         await dynamicPricingService.deleteSpecialOffer(property.id, offer.id);
         setSuccess('Offer deleted successfully');
       } catch (err: any) {
-        setError(err.message || 'Failed to delete offer');
+        const backendMsg = err?.response?.data?.message || err?.message || 'Failed to delete offer';
+        setError(backendMsg);
+        toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
         return;
       }
     }
@@ -205,7 +210,7 @@ export default function SpecialOffers() {
       });
       
       // Extract detailed error message from backend response
-      let errorMessage = 'Failed to save offers';
+      let errorMessage = err?.response?.data?.message || 'Failed to save offers';
       if (err?.response?.data?.errors) {
         // Handle validation errors
         const errors = err.response.data.errors;
@@ -225,6 +230,7 @@ export default function SpecialOffers() {
       }
       
       setError(errorMessage);
+      toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
     } finally {
       setSaving(false);
     }

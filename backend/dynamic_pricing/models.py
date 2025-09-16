@@ -90,11 +90,13 @@ class DpGeneralSettings(models.Model):
     Dynamic pricing general settings for each property
     """
     property_id = models.OneToOneField(Property, on_delete=models.CASCADE, primary_key=True, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='general_settings', help_text="User who owns this property")
     min_competitors = models.IntegerField(default=2)
     comp_price_calculation = models.CharField(max_length=255, default='min')  # Minimum, etc.
     future_days_to_price = models.IntegerField(default=365)
     pricing_status = models.CharField(max_length=255, default='offline')
     los_status = models.CharField(max_length=255, default='offline')
+    otas_price_diff = models.FloatField(default=0)
     # LOS-specific settings
     los_num_competitors = models.IntegerField(default=2, help_text="Number of competitors required for LOS calculations")
     los_aggregation = models.CharField(max_length=255, default='min', help_text="LOS aggregation method: min or max")
@@ -114,6 +116,7 @@ class DpPropertyCompetitor(models.Model):
     Property-competitor relationships for dynamic pricing
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='property_competitors', help_text="User who owns this property")
     competitor_id = models.ForeignKey(Competitor, on_delete=models.CASCADE, db_column='competitor_id')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -204,6 +207,7 @@ class DpLosSetup(models.Model):
     Dynamic pricing length of stay setup
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='los_setups', help_text="User who owns this property")
     valid_from = models.DateField()
     valid_until = models.DateField()
     day_of_week = models.CharField(max_length=255, default='Monday')  # "mon", "tue", "wed", "thu", "fri", "sat", "sun"
@@ -225,6 +229,7 @@ class DpLosReduction(models.Model):
     Dynamic pricing length of stay reduction
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='los_reductions', help_text="User who owns this property")
     lead_time_days = models.IntegerField(default=7)
     occupancy_level = models.CharField(max_length=255, default='50-70')
     los_value = models.IntegerField(default=1)       
@@ -245,6 +250,7 @@ class DpMinimumSellingPrice(models.Model):
     Minimum selling price table
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='minimum_selling_prices', help_text="User who owns this property")
     valid_from = models.DateField()
     valid_until = models.DateField()
     msp = models.IntegerField()
@@ -272,6 +278,7 @@ class DpRoomRates(models.Model):
     ]
     
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='room_rates', help_text="User who owns this property")
     rate_id = models.CharField(max_length=255)
     is_base_rate = models.BooleanField(default=False)
     increment_type = models.CharField(max_length=255, choices=INCREMENT_TYPE_CHOICES, default='Percentage')
@@ -293,6 +300,7 @@ class DpPriceChangeHistory(models.Model):
     Dynamic pricing price change history - tracks pricing decisions over time
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='price_change_history', help_text="User who owns this property")
     pms_hotel_id = models.CharField(max_length=255)
     checkin_date = models.DateField()  # Date for which the price change was calculated
     as_of = models.DateTimeField()  # Timestamp when the data was captured
@@ -478,6 +486,12 @@ class UnifiedRoomsAndRates(models.Model):
         on_delete=models.CASCADE,
         db_column='property_id',
         help_text='Internal property ID (unique across all PMSs)'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='unified_rooms_and_rates',
+        help_text="User who owns this property"
     )
     pms_source = models.CharField(max_length=50, choices=PMS_SOURCE_CHOICES)
     pms_hotel_id = models.CharField(max_length=255)

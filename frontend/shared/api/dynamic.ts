@@ -114,18 +114,14 @@ export interface PriceHistoryForDateRangeResponse {
 // Types for DpGeneralSettings
 export interface DpGeneralSettings {
   property_id: string;
-  base_rate_code?: string;
-  is_base_in_pms?: boolean;
   min_competitors: number;
   comp_price_calculation: 'min' | 'max' | 'avg' | 'median';
-  competitor_excluded?: string;
-  competitors_excluded?: any[];
-  msp_include_events_weekend_increments: boolean;
   future_days_to_price: number;
   pricing_status: string;
   los_status: string;
   los_num_competitors: number;
   los_aggregation: 'min' | 'max';
+  otas_price_diff: number;
   created_at: string;
   updated_at: string;
 }
@@ -581,6 +577,13 @@ export const dynamicPricingService = {
     });
   },
 
+  async getPropertyMSPEntries(propertyId: string): Promise<MSPEntriesResponse & { property_id: string; property_name: string }> {
+    return apiRequest<MSPEntriesResponse & { property_id: string; property_name: string }>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/msp/`,
+    });
+  },
+
   async createMSP(data: { periods: Array<{ fromDate: string; toDate: string; price: string; periodTitle: string }> }): Promise<{
     message: string;
     created_entries: MSPEntry[];
@@ -593,6 +596,22 @@ export const dynamicPricingService = {
     }>({
       method: 'POST',
       url: '/dynamic-pricing/msp/',
+      data,
+    });
+  },
+
+  async createPropertyMSP(propertyId: string, data: { periods: Array<{ fromDate: string; toDate: string; price: string; periodTitle: string }> }): Promise<{
+    message: string;
+    created_entries: MSPEntry[];
+    errors?: string[];
+  }> {
+    return apiRequest<{
+      message: string;
+      created_entries: MSPEntry[];
+      errors?: string[];
+    }>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/msp/`,
       data,
     });
   },
@@ -736,8 +755,8 @@ export const dynamicPricingService = {
 
   async updateGeneralSettings(
     propertyId: string, 
-    data: { comp_price_calculation?: string; min_competitors?: number; los_num_competitors?: number; los_aggregation?: string }
-  ): Promise<{ message: string; property_id: string; updated_fields: string[]; comp_price_calculation: string; min_competitors: number; los_num_competitors: number; los_aggregation: string; updated_at: string }> {
+    data: { comp_price_calculation?: string; min_competitors?: number; los_num_competitors?: number; los_aggregation?: string; otas_price_diff?: number }
+  ): Promise<{ message: string; property_id: string; updated_fields: string[]; comp_price_calculation: string; min_competitors: number; los_num_competitors: number; los_aggregation: string; otas_price_diff: number; updated_at: string }> {
     return apiRequest({
       method: 'PATCH',
       url: `/dynamic-pricing/properties/${propertyId}/general-settings/`,

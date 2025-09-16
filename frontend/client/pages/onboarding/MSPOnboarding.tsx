@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { useCreateDynamicMSP, useDynamicMSPEntries } from "../../../shared/api/hooks";
+import { removeLocalStorageItem, HOTEL_INFO_KEY } from "../../../shared/localStorage";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 interface MSPPeriod {
@@ -125,6 +126,11 @@ export default function MSP() {
       
       console.log("MSP periods saved successfully:", result);
       console.log(`Created: ${result.created_entries?.length || 0} entries`);
+      
+      // Clear hotel information from localStorage after successful MSP save
+      removeLocalStorageItem(HOTEL_INFO_KEY);
+      console.log("Hotel information cleared from localStorage");
+      
       navigate("/welcome-complete");
     } catch (err: any) {
       console.error("Error saving MSP periods:", err);

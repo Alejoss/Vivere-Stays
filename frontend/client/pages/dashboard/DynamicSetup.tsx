@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { toast } from "../../hooks/use-toast";
 
 // Category definitions matching the backend model
 const OCCUPANCY_CATEGORIES = [
@@ -68,7 +69,9 @@ export default function DynamicSetup() {
       const response = await dynamicPricingService.getDynamicRules(property.id);
       setRules(response.rules.map(rule => ({ ...rule, isNew: false })));
     } catch (err: any) {
-      setError(err.message || 'Failed to load dynamic rules');
+      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load dynamic rules';
+      setError(backendMsg);
+      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -157,7 +160,9 @@ export default function DynamicSetup() {
       setSuccess('Dynamic rules saved successfully');
       loadRules(); // Reload to get updated data
     } catch (err: any) {
-      setError(err.message || 'Failed to save dynamic rules');
+      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to save dynamic rules';
+      setError(backendMsg);
+      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setSaving(false);
     }

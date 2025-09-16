@@ -6,6 +6,7 @@ from .views import (
     PropertyDetailView,
     PropertyListView,
     MinimumSellingPriceView,
+    PropertyMSPView,
     PriceHistoryView,
     OverwritePriceView,
     OverwritePriceRangeView,
@@ -76,6 +77,7 @@ urlpatterns = [
     
     # Minimum Selling Price endpoints
     path('msp/', MinimumSellingPriceView.as_view(), name='msp'),
+    path('properties/<str:property_id>/msp/', PropertyMSPView.as_view(), name='property-msp'),
     
     # Price History endpoints
     path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),

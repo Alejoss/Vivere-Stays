@@ -273,7 +273,8 @@ class PropertyPMSUpdateView(APIView):
         try:
             from .models import DpGeneralSettings
             settings, created = DpGeneralSettings.objects.get_or_create(
-                property_id=property_instance
+                property_id=property_instance,
+                user=request.user
             )
             settings.is_base_in_pms = True  # Apaleo-specific setting
             settings.save()
@@ -485,20 +486,71 @@ class MinimumSellingPriceView(APIView):
             return Response({
                 'error': 'Failed to retrieve MSP entries'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PropertyMSPView(APIView):
+    """
+    API endpoint for managing Minimum Selling Price (MSP) entries for a specific property
+    """
+    permission_classes = [IsAuthenticated]
     
-    def post(self, request):
+    def get(self, request, property_id):
+        """
+        Get MSP entries for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            msp_entries = DpMinimumSellingPrice.objects.filter(
+                property_id=property_instance
+            ).order_by('valid_from')
+            
+            serializer = MinimumSellingPriceSerializer(msp_entries, many=True)
+            
+            return Response({
+                'msp_entries': serializer.data,
+                'count': len(serializer.data),
+                'property_id': property_id,
+                'property_name': property_instance.name
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error retrieving MSP entries for property {property_id}: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving MSP entries',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request, property_id):
         """
         Create or update MSP entries for a property
         """
         try:
-            # Get the user's profile and their most recent property
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
             user_profile = request.user.profile
-            try:
-                property_instance = user_profile.get_properties().latest('created_at')
-            except Property.DoesNotExist:
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
                 return Response({
-                    'error': 'No property found for this user'
-                }, status=status.HTTP_404_NOT_FOUND)
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
             
             # Get the periods data from request
             periods = request.data.get('periods', [])
@@ -606,7 +658,7 @@ class MinimumSellingPriceView(APIView):
                             'manual_alternative_price': None  # Can be set later if needed
                         }
                         
-                        serializer = MinimumSellingPriceSerializer(data=msp_data)
+                        serializer = MinimumSellingPriceSerializer(data=msp_data, context={'request': request})
                         if serializer.is_valid():
                             msp_entry = serializer.save()
                             created_msp_entries.append(serializer.data)
@@ -678,7 +730,7 @@ class MinimumSellingPriceView(APIView):
             
             logger.info(f"Test data: {test_data}")
             
-            serializer = MinimumSellingPriceSerializer(data=test_data)
+            serializer = MinimumSellingPriceSerializer(data=test_data, context={'request': request})
             if serializer.is_valid():
                 msp_entry = serializer.save()
                 logger.info(f"Test MSP entry created successfully: {msp_entry.id}")
@@ -810,6 +862,7 @@ class OverwritePriceView(APIView):
             # Create a new record with the same fields, but updated overwrite_price and as_of
             new_record = DpPriceChangeHistory.objects.create(
                 property_id=price_record.property_id,
+                user=request.user,
                 pms_hotel_id=price_record.pms_hotel_id,
                 checkin_date=price_record.checkin_date,
                 as_of=timezone.now(),
@@ -985,6 +1038,7 @@ class OverwritePriceRangeView(APIView):
                     continue
                 new_record = DpPriceChangeHistory.objects.create(
                     property_id=price_record.property_id,
+                    user=request.user,
                     pms_hotel_id=price_record.pms_hotel_id,
                     checkin_date=price_record.checkin_date,
                     as_of=timezone.now(),
@@ -1597,29 +1651,34 @@ class DpGeneralSettingsUpdateView(APIView):
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Get or create the general settings for this property
-            settings, created = DpGeneralSettings.objects.get_or_create(
-                property_id=property_instance,
-                defaults={
-                    'comp_price_calculation': 'min',
-                    'min_competitors': 2,
-                    'future_days_to_price': 365,
-                    'pricing_status': 'offline',
-                    'los_status': 'offline'
-                }
-            )
+            # Retrieve settings by property only to avoid duplicate PK on OneToOne
+            settings = DpGeneralSettings.objects.filter(property_id=property_instance).first()
+            created = False
+            if not settings:
+                print(f"🔧 DEBUG: No settings found, creating default for property {property_id}")
+                settings = DpGeneralSettings.objects.create(
+                    property_id=property_instance,
+                    user=request.user,
+                    comp_price_calculation='min',
+                    min_competitors=2,
+                    future_days_to_price=365,
+                    pricing_status='offline',
+                    los_status='offline',
+                    los_num_competitors=2,
+                    los_aggregation='min'
+                )
+                created = True
             
             return Response({
                 'property_id': property_id,
-                'base_rate_code': settings.base_rate_code,
-                'is_base_in_pms': settings.is_base_in_pms,
                 'min_competitors': settings.min_competitors,
                 'comp_price_calculation': settings.comp_price_calculation,
-                'competitor_excluded': settings.competitor_excluded,
-                'msp_include_events_weekend_increments': settings.msp_include_events_weekend_increments,
                 'future_days_to_price': settings.future_days_to_price,
                 'pricing_status': settings.pricing_status,
                 'los_status': settings.los_status,
+                'los_num_competitors': settings.los_num_competitors,
+                'los_aggregation': settings.los_aggregation,
+                'otas_price_diff': settings.otas_price_diff,
                 'created_at': settings.created_at,
                 'updated_at': settings.updated_at
             }, status=status.HTTP_200_OK)
@@ -1660,17 +1719,26 @@ class DpGeneralSettingsUpdateView(APIView):
             
             print(f"🔧 DEBUG: User has access to property {property_id}")
             
-            # Get or create the general settings for this property
-            settings, created = DpGeneralSettings.objects.get_or_create(
-                property_id=property_instance,
-                defaults={
-                    'comp_price_calculation': 'min',
-                    'min_competitors': 2,
-                    'future_days_to_price': 365,
-                    'pricing_status': 'offline',
-                    'los_status': 'offline'
-                }
-            )
+            # Retrieve settings by property only to avoid duplicate PK on OneToOne
+            settings = DpGeneralSettings.objects.filter(property_id=property_instance).first()
+            created = False
+            if not settings:
+                print(f"🔧 DEBUG: No settings found, creating default for property {property_id}")
+                settings = DpGeneralSettings.objects.create(
+                    property_id=property_instance,
+                    user=request.user,
+                    comp_price_calculation='min',
+                    min_competitors=2,
+                    future_days_to_price=365,
+                    pricing_status='offline',
+                    los_status='offline',
+                    los_num_competitors=2,
+                    los_aggregation='min'
+                )
+                created = True
+            else:
+                # If settings exist but belong to another user, keep owner but allow updates
+                print(f"🔧 DEBUG: Retrieved existing settings (owner user_id={settings.user_id})")
             print(f"🔧 DEBUG: Settings {'created' if created else 'retrieved'}: comp_price_calculation={settings.comp_price_calculation}")
             
             # Track what fields are being updated
@@ -1733,6 +1801,18 @@ class DpGeneralSettingsUpdateView(APIView):
                 print(f"🔧 DEBUG: Changing los_aggregation from '{old_los_aggregation}' to '{new_los_aggregation}'")
                 settings.los_aggregation = new_los_aggregation
                 updated_fields.append(f'los_aggregation: {old_los_aggregation} -> {new_los_aggregation}')
+
+            # Update otas_price_diff if provided
+            if 'otas_price_diff' in request.data:
+                try:
+                    new_otas_price_diff = float(request.data.get('otas_price_diff'))
+                except (TypeError, ValueError):
+                    return Response({
+                        'message': 'otas_price_diff must be a valid number'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                old_otas_price_diff = settings.otas_price_diff
+                settings.otas_price_diff = new_otas_price_diff
+                updated_fields.append(f'otas_price_diff: {old_otas_price_diff} -> {new_otas_price_diff}')
             
             # Save if any fields were updated
             if updated_fields:
@@ -1747,6 +1827,7 @@ class DpGeneralSettingsUpdateView(APIView):
                     'min_competitors': settings.min_competitors,
                     'los_num_competitors': settings.los_num_competitors,
                     'los_aggregation': settings.los_aggregation,
+                    'otas_price_diff': settings.otas_price_diff,
                     'updated_at': settings.updated_at
                 }, status=status.HTTP_200_OK)
             else:
@@ -1797,7 +1878,7 @@ class CompetitorCandidatesListView(APIView):
             # Get competitor candidates for this property
             from .models import CompetitorCandidate
             candidates = CompetitorCandidate.objects.filter(
-                property_instance=property_instance,
+                property_id=property_instance,
                 deleted=False
             ).order_by('created_at')
             
@@ -1906,7 +1987,7 @@ class CompetitorCandidateUpdateView(APIView):
             from .models import CompetitorCandidate
             candidate = get_object_or_404(CompetitorCandidate, 
                                         id=candidate_id, 
-                                        property_instance=property_instance,
+                                        property_id=property_instance,
                                         deleted=False)
             
             print(f"✅ Candidate found: {candidate.competitor_name}")
@@ -2087,7 +2168,7 @@ class CompetitorCandidateDeleteView(APIView):
             from .models import CompetitorCandidate
             candidate = get_object_or_404(CompetitorCandidate, 
                                         id=candidate_id, 
-                                        property_instance=property_instance)
+                                        property_id=property_instance)
             
             print(f"✅ Candidate found: {candidate.competitor_name}")
             print(f"📊 Current deleted status: {candidate.deleted}")
@@ -2802,7 +2883,7 @@ class LosReductionCreateView(APIView):
             # Remove user field since it doesn't exist in the model
             data.pop('user', None)
             
-            serializer = DpLosReductionSerializer(data=data)
+            serializer = DpLosReductionSerializer(data=data, context={'request': request})
             
             if serializer.is_valid():
                 los_reduction = serializer.save()
@@ -3026,7 +3107,7 @@ class LosSetupCreateView(APIView):
             data = request.data.copy()
             data['property_id'] = property_instance.id
             
-            serializer = DpLosSetupSerializer(data=data)
+            serializer = DpLosSetupSerializer(data=data, context={'request': request})
             
             if serializer.is_valid():
                 los_setup = serializer.save()
@@ -3272,12 +3353,14 @@ class PropertyAvailableRatesUpdateView(APIView):
                     # If this rate is being set as base rate, unset all other base rates for this property
                     if is_base_rate:
                         DpRoomRates.objects.filter(
-                            property_id=property_instance
+                            property_id=property_instance,
+                            user=request.user
                         ).update(is_base_rate=False)
                     
                     # Get or create the DpRoomRates object
                     room_rate, created = DpRoomRates.objects.get_or_create(
                         property_id=property_instance,
+                        user=request.user,
                         rate_id=rate_id,
                         defaults={
                             'increment_type': increment_type,

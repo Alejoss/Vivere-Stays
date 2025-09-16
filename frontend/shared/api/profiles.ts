@@ -8,6 +8,7 @@ export interface ProfileData {
     email: string;
     first_name: string;
     last_name: string;
+    date_joined: string;
   };
   timezone: string;
   profile_picture: string | null;
@@ -119,6 +120,11 @@ export interface OnboardingProgress {
 
 export interface OnboardingProgressUpdate {
   step: string;
+}
+
+export interface PasswordChangeRequest {
+  current_password: string;
+  new_password: string;
 }
 
 export const profilesService = {
@@ -307,6 +313,18 @@ export const profilesService = {
     }>({
       method: 'POST',
       url: '/profiles/onboarding-progress/',
+      data,
+    });
+  },
+
+  async changePassword(data: PasswordChangeRequest): Promise<{
+    message: string;
+  }> {
+    return apiRequest<{
+      message: string;
+    }>({
+      method: 'POST',
+      url: '/profiles/change-password/',
       data,
     });
   },

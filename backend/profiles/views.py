@@ -19,6 +19,8 @@ from django.middleware.csrf import get_token
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.core.cache import cache
 from datetime import timedelta
@@ -1363,4 +1365,67 @@ class TestEmailView(APIView):
             logger.error(f"Error in TestEmailView: {str(e)}")
             return Response({
                 'error': f'An unexpected error occurred: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ChangePasswordView(APIView):
+    """
+    View to change user password
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Change user password
+        
+        Expected payload:
+        {
+            "current_password": "current_password",
+            "new_password": "new_password"
+        }
+        """
+        try:
+            current_password = request.data.get('current_password')
+            new_password = request.data.get('new_password')
+            
+            if not current_password:
+                return Response({
+                    'error': 'Current password is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not new_password:
+                return Response({
+                    'error': 'New password is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Verify current password
+            user = request.user
+            if not user.check_password(current_password):
+                return Response({
+                    'error': 'Current password is incorrect'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate new password
+            try:
+                validate_password(new_password, user)
+            except ValidationError as e:
+                return Response({
+                    'error': 'New password does not meet requirements',
+                    'details': list(e.messages)
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Set new password
+            user.set_password(new_password)
+            user.save()
+            
+            logger.info(f"Password changed successfully for user {user.username}")
+            
+            return Response({
+                'message': 'Password changed successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error changing password for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to change password'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

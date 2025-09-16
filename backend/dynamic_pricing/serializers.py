@@ -160,10 +160,10 @@ class MinimumSellingPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpMinimumSellingPrice
         fields = [
-            'id', 'property_id', 'valid_from', 'valid_until', 
+            'id', 'property_id', 'user', 'valid_from', 'valid_until', 
             'msp', 'period_title', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
     def validate(self, data):
         """
@@ -189,10 +189,15 @@ class MinimumSellingPriceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Create MSP entry with additional logging
+        Create MSP entry with additional logging and user assignment
         """
         import logging
         logger = logging.getLogger(__name__)
+        
+        # Set the user from the request context
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
         
         logger.info(f"Creating MSP entry with validated data: {validated_data}")
         
@@ -427,11 +432,11 @@ class DpGeneralSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpGeneralSettings
         fields = [
-            'property_id', 'min_competitors', 'comp_price_calculation', 
+            'property_id', 'user', 'min_competitors', 'comp_price_calculation', 
             'future_days_to_price', 'pricing_status', 'los_status', 
-            'los_num_competitors', 'los_aggregation', 'created_at', 'updated_at'
+            'los_num_competitors', 'los_aggregation', 'otas_price_diff', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['property_id', 'created_at', 'updated_at']
+        read_only_fields = ['property_id', 'user', 'created_at', 'updated_at']
 
     def validate_comp_price_calculation(self, value):
         """
@@ -470,10 +475,10 @@ class PropertyCompetitorSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpPropertyCompetitor
         fields = [
-            'id', 'competitor_id', 'competitor_name', 'booking_link', 
+            'id', 'property_id', 'user', 'competitor_id', 'competitor_name', 'booking_link', 
             'only_follow', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'property_id', 'user', 'created_at', 'updated_at']
 
 
 class OfferIncrementsSerializer(serializers.ModelSerializer):
@@ -819,10 +824,10 @@ class DpLosSetupSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpLosSetup
         fields = [
-            'id', 'property_id', 'valid_from', 'valid_until', 
+            'id', 'property_id', 'user', 'valid_from', 'valid_until', 
             'day_of_week', 'los_value', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'property_id', 'user', 'created_at', 'updated_at']
 
     def validate(self, data):
         """
@@ -840,10 +845,10 @@ class DpLosReductionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpLosReduction
         fields = [
-            'id', 'property_id', 'lead_time_days', 
+            'id', 'property_id', 'user', 'lead_time_days', 
             'occupancy_level', 'los_value', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'property_id', 'user', 'created_at', 'updated_at']
 
     def validate_los_value(self, value):
         """
@@ -863,17 +868,28 @@ class BulkDpLosSetupSerializer(serializers.Serializer):
     def create(self, validated_data):
         setups_data = validated_data['setups']
         property_instance = self.context['property']
-        user = self.context['user']
+        user = self.context.get('user')
+        
+        # If user is not in context, get it from request
+        if not user:
+            request = self.context.get('request')
+            if request and request.user.is_authenticated:
+                user = request.user
+        
+        if not user:
+            raise serializers.ValidationError("User must be authenticated.")
         
         created_setups = []
         errors = []
         
         for i, setup_data in enumerate(setups_data):
             try:
-                # Remove property_id from setup_data since it's provided as a string from frontend
-                # but we need to use the Property instance from context
+                # Remove property_id and user from setup_data since they're provided as strings from frontend
+                # but we need to use the Property instance and User from context
                 setup_data.pop('property_id', None)
+                setup_data.pop('user', None)
                 setup_data['property_id'] = property_instance
+                setup_data['user'] = user
                 print(f"🔧 DEBUG: Creating DpLosSetup with data: {setup_data}")
                 setup = DpLosSetup.objects.create(**setup_data)
                 # Don't serialize here - just store the model instance
@@ -907,18 +923,28 @@ class BulkDpLosReductionSerializer(serializers.Serializer):
     def create(self, validated_data):
         reductions_data = validated_data['reductions']
         property_instance = self.context['property']
+        user = self.context.get('user')
+        
+        # If user is not in context, get it from request
+        if not user:
+            request = self.context.get('request')
+            if request and request.user.is_authenticated:
+                user = request.user
+        
+        if not user:
+            raise serializers.ValidationError("User must be authenticated.")
         
         created_reductions = []
         errors = []
         
         for i, reduction_data in enumerate(reductions_data):
             try:
-                # Remove property_id from reduction_data since it's provided as a string from frontend
-                # but we need to use the Property instance from context
+                # Remove property_id and user from reduction_data since they're provided as strings from frontend
+                # but we need to use the Property instance and User from context
                 reduction_data.pop('property_id', None)
-                reduction_data['property_id'] = property_instance
-                # Remove user field since it doesn't exist in the model
                 reduction_data.pop('user', None)
+                reduction_data['property_id'] = property_instance
+                reduction_data['user'] = user
                 print(f"🔧 DEBUG: Creating DpLosReduction with data: {reduction_data}")
                 reduction = DpLosReduction.objects.create(**reduction_data)
                 # Don't serialize here - just store the model instance
@@ -951,11 +977,11 @@ class UnifiedRoomsAndRatesSerializer(serializers.ModelSerializer):
     class Meta:
         model = UnifiedRoomsAndRates
         fields = [
-            'id', 'property_id', 'pms_source', 'pms_hotel_id', 'room_id', 'rate_id',
+            'id', 'property_id', 'user', 'pms_source', 'pms_hotel_id', 'room_id', 'rate_id',
             'room_name', 'room_description', 'rate_name', 'rate_description', 
             'rate_category', 'last_updated'
         ]
-        read_only_fields = ['id', 'last_updated']
+        read_only_fields = ['id', 'property_id', 'user', 'last_updated']
 
 
 class AvailableRatesUnifiedSerializer(serializers.Serializer):
@@ -966,6 +992,7 @@ class AvailableRatesUnifiedSerializer(serializers.Serializer):
     # Fields from UnifiedRoomsAndRates
     id = serializers.IntegerField(read_only=True)
     property_id = serializers.CharField(read_only=True)
+    user = serializers.CharField(read_only=True)
     pms_source = serializers.CharField(read_only=True)
     pms_hotel_id = serializers.CharField(read_only=True)
     room_id = serializers.CharField(read_only=True)

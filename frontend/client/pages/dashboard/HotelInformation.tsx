@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { Building2, Plus, Save, ChevronDown } from "lucide-react";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { toast } from "../../hooks/use-toast";
 
 interface FormData {
   hotelName: string;
@@ -225,6 +226,8 @@ export default function HotelInformation() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [otasPriceDiff, setOtasPriceDiff] = useState<string>("");
+  const [isUpdatingOtas, setIsUpdatingOtas] = useState(false);
 
   // Load property data when component mounts or property changes
   useEffect(() => {
@@ -242,6 +245,15 @@ export default function HotelInformation() {
         numberOfRooms: property.number_of_rooms?.toString() || "",
         propertyType: property.property_type || "",
       });
+      // Load general settings (including otas_price_diff)
+      (async () => {
+        try {
+          const settings = await dynamicPricingService.getGeneralSettings(property.id);
+          setOtasPriceDiff(settings?.otas_price_diff?.toString() ?? "");
+        } catch (e) {
+          // ignore for now
+        }
+      })();
     }
   }, [property]);
 
@@ -676,12 +688,37 @@ export default function HotelInformation() {
               <div className="relative">
                 <input
                   type="number"
-                  value="10"
-                  className="w-24 px-4 py-3 text-xl font-bold text-center border-2 border-[#287CAC] rounded-lg bg-white text-[#287CAC] focus:outline-none focus:ring-2 focus:ring-[#287CAC]/20 focus:border-[#287CAC] transition-all shadow-sm pr-8"
-                  placeholder="10"
-                  readOnly
+                  inputMode="decimal"
+                  step="0.01"
+                  value={otasPriceDiff}
+                  onChange={(e) => setOtasPriceDiff(e.target.value)}
+                  onBlur={async () => {
+                    if (!property?.id) return;
+                    const parsed = parseFloat(otasPriceDiff);
+                    if (isNaN(parsed)) return; // silently ignore invalid
+                    try {
+                      setIsUpdatingOtas(true);
+                      await dynamicPricingService.updateGeneralSettings(property.id, { otas_price_diff: parsed });
+                      toast({
+                        title: "Saved",
+                        description: "OTA price difference updated",
+                      });
+                    } catch (e) {
+                      const err: any = e;
+                      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to update OTA price difference';
+                      toast({
+                        title: "Error",
+                        description: backendMsg,
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setIsUpdatingOtas(false);
+                    }
+                  }}
+                  className={`w-36 px-4 py-3 text-xl font-bold text-center border-2 ${isUpdatingOtas ? 'border-gray-300' : 'border-[#287CAC]'} rounded-lg bg-white text-[#287CAC] focus:outline-none focus:ring-2 focus:ring-[#287CAC]/20 focus:border-[#287CAC] transition-all shadow-sm pr-8`}
+                  placeholder="0"
                 />
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xl font-bold text-[#287CAC]">
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xl font-bold text-[#287CAC] pointer-events-none">
                   %
                 </span>
               </div>

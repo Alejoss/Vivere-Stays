@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { Save, ChevronDown, Percent } from "lucide-react";
 import { dynamicPricingService, UnifiedRoomRate } from "../../../shared/api/dynamic";
+import { toast } from "../../hooks/use-toast";
 import { PropertyContext } from "../../../shared/PropertyContext";
 
 export default function AvailableRates() {
@@ -44,9 +45,11 @@ export default function AvailableRates() {
         // Sort rates so base rate appears first
         const sortedRates = sortRatesWithBaseFirst(response.rates);
         setEditableRates(sortedRates);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching available rates:', err);
-        setError('Failed to load available rates');
+        const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load available rates';
+        setError(backendMsg);
+        toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
       } finally {
         setLoading(false);
       }
@@ -91,9 +94,11 @@ export default function AvailableRates() {
         setSaveMessage(null);
       }, 3000);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving available rates:', err);
-      setSaveMessage('Failed to save available rates. Please try again.');
+      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to save available rates. Please try again.';
+      setSaveMessage(backendMsg);
+      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setSaving(false);
     }

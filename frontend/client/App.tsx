@@ -36,8 +36,10 @@ import SpecialOffers from "./pages/dashboard/SpecialOffers";
 import DynamicSetup from "./pages/dashboard/DynamicSetup";
 import LengthOfStay from "./pages/dashboard/LengthOfStay";
 import AvailableRates from "./pages/dashboard/AvailableRates";
+import MSPManagement from "./pages/dashboard/MSPManagement";
 import Notifications from "./pages/dashboard/Notifications";
 import Support from "./pages/dashboard/Support";
+import MyAccount from "./pages/dashboard/MyAccount";
 
 const queryClient = new QueryClient();
 
@@ -84,8 +86,10 @@ const App = () => (
             <Route path="/dashboard/dynamic-setup" element={<DashboardLayout><DynamicSetup /></DashboardLayout>} />
             <Route path="/dashboard/length-of-stay" element={<DashboardLayout><LengthOfStay /></DashboardLayout>} />
             <Route path="/dashboard/available-rates" element={<DashboardLayout><AvailableRates /></DashboardLayout>} />
+            <Route path="/dashboard/msp-management" element={<DashboardLayout><MSPManagement /></DashboardLayout>} />
             
             {/* Account Routes */}
+            <Route path="/dashboard/my-account" element={<DashboardLayout><MyAccount /></DashboardLayout>} />
             <Route path="/dashboard/notifications" element={<DashboardLayout><Notifications /></DashboardLayout>} />
             <Route path="/dashboard/support" element={<DashboardLayout><Support /></DashboardLayout>} />
             

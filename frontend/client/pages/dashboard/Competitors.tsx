@@ -200,10 +200,12 @@ export default function Competitors() {
       setCompetitorCandidates(response.candidates);
     } catch (error: any) {
       console.error("Error fetching competitor candidates:", error);
-      setError("Failed to fetch competitor candidates");
+      const backendMsg = error?.response?.data?.message || error?.message || "Failed to fetch competitor candidates";
+      setError(backendMsg);
+      toast({ title: "Error", description: backendMsg, variant: "destructive" });
       toast({
         title: "Error",
-        description: "Failed to fetch competitor candidates",
+        description: backendMsg,
         variant: "destructive",
       });
     } finally {
@@ -223,10 +225,12 @@ export default function Competitors() {
       setProcessedCompetitors(response.competitors);
     } catch (error: any) {
       console.error("Error fetching processed competitors:", error);
-      setError("Failed to fetch processed competitors");
+      const backendMsg = error?.response?.data?.message || error?.message || "Failed to fetch processed competitors";
+      setError(backendMsg);
+      toast({ title: "Error", description: backendMsg, variant: "destructive" });
       toast({
         title: "Error",
-        description: "Failed to fetch processed competitors",
+        description: backendMsg,
         variant: "destructive",
       });
     } finally {
@@ -445,11 +449,8 @@ export default function Competitors() {
       });
     } catch (error: any) {
       console.error("Error updating only_follow:", error);
-      toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to update competitor follow status",
-        variant: "destructive",
-      });
+      const backendMsg = error?.response?.data?.message || error?.message || "Failed to update competitor follow status";
+      toast({ title: "Error", description: backendMsg, variant: "destructive" });
     }
   };
 
@@ -471,11 +472,8 @@ export default function Competitors() {
       });
     } catch (error: any) {
       console.error("Error deleting competitor candidate:", error);
-      toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to delete competitor candidate",
-        variant: "destructive",
-      });
+      const backendMsg = error?.response?.data?.message || error?.message || "Failed to delete competitor candidate";
+      toast({ title: "Error", description: backendMsg, variant: "destructive" });
     }
   };
 
@@ -497,11 +495,8 @@ export default function Competitors() {
       });
     } catch (error: any) {
       console.error("Error deleting competitor:", error);
-      toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to delete competitor",
-        variant: "destructive",
-      });
+      const backendMsg = error?.response?.data?.message || error?.message || "Failed to delete competitor";
+      toast({ title: "Error", description: backendMsg, variant: "destructive" });
     }
   };
 
@@ -558,11 +553,8 @@ export default function Competitors() {
       });
     } catch (error: any) {
       console.error("Error adding competitor:", error);
-      toast({
-        title: "Error",
-        description: error?.response?.data?.message || "Failed to add competitor",
-        variant: "destructive",
-      });
+      const backendMsg = error?.response?.data?.message || error?.message || "Failed to add competitor";
+      toast({ title: "Error", description: backendMsg, variant: "destructive" });
     } finally {
       setIsCreatingCompetitor(false);
     }
