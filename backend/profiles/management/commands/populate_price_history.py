@@ -73,6 +73,7 @@ class Command(BaseCommand):
                     if not dry_run:
                         record = DpPriceChangeHistory(
                             property_id=property_obj,
+                            user=profile.user,
                             pms_hotel_id=property_obj.pms_hotel_id or f"PMS_{property_obj.id}",
                             checkin_date=checkin_date,
                             as_of=as_of_now,
@@ -104,6 +105,7 @@ class Command(BaseCommand):
                     if not dry_run:
                         record = DpPriceChangeHistory(
                             property_id=property_obj,
+                            user=profile.user,
                             pms_hotel_id=property_obj.pms_hotel_id or f"PMS_{property_obj.id}",
                             checkin_date=checkin_date,
                             as_of=as_of_now,

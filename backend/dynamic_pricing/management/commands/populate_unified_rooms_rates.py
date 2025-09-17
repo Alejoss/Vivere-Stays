@@ -202,6 +202,7 @@ class Command(BaseCommand):
                         if not dry_run:
                             record = UnifiedRoomsAndRates(
                                 property_id=property_obj,
+                                user=profile.user,
                                 pms_source=pms_source,
                                 pms_hotel_id=property_obj.pms_hotel_id or f"PMS_{property_obj.id}",
                                 room_id=room_template['room_id'],

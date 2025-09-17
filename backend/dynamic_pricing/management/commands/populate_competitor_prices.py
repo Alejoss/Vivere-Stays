@@ -58,10 +58,15 @@ class Command(BaseCommand):
                     total_competitors_created += 1
                 # Link property and competitor
                 if not dry_run:
-                    DpPropertyCompetitor.objects.get_or_create(
-                        property_id=property_obj,
-                        competitor_id=comp
-                    )
+                    # Get the user from the property's profiles
+                    property_profiles = property_obj.profiles.all()
+                    if property_profiles.exists():
+                        user = property_profiles.first().user
+                        DpPropertyCompetitor.objects.get_or_create(
+                            property_id=property_obj,
+                            user=user,
+                            competitor_id=comp
+                        )
             # For each competitor, create price history
             for comp in competitors:
                 records_to_create = []
