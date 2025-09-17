@@ -23,6 +23,12 @@ export default function AddCompetitor() {
   
   const createCompetitorCandidates = useCreateCompetitorCandidates();
 
+  // Debug PropertyContext state
+  useEffect(() => {
+    console.log('[AddCompetitor] PropertyContext property:', property);
+    console.log('[AddCompetitor] PropertyContext property?.id:', property?.id);
+  }, [property]);
+
   // Utility function to clean hotel names
   const cleanHotelName = (name: string): string => {
     if (!name) return '';
@@ -100,11 +106,35 @@ export default function AddCompetitor() {
   const handleContinue = async () => {
     setError("");
     
-    // Ensure we have a property id
-    if (!property?.id) {
-      setError("Missing property context. Please go back and ensure the property is selected/created.");
-      return;
+    // Ensure we have a property id - try PropertyContext first, then localStorage fallback
+    let propertyId = property?.id;
+    
+    if (!propertyId) {
+      console.error('[AddCompetitor] Missing property context:', { property });
+      
+      // Fallback: try to get property from localStorage
+      try {
+        const selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
+        const propertyData = getLocalStorageItem<any>("property_data");
+        
+        console.log('[AddCompetitor] Fallback - selectedPropertyId from localStorage:', selectedPropertyId);
+        console.log('[AddCompetitor] Fallback - property_data from localStorage:', propertyData);
+        
+        if (selectedPropertyId) {
+          propertyId = selectedPropertyId;
+          console.log('[AddCompetitor] Using fallback property ID:', propertyId);
+        } else {
+          setError("Missing property context. Please go back and ensure the property is selected/created.");
+          return;
+        }
+      } catch (error) {
+        console.error('[AddCompetitor] Error reading from localStorage:', error);
+        setError("Missing property context. Please go back and ensure the property is selected/created.");
+        return;
+      }
     }
+    
+    console.log('[AddCompetitor] Using property ID:', propertyId);
     
     // Filter out empty hotel names and get only valid ones
     const validHotelNames = competitorHotels
@@ -121,10 +151,13 @@ export default function AddCompetitor() {
     setIsLoading(true);
     try {
       // Pass the property ID explicitly
-      const response = await createCompetitorCandidates.mutateAsync({
-        property_id: property.id,
+      const requestData = {
+        property_id: propertyId,
         competitor_names: validHotelNames
-      });
+      };
+      console.log('[AddCompetitor] Sending request data:', requestData);
+      
+      const response = await createCompetitorCandidates.mutateAsync(requestData);
       
       navigate("/msp");
     } catch (err: any) {

@@ -1584,14 +1584,40 @@ class BulkCompetitorCandidateCreateView(APIView):
         Create multiple competitor candidates for a property
         """
         try:
+            print(f"🔍 BulkCompetitorCandidateCreateView: Received property_id: {property_id}")
+            print(f"🔍 BulkCompetitorCandidateCreateView: Request data: {request.data}")
+            print(f"🔍 BulkCompetitorCandidateCreateView: User: {request.user.username}")
+            
+            # Check user's profile
+            try:
+                user_profile = request.user.profile
+                print(f"🔍 BulkCompetitorCandidateCreateView: User profile ID: {user_profile.id}")
+                print(f"🔍 BulkCompetitorCandidateCreateView: User profile properties count: {user_profile.get_properties().count()}")
+                
+                # Check if the specific property is associated with this user
+                if property_id:
+                    from dynamic_pricing.models import Property
+                    try:
+                        property_obj = Property.objects.get(id=property_id)
+                        print(f"🔍 BulkCompetitorCandidateCreateView: Property found: {property_obj.name}")
+                        print(f"🔍 BulkCompetitorCandidateCreateView: Property profiles: {list(property_obj.profiles.values_list('id', flat=True))}")
+                        print(f"🔍 BulkCompetitorCandidateCreateView: User has this property: {user_profile.has_property(property_obj)}")
+                    except Property.DoesNotExist:
+                        print(f"🔍 BulkCompetitorCandidateCreateView: Property {property_id} does not exist")
+            except Exception as e:
+                print(f"🔍 BulkCompetitorCandidateCreateView: Error getting user profile: {e}")
+            
             # Pass property_id to serializer context if provided
             context = {'request': request}
             if property_id:
                 context['property_id'] = property_id
+                print(f"🔍 BulkCompetitorCandidateCreateView: Added property_id to context: {property_id}")
                 
             serializer = BulkCompetitorCandidateSerializer(data=request.data, context=context)
             
+            print(f"🔍 BulkCompetitorCandidateCreateView: Serializer validation starting...")
             if serializer.is_valid():
+                print(f"🔍 BulkCompetitorCandidateCreateView: Serializer is valid, proceeding to save...")
                 # Create the competitor candidates
                 result = serializer.save()
                 
@@ -1619,6 +1645,7 @@ class BulkCompetitorCandidateCreateView(APIView):
                 
                 return Response(response_data, status=status.HTTP_201_CREATED)
             else:
+                print(f"🔍 BulkCompetitorCandidateCreateView: Serializer validation failed with errors: {serializer.errors}")
                 logger.warning(f"Bulk competitor candidate creation failed - validation errors: {serializer.errors}")
                 return Response({
                     'message': 'Bulk competitor candidate creation failed',

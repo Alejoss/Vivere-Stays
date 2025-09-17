@@ -13,6 +13,11 @@ export function getLocalStorageItem<T>(key: string): T | null {
 
 export function setLocalStorageItem<T>(key: string, value: T) {
   localStorage.setItem(key, JSON.stringify(value));
+  
+  // Dispatch custom event for same-tab localStorage changes
+  window.dispatchEvent(new CustomEvent('localStorageChange', {
+    detail: { key, value }
+  }));
 }
 
 export function removeLocalStorageItem(key: string) {

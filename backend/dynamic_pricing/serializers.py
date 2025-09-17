@@ -312,6 +312,8 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
         """
         Validate that all competitor names are valid
         """
+        print(f"🔍 BulkCompetitorCandidateSerializer: validate_competitor_names called with: {value}")
+        
         # Allow empty list - no competitors required
         if not value:
             return value
@@ -322,7 +324,16 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
             if len(name.strip()) < 2:
                 raise serializers.ValidationError("All competitor names must be at least 2 characters long.")
         
+        print(f"🔍 BulkCompetitorCandidateSerializer: validate_competitor_names passed validation")
         return value
+
+    def validate(self, data):
+        """
+        General validation for the serializer
+        """
+        print(f"🔍 BulkCompetitorCandidateSerializer: validate called with data: {data}")
+        print(f"🔍 BulkCompetitorCandidateSerializer: context: {self.context}")
+        return data
 
     def create(self, validated_data):
         """
@@ -340,14 +351,26 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
             
             # Get property instance - either from context or user's last created property
             property_id = self.context.get('property_id')
+            print(f"🔍 BulkCompetitorCandidateSerializer: property_id from context: {property_id}")
+            print(f"🔍 BulkCompetitorCandidateSerializer: request.user: {request.user.username}")
+            
             if property_id:
                 # Use provided property_id
                 try:
+                    print(f"🔍 BulkCompetitorCandidateSerializer: Looking for property {property_id} for user {request.user.username}")
                     property_instance = Property.objects.get(
                         id=property_id,
                         profiles__user=request.user
                     )
+                    print(f"🔍 BulkCompetitorCandidateSerializer: Found property: {property_instance.name}")
                 except Property.DoesNotExist:
+                    print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} not found for user {request.user.username}")
+                    # Let's also check if the property exists at all
+                    try:
+                        property_exists = Property.objects.get(id=property_id)
+                        print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} exists but not associated with user")
+                    except Property.DoesNotExist:
+                        print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} does not exist at all")
                     raise serializers.ValidationError("Property not found or you don't have access to it.")
             else:
                 # Fallback to user's last created property (backward compatibility)

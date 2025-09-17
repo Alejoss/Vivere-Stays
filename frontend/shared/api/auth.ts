@@ -64,8 +64,8 @@ export const authService = {
         url: '/profiles/logout/',
       });
     } finally {
-      // Always clear local storage even if API call fails
-      localStorage.removeItem('access_token');
+      // Note: localStorage cleanup is handled by the Logout component
+      // to ensure comprehensive cleanup of all application data
     }
   },
 

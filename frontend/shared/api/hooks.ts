@@ -174,7 +174,11 @@ export const useCreateBulkCompetitors = () => {
 
 export const useCreateCompetitorCandidates = () => {
   return useMutation({
-    mutationFn: (data: { competitor_names: string[] }) =>
+    mutationFn: (data: { 
+      competitor_names: string[];
+      property_id?: string;
+      suggested_by_user?: boolean;
+    }) =>
       dynamicPricingService.createCompetitorCandidates(data),
   });
 };

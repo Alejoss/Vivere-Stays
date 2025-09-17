@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLogout } from "../../shared/api/hooks";
 import { useQueryClient } from "@tanstack/react-query";
+import { removeLocalStorageItem } from "../../shared/localStorage";
 
 export default function Logout() {
   const navigate = useNavigate();
@@ -22,12 +23,23 @@ export default function Logout() {
         
         console.log("✅ Logout: Successfully logged out");
         
-        // Clear any local storage items
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('hotelInformationData');
-        localStorage.removeItem('hotelDataForPMS');
+        // Clear all local storage items using standardized utility
+        const localStorageKeys = [
+          'access_token',
+          'hotelInformationData',
+          'hotelDataForPMS',
+          'selectedPropertyId',
+          'property_data',
+          'registerFormData',
+          'profileCompletionData',
+          'vivereConnection'
+        ];
         
-        console.log("🧹 Logout: Cleared local storage");
+        localStorageKeys.forEach(key => {
+          removeLocalStorageItem(key);
+        });
+        
+        console.log("🧹 Logout: Cleared all local storage items");
         
         // Redirect to login page
         navigate("/login");
@@ -37,9 +49,22 @@ export default function Logout() {
         
         // Even if logout API fails, clear everything and redirect
         queryClient.clear();
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('hotelInformationData');
-        localStorage.removeItem('hotelDataForPMS');
+        
+        // Clear all local storage items using standardized utility
+        const localStorageKeys = [
+          'access_token',
+          'hotelInformationData',
+          'hotelDataForPMS',
+          'selectedPropertyId',
+          'property_data',
+          'registerFormData',
+          'profileCompletionData',
+          'vivereConnection'
+        ];
+        
+        localStorageKeys.forEach(key => {
+          removeLocalStorageItem(key);
+        });
         
         navigate("/login");
       }
