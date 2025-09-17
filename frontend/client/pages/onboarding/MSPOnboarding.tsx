@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -7,9 +7,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { useCreateDynamicMSP, useDynamicMSPEntries } from "../../../shared/api/hooks";
+import { useDynamicMSPEntries } from "../../../shared/api/hooks";
 import { removeLocalStorageItem, HOTEL_INFO_KEY } from "../../../shared/localStorage";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { PropertyContext } from "../../../shared/PropertyContext";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
 
 interface MSPPeriod {
   id: string;
@@ -21,8 +23,24 @@ interface MSPPeriod {
 
 export default function MSP() {
   const navigate = useNavigate();
-  const createMSP = useCreateDynamicMSP();
+  const { property } = useContext(PropertyContext) ?? {};
   const { data: mspEntriesData, isLoading: mspEntriesLoading } = useDynamicMSPEntries();
+  
+  // Debug: Log context and localStorage on mount
+  useEffect(() => {
+    try {
+      const selectedPropertyId = localStorage.getItem('selectedPropertyId');
+      const propertyDataRaw = localStorage.getItem('property_data');
+      let propertyData: any = null;
+      try { propertyData = propertyDataRaw ? JSON.parse(propertyDataRaw) : null; } catch (e) { /* ignore parse error */ }
+      console.log('[MSPOnboarding] Mount');
+      console.log('[MSPOnboarding] PropertyContext.property:', property);
+      console.log('[MSPOnboarding] localStorage.selectedPropertyId:', selectedPropertyId);
+      console.log('[MSPOnboarding] localStorage.property_data:', propertyData);
+    } catch (e) {
+      console.warn('[MSPOnboarding] Error reading localStorage for debugging', e);
+    }
+  }, [property]);
   
   // Helper function to get current date in dd/MM/yyyy format
   const getCurrentDate = () => {
@@ -114,10 +132,26 @@ export default function MSP() {
       setError(`Invalid date range: The end date (${invalidPeriod.toDate}) must be after the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`);
       return;
     }
+    // Debug: Log property prior to guard
+    try {
+      const selectedPropertyId = localStorage.getItem('selectedPropertyId');
+      console.log('[MSPOnboarding] handleFinish invoked');
+      console.log('[MSPOnboarding] PropertyContext.property:', property);
+      console.log('[MSPOnboarding] localStorage.selectedPropertyId:', selectedPropertyId);
+    } catch {}
+
+    // Resolve property id from context or localStorage fallback
+    const resolvedPropertyId = property?.id || localStorage.getItem('selectedPropertyId') || '';
+    if (!resolvedPropertyId) {
+      setError("Missing property context. Please go back and ensure the property is selected/created.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Call the MSP API
-      const result = await createMSP.mutateAsync({ periods });
+      console.log('[MSPOnboarding] Submitting MSP to endpoint:', `/dynamic-pricing/properties/${resolvedPropertyId}/msp/`);
+      const result = await dynamicPricingService.createPropertyMSP(resolvedPropertyId, { periods });
       
       if (result.errors && result.errors.length > 0) {
         setError(`Some periods could not be saved: ${result.errors.join(', ')}`);

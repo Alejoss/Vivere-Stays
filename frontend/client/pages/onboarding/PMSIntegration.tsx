@@ -71,6 +71,18 @@ export default function PMSIntegration() {
       const propertyResponse = await createHotelMutation.mutateAsync(hotelData);
       console.log(`✅ PMSIntegration - Property ${propertyResponse.action} successfully:`, propertyResponse.property);
 
+      // Persist property id and data so PropertyContext (or later steps) can load it
+      try {
+        const createdProperty = propertyResponse.property ?? propertyResponse;
+        if (createdProperty?.id) {
+          localStorage.setItem('selectedPropertyId', createdProperty.id);
+          localStorage.setItem('property_data', JSON.stringify(createdProperty));
+          console.log('🏷️ PMSIntegration - Persisted selectedPropertyId and property_data to localStorage');
+        }
+      } catch (e) {
+        console.warn('PMSIntegration - Failed to persist property to localStorage', e);
+      }
+
       // Step 2: Create PMS Integration
       console.log("🔗 PMSIntegration - Creating PMS integration...");
       const integrationData: any = {};
