@@ -27,16 +27,8 @@ export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps
     // Prioritize propertyId from URL over localStorage
     let selectedPropertyId = propertyId;
     if (!selectedPropertyId) {
-      // Handle both JSON and plain string values for selectedPropertyId
-      const storedId = localStorage.getItem("selectedPropertyId");
-      if (storedId) {
-        try {
-          selectedPropertyId = JSON.parse(storedId);
-        } catch {
-          // If it's not JSON, use it as a plain string
-          selectedPropertyId = storedId;
-        }
-      }
+      // Use standardized JSON storage method
+      selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
       console.log('[PropertyContext] No propertyId in URL, using from localStorage:', selectedPropertyId);
     } else {
       console.log('[PropertyContext] Using propertyId from URL:', selectedPropertyId);

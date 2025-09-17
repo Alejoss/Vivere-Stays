@@ -6,6 +6,7 @@ import { profilesService } from "../../../shared/api/profiles";
 import { queryKeys } from "../../../shared/api/hooks";
 import { loadStripe } from "@stripe/stripe-js";
 import { paymentService } from "@shared/api/payments";
+import { getLocalStorageItem } from "../../../shared/localStorage";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
 
@@ -38,9 +39,8 @@ export default function SelectPlan() {
   useEffect(() => {
     try {
       // Use hotelInformationData as primary source
-      const hotelInfoString = localStorage.getItem('hotelInformationData');
-      if (hotelInfoString) {
-        const hotelInfo = JSON.parse(hotelInfoString);
+      const hotelInfo = getLocalStorageItem<any>('hotelInformationData');
+      if (hotelInfo) {
         if (hotelInfo.numberOfRooms) {
           setNumberOfRooms(parseInt(hotelInfo.numberOfRooms) || 1);
         }
@@ -49,9 +49,8 @@ export default function SelectPlan() {
       console.error('Error loading hotel data:', error);
       // Fallback to checking hotelDataForPMS for backward compatibility
       try {
-        const hotelDataString = localStorage.getItem('hotelDataForPMS');
-        if (hotelDataString) {
-          const hotelData = JSON.parse(hotelDataString);
+        const hotelData = getLocalStorageItem<any>('hotelDataForPMS');
+        if (hotelData) {
           if (hotelData.number_of_rooms) {
             setNumberOfRooms(hotelData.number_of_rooms);
           }

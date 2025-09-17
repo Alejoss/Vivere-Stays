@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreatePMSIntegration, useCreateHotel, usePMSList } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
-import { getHotelDataForAPI } from "../../../shared/localStorage";
+import { getHotelDataForAPI, setLocalStorageItem, getLocalStorageItem } from "../../../shared/localStorage";
 
 type PMSOption = "mews" | "cloudbeds" | "opera" | "other" | "none" | null;
 
@@ -29,9 +29,8 @@ export default function PMSIntegration() {
       console.error('Error loading hotel data:', error);
       // Fallback to checking hotelDataForPMS for backward compatibility
       try {
-        const hotelDataString = localStorage.getItem('hotelDataForPMS');
-        if (hotelDataString) {
-          const hotelData = JSON.parse(hotelDataString);
+        const hotelData = getLocalStorageItem<any>('hotelDataForPMS');
+        if (hotelData) {
           setHotelData(hotelData);
         }
       } catch (fallbackError) {
@@ -75,8 +74,8 @@ export default function PMSIntegration() {
       try {
         const createdProperty = propertyResponse.property ?? propertyResponse;
         if (createdProperty?.id) {
-          localStorage.setItem('selectedPropertyId', createdProperty.id);
-          localStorage.setItem('property_data', JSON.stringify(createdProperty));
+          setLocalStorageItem('selectedPropertyId', createdProperty.id);
+          setLocalStorageItem('property_data', createdProperty);
           console.log('🏷️ PMSIntegration - Persisted selectedPropertyId and property_data to localStorage');
         }
       } catch (e) {

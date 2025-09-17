@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCreateCompetitorCandidates } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
-import { getHotelDataForAPI } from "../../../shared/localStorage";
+import { getHotelDataForAPI, getLocalStorageItem } from "../../../shared/localStorage";
 import { PropertyContext } from "../../../shared/PropertyContext";
 
 interface CompetitorHotel {
@@ -82,10 +82,9 @@ export default function AddCompetitor() {
     } catch (error) {
       // Fallback to checking hotelDataForPMS for backward compatibility
       try {
-        const hotelDataString = localStorage.getItem('hotelDataForPMS');
+        const hotelData = getLocalStorageItem<any>('hotelDataForPMS');
         
-        if (hotelDataString) {
-          const hotelData = JSON.parse(hotelDataString);
+        if (hotelData) {
           
           // Check if we have the required location data
           if (hotelData.street_address && hotelData.city) {

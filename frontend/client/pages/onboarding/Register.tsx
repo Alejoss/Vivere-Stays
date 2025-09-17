@@ -5,6 +5,7 @@ import { useCheckUserExists } from "../../../shared/api/hooks";
 import { useRegister, useGoogleLogin } from "../../../shared/api/hooks";
 import { RegisterRequest } from "../../../shared/api/types";
 import { profilesService } from "../../../shared/api/profiles";
+import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
 
 // Error Message Component
 const ErrorMessage = ({ message }: { message: string }) => {
@@ -83,13 +84,9 @@ export default function Register() {
   
   // Load saved form data from localStorage on component mount
   const [formData, setFormData] = useState(() => {
-    const savedData = localStorage.getItem('registerFormData');
+    const savedData = getLocalStorageItem<any>('registerFormData');
     if (savedData) {
-      try {
-        return JSON.parse(savedData);
-      } catch (e) {
-        console.error('Error parsing saved form data:', e);
-      }
+      return savedData;
     }
     return {
       firstName: "",
@@ -177,7 +174,7 @@ export default function Register() {
 
   // Save form data to localStorage
   const saveFormData = (data: typeof formData) => {
-    localStorage.setItem('registerFormData', JSON.stringify(data));
+    setLocalStorageItem('registerFormData', data);
   };
 
   const handleInputChange =

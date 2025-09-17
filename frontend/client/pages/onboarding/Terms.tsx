@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegister } from "../../../shared/api/hooks";
+import { getLocalStorageItem } from "../../../shared/localStorage";
 
 export default function Terms() {
   const navigate = useNavigate();
@@ -23,13 +24,13 @@ export default function Terms() {
     setIsLoading(true);
     try {
       // Get form data from localStorage
-      const savedFormData = localStorage.getItem('registerFormData');
+      const savedFormData = getLocalStorageItem('registerFormData');
       if (!savedFormData) {
         setError("Registration data not found. Please go back and try again.");
         return;
       }
 
-      const formData = JSON.parse(savedFormData);
+      const formData = savedFormData;
       
       // Create user account with backend
       const registrationData = {

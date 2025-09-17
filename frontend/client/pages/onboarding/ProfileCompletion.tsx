@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profilesService } from "../../../shared/api/profiles";
 import { queryKeys } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
 
 // Error Message Component
 const ErrorMessage = ({ message }: { message: string }) => {
@@ -41,13 +42,9 @@ export default function ProfileCompletion() {
   
   // Load saved form data from localStorage on component mount
   const [formData, setFormData] = useState<ProfileCompletionData>(() => {
-    const savedData = localStorage.getItem('profileCompletionData');
+    const savedData = getLocalStorageItem<ProfileCompletionData>('profileCompletionData');
     if (savedData) {
-      try {
-        return JSON.parse(savedData);
-      } catch (e) {
-        console.error('Error parsing saved form data:', e);
-      }
+      return savedData;
     }
     return {
       firstName: "",
@@ -139,7 +136,7 @@ export default function ProfileCompletion() {
 
   // Save form data to localStorage
   const saveFormData = (data: ProfileCompletionData) => {
-    localStorage.setItem('profileCompletionData', JSON.stringify(data));
+    setLocalStorageItem('profileCompletionData', data);
   };
 
   const handleInputChange =
