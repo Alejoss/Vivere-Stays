@@ -333,21 +333,34 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
         
         # If no competitors provided, return success with empty results
         if not competitor_names:
-            # Get the current user's last created property for consistency
+            # Get the current user's property for consistency
             request = self.context.get('request')
             if not request or not request.user.is_authenticated:
                 raise serializers.ValidationError("User must be authenticated.")
             
-            try:
-                property_instance = Property.objects.filter(
-                    profiles__user=request.user
-                ).order_by('-created_at').first()
-                
-                if not property_instance:
-                    raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+            # Get property instance - either from context or user's last created property
+            property_id = self.context.get('property_id')
+            if property_id:
+                # Use provided property_id
+                try:
+                    property_instance = Property.objects.get(
+                        id=property_id,
+                        profiles__user=request.user
+                    )
+                except Property.DoesNotExist:
+                    raise serializers.ValidationError("Property not found or you don't have access to it.")
+            else:
+                # Fallback to user's last created property (backward compatibility)
+                try:
+                    property_instance = Property.objects.filter(
+                        profiles__user=request.user
+                    ).order_by('-created_at').first()
                     
-            except Property.DoesNotExist:
-                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                    if not property_instance:
+                        raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                        
+                except Property.DoesNotExist:
+                    raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
             
             return {
                 'created_candidates': [],
@@ -358,22 +371,34 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
         created_candidates = []
         errors = []
         
-        # Get the current user's last created property
+        # Get the current user's property
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError("User must be authenticated.")
         
-        # Get the user's last created property
-        try:
-            property_instance = Property.objects.filter(
-                profiles__user=request.user
-            ).order_by('-created_at').first()
-            
-            if not property_instance:
-                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+        # Get property instance - either from context or user's last created property
+        property_id = self.context.get('property_id')
+        if property_id:
+            # Use provided property_id
+            try:
+                property_instance = Property.objects.get(
+                    id=property_id,
+                    profiles__user=request.user
+                )
+            except Property.DoesNotExist:
+                raise serializers.ValidationError("Property not found or you don't have access to it.")
+        else:
+            # Fallback to user's last created property (backward compatibility)
+            try:
+                property_instance = Property.objects.filter(
+                    profiles__user=request.user
+                ).order_by('-created_at').first()
                 
-        except Property.DoesNotExist:
-            raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                if not property_instance:
+                    raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                    
+            except Property.DoesNotExist:
+                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
         
         for competitor_name in competitor_names:
             try:

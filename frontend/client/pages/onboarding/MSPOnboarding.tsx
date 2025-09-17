@@ -26,20 +26,10 @@ export default function MSP() {
   const { property } = useContext(PropertyContext) ?? {};
   const { data: mspEntriesData, isLoading: mspEntriesLoading } = useDynamicMSPEntries();
   
-  // Debug: Log context and localStorage on mount
+  // Debug: Log context on mount
   useEffect(() => {
-    try {
-      const selectedPropertyId = localStorage.getItem('selectedPropertyId');
-      const propertyDataRaw = localStorage.getItem('property_data');
-      let propertyData: any = null;
-      try { propertyData = propertyDataRaw ? JSON.parse(propertyDataRaw) : null; } catch (e) { /* ignore parse error */ }
-      console.log('[MSPOnboarding] Mount');
-      console.log('[MSPOnboarding] PropertyContext.property:', property);
-      console.log('[MSPOnboarding] localStorage.selectedPropertyId:', selectedPropertyId);
-      console.log('[MSPOnboarding] localStorage.property_data:', propertyData);
-    } catch (e) {
-      console.warn('[MSPOnboarding] Error reading localStorage for debugging', e);
-    }
+    console.log('[MSPOnboarding] Mount');
+    console.log('[MSPOnboarding] PropertyContext.property:', property);
   }, [property]);
   
   // Helper function to get current date in dd/MM/yyyy format
@@ -133,16 +123,11 @@ export default function MSP() {
       return;
     }
     // Debug: Log property prior to guard
-    try {
-      const selectedPropertyId = localStorage.getItem('selectedPropertyId');
-      console.log('[MSPOnboarding] handleFinish invoked');
-      console.log('[MSPOnboarding] PropertyContext.property:', property);
-      console.log('[MSPOnboarding] localStorage.selectedPropertyId:', selectedPropertyId);
-    } catch {}
+    console.log('[MSPOnboarding] handleFinish invoked');
+    console.log('[MSPOnboarding] PropertyContext.property:', property);
 
-    // Resolve property id from context or localStorage fallback
-    const resolvedPropertyId = property?.id || localStorage.getItem('selectedPropertyId') || '';
-    if (!resolvedPropertyId) {
+    // Ensure we have a property id from context
+    if (!property?.id) {
       setError("Missing property context. Please go back and ensure the property is selected/created.");
       return;
     }
@@ -150,8 +135,8 @@ export default function MSP() {
     setIsLoading(true);
     try {
       // Call the MSP API
-      console.log('[MSPOnboarding] Submitting MSP to endpoint:', `/dynamic-pricing/properties/${resolvedPropertyId}/msp/`);
-      const result = await dynamicPricingService.createPropertyMSP(resolvedPropertyId, { periods });
+      console.log('[MSPOnboarding] Submitting MSP to endpoint:', `/dynamic-pricing/properties/${property.id}/msp/`);
+      const result = await dynamicPricingService.createPropertyMSP(property.id, { periods });
       
       if (result.errors && result.errors.length > 0) {
         setError(`Some periods could not be saved: ${result.errors.join(', ')}`);

@@ -1579,12 +1579,17 @@ class BulkCompetitorCandidateCreateView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
-    def post(self, request):
+    def post(self, request, property_id=None):
         """
         Create multiple competitor candidates for a property
         """
         try:
-            serializer = BulkCompetitorCandidateSerializer(data=request.data, context={'request': request})
+            # Pass property_id to serializer context if provided
+            context = {'request': request}
+            if property_id:
+                context['property_id'] = property_id
+                
+            serializer = BulkCompetitorCandidateSerializer(data=request.data, context=context)
             
             if serializer.is_valid():
                 # Create the competitor candidates

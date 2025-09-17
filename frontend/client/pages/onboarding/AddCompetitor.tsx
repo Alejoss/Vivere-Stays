@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateCompetitorCandidates } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelDataForAPI } from "../../../shared/localStorage";
+import { PropertyContext } from "../../../shared/PropertyContext";
 
 interface CompetitorHotel {
   id: string;
@@ -12,6 +13,7 @@ interface CompetitorHotel {
 
 export default function AddCompetitor() {
   const navigate = useNavigate();
+  const { property } = useContext(PropertyContext) ?? {};
   const [competitorHotels, setCompetitorHotels] = useState<CompetitorHotel[]>([
     { id: "1", name: "" },
   ]);
@@ -99,6 +101,12 @@ export default function AddCompetitor() {
   const handleContinue = async () => {
     setError("");
     
+    // Ensure we have a property id
+    if (!property?.id) {
+      setError("Missing property context. Please go back and ensure the property is selected/created.");
+      return;
+    }
+    
     // Filter out empty hotel names and get only valid ones
     const validHotelNames = competitorHotels
       .map(hotel => hotel.name.trim())
@@ -113,8 +121,9 @@ export default function AddCompetitor() {
     // Only make API call if there are valid competitors
     setIsLoading(true);
     try {
-      // Backend will automatically get the user's last created property
+      // Pass the property ID explicitly
       const response = await createCompetitorCandidates.mutateAsync({
+        property_id: property.id,
         competitor_names: validHotelNames
       });
       

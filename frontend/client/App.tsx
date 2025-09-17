@@ -23,6 +23,7 @@ import MSPOnboarding from "./pages/onboarding/MSPOnboarding";
 import WelcomeComplete from "./pages/onboarding/WelcomeComplete";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/dashboard/Layout";
+import OnboardingLayout from "./components/onboarding/OnboardingLayout";
 import DashboardIndex from "./pages/dashboard/Index";
 import PropertyList from "./pages/dashboard/PropertyList";
 import PropertyDashboard from "./pages/dashboard/PropertyDashboard";
@@ -61,14 +62,14 @@ const App = () => (
             <Route path="/profile-completion" element={<ProfileCompletion />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/hotel-information" element={<HotelInformationOnboarding />} />
-            <Route path="/pms-integration" element={<PMSIntegration />} />
-            <Route path="/pms-information" element={<PMSInformation />} />
-            <Route path="/select-plan" element={<SelectPlan />} />
-            <Route path="/payment" element={<Payment />} />
-            <Route path="/add-competitor" element={<AddCompetitor />} />
-            <Route path="/msp" element={<MSPOnboarding />} />
-            <Route path="/welcome-complete" element={<WelcomeComplete />} />
+            <Route path="/hotel-information" element={<OnboardingLayout><HotelInformationOnboarding /></OnboardingLayout>} />
+            <Route path="/pms-integration" element={<OnboardingLayout><PMSIntegration /></OnboardingLayout>} />
+            <Route path="/pms-information" element={<OnboardingLayout><PMSInformation /></OnboardingLayout>} />
+            <Route path="/select-plan" element={<OnboardingLayout><SelectPlan /></OnboardingLayout>} />
+            <Route path="/payment" element={<OnboardingLayout><Payment /></OnboardingLayout>} />
+            <Route path="/add-competitor" element={<OnboardingLayout><AddCompetitor /></OnboardingLayout>} />
+            <Route path="/msp" element={<OnboardingLayout><MSPOnboarding /></OnboardingLayout>} />
+            <Route path="/welcome-complete" element={<OnboardingLayout><WelcomeComplete /></OnboardingLayout>} />
             
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={<DashboardLayout><PropertyList /></DashboardLayout>} />

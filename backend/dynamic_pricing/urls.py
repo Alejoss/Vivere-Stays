@@ -74,6 +74,7 @@ urlpatterns = [
     path('competitors/fetch/', FetchCompetitorsView.as_view(), name='fetch-competitors'),
     path('competitors/nearby/', NearbyHotelsView.as_view(), name='nearby-hotels'),
     path('competitors/candidates/bulk-create/', BulkCompetitorCandidateCreateView.as_view(), name='bulk-create-competitor-candidates'),
+    path('properties/<str:property_id>/competitors/candidates/bulk-create/', BulkCompetitorCandidateCreateView.as_view(), name='bulk-create-competitor-candidates-for-property'),
     
     # Minimum Selling Price endpoints
     path('msp/', MinimumSellingPriceView.as_view(), name='msp'),

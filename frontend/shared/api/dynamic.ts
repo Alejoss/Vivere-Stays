@@ -702,6 +702,7 @@ export const dynamicPricingService = {
   async createCompetitorCandidates(data: { 
     competitor_names: string[];
     suggested_by_user?: boolean;
+    property_id?: string;
   }): Promise<{
     message: string;
     property_id: string;
@@ -715,6 +716,14 @@ export const dynamicPricingService = {
     total_errors: number;
     errors?: Array<{ name: string; error: string }>;
   }> {
+    // Use property-specific endpoint if property_id is provided
+    const url = data.property_id 
+      ? `/dynamic-pricing/properties/${data.property_id}/competitors/candidates/bulk-create/`
+      : '/dynamic-pricing/competitors/candidates/bulk-create/';
+    
+    // Remove property_id from data since it's in the URL
+    const { property_id, ...requestData } = data;
+    
     return apiRequest<{
       message: string;
       property_id: string;
@@ -729,8 +738,8 @@ export const dynamicPricingService = {
       errors?: Array<{ name: string; error: string }>;
     }>({
       method: 'POST',
-      url: '/dynamic-pricing/competitors/candidates/bulk-create/',
-      data,
+      url,
+      data: requestData,
     });
   },
 
