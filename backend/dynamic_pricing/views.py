@@ -2909,13 +2909,11 @@ class LosReductionCreateView(APIView):
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Prepare data for single rule creation
-            data = request.data.copy()
-            data['property_id'] = property_instance.id
-            # Remove user field since it doesn't exist in the model
-            data.pop('user', None)
-            
-            serializer = DpLosReductionSerializer(data=data, context={'request': request})
+            # Prepare serializer with context so it assigns property and user server-side
+            serializer = DpLosReductionSerializer(
+                data=request.data,
+                context={'request': request, 'property': property_instance, 'user': request.user}
+            )
             
             if serializer.is_valid():
                 los_reduction = serializer.save()
@@ -3135,11 +3133,8 @@ class LosSetupCreateView(APIView):
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Prepare data for single rule creation
-            data = request.data.copy()
-            data['property_id'] = property_instance.id
-            
-            serializer = DpLosSetupSerializer(data=data, context={'request': request})
+            # Prepare serializer with context so it assigns property and user server-side
+            serializer = DpLosSetupSerializer(data=request.data, context={'request': request, 'property': property_instance, 'user': request.user})
             
             if serializer.is_valid():
                 los_setup = serializer.save()

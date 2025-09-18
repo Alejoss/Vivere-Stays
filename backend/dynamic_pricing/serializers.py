@@ -885,6 +885,23 @@ class DpLosSetupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("valid_from must be before valid_until")
         return data
 
+    def create(self, validated_data):
+        """
+        Ensure property_id and user are set from context during creation.
+        """
+        request = self.context.get('request')
+        user = self.context.get('user') or (request.user if request and request.user.is_authenticated else None)
+        property_instance = self.context.get('property')
+
+        if not property_instance:
+            raise serializers.ValidationError("Property context is required to create LOS setup")
+        if not user:
+            raise serializers.ValidationError("User must be authenticated.")
+
+        validated_data['property_id'] = property_instance
+        validated_data['user'] = user
+        return super().create(validated_data)
+
 
 class DpLosReductionSerializer(serializers.ModelSerializer):
     """
@@ -905,6 +922,23 @@ class DpLosReductionSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("LOS value must be greater than 0")
         return value
+
+    def create(self, validated_data):
+        """
+        Ensure property_id and user are set from context during creation.
+        """
+        request = self.context.get('request')
+        user = self.context.get('user') or (request.user if request and request.user.is_authenticated else None)
+        property_instance = self.context.get('property')
+
+        if not property_instance:
+            raise serializers.ValidationError("Property context is required to create LOS reduction")
+        if not user:
+            raise serializers.ValidationError("User must be authenticated.")
+
+        validated_data['property_id'] = property_instance
+        validated_data['user'] = user
+        return super().create(validated_data)
 
 
 class BulkDpLosSetupSerializer(serializers.Serializer):
