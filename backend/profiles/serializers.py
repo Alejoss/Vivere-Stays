@@ -3,7 +3,7 @@ import logging
 
 from django.contrib.auth.models import User
 
-from profiles.models import Profile, PMSIntegrationRequirement
+from profiles.models import Profile, PMSIntegrationRequirement, SupportTicket
 
 # Get logger for profiles serializers
 logger = logging.getLogger('academia_blockchain.profiles.serializers')
@@ -165,3 +165,46 @@ class PMSIntegrationRequirementSerializer(serializers.ModelSerializer):
             validated_data['status'] = 'not_supported'
         
         return super().create(validated_data)
+
+
+class SupportTicketSerializer(serializers.ModelSerializer):
+    """
+    Serializer for SupportTicket model
+    """
+    issue_type_display = serializers.CharField(source='get_issue_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = SupportTicket
+        fields = [
+            'id', 'user', 'user_email', 'user_username', 'issue_type', 'issue_type_display',
+            'title', 'description', 'status', 'status_display', 'priority', 'priority_display',
+            'screenshot', 'created_at', 'updated_at', 'resolved_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'resolved_at']
+    
+    def create(self, validated_data):
+        """
+        Create a new support ticket
+        """
+        # The user will be set in the view from the request
+        return super().create(validated_data)
+    
+    def validate_title(self, value):
+        """
+        Validate title length
+        """
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("Title must be at least 5 characters long.")
+        return value.strip()
+    
+    def validate_description(self, value):
+        """
+        Validate description length
+        """
+        if len(value.strip()) < 10:
+            raise serializers.ValidationError("Description must be at least 10 characters long.")
+        return value.strip()

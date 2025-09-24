@@ -19,7 +19,7 @@ export default function PropertyList() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-              <p className="text-[16px] text-[#485567]">Loading your properties...</p>
+              <p className="text-base text-[#485567]">Loading your properties...</p>
             </div>
           </div>
         </div>
@@ -94,21 +94,21 @@ export default function PropertyList() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Property Type</span>
-                  <span className="font-medium text-gray-900 capitalize">
+                  <span className="font-semibold text-gray-900 capitalize">
                     {property.property_type || 'Not specified'}
                   </span>
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Rooms</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="font-semibold text-gray-900">
                     {property.number_of_rooms}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Status</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                     property.is_active 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-red-100 text-red-800'
@@ -120,7 +120,7 @@ export default function PropertyList() {
 
               {/* Action Button */}
               <div className="mt-6 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-center gap-2 text-[#294758] font-medium group-hover:text-[#234149] transition-colors">
+                <div className="flex items-center justify-center gap-2 text-[#294758] font-semibold group-hover:text-[#234149] transition-colors">
                   <Calendar className="h-4 w-4" />
                   <span>View Pricing Calendar</span>
                 </div>

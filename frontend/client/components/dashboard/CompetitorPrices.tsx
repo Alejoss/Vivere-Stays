@@ -46,7 +46,7 @@ export default function CompetitorPrices({
   onPriceUpdate,
   selectedDayPriceHistory,
 }: CompetitorPricesProps) {
-  const [suggestedPrice, setSuggestedPrice] = useState("66");
+  const [suggestedPrice, setSuggestedPrice] = useState("");
   const [competitorData, setCompetitorData] = useState<CompetitorPriceForDate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +145,7 @@ export default function CompetitorPrices({
             type="number"
             value={suggestedPrice}
             onChange={(e) => setSuggestedPrice(e.target.value)}
+            placeholder={selectedDayPriceHistory ? selectedDayPriceHistory.price.toString() : "0"}
             className="w-full pl-[35px] pr-[15px] py-[11px] border border-blue-300 rounded-md bg-white text-[16px] font-normal text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

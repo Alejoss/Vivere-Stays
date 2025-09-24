@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ChevronUp, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { usePriceHistory, useUserProperties } from "../../../shared/api/hooks";
 import { getLocalStorageItem, setLocalStorageItem, getVivereConnection } from "../../../shared/localStorage";
@@ -85,6 +85,13 @@ const generateCalendarData = (
 
 const dayHeaders = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const priceOptions = [
+  "Average Daily Rate",
+  "PMS Price",
+  "Competitor Average",
+  "MSP",
+];
+
 const getOccupancyColor = (occupancy: string) => {
   switch (occupancy) {
     case "low":
@@ -140,15 +147,18 @@ interface PriceCalendarProps {
   onDateClick: (day: number, month?: string, year?: string) => void;
   propertyId?: string; // Optional prop for when we know the property ID
   refreshKey?: number;
+  onPriceOptionChange?: (option: string) => void;
 }
 
-export default function PriceCalendar({ onDateClick, propertyId, refreshKey }: PriceCalendarProps) {
+export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onPriceOptionChange }: PriceCalendarProps) {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(propertyId || null);
   const [propertyData, setPropertyData] = useState<any>(null);
+  const [selectedPrice, setSelectedPrice] = useState("Average Daily Rate");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Get user properties (only if no propertyId is provided)
   const { data: userPropertiesData, isLoading: propertiesLoading } = useUserProperties();
@@ -232,6 +242,14 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey }: P
     setShowMonthPicker(false);
   };
 
+  const handlePriceOptionSelect = (option: string) => {
+    setSelectedPrice(option);
+    setIsDropdownOpen(false);
+    if (onPriceOptionChange) {
+      onPriceOptionChange(option);
+    }
+  };
+
   const toggleMonthPicker = () => {
     if (!showMonthPicker) {
       setTempYear(currentYear);
@@ -284,9 +302,45 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey }: P
     <div className="w-full max-w-none bg-white border border-hotel-border-light rounded-[9px] p-4 lg:p-[26px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-[57px]">
-        <h2 className="text-[24px] font-bold text-gray-700">Price Calendar</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-[24px] font-bold text-gray-700">Price Calendar</h2>
+          
+          {/* Price Type Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center justify-between px-[15px] py-[13px] border border-hotel-border-light rounded-md bg-white hover:bg-gray-50 transition-colors min-w-[180px]"
+            >
+              <span className="text-[14px] font-normal text-black">
+                {selectedPrice}
+              </span>
+              <ChevronDown
+                size={15}
+                className={`text-gray-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
 
-                  <div className="flex items-center gap-4">
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-hotel-border-light rounded-md shadow-lg z-10">
+                {priceOptions.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => handlePriceOptionSelect(option)}
+                    className={`w-full px-[15px] py-[13px] text-left text-[14px] font-normal hover:bg-gray-50 transition-colors ${
+                      selectedPrice === option
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-black"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
             {/* Property Selector - only show if no propertyId is provided */}
             {!propertyId && userPropertiesData?.properties && (
               <select

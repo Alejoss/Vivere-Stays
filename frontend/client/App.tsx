@@ -18,6 +18,7 @@ import PMSIntegration from "./pages/onboarding/PMSIntegration";
 import PMSInformation from "./pages/onboarding/PMSInformation";
 import SelectPlan from "./pages/onboarding/SelectPlan";
 import Payment from "./pages/onboarding/Payment";
+import ContactSalesOnboarding from "./pages/onboarding/ContactSalesOnboarding";
 import AddCompetitor from "./pages/onboarding/AddCompetitor";
 import MSPOnboarding from "./pages/onboarding/MSPOnboarding";
 import WelcomeComplete from "./pages/onboarding/WelcomeComplete";
@@ -25,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/dashboard/Layout";
 import OnboardingLayout from "./components/onboarding/OnboardingLayout";
 import DashboardIndex from "./pages/dashboard/Index";
+import DashboardRedirect from "./pages/dashboard/DashboardRedirect";
 import PropertyList from "./pages/dashboard/PropertyList";
 import PropertyDashboard from "./pages/dashboard/PropertyDashboard";
 import ChangePrices from "./pages/dashboard/ChangePrices";
@@ -67,12 +69,13 @@ const App = () => (
             <Route path="/pms-information" element={<OnboardingLayout><PMSInformation /></OnboardingLayout>} />
             <Route path="/select-plan" element={<OnboardingLayout><SelectPlan /></OnboardingLayout>} />
             <Route path="/payment" element={<OnboardingLayout><Payment /></OnboardingLayout>} />
+            <Route path="/contact-sales" element={<OnboardingLayout><ContactSalesOnboarding /></OnboardingLayout>} />
             <Route path="/add-competitor" element={<OnboardingLayout><AddCompetitor /></OnboardingLayout>} />
             <Route path="/msp" element={<OnboardingLayout><MSPOnboarding /></OnboardingLayout>} />
             <Route path="/welcome-complete" element={<OnboardingLayout><WelcomeComplete /></OnboardingLayout>} />
             
             {/* Dashboard Routes */}
-            <Route path="/dashboard" element={<DashboardLayout><PropertyList /></DashboardLayout>} />
+            <Route path="/dashboard" element={<DashboardRedirect />} />
             <Route path="/dashboard/property/:propertyId" element={<DashboardLayout><PropertyDashboard /></DashboardLayout>} />
             <Route path="/dashboard/change-prices/:propertyId" element={<DashboardLayout><ChangePrices /></DashboardLayout>} />
             {/* <Route path="/dashboard/change-prices" element={<DashboardLayout><ChangePrices /></DashboardLayout>} /> */}

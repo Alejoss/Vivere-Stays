@@ -1,5 +1,5 @@
 from django.contrib import admin
-from profiles.models import Profile, PMSIntegrationRequirement, Payment
+from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket
 
 
 @admin.register(Profile)
@@ -21,4 +21,35 @@ class PMSIntegrationRequirementAdmin(admin.ModelAdmin):
     search_fields = ('profile__user__username', 'profile__user__email', 'property_obj__name', 'custom_pms_name')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-created_at',)
+
+
+@admin.register(SupportTicket)
+class SupportTicketAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'title', 'issue_type', 'status', 'priority', 'created_at')
+    list_filter = ('issue_type', 'status', 'priority', 'created_at')
+    search_fields = ('user__username', 'user__email', 'title', 'description')
+    readonly_fields = ('created_at', 'updated_at', 'resolved_at')
+    ordering = ('-created_at',)
+    list_per_page = 25
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('user', 'title', 'issue_type', 'description')
+        }),
+        ('Status & Priority', {
+            'fields': ('status', 'priority')
+        }),
+        ('Screenshot', {
+            'fields': ('screenshot',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'resolved_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+
 admin.site.register(Payment)

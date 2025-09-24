@@ -165,7 +165,7 @@ export default function Notifications() {
       <div className="px-6">
         {/* Title and Badge */}
         <div className="flex items-center gap-4 mb-8">
-          <h1 className="text-[28px] font-bold text-[#294758]">
+          <h1 className="text-3xl font-bold text-[#294758]">
             Notifications
           </h1>
           {newCount > 0 && (
@@ -180,7 +180,7 @@ export default function Notifications() {
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentFilter("all")}
-              className={`px-4 py-3 rounded-md text-[14px] transition-colors ${
+              className={`px-4 py-3 rounded-md text-sm transition-colors ${
                 currentFilter === "all"
                   ? "bg-[#294859] text-white"
                   : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
@@ -190,7 +190,7 @@ export default function Notifications() {
             </button>
             <button
               onClick={() => setCurrentFilter("unread")}
-              className={`px-4 py-3 rounded-md text-[14px] transition-colors ${
+              className={`px-4 py-3 rounded-md text-sm transition-colors ${
                 currentFilter === "unread"
                   ? "bg-[#294859] text-white"
                   : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
@@ -202,7 +202,7 @@ export default function Notifications() {
 
           <button
             onClick={markAllAsRead}
-            className="flex items-center gap-2 px-4 py-3 border border-[#DCE0E4] rounded-lg bg-white text-[#294859] text-[14px] font-medium hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-3 border border-[#DCE0E4] rounded-lg bg-white text-[#294859] text-sm font-semibold hover:bg-gray-50 transition-colors"
           >
             <Check size={20} />
             Mark all as read
@@ -225,7 +225,7 @@ export default function Notifications() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     {getNotificationIcon(notification.type, notification.isNew)}
-                    <h3 className="text-[17px] font-bold text-[#111827]">
+                    <h3 className="text-lg font-bold text-[#111827]">
                       {notification.title}
                     </h3>
                     {notification.isNew && (
@@ -255,7 +255,7 @@ export default function Notifications() {
                 </div>
 
                 {/* Description */}
-                <p className="text-[15px] text-[#485567] mb-4 leading-relaxed">
+                <p className="text-base text-[#485567] mb-4 leading-relaxed">
                   {notification.description}
                 </p>
 
@@ -271,7 +271,7 @@ export default function Notifications() {
 
         {filteredNotifications.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-[#6B7280] text-[16px]">
+            <p className="text-[#6B7280] text-base">
               {currentFilter === "unread"
                 ? "No unread notifications"
                 : "No notifications"}

@@ -334,7 +334,7 @@ function WeeklyPriceOverview({
       <div className="bg-hotel-brand rounded-t-lg p-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Calendar className="text-white" size={20} />
-          <span className="text-white text-[20px] font-bold">
+          <span className="text-white text-xl font-bold">
             Weekly Price Overview
           </span>
         </div>
@@ -347,7 +347,7 @@ function WeeklyPriceOverview({
             <ChevronLeft size={20} />
           </button>
           <div className="px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm">
-            <span className="text-hotel-brand text-[16px] font-bold">
+            <span className="text-hotel-brand text-base font-bold">
               Week {currentWeek}
             </span>
           </div>
@@ -365,7 +365,7 @@ function WeeklyPriceOverview({
       <div className="px-6 py-4 bg-hotel-brand relative month-dropdown-container">
         <button
           onClick={() => setShowMonthDropdown(!showMonthDropdown)}
-          className="flex items-center gap-2 px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm text-hotel-brand text-[20px] font-bold hover:bg-white transition-colors"
+          className="flex items-center gap-2 px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm text-hotel-brand text-xl font-bold hover:bg-white transition-colors"
         >
           <span>{getCurrentMonthYear(currentWeek)}</span>
           <div
@@ -400,7 +400,7 @@ function WeeklyPriceOverview({
       {/* Date Headers */}
       <div className="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-4">
         <div className="w-[140px] flex items-center">
-          <span className="text-hotel-brand font-semibold text-[16px]">
+          <span className="text-hotel-brand font-semibold text-base">
             Hotel
           </span>
         </div>
@@ -413,8 +413,8 @@ function WeeklyPriceOverview({
                 key={index}
                 className="flex flex-col items-center gap-3 w-[78px] lg:w-[90px] xl:w-[110px]"
               >
-                <span className="text-hotel-brand text-[22px] font-bold">{dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}</span>
-                <span className="text-gray-700 text-[18px] font-semibold">{d.getDate().toString().padStart(2, '0')}</span>
+                <span className="text-hotel-brand text-2xl font-bold">{dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}</span>
+                <span className="text-gray-700 text-lg font-semibold">{d.getDate().toString().padStart(2, '0')}</span>
               </div>
             );
           })}
@@ -428,7 +428,7 @@ function WeeklyPriceOverview({
           className="flex items-center border-b border-gray-200 px-4 py-4"
         >
           <div className="w-[140px]">
-            <span className="text-black text-[16px] font-normal">
+            <span className="text-black text-base font-normal">
               {competitor.name}
             </span>
           </div>
@@ -447,7 +447,7 @@ function WeeklyPriceOverview({
       {/* Your Price Row (dynamic) */}
       <div className="flex items-center bg-gray-50 border-b-2 border-hotel-brand px-4 py-5 rounded-b-lg">
         <div className="w-[140px]">
-          <span className="text-black text-[20px] font-bold">Your Price</span>
+          <span className="text-black text-xl font-bold">Your Price</span>
         </div>
         <div className="flex-1 flex items-center justify-between px-4">
           {competitorData.dates.map((date, index) => {
@@ -467,13 +467,13 @@ function WeeklyPriceOverview({
             return (
               <div key={index} className="w-[100px] lg:w-[120px] xl:w-[140px] flex justify-center">
                 <div className="relative flex items-center w-full">
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[17px] text-[#294859] font-bold z-10">$</span>
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-lg text-[#294859] font-bold z-10">$</span>
                   <input
                     type="text"
                     value={price}
                     onChange={(e) => handlePriceChange(index, e.target.value)}
                     onBlur={() => handlePriceBlur(index)}
-                    className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-[20px] font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
+                    className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-xl font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
                     style={{ minWidth: 70, maxWidth: 110 }}
                     maxLength={5}
                     disabled={isPast}
@@ -488,7 +488,7 @@ function WeeklyPriceOverview({
       
       {/* Success Message */}
       {successMsg && (
-        <div className="mt-4 px-4 py-2 bg-green-100 text-green-800 text-center text-[14px] font-medium rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
+        <div className="mt-4 px-4 py-2 bg-green-100 text-green-800 text-center text-sm font-semibold rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
           {successMsg}
         </div>
       )}
@@ -649,7 +649,7 @@ function StayPeriodSelector({
               strokeLinejoin="round"
             />
           </svg>
-          <span className="text-white text-[18px] font-semibold">
+          <span className="text-white text-lg font-semibold">
             Select Date Range
           </span>
         </div>
@@ -658,7 +658,7 @@ function StayPeriodSelector({
       <form className="px-6 py-6 pb-12" onSubmit={handleSubmit}>
         {/* Check-in Date */}
         <div className="mb-6">
-          <label className="block text-[14px] font-semibold text-black mb-3">
+          <label className="block text-sm font-semibold text-black mb-3">
             Start Date
           </label>
           <div className="relative">
@@ -699,7 +699,7 @@ function StayPeriodSelector({
         </div>
         {/* Check-out Date */}
         <div className="mb-6">
-          <label className="block text-[14px] font-semibold text-black mb-3">
+          <label className="block text-sm font-semibold text-black mb-3">
             End Date
           </label>
           <div className="relative">
@@ -740,14 +740,14 @@ function StayPeriodSelector({
         </div>
         {/* Total Price Input */}
         <div className="mb-3 relative">
-          <span className="absolute left-4 top-2 text-[17px] font-bold text-[#294859] z-10">
+          <span className="absolute left-4 top-2 text-lg font-bold text-[#294859] z-10">
             $
           </span>
           <input
             type="text"
             value={totalPrice}
             onChange={(e) => setTotalPrice(e.target.value)}
-            className="w-full h-[36px] pl-8 pr-4 py-2 border border-[#294859] bg-[#BFDBFE] rounded text-[17px] font-bold text-[#294859] text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full h-[36px] pl-8 pr-4 py-2 border border-[#294859] bg-[#BFDBFE] rounded text-lg font-bold text-[#294859] text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         {/* Nightly Rate Display */}
@@ -766,7 +766,7 @@ function StayPeriodSelector({
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full h-[37px] bg-[#2766EC] text-white text-[14px] font-semibold rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50"
+          className="w-full h-[37px] bg-[#294758] text-white text-sm font-semibold rounded-lg hover:bg-[#234149] transition-colors flex items-center justify-center disabled:opacity-50"
           disabled={loading || !propertyId || !checkIn || !checkOut || !totalPrice}
         >
           {loading ? 'Updating...' : 'Submit'}
@@ -816,10 +816,10 @@ export default function ChangePrices() {
       {/* Header Section */}
       <div className="px-6 py-6 border-b border-gray-200">
         <div className="mb-4">
-          <h1 className="text-[28px] font-bold text-hotel-brand mb-2">
+          <h1 className="text-3xl font-bold text-hotel-brand mb-2">
             Change Prices
           </h1>
-          <p className="text-[16px] text-gray-600">
+          <p className="text-base text-gray-600">
             Adjust your pricing strategy based on competitor analysis
           </p>
         </div>
@@ -843,7 +843,7 @@ export default function ChangePrices() {
             setSuccessMsg={setSuccessMsg}
           />
           {successMsg && (
-            <div className="w-[275px] mt-4 mx-auto px-4 py-2 bg-green-100 text-green-800 text-center text-[14px] font-medium rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
+            <div className="w-[275px] mt-4 mx-auto px-4 py-2 bg-green-100 text-green-800 text-center text-sm font-semibold rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
               {successMsg}
             </div>
           )}

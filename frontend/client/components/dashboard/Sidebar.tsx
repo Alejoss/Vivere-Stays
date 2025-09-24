@@ -23,11 +23,11 @@ const navigationItems = [
 const hotelManagementItems = [
   { id: "hotel-information", label: "Hotel Information", path: "/dashboard/hotel-information" },
   { id: "competitors", label: "Competitors", path: "/dashboard/competitors" },
+  { id: "msp-management", label: "MSP Management", path: "/dashboard/msp-management" },
   { id: "special-offers", label: "Special Offers", path: "/dashboard/special-offers" },
   { id: "dynamic-setup", label: "Dynamic Setup", path: "/dashboard/dynamic-setup" },
   { id: "length-of-stay", label: "Length of Stay", path: "/dashboard/length-of-stay" },
   { id: "available-rates", label: "Available Rates", path: "/dashboard/available-rates" },
-  { id: "msp-management", label: "MSP Management", path: "/dashboard/msp-management" },
 ];
 
 const accountItems = [

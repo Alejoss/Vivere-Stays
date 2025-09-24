@@ -177,7 +177,7 @@ export default function MyAccount() {
       <div className="px-6">
         {/* Title */}
         <div className="mb-8">
-          <h1 className="text-[28px] font-bold text-[#294758]">My Account</h1>
+          <h1 className="text-3xl font-bold text-[#294758]">My Account</h1>
           <p className="text-[#6B7280] mt-2">Manage your account settings and security</p>
         </div>
 
@@ -188,7 +188,7 @@ export default function MyAccount() {
               <div className="w-10 h-10 bg-[#294758] rounded-full flex items-center justify-center">
                 <User className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-[20px] font-bold text-[#294758]">Profile Information</h2>
+              <h2 className="text-xl font-bold text-[#294758]">Profile Information</h2>
             </div>
 
             <div className="space-y-4">
@@ -197,7 +197,7 @@ export default function MyAccount() {
                 <Mail className="w-5 h-5 text-[#6B7280]" />
                 <div>
                   <p className="text-[12px] text-[#6B7280] uppercase tracking-wide">Email</p>
-                  <p className="text-[16px] font-medium text-[#111827]">{profile.user.email}</p>
+                  <p className="text-base font-normal text-[#111827]">{profile.user.email}</p>
                 </div>
               </div>
 
@@ -206,7 +206,7 @@ export default function MyAccount() {
                 <Calendar className="w-5 h-5 text-[#6B7280]" />
                 <div>
                   <p className="text-[12px] text-[#6B7280] uppercase tracking-wide">Member Since</p>
-                  <p className="text-[16px] font-medium text-[#111827]">
+                  <p className="text-base font-normal text-[#111827]">
                     {formatDate(profile.user.date_joined)}
                   </p>
                 </div>
@@ -217,7 +217,7 @@ export default function MyAccount() {
                 <User className="w-5 h-5 text-[#6B7280]" />
                 <div>
                   <p className="text-[12px] text-[#6B7280] uppercase tracking-wide">Name</p>
-                  <p className="text-[16px] font-medium text-[#111827]">
+                  <p className="text-base font-normal text-[#111827]">
                     {profile.user.first_name && profile.user.last_name
                       ? `${profile.user.first_name} ${profile.user.last_name}`
                       : profile.user.username}
@@ -232,7 +232,7 @@ export default function MyAccount() {
                 </div>
                 <div>
                   <p className="text-[12px] text-[#6B7280] uppercase tracking-wide">Properties</p>
-                  <p className="text-[16px] font-medium text-[#111827]">
+                  <p className="text-base font-normal text-[#111827]">
                     {profile.properties_count} {profile.properties_count === 1 ? 'property' : 'properties'}
                   </p>
                 </div>
@@ -246,20 +246,20 @@ export default function MyAccount() {
               <div className="w-10 h-10 bg-[#294758] rounded-full flex items-center justify-center">
                 <Lock className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-[20px] font-bold text-[#294758]">Change Password</h2>
+              <h2 className="text-xl font-bold text-[#294758]">Change Password</h2>
             </div>
 
             {passwordSuccess && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
                 <Check className="w-5 h-5 text-green-600" />
-                <p className="text-green-800 font-medium">Password changed successfully!</p>
+                <p className="text-green-800 font-semibold">Password changed successfully!</p>
               </div>
             )}
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               {/* Current Password */}
               <div>
-                <label className="block text-[14px] font-medium text-[#374151] mb-2">
+                <label className="block text-sm font-semibold text-[#374151] mb-2">
                   Current Password
                 </label>
                 <div className="relative">
@@ -287,7 +287,7 @@ export default function MyAccount() {
 
               {/* New Password */}
               <div>
-                <label className="block text-[14px] font-medium text-[#374151] mb-2">
+                <label className="block text-sm font-semibold text-[#374151] mb-2">
                   New Password
                 </label>
                 <div className="relative">
@@ -315,7 +315,7 @@ export default function MyAccount() {
 
               {/* Confirm Password */}
               <div>
-                <label className="block text-[14px] font-medium text-[#374151] mb-2">
+                <label className="block text-sm font-semibold text-[#374151] mb-2">
                   Confirm New Password
                 </label>
                 <div className="relative">
@@ -344,7 +344,7 @@ export default function MyAccount() {
               {/* General Error */}
               {passwordErrors.general && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-800 text-[14px]">{passwordErrors.general}</p>
+                  <p className="text-red-800 text-sm">{passwordErrors.general}</p>
                 </div>
               )}
 
@@ -352,7 +352,7 @@ export default function MyAccount() {
               <button
                 type="submit"
                 disabled={passwordLoading}
-                className="w-full bg-[#294758] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1F2937] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-[#294758] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#1F2937] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {passwordLoading ? "Changing Password..." : "Change Password"}
               </button>
@@ -360,7 +360,7 @@ export default function MyAccount() {
 
             {/* Password Requirements */}
             <div className="mt-6 p-4 bg-[#F9FAFB] rounded-lg">
-              <h3 className="text-[14px] font-medium text-[#374151] mb-2">Password Requirements:</h3>
+              <h3 className="text-sm font-semibold text-[#374151] mb-2">Password Requirements:</h3>
               <ul className="text-[12px] text-[#6B7280] space-y-1">
                 <li>• At least 8 characters long</li>
                 <li>• Cannot be the same as your current password</li>

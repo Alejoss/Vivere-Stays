@@ -169,6 +169,13 @@ class Command(BaseCommand):
                 self.stdout.write(f"    Processing property: {property_obj.name}")
                 total_properties_processed += 1
                 records_to_create = []
+                # Fetch existing (room_id, rate_id) pairs for this property to avoid duplicates
+                existing_pairs = set(
+                    UnifiedRoomsAndRates.objects
+                    .filter(property_id=property_obj)
+                    .values_list('room_id', 'rate_id')
+                )
+                skipped_duplicates = 0
 
                 # Determine PMS source based on property's PMS
                 pms_source = 'mrplan'  # Default
@@ -200,21 +207,25 @@ class Command(BaseCommand):
                             is_base_rate = False
 
                         if not dry_run:
-                            record = UnifiedRoomsAndRates(
-                                property_id=property_obj,
-                                user=profile.user,
-                                pms_source=pms_source,
-                                pms_hotel_id=property_obj.pms_hotel_id or f"PMS_{property_obj.id}",
-                                room_id=room_template['room_id'],
-                                rate_id=rate_template['rate_id'],
-                                room_name=room_template['room_name'],
-                                room_description=room_template['room_description'],
-                                rate_name=rate_template['rate_name'],
-                                rate_description=rate_template['rate_description'],
-                                rate_category=rate_template['rate_category'],
-                                last_updated=timezone.now()
-                            )
-                            records_to_create.append(record)
+                            pair = (room_template['room_id'], rate_template['rate_id'])
+                            if pair in existing_pairs:
+                                skipped_duplicates += 1
+                            else:
+                                record = UnifiedRoomsAndRates(
+                                    property_id=property_obj,
+                                    user=profile.user,
+                                    pms_source=pms_source,
+                                    pms_hotel_id=property_obj.pms_hotel_id or f"PMS_{property_obj.id}",
+                                    room_id=room_template['room_id'],
+                                    rate_id=rate_template['rate_id'],
+                                    room_name=room_template['room_name'],
+                                    room_description=room_template['room_description'],
+                                    rate_name=rate_template['rate_name'],
+                                    rate_description=rate_template['rate_description'],
+                                    rate_category=rate_template['rate_category'],
+                                    last_updated=timezone.now()
+                                )
+                                records_to_create.append(record)
                         else:
                             total_records_created += 1
 
@@ -222,8 +233,12 @@ class Command(BaseCommand):
                     UnifiedRoomsAndRates.objects.bulk_create(records_to_create)
                     total_records_created += len(records_to_create)
                     self.stdout.write(f"      Created {len(records_to_create)} unified room/rate records")
+                    if skipped_duplicates:
+                        self.stdout.write(f"      Skipped {skipped_duplicates} duplicates already present")
                 elif dry_run and records_to_create:
                     self.stdout.write(f"      Would create {len(records_to_create)} unified room/rate records")
+                elif not dry_run and not records_to_create and skipped_duplicates:
+                    self.stdout.write(f"      No new records to create. Skipped {skipped_duplicates} duplicates")
 
         # Summary
         self.stdout.write("\n" + "="*50)

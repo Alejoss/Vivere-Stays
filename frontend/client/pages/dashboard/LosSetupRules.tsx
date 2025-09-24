@@ -1,11 +1,15 @@
 import { Plus, Save, Trash2, Calendar, Info } from "lucide-react";
 import { useState, useEffect, useContext } from "react";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
-import type { 
-  LosSetupRule, 
+import { toast } from "../../hooks/use-toast";
+import type {
+  LosSetupRule,
   CreateLosSetupRuleRequest,
-  UpdateLosSetupRuleRequest
+  UpdateLosSetupRuleRequest,
 } from "../../../shared/api/dynamic";
 
 export default function LosSetupRules() {
@@ -14,14 +18,65 @@ export default function LosSetupRules() {
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
 
   // Weekday options
-  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const weekdays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ] as const;
 
-  // State management
-  const [setupRules, setSetupRules] = useState<LosSetupRule[]>([]);
+  // Zod schema for a single rule
+  const RuleSchema = z
+    .object({
+      id: z.union([z.number(), z.string()]).optional(),
+      property_id: z.string().min(1, 'property_id is required'),
+      valid_from: z.string().min(1, 'valid_from is required'),
+      valid_until: z.string().min(1, 'valid_until is required'),
+      day_of_week: z.enum(weekdays, {
+        errorMap: () => ({ message: 'Invalid day of week' }),
+      }),
+      los_value: z.coerce.number().int().min(1, 'LOS must be at least 1'),
+      // Optional backend-only
+      num_competitors: z.coerce.number().int().min(1).optional(),
+      los_aggregation: z.string().optional(),
+    })
+    .superRefine((val, ctx) => {
+      // Date range validation
+      const from = new Date(val.valid_from);
+      const until = new Date(val.valid_until);
+      if (isNaN(from.getTime()) || isNaN(until.getTime())) {
+        return; // basic required check already handled above
+      }
+      // Backend requires strictly before (not equal)
+      if (from >= until) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'valid_from must be before valid_until',
+          path: ['valid_until'],
+        });
+      }
+    });
+
+  const FormSchema = z.object({
+    rules: z.array(RuleSchema),
+  });
+
+  type FormValues = z.infer<typeof FormSchema>;
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: { rules: [] },
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+  });
+
+  const { control, handleSubmit, reset, formState, getValues, setError: setFormError } = form;
+  const { fields, append, remove, update } = useFieldArray({ control, name: 'rules' });
 
   // Load existing data on component mount
   useEffect(() => {
@@ -34,44 +89,54 @@ export default function LosSetupRules() {
     if (!property?.id) return;
     
     setIsLoading(true);
-    setErrorMessage("");
     
     try {
       const response = await dynamicPricingService.getLosSetupRules(property.id);
-      setSetupRules(response.setups);
+      // Initialize form with backend data
+      reset({
+        rules: (response.setups || []).map((r: LosSetupRule) => ({
+          ...r,
+          // ensure strings for date inputs
+          valid_from: String(r.valid_from),
+          valid_until: String(r.valid_until),
+          num_competitors: r?.num_competitors ?? 2,
+          los_aggregation: r?.los_aggregation ?? 'min',
+        })),
+      });
     } catch (error) {
       console.error("Error loading LOS setup data:", error);
-      setErrorMessage("Failed to load existing LOS setup configuration");
+      toast({
+        title: "Error",
+        description: "Failed to load existing LOS setup configuration",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const addSetupRule = () => {
-    const newRule: Partial<LosSetupRule> = {
+    append({
       id: `temp_${Date.now()}` as any,
-      property_id: property?.id || "",
+      property_id: property?.id || '',
       valid_from: new Date().toISOString().split('T')[0],
       valid_until: new Date().toISOString().split('T')[0],
-      day_of_week: "Monday",
+      day_of_week: 'Monday',
       los_value: 1,
-      num_competitors: 2, // Default value
-      los_aggregation: "min", // Default value
-    };
-    setSetupRules([...setupRules, newRule as LosSetupRule]);
+      num_competitors: 2,
+      los_aggregation: 'min',
+    } as any);
   };
 
-  const removeSetupRule = async (id: number | string) => {
+  const removeSetupRule = async (index: number) => {
     if (!property?.id) return;
 
+    const current = getValues().rules?.[index];
     try {
-      if (typeof id === 'number') {
-        // This is an existing rule - delete it from the backend
-        await dynamicPricingService.deleteLosSetupRule(property.id, id);
+      if (current && typeof current.id === 'number') {
+        await dynamicPricingService.deleteLosSetupRule(property.id, current.id);
       }
-      
-      // Remove from local state regardless of whether it was a new or existing rule
-      setSetupRules(setupRules.filter(rule => rule.id !== id));
+      remove(index);
     } catch (error: any) {
       console.error("Error deleting setup rule:", error);
       
@@ -86,10 +151,12 @@ export default function LosSetupRules() {
             // Format validation errors
             const errorMessages = [];
             for (const [field, messages] of Object.entries(errorData.errors)) {
-              if (Array.isArray(messages)) {
-                errorMessages.push(`${field}: ${messages.join(', ')}`);
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              // If field is non_field_errors, do not prefix with the key
+              if (field === 'non_field_errors') {
+                errorMessages.push(`${messageText}`);
               } else {
-                errorMessages.push(`${field}: ${messages}`);
+                errorMessages.push(`${field}: ${messageText}`);
               }
             }
             errorMessage = errorMessages.join('; ');
@@ -107,10 +174,11 @@ export default function LosSetupRules() {
             // Format validation errors
             const errorMessages = [];
             for (const [field, messages] of Object.entries(errorData.errors)) {
-              if (Array.isArray(messages)) {
-                errorMessages.push(`${field}: ${messages.join(', ')}`);
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              if (field === 'non_field_errors') {
+                errorMessages.push(`${messageText}`);
               } else {
-                errorMessages.push(`${field}: ${messages}`);
+                errorMessages.push(`${field}: ${messageText}`);
               }
             }
             errorMessage = errorMessages.join('; ');
@@ -125,15 +193,15 @@ export default function LosSetupRules() {
         errorMessage = error.response.data.message;
       }
       
-      setErrorMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
-  const updateSetupRule = (id: number | string, field: string, value: string | number) => {
-    setSetupRules(setupRules.map(rule => 
-      rule.id === id ? { ...rule, [field]: value } : rule
-    ));
-  };
+  // update handled by react-hook-form registration
 
   const saveRule = async (rule: LosSetupRule) => {
     if (!property?.id) return;
@@ -152,11 +220,12 @@ export default function LosSetupRules() {
         };
 
         const response = await dynamicPricingService.createLosSetupRule(property.id, createData);
-        
-        // Update the rule in state with the new ID from the response
-        setSetupRules(setupRules.map(r => 
-          r.id === rule.id ? { ...response.setup } : r
-        ));
+        // Update the form value with the new ID
+        const currentValues = getValues().rules;
+        const idx = currentValues.findIndex((r) => r.id === rule.id);
+        if (idx !== -1) {
+          update(idx, { ...response.setup } as any);
+        }
       } else {
         // This is an existing rule - update it
         const updateData: UpdateLosSetupRuleRequest = {
@@ -172,7 +241,6 @@ export default function LosSetupRules() {
       }
     } catch (error: any) {
       console.error("Error saving rule:", error);
-      
       // Extract detailed error message from backend response
       let errorMessage = "Failed to save rule. Please try again.";
       
@@ -184,10 +252,11 @@ export default function LosSetupRules() {
             // Format validation errors
             const errorMessages = [];
             for (const [field, messages] of Object.entries(errorData.errors)) {
-              if (Array.isArray(messages)) {
-                errorMessages.push(`${field}: ${messages.join(', ')}`);
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              if (field === 'non_field_errors') {
+                errorMessages.push(`${messageText}`);
               } else {
-                errorMessages.push(`${field}: ${messages}`);
+                errorMessages.push(`${field}: ${messageText}`);
               }
             }
             errorMessage = errorMessages.join('; ');
@@ -205,10 +274,11 @@ export default function LosSetupRules() {
             // Format validation errors
             const errorMessages = [];
             for (const [field, messages] of Object.entries(errorData.errors)) {
-              if (Array.isArray(messages)) {
-                errorMessages.push(`${field}: ${messages.join(', ')}`);
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              if (field === 'non_field_errors') {
+                errorMessages.push(`${messageText}`);
               } else {
-                errorMessages.push(`${field}: ${messages}`);
+                errorMessages.push(`${field}: ${messageText}`);
               }
             }
             errorMessage = errorMessages.join('; ');
@@ -223,31 +293,45 @@ export default function LosSetupRules() {
         errorMessage = error.response.data.message;
       }
       
-      setErrorMessage(errorMessage);
+      // Throw so the aggregate saver can control the banner
+      throw new Error(errorMessage);
     }
   };
 
-  const handleSaveAll = async () => {
+  const onSubmit = async (values: FormValues) => {
     if (!property?.id) {
-      setErrorMessage("No property selected");
+      toast({
+        title: "Error",
+        description: "No property selected",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSaving(true);
-    setSaveMessage("");
-    setErrorMessage("");
 
     try {
-      // Save all rules that need saving
-      const savePromises = setupRules.map(rule => saveRule(rule));
-      await Promise.all(savePromises);
-      
-      setSaveMessage("All LOS setup rules saved successfully!");
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSaveMessage("");
-      }, 3000);
+      // Save all rules and evaluate outcomes
+      const results = await Promise.allSettled(values.rules.map(rule => saveRule(rule as any)));
+
+      const rejected = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
+      if (rejected.length > 0) {
+        const messages = Array.from(new Set(rejected.map(r => {
+          const reason: any = r.reason;
+          return typeof reason === 'string' ? reason : reason?.message || 'Failed to save one or more LOS setup rules. Please fix errors and try again.';
+        })));
+        toast({
+          title: "Error",
+          description: messages.join('; '),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "All LOS setup rules saved successfully!",
+      });
       
     } catch (error: any) {
       console.error("Error saving LOS setup rules:", error);
@@ -263,10 +347,11 @@ export default function LosSetupRules() {
             // Format validation errors
             const errorMessages = [];
             for (const [field, messages] of Object.entries(errorData.errors)) {
-              if (Array.isArray(messages)) {
-                errorMessages.push(`${field}: ${messages.join(', ')}`);
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              if (field === 'non_field_errors') {
+                errorMessages.push(`${messageText}`);
               } else {
-                errorMessages.push(`${field}: ${messages}`);
+                errorMessages.push(`${field}: ${messageText}`);
               }
             }
             errorMessage = errorMessages.join('; ');
@@ -284,10 +369,11 @@ export default function LosSetupRules() {
             // Format validation errors
             const errorMessages = [];
             for (const [field, messages] of Object.entries(errorData.errors)) {
-              if (Array.isArray(messages)) {
-                errorMessages.push(`${field}: ${messages.join(', ')}`);
+              const messageText = Array.isArray(messages) ? messages.join(', ') : messages;
+              if (field === 'non_field_errors') {
+                errorMessages.push(`${messageText}`);
               } else {
-                errorMessages.push(`${field}: ${messages}`);
+                errorMessages.push(`${field}: ${messageText}`);
               }
             }
             errorMessage = errorMessages.join('; ');
@@ -302,7 +388,11 @@ export default function LosSetupRules() {
         errorMessage = error.response.data.message;
       }
       
-      setErrorMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -324,6 +414,7 @@ export default function LosSetupRules() {
     <div className="min-h-screen bg-white">
       <div className="px-6 py-8">
         <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+          <FormProvider {...form}>
           {/* Section Header */}
           <div className="flex items-center gap-3 mb-8">
             <Calendar size={34} className="text-[#287CAC]" />
@@ -342,43 +433,20 @@ export default function LosSetupRules() {
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-medium">Loading LOS setup rules...</span>
+                <span className="text-blue-800 font-normal">Loading LOS setup rules...</span>
               </div>
             </div>
           )}
 
-          {/* Success Message */}
-          {saveMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <span className="text-white text-xs">✓</span>
-                </div>
-                <span className="text-green-800 font-medium">{saveMessage}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <span className="text-white text-xs">✕</span>
-                </div>
-                <span className="text-red-800 font-medium">{errorMessage}</span>
-              </div>
-            </div>
-          )}
 
 
           {/* Setup Rules Table */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-black">Setup Rules</h3>
-              {setupRules.length > 0 && (
+              {fields.length > 0 && (
                 <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                  {setupRules.length} rule{setupRules.length !== 1 ? 's' : ''}
+                  {fields.length} rule{fields.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
@@ -407,30 +475,33 @@ export default function LosSetupRules() {
               </div>
 
               {/* Table Rows */}
-              {setupRules.map((rule, index) => (
+              {fields.map((rule, index) => (
                 <div key={rule.id || index} className="grid grid-cols-5 gap-0">
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
                       type="date"
-                      value={rule.valid_from}
-                      onChange={(e) => updateSetupRule(rule.id, 'valid_from', e.target.value)}
+                      {...form.register(`rules.${index}.valid_from` as const)}
                       disabled={isLoading || isSaving}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
+                    {formState.errors?.rules?.[index]?.valid_from?.message && (
+                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
+                    )}
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
                       type="date"
-                      value={rule.valid_until}
-                      onChange={(e) => updateSetupRule(rule.id, 'valid_until', e.target.value)}
+                      {...form.register(`rules.${index}.valid_until` as const)}
                       disabled={isLoading || isSaving}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
+                    {formState.errors?.rules?.[index]?.valid_until?.message && (
+                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
+                    )}
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <select
-                      value={rule.day_of_week}
-                      onChange={(e) => updateSetupRule(rule.id, 'day_of_week', e.target.value)}
+                      {...form.register(`rules.${index}.day_of_week` as const)}
                       disabled={isLoading || isSaving}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -440,20 +511,25 @@ export default function LosSetupRules() {
                         </option>
                       ))}
                     </select>
+                    {formState.errors?.rules?.[index]?.day_of_week?.message && (
+                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
+                    )}
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <input
                       type="number"
-                      value={rule.los_value}
-                      onChange={(e) => updateSetupRule(rule.id, 'los_value', parseInt(e.target.value))}
+                      {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
                       disabled={isLoading || isSaving}
                       className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       min="1"
                     />
+                    {formState.errors?.rules?.[index]?.los_value?.message && (
+                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.los_value?.message)}</div>
+                    )}
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6] flex justify-center">
                     <button
-                      onClick={() => removeSetupRule(rule.id)}
+                      onClick={() => removeSetupRule(index)}
                       disabled={isLoading || isSaving}
                       className="text-red-500 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -475,9 +551,9 @@ export default function LosSetupRules() {
               </button>
               
               <button 
-                onClick={handleSaveAll}
-                disabled={isSaving || isLoading}
-                className="flex items-center gap-2 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleSubmit(onSubmit)}
+                disabled={isSaving || isLoading || !formState.isValid}
+                className="flex items-center gap-2 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -493,6 +569,7 @@ export default function LosSetupRules() {
               </button>
             </div>
           </div>
+          </FormProvider>
         </div>
       </div>
     </div>

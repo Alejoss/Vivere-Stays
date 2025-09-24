@@ -1,4 +1,6 @@
 import { useState, useEffect, useContext } from "react";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Plus,
   Save,
@@ -10,6 +12,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { dynamicPricingService, SpecialOffer, CreateSpecialOfferRequest } from "../../../shared/api/dynamic";
+import { z } from "zod";
 import { toast } from "../../hooks/use-toast";
 import { PropertyContext } from "../../../shared/PropertyContext";
 
@@ -25,13 +28,63 @@ interface OfferFormData {
   isNew?: boolean;
 }
 
+// Zod schema for standardized validation (aligns with LOS approach)
+const OfferSchema = z.object({
+  id: z.number().optional(),
+  offer_name: z.string().trim().min(1, 'Offer name is required'),
+  valid_from: z.string().min(1, 'Valid from date is required'),
+  valid_until: z.string().min(1, 'Valid until date is required'),
+  applied_from_days: z.union([z.coerce.number().int().min(0), z.null()]),
+  applied_until_days: z.union([z.coerce.number().int().min(0), z.null()]),
+  increment_type: z.enum(['Percentage', 'Additional']),
+  increment_value: z.coerce.number().min(0, 'Value must be ≥ 0'),
+}).superRefine((val, ctx) => {
+  // valid_from must be strictly before valid_until
+  const from = new Date(val.valid_from);
+  const until = new Date(val.valid_until);
+  if (!isNaN(from.getTime()) && !isNaN(until.getTime())) {
+    if (from >= until) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'valid_from must be before valid_until',
+        path: ['valid_until'],
+      });
+    }
+  }
+
+  // Available From should be greater than Available Until (when both set)
+  if (
+    typeof val.applied_from_days === 'number' &&
+    typeof val.applied_until_days === 'number'
+  ) {
+    if (!(val.applied_from_days > val.applied_until_days)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Available From days must be greater than Available Until days',
+        path: ['applied_from_days'],
+      });
+    }
+  }
+});
+
+const OffersSchema = z.object({ offers: z.array(OfferSchema) });
+
+type OffersForm = z.infer<typeof OffersSchema>;
+
 export default function SpecialOffers() {
   const { property } = useContext(PropertyContext) ?? {};
-  const [offers, setOffers] = useState<OfferFormData[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  const form = useForm<OffersForm>({
+    resolver: zodResolver(OffersSchema),
+    defaultValues: { offers: [] },
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+    criteriaMode: 'firstError',
+  });
+  const { control, formState, handleSubmit, reset, register, getValues, setFocus } = form;
+  const { fields, append, remove, update } = useFieldArray({ control, name: 'offers' });
 
   // Load existing offers on component mount
   useEffect(() => {
@@ -44,23 +97,22 @@ export default function SpecialOffers() {
     if (!property?.id) return;
     
     setLoading(true);
-    setError(null);
     try {
       const response = await dynamicPricingService.getSpecialOffers(property.id);
-      setOffers(response.offers.map(offer => ({
-        id: offer.id,
-        offer_name: offer.offer_name,
-        valid_from: offer.valid_from,
-        valid_until: offer.valid_until,
-        applied_from_days: offer.applied_from_days,
-        applied_until_days: offer.applied_until_days,
-        increment_type: offer.increment_type,
-        increment_value: offer.increment_value,
-        isNew: false
-      })));
+      reset({
+        offers: (response.offers || []).map((offer: any) => ({
+          id: offer.id,
+          offer_name: offer.offer_name || '',
+          valid_from: offer.valid_from || '',
+          valid_until: offer.valid_until || '',
+          applied_from_days: offer.applied_from_days ?? null,
+          applied_until_days: offer.applied_until_days ?? null,
+          increment_type: offer.increment_type || 'Percentage',
+          increment_value: offer.increment_value ?? 0,
+        })),
+      });
     } catch (err: any) {
       const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load offers';
-      setError(backendMsg);
       toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -69,27 +121,24 @@ export default function SpecialOffers() {
 
   // Helper functions
   const addNewOffer = () => {
-    const newOffer: OfferFormData = {
-      offer_name: "",
-      valid_from: "",
-      valid_until: "",
+    append({
+      offer_name: '',
+      valid_from: '',
+      valid_until: '',
       applied_from_days: null,
       applied_until_days: null,
       increment_type: 'Percentage',
       increment_value: 0,
-      isNew: true
-    };
-    setOffers([...offers, newOffer]);
+    } as any);
   };
 
   const updateOffer = (index: number, field: keyof OfferFormData, value: any) => {
-    const updatedOffers = [...offers];
-    updatedOffers[index] = { ...updatedOffers[index], [field]: value };
-    setOffers(updatedOffers);
+    const current = getValues().offers?.[index] || fields[index];
+    update(index, { ...current, [field]: value } as any);
   };
 
   const removeOffer = async (index: number) => {
-    const offer = offers[index];
+    const offer = getValues().offers?.[index] || (fields[index] as any);
     
     // If it's an existing offer, delete it from the server
     if (offer.id && !offer.isNew) {
@@ -97,53 +146,29 @@ export default function SpecialOffers() {
       
       try {
         await dynamicPricingService.deleteSpecialOffer(property.id, offer.id);
-        setSuccess('Offer deleted successfully');
+        toast({
+          title: "Success",
+          description: "Offer deleted successfully",
+        });
       } catch (err: any) {
         const backendMsg = err?.response?.data?.message || err?.message || 'Failed to delete offer';
-        setError(backendMsg);
         toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
         return;
       }
     }
     
-    // Remove from local state
-    const updatedOffers = offers.filter((_, i) => i !== index);
-    setOffers(updatedOffers);
+    remove(index);
   };
 
-  const saveOffers = async () => {
+  const onSubmit = async (values: OffersForm) => {
     if (!property?.id) return;
     
     setSaving(true);
-    setError(null);
-    setSuccess(null);
-    
-    // Client-side validation for required fields only
-    const validationErrors = [];
-    for (let i = 0; i < offers.length; i++) {
-      const offer = offers[i];
-      
-      // Check required fields
-      if (!offer.offer_name?.trim()) {
-        validationErrors.push(`Offer in row ${i + 1}: Offer name is required`);
-      }
-      if (!offer.valid_from) {
-        validationErrors.push(`Offer "${offer.offer_name || 'Unnamed'}" (row ${i + 1}): Valid from date is required`);
-      }
-      if (!offer.valid_until) {
-        validationErrors.push(`Offer "${offer.offer_name || 'Unnamed'}" (row ${i + 1}): Valid until date is required`);
-      }
-    }
-    
-    if (validationErrors.length > 0) {
-      setError(validationErrors.join('; '));
-      setSaving(false);
-      return;
-    }
     
     try {
-      const newOffers = offers.filter(offer => offer.isNew);
-      const existingOffers = offers.filter(offer => !offer.isNew);
+      const allOffers = values.offers || [];
+      const newOffers = allOffers.filter(offer => !offer.id);
+      const existingOffers = allOffers.filter(offer => !!offer.id);
       
       // Update existing offers
       for (const offer of existingOffers) {
@@ -197,7 +222,10 @@ export default function SpecialOffers() {
         }
       }
       
-      setSuccess('Offers saved successfully');
+      toast({
+        title: "Success",
+        description: "Offers saved successfully",
+      });
       loadOffers(); // Reload to get updated data
     } catch (err: any) {
       console.error('🔧 FRONTEND DEBUG: Error saving offers:', err);
@@ -229,7 +257,6 @@ export default function SpecialOffers() {
         errorMessage = err.message;
       }
       
-      setError(errorMessage);
       toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
     } finally {
       setSaving(false);
@@ -322,17 +349,6 @@ export default function SpecialOffers() {
             </div>
           </div>
 
-          {/* Error/Success Messages */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-          {success && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-600 text-sm">{success}</p>
-            </div>
-          )}
 
           {/* Offers Table */}
           <div className="mb-8">
@@ -364,89 +380,108 @@ export default function SpecialOffers() {
                 <div className="text-center py-8">
                   <p className="text-gray-500">Loading offers...</p>
                 </div>
-              ) : offers.length === 0 ? (
+              ) : fields.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No offers found. Click "Add Offer" to create your first special offer.</p>
                 </div>
               ) : (
-                offers.map((offer, index) => (
+                fields.map((offer, index) => (
                   <div
                     key={offer.id || `new-${index}`}
                     className={`grid grid-cols-8 gap-4 items-center p-3 rounded-lg ${
-                      offer.isNew ? 'bg-blue-50 border border-blue-200' : 'bg-white'
+                      offer.id ? 'bg-white' : 'bg-blue-50 border border-blue-200'
                     }`}
                   >
                     {/* Offer Name */}
                     <div>
                       <input
                         type="text"
-                        value={offer.offer_name}
-                        onChange={(e) => updateOffer(index, 'offer_name', e.target.value)}
+                        {...register(`offers.${index}.offer_name` as const)}
                         placeholder="Discount Name"
                         className="w-full px-3 py-2 text-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
+                      {formState.errors?.offers?.[index]?.offer_name?.message ? (
+                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
+                      ) : null}
                     </div>
 
                     {/* Valid From */}
                     <div>
-                      <DateInput
-                        value={offer.valid_from}
-                        onChange={(value) => updateOffer(index, 'valid_from', value)}
+                      <input
+                        type="date"
+                        {...register(`offers.${index}.valid_from` as const)}
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
                         placeholder="Select start date"
                       />
+                      {formState.errors?.offers?.[index]?.valid_from?.message ? (
+                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
+                      ) : null}
                     </div>
 
                     {/* Valid Until */}
                     <div>
-                      <DateInput
-                        value={offer.valid_until}
-                        onChange={(value) => updateOffer(index, 'valid_until', value)}
+                      <input
+                        type="date"
+                        {...register(`offers.${index}.valid_until` as const)}
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
                         placeholder="Select end date"
                       />
+                      {formState.errors?.offers?.[index]?.valid_until?.message ? (
+                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
+                      ) : null}
                     </div>
 
                     {/* Available From Days */}
                     <div>
                       <input
                         type="number"
-                        value={offer.applied_from_days || ''}
-                        onChange={(e) => updateOffer(index, 'applied_from_days', e.target.value ? parseInt(e.target.value) : null)}
+                        {...register(`offers.${index}.applied_from_days` as const)}
                         placeholder="0"
                         min="0"
                         className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
+                      {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
+                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
+                      ) : null}
                     </div>
 
                     {/* Available Until Days */}
                     <div>
                       <input
                         type="number"
-                        value={offer.applied_until_days || ''}
-                        onChange={(e) => updateOffer(index, 'applied_until_days', e.target.value ? parseInt(e.target.value) : null)}
+                        {...register(`offers.${index}.applied_until_days` as const)}
                         placeholder="0"
                         min="0"
                         className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
+                      {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
+                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
+                      ) : null}
                     </div>
 
                     {/* Type */}
                     <div>
-                      <TypeSelector
-                        value={offer.increment_type}
-                        onChange={(value) => updateOffer(index, 'increment_type', value)}
-                      />
+                      <select
+                        {...register(`offers.${index}.increment_type` as const)}
+                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black appearance-none"
+                      >
+                        <option value="Percentage">Percentage</option>
+                        <option value="Additional">Additional</option>
+                      </select>
                     </div>
 
                     {/* Value */}
                     <div>
                       <input
                         type="number"
-                        value={offer.increment_value}
-                        onChange={(e) => updateOffer(index, 'increment_value', parseInt(e.target.value) || 0)}
+                        {...register(`offers.${index}.increment_value` as const)}
                         placeholder="0"
                         min="0"
                         className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
+                      {formState.errors?.offers?.[index]?.increment_value?.message ? (
+                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
+                      ) : null}
                     </div>
 
                     {/* Actions */}
@@ -475,9 +510,26 @@ export default function SpecialOffers() {
               Add Offer
             </button>
             <button 
-              onClick={saveOffers}
-              disabled={saving || offers.length === 0}
-              className="flex items-center gap-4 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSubmit(onSubmit, () => {
+                // Show a concise banner and focus first error
+                toast({
+                  title: 'Validation Error',
+                  description: 'Please fix the highlighted errors and try again.',
+                  variant: 'destructive',
+                });
+                // Try to focus the first invalid field
+                const offersErrors = formState.errors?.offers as any[] | undefined;
+                if (offersErrors && offersErrors.length > 0) {
+                  const firstIdx = offersErrors.findIndex(Boolean);
+                  if (firstIdx >= 0) {
+                    const errObj = offersErrors[firstIdx] || {};
+                    const firstField = Object.keys(errObj)[0];
+                    if (firstField) setFocus(`offers.${firstIdx}.${firstField}` as any);
+                  }
+                }
+              })}
+              disabled={saving || fields.length === 0}
+              className="flex items-center gap-4 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={24} />
               {saving ? 'Saving...' : 'Save Special Offers'}
@@ -485,15 +537,15 @@ export default function SpecialOffers() {
           </div>
 
           {/* Created Offers Summary */}
-          {offers.length > 0 && (
+          {fields.length > 0 && (
             <div className="bg-[#F9FAFB] border border-[#EBEDF0] rounded-lg p-4 mb-8">
               <h3 className="text-base font-bold text-gray-900 mb-4">
                 Created Offers Summary
               </h3>
               <div className="space-y-2 text-sm">
-                {offers.filter(offer => !offer.isNew).map((offer, index) => (
+                {fields.filter((offer: any) => offer.id).map((offer: any, index) => (
                   <p key={offer.id || index}>
-                    <span className="text-gray-900 font-medium">{offer.offer_name || 'Unnamed Offer'}</span>
+                    <span className="text-gray-900 font-semibold">{offer.offer_name || 'Unnamed Offer'}</span>
                     <span className="text-gray-500"> — valid from</span>
                     <span className="text-gray-900"> {offer.valid_from} to {offer.valid_until}</span>
                     {offer.applied_from_days !== null && offer.applied_until_days !== null && (
@@ -501,9 +553,9 @@ export default function SpecialOffers() {
                     )}
                   </p>
                 ))}
-                {offers.filter(offer => offer.isNew).length > 0 && (
-                  <p className="text-blue-600 font-medium">
-                    {offers.filter(offer => offer.isNew).length} new offer(s) pending save
+                {fields.filter((offer: any) => !offer.id).length > 0 && (
+                  <p className="text-blue-600 font-semibold">
+                    {fields.filter((offer: any) => !offer.id).length} new offer(s) pending save
                   </p>
                 )}
               </div>

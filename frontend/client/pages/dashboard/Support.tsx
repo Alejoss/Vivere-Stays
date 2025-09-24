@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { FileText, ChevronDown, Lightbulb, Check } from "lucide-react";
+import { FileText, ChevronDown, Lightbulb, Check, Upload } from "lucide-react";
+import { toast } from "../../hooks/use-toast";
+import { profilesService, SupportTicketCreateRequest } from "../../../shared/api/profiles";
 
 export default function Support() {
   const [selectedIssue, setSelectedIssue] = useState("General Question");
   const [description, setDescription] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const issueTypes = [
     "General Question",
@@ -15,18 +18,91 @@ export default function Support() {
     "Bug Report",
   ];
 
+  const issueTypeMapping: { [key: string]: string } = {
+    "General Question": "general_question",
+    "Technical Issue": "technical_issue",
+    "Billing Question": "billing_question",
+    "Feature Request": "feature_request",
+    "Bug Report": "bug_report",
+  };
+
   const tips = [
     "Be specific about the issue you're experiencing",
     "Include error messages or screenshots if possible",
     "Mention steps you've already tried",
-    "Select the appropriate priority level",
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Support ticket submitted:", { selectedIssue, description });
-    setShowSuccess(true);
+    
+    if (!description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a description of your issue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const supportData: SupportTicketCreateRequest = {
+        issue_type: issueTypeMapping[selectedIssue] as any,
+        description: description.trim(),
+        priority: "medium", // Default priority
+        screenshot: screenshot || undefined,
+      };
+
+      const response = await profilesService.createSupportTicket(supportData);
+      
+      toast({
+        title: "Success",
+        description: "Support ticket submitted successfully! Our team will get back to you soon.",
+      });
+      
+      // Reset form
+      setSelectedIssue("General Question");
+      setDescription("");
+      setScreenshot(null);
+      
+    } catch (error: any) {
+      console.error("Error submitting support ticket:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to submit support ticket. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File",
+          description: "Please select an image file for the screenshot.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Screenshot must be smaller than 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setScreenshot(file);
+    }
   };
 
 
@@ -36,10 +112,10 @@ export default function Support() {
 
       {/* Header */}
       <div className="px-6 mb-8">
-        <h1 className="text-[28px] font-bold text-[#294758] mb-2">
+        <h1 className="text-3xl font-bold text-[#294758] mb-2">
           Support Center
         </h1>
-        <p className="text-[16px] text-[#4B5563]">
+        <p className="text-base text-[#4B5563]">
           Need help? Create a support ticket and our team will get back to you
           as soon as possible.
         </p>
@@ -53,14 +129,14 @@ export default function Support() {
           <div className="bg-[#294859] text-white px-8 py-4 rounded-t-md mb-6">
             <div className="flex items-center gap-2">
               <FileText size={20} />
-              <h2 className="text-[20px] font-bold">Create Support Ticket</h2>
+              <h2 className="text-xl font-bold">Create Support Ticket</h2>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Issue Type Dropdown */}
             <div>
-              <label className="block text-[14px] font-normal text-black mb-4">
+              <label className="block text-sm font-normal text-black mb-4">
                 What can we help you with?
               </label>
               <div className="relative">
@@ -85,7 +161,7 @@ export default function Support() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <span className="text-[14px] text-[#1E1E1E]">
+                    <span className="text-sm text-[#1E1E1E]">
                       {selectedIssue}
                     </span>
                   </div>
@@ -107,7 +183,7 @@ export default function Support() {
                           setSelectedIssue(type);
                           setIsDropdownOpen(false);
                         }}
-                        className="w-full px-4 py-3 text-left text-[14px] text-[#1E1E1E] hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                        className="w-full px-4 py-3 text-left text-sm text-[#1E1E1E] hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
                       >
                         {type}
                       </button>
@@ -119,28 +195,61 @@ export default function Support() {
 
             {/* Description */}
             <div>
-              <label className="block text-[14px] font-normal text-black mb-4">
+              <label className="block text-sm font-normal text-black mb-4">
                 Detailed Description *
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Please provide as much detail as possible about your issue. Include steps to reproduce, error messages, and any relevant information that might help us assist you better."
-                className="w-full px-4 py-3 border border-[#D7DAE0] rounded-md bg-white text-[14px] text-[#71717A] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-[#D7DAE0] rounded-md bg-white text-sm text-[#71717A] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent resize-none"
                 rows={6}
-                maxLength={1000}
+                maxLength={500}
               />
               <div className="mt-2 text-[12px] text-[#71717A]">
-                {description.length}/1000 characters
+                {description.length}/500 characters
+              </div>
+            </div>
+
+            {/* Screenshot Upload */}
+            <div>
+              <label className="block text-sm font-normal text-black mb-4">
+                Screenshot (Optional)
+              </label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleScreenshotChange}
+                  className="hidden"
+                  id="screenshot-upload"
+                />
+                <label
+                  htmlFor="screenshot-upload"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-[#D7DAE0] rounded-md bg-white text-sm text-[#71717A] hover:bg-gray-50 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent"
+                >
+                  <Upload size={16} />
+                  {screenshot ? screenshot.name : "Upload Screenshot"}
+                </label>
+              </div>
+              {screenshot && (
+                <div className="mt-2 text-[12px] text-[#16B257] flex items-center gap-1">
+                  <Check size={12} />
+                  Screenshot selected: {screenshot.name}
+                </div>
+              )}
+              <div className="mt-1 text-[12px] text-[#71717A]">
+                Supported formats: JPG, PNG, GIF (max 5MB)
               </div>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-[#294859] text-white text-[16px] font-medium py-3 px-6 rounded-md hover:bg-[#1f3642] transition-colors focus:outline-none focus:ring-2 focus:ring-[#294859] focus:ring-offset-2"
+              disabled={isSubmitting}
+              className="w-full bg-[#294859] text-white text-base font-semibold py-3 px-6 rounded-md hover:bg-[#1f3642] transition-colors focus:outline-none focus:ring-2 focus:ring-[#294859] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Support Ticket
+              {isSubmitting ? "Creating Ticket..." : "Create Support Ticket"}
             </button>
           </form>
         </div>
@@ -152,7 +261,7 @@ export default function Support() {
             <div className="bg-gradient-to-r from-[#20C25E] to-[#069768] px-8 py-6">
               <div className="flex items-center gap-2 text-white">
                 <Lightbulb size={20} fill="white" />
-                <h3 className="text-[16px] font-bold">
+                <h3 className="text-base font-bold">
                   Tips for Better Support
                 </h3>
               </div>
@@ -175,51 +284,6 @@ export default function Support() {
         </div>
       </div>
 
-      {/* Success Modal */}
-      {showSuccess && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 p-8">
-            {/* Success Icon */}
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <Check size={32} className="text-green-600" />
-              </div>
-            </div>
-
-            {/* Success Message */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Ticket Created Successfully!
-              </h2>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Thank you for contacting us. Our support team has received your ticket and will respond soon.
-              </p>
-            </div>
-
-            {/* Ticket ID */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-1">
-                  Your ticket ID:
-                </div>
-                <div className="text-lg font-bold text-[#294758]">
-                  #VS-2025-001
-                </div>
-              </div>
-            </div>
-
-            {/* OK Button */}
-            <div className="flex justify-center">
-              <button
-                onClick={() => setShowSuccess(false)}
-                className="px-8 py-3 bg-[#294758] text-white text-sm font-medium rounded-md hover:bg-[#1f3642] transition-colors focus:outline-none focus:ring-2 focus:ring-[#294758] focus:ring-offset-2"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

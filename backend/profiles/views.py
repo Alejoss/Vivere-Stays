@@ -30,8 +30,8 @@ from datetime import datetime
 import jwt
 import json
 
-from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer
-from profiles.models import Profile, PMSIntegrationRequirement, Payment
+from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer, SupportTicketSerializer
+from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -1428,4 +1428,69 @@ class ChangePasswordView(APIView):
             logger.error(f"Error changing password for user {request.user.username}: {str(e)}", exc_info=True)
             return Response({
                 'error': 'Failed to change password'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SupportTicketView(APIView):
+    """
+    API view for creating and retrieving support tickets
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    
+    def post(self, request):
+        """
+        Create a new support ticket
+        """
+        try:
+            # Add user to the data
+            data = request.data.copy()
+            data['user'] = request.user.id
+            
+            # Generate title from issue type if not provided
+            if not data.get('title'):
+                issue_type = data.get('issue_type', 'general_question')
+                issue_type_display = dict(SupportTicket.ISSUE_TYPES).get(issue_type, 'General Question')
+                data['title'] = f"{issue_type_display} - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            
+            serializer = SupportTicketSerializer(data=data)
+            
+            if serializer.is_valid():
+                support_ticket = serializer.save()
+                
+                logger.info(f"Support ticket created: {support_ticket.id} by user {request.user.username}")
+                
+                return Response({
+                    'message': 'Support ticket created successfully',
+                    'ticket': SupportTicketSerializer(support_ticket).data
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    'error': 'Invalid data provided',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating support ticket for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to create support ticket'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def get(self, request):
+        """
+        Get support tickets for the authenticated user
+        """
+        try:
+            support_tickets = SupportTicket.objects.filter(user=request.user)
+            serializer = SupportTicketSerializer(support_tickets, many=True)
+            
+            return Response({
+                'tickets': serializer.data,
+                'count': support_tickets.count()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving support tickets for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to retrieve support tickets'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

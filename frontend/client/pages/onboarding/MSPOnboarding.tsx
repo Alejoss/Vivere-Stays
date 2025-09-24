@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { useDynamicMSPEntries } from "../../../shared/api/hooks";
-import { removeLocalStorageItem, HOTEL_INFO_KEY } from "../../../shared/localStorage";
+import { removeLocalStorageItem, HOTEL_INFO_KEY, setLocalStorageItem } from "../../../shared/localStorage";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
@@ -146,6 +146,17 @@ export default function MSP() {
       console.log("MSP periods saved successfully:", result);
       console.log(`Created: ${result.created_entries?.length || 0} entries`);
       
+      // Persist selected property for deterministic dashboard redirect
+      try {
+        setLocalStorageItem("selectedPropertyId", property.id);
+        if (property) {
+          setLocalStorageItem("property_data", property as any);
+        }
+        console.log('[MSPOnboarding] Persisted selectedPropertyId and property_data to localStorage');
+      } catch (storageErr) {
+        console.warn('[MSPOnboarding] Failed to persist property selection:', storageErr);
+      }
+
       // Clear hotel information from localStorage after successful MSP save
       removeLocalStorageItem(HOTEL_INFO_KEY);
       console.log("Hotel information cleared from localStorage");

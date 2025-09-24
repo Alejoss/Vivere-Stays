@@ -6,7 +6,8 @@ import { profilesService } from "../../../shared/api/profiles";
 import { queryKeys } from "../../../shared/api/hooks";
 import { loadStripe } from "@stripe/stripe-js";
 import { paymentService } from "@shared/api/payments";
-import { getLocalStorageItem } from "../../../shared/localStorage";
+import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
 
@@ -28,6 +29,10 @@ export default function SelectPlan() {
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("scale");
   const [numberOfRooms, setNumberOfRooms] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [tempRoomCount, setTempRoomCount] = useState<number>(1);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [pmsSelectionType, setPmsSelectionType] = useState<string | null>(null);
 
   // Pricing calculation function
   const calculatePrice = (pricePerRoom: number, rooms: number): number => {
@@ -44,6 +49,18 @@ export default function SelectPlan() {
         if (hotelInfo.numberOfRooms) {
           setNumberOfRooms(parseInt(hotelInfo.numberOfRooms) || 1);
         }
+      }
+      
+      // Get property ID from localStorage
+      const propertyId = getLocalStorageItem<string>('selectedPropertyId');
+      if (propertyId) {
+        setSelectedPropertyId(propertyId);
+      }
+
+      // Get PMS selection type from localStorage
+      const pmsType = getLocalStorageItem<string>('pmsSelectionType');
+      if (pmsType) {
+        setPmsSelectionType(pmsType);
       }
     } catch (error) {
       console.error('Error loading hotel data:', error);
@@ -107,6 +124,16 @@ export default function SelectPlan() {
     },
   });
 
+  // Update property mutation
+  const updatePropertyMutation = useMutation({
+    mutationFn: ({ propertyId, data }: { propertyId: string; data: any }) => 
+      dynamicPricingService.updateProperty(propertyId, data),
+    onSuccess: () => {
+      // Invalidate property data
+      queryClient.invalidateQueries({ queryKey: ['dynamic-pricing', 'property'] });
+    },
+  });
+
   // const handleContinue = async () => {
   //   setIsLoading(true);
     
@@ -129,7 +156,14 @@ export default function SelectPlan() {
     try {
       await updateProfileMutation.mutateAsync(selectedPlan);
 
-    
+      // Check if user selected "Other" or "I don't have PMS"
+      if (pmsSelectionType === "custom_or_none") {
+        // Navigate to Contact Sales instead of payment
+        navigate("/contact-sales");
+        return;
+      }
+
+      // Standard flow for users with standard PMS
       await updateOnboardingMutation.mutateAsync("payment");
       const stripe = await stripePromise;
   
@@ -158,6 +192,44 @@ export default function SelectPlan() {
   
   const handleSelectPlan = (planId: PlanType) => {
     setSelectedPlan(planId);
+  };
+
+  const handleOpenRoomModal = () => {
+    setTempRoomCount(numberOfRooms);
+    setShowRoomModal(true);
+  };
+
+  const handleCloseRoomModal = () => {
+    setShowRoomModal(false);
+    setTempRoomCount(numberOfRooms);
+  };
+
+  const handleSaveRoomCount = async () => {
+    if (!selectedPropertyId) {
+      console.error('No property ID available');
+      return;
+    }
+
+    try {
+      await updatePropertyMutation.mutateAsync({
+        propertyId: selectedPropertyId,
+        data: { number_of_rooms: tempRoomCount }
+      });
+
+      // Update local state
+      setNumberOfRooms(tempRoomCount);
+      
+      // Update localStorage
+      const hotelInfo = getLocalStorageItem<any>('hotelInformationData');
+      if (hotelInfo) {
+        hotelInfo.numberOfRooms = tempRoomCount.toString();
+        setLocalStorageItem('hotelInformationData', hotelInfo);
+      }
+
+      setShowRoomModal(false);
+    } catch (error) {
+      console.error('Error updating room count:', error);
+    }
   };
 
   return (
@@ -416,25 +488,58 @@ export default function SelectPlan() {
             Choose your plan and complete your registration
           </p>
           <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4">
-            <p className="text-[14px] text-[#64748B]">
-              Pricing calculated for {numberOfRooms} {numberOfRooms === 1 ? 'room' : 'rooms'}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[14px] text-[#64748B]">
+                Pricing calculated for {numberOfRooms} {numberOfRooms === 1 ? 'room' : 'rooms'}
+              </p>
+              <button
+                onClick={handleOpenRoomModal}
+                className="text-[14px] text-[#294758] font-medium hover:text-[#1e3340] underline"
+              >
+                Change
+              </button>
+            </div>
           </div>
         </div>
 
 
+
+        {/* Information for custom/no PMS users */}
+        {pmsSelectionType === "custom_or_none" && (
+          <div className="bg-[#FFF9F1] border border-[#C2410C] rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 11.25C10.3452 11.25 10.625 10.9702 10.625 10.625V6.25C10.625 5.90482 10.3452 5.625 10 5.625C9.65482 5.625 9.375 5.90482 9.375 6.25V10.625C9.375 10.9702 9.65482 11.25 10 11.25ZM10 13.75C10.6904 13.75 11.25 13.1904 11.25 12.5C11.25 11.8096 10.6904 11.25 10 11.25C9.30964 11.25 8.75 11.8096 8.75 12.5C8.75 13.1904 9.30964 13.75 10 13.75ZM10 18.75C14.1421 18.75 17.5 15.3921 17.5 11.25C17.5 7.10786 14.1421 3.75 10 3.75C5.85786 3.75 2.5 7.10786 2.5 11.25C2.5 15.3921 5.85786 18.75 10 18.75ZM10 20C15.5228 20 20 15.5228 20 10C20 4.47715 15.5228 0 10 0C4.47715 0 0 4.47715 0 10C0 15.5228 4.47715 20 10 20Z"
+                  fill="#C2410C"
+                />
+              </svg>
+              <p className="text-[14px] text-[#C2410C] font-medium">
+                Our sales team will help you integrate Vivere Stays based on your specific PMS integration needs.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Plan Cards */}
         <div className="space-y-5 mb-5">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`flex items-center justify-between p-[21px] rounded-xl cursor-pointer transition-all ${
-                selectedPlan === plan.id
-                  ? "border-2 border-[#294859] bg-[#CEF4FC]"
-                  : "border border-[#9CAABD] bg-white hover:border-[#294859]"
+              className={`flex items-center justify-between p-[21px] rounded-xl transition-all ${
+                pmsSelectionType === "custom_or_none" 
+                  ? "border border-[#9CAABD] bg-white cursor-default"
+                  : selectedPlan === plan.id
+                    ? "border-2 border-[#294859] bg-[#CEF4FC] cursor-pointer"
+                    : "border border-[#9CAABD] bg-white hover:border-[#294859] cursor-pointer"
               }`}
-              onClick={() => handleSelectPlan(plan.id)}
+              onClick={() => pmsSelectionType !== "custom_or_none" && handleSelectPlan(plan.id)}
             >
               <div className="flex-1">
                 <h3 className="text-[18px] font-semibold text-black mb-[6px]">
@@ -445,9 +550,12 @@ export default function SelectPlan() {
                 </p>
                 <p className="text-[20px] font-bold text-black">{plan.price}</p>
               </div>
-              <button className="bg-[#2C4E60] text-white px-[17px] py-[11px] rounded-[9px] text-[14px] font-normal hover:bg-[#234149] transition-colors">
-                {plan.id === "pro" ? "Contact Sales" : "Select"}
-              </button>
+              {/* Only show selection buttons for standard PMS users */}
+              {pmsSelectionType !== "custom_or_none" && (
+                <button className="bg-[#2C4E60] text-white px-[17px] py-[11px] rounded-[9px] text-[14px] font-normal hover:bg-[#234149] transition-colors">
+                  {plan.id === "pro" ? "Contact Sales" : "Select"}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -492,7 +600,7 @@ export default function SelectPlan() {
                 </>
               ) : (
                 <>
-                  Continue to Payment
+                  {pmsSelectionType === "custom_or_none" ? "Contact Sales" : "Continue to Payment"}
                   <svg
                     width="21"
                     height="20"
@@ -522,6 +630,57 @@ export default function SelectPlan() {
           </button>
         </div>
       </div>
+
+      {/* Room Count Modal */}
+      {showRoomModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] p-8 w-full max-w-md mx-4">
+            <div className="text-center mb-6">
+              <h2 className="text-[24px] font-bold text-[#1E1E1E] mb-2">
+                Update Room Count
+              </h2>
+              <p className="text-[16px] text-[#485567]">
+                How many rooms does your property have?
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-[14px] text-[#485567] font-medium mb-2">
+                Number of Rooms
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                value={tempRoomCount}
+                onChange={(e) => setTempRoomCount(parseInt(e.target.value) || 1)}
+                className="w-full h-[50px] px-4 border border-[#D7DFE8] rounded-[8px] bg-white text-[16px] focus:outline-none focus:border-[#294859] transition-colors"
+                placeholder="Enter number of rooms"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCloseRoomModal}
+                className="flex-1 h-[50px] bg-white border border-[#D9D9D9] text-[#294758] text-[16px] font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveRoomCount}
+                disabled={updatePropertyMutation.isPending || tempRoomCount < 1}
+                className={`flex-1 h-[50px] rounded-[10px] text-[16px] font-bold transition-colors ${
+                  updatePropertyMutation.isPending || tempRoomCount < 1
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : "bg-[#294758] text-white hover:bg-[#234149]"
+                }`}
+              >
+                {updatePropertyMutation.isPending ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

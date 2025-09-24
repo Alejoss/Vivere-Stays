@@ -127,6 +127,43 @@ export interface PasswordChangeRequest {
   new_password: string;
 }
 
+export interface SupportTicketData {
+  id?: number;
+  user?: number;
+  user_email?: string;
+  user_username?: string;
+  issue_type: 'general_question' | 'technical_issue' | 'billing_question' | 'feature_request' | 'bug_report';
+  issue_type_display?: string;
+  title?: string;
+  description: string;
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
+  status_display?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  priority_display?: string;
+  screenshot?: File | string | null;
+  created_at?: string;
+  updated_at?: string;
+  resolved_at?: string | null;
+}
+
+export interface SupportTicketCreateRequest {
+  issue_type: 'general_question' | 'technical_issue' | 'billing_question' | 'feature_request' | 'bug_report';
+  title?: string;
+  description: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  screenshot?: File;
+}
+
+export interface SupportTicketResponse {
+  message: string;
+  ticket: SupportTicketData;
+}
+
+export interface SupportTicketsListResponse {
+  tickets: SupportTicketData[];
+  count: number;
+}
+
 export const profilesService = {
   async getProfile(): Promise<ProfileData> {
     return apiRequest<ProfileData>({
@@ -326,6 +363,41 @@ export const profilesService = {
       method: 'POST',
       url: '/profiles/change-password/',
       data,
+    });
+  },
+
+  async createSupportTicket(data: SupportTicketCreateRequest): Promise<SupportTicketResponse> {
+    const formData = new FormData();
+    
+    formData.append('issue_type', data.issue_type);
+    formData.append('description', data.description);
+    
+    if (data.title) {
+      formData.append('title', data.title);
+    }
+    
+    if (data.priority) {
+      formData.append('priority', data.priority);
+    }
+    
+    if (data.screenshot) {
+      formData.append('screenshot', data.screenshot);
+    }
+
+    return apiRequest<SupportTicketResponse>({
+      method: 'POST',
+      url: '/profiles/support-tickets/',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  async getSupportTickets(): Promise<SupportTicketsListResponse> {
+    return apiRequest<SupportTicketsListResponse>({
+      method: 'GET',
+      url: '/profiles/support-tickets/',
     });
   },
 }; 

@@ -29,7 +29,7 @@ export default function LengthOfStay() {
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('general')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`py-2 px-1 border-b-2 font-semibold text-sm ${
                   activeTab === 'general'
                     ? 'border-[#287CAC] text-[#287CAC]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -39,7 +39,7 @@ export default function LengthOfStay() {
               </button>
               <button
                 onClick={() => setActiveTab('setup')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`py-2 px-1 border-b-2 font-semibold text-sm ${
                   activeTab === 'setup'
                     ? 'border-[#287CAC] text-[#287CAC]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -49,7 +49,7 @@ export default function LengthOfStay() {
               </button>
               <button
                 onClick={() => setActiveTab('reduction')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`py-2 px-1 border-b-2 font-semibold text-sm ${
                   activeTab === 'reduction'
                     ? 'border-[#287CAC] text-[#287CAC]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

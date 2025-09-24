@@ -111,20 +111,21 @@ export default function PMSIntegration() {
       
       console.log("✅ PMSIntegration - PMS integration saved successfully");
       
+      // Store PMS selection type for later use in Select Plan
+      const pmsSelectionType = selectedPMS === "other" || selectedPMS === "none" ? "custom_or_none" : "standard";
+      setLocalStorageItem('pmsSelectionType', pmsSelectionType);
+      
+      // Store custom PMS name if user selected "other"
+      if (selectedPMS === "other" && customPMSName.trim()) {
+        setLocalStorageItem('customPmsName', customPMSName.trim());
+      }
+      
       // Don't clear localStorage - keep data for potential back navigation
       // localStorage.removeItem('hotelDataForPMS');
       // localStorage.removeItem('hotelInformationData');
       
-      // Navigate based on PMS selection
-      if (selectedPMS === "other" || selectedPMS === "none") {
-        // For custom PMS or no PMS, show information page first
-        // Pass the custom PMS name if "other" was selected
-        const pmsInfo = selectedPMS === "other" ? { customPMSName } : null;
-        navigate("/pms-information", { state: { pmsInfo } });
-      } else {
-        // For standard PMS selections, go directly to plans
-        navigate("/select-plan");
-      }
+      // Navigate directly to select plan for all PMS selections
+      navigate("/select-plan");
     } catch (err: any) {
       console.error("❌ PMSIntegration - Error during property creation or PMS integration:", err);
       console.error("❌ PMSIntegration - Error details:", {
@@ -441,10 +442,7 @@ export default function PMSIntegration() {
                 </>
               ) : (
                 <>
-                  {selectedPMS === "other" || selectedPMS === "none" 
-                    ? "Continue" 
-                    : "Continue to Plans"
-                  }
+                  Continue to Plans
                   <svg
                     width="20"
                     height="20"

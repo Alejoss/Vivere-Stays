@@ -1185,8 +1185,11 @@ def competitor_prices_weekly_chart(request, property_id):
         return Response({'error': 'Invalid start_date format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
     # Build week dates (Monday to Sunday)
     week_dates = [start_date + timedelta(days=i) for i in range(7)]
-    # Get competitors for the property
-    competitor_links = DpPropertyCompetitor.objects.filter(property_id=property_id)
+    # Get competitors for the property (excluding deleted ones)
+    competitor_links = DpPropertyCompetitor.objects.filter(
+        property_id=property_id,
+        deleted_at__isnull=True
+    )
     competitor_ids = list(competitor_links.values_list('competitor_id', flat=True))
     competitors = Competitor.objects.filter(id__in=competitor_ids)
     # Get lowest prices for these competitors and dates
@@ -1247,8 +1250,11 @@ def competitor_prices_for_date(request, property_id):
     except ValueError:
         print(f"[DEBUG] Invalid date format: {date_str}")
         return Response({'error': 'Invalid date format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
-    # Get competitors for the property
-    competitor_links = DpPropertyCompetitor.objects.filter(property_id=property_id)
+    # Get competitors for the property (excluding deleted ones)
+    competitor_links = DpPropertyCompetitor.objects.filter(
+        property_id=property_id,
+        deleted_at__isnull=True
+    )
     print(f"[DEBUG] competitor_links found: {competitor_links.count()}")
     competitor_ids = list(competitor_links.values_list('competitor_id', flat=True))
     print(f"[DEBUG] competitor_ids: {competitor_ids}")

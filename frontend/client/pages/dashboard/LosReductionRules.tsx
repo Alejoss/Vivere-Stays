@@ -2,6 +2,7 @@ import { Plus, Save, Trash2, Calendar, Info } from "lucide-react";
 import { useState, useEffect, useContext } from "react";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { toast } from "../../hooks/use-toast";
 import type { 
   LosReductionRule, 
   CreateLosReductionRuleRequest,
@@ -14,8 +15,6 @@ export default function LosReductionRules() {
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
 
   // Occupancy categories
   const occupancyCategories = [
@@ -42,14 +41,17 @@ export default function LosReductionRules() {
     if (!property?.id) return;
     
     setIsLoading(true);
-    setErrorMessage("");
     
     try {
       const response = await dynamicPricingService.getLosReductionRules(property.id);
       setReductionRules(response.reductions);
     } catch (error) {
       console.error("Error loading LOS reduction data:", error);
-      setErrorMessage("Failed to load existing LOS reduction configuration");
+      toast({
+        title: "Error",
+        description: "Failed to load existing LOS reduction configuration",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +132,11 @@ export default function LosReductionRules() {
         errorMessage = error.response.data.message;
       }
       
-      setErrorMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
@@ -222,31 +228,35 @@ export default function LosReductionRules() {
         errorMessage = error.response.data.message;
       }
       
-      setErrorMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
   const handleSaveAll = async () => {
     if (!property?.id) {
-      setErrorMessage("No property selected");
+      toast({
+        title: "Error",
+        description: "No property selected",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSaving(true);
-    setSaveMessage("");
-    setErrorMessage("");
 
     try {
       // Save all rules that need saving
       const savePromises = reductionRules.map(rule => saveRule(rule));
       await Promise.all(savePromises);
       
-      setSaveMessage("All LOS reduction rules saved successfully!");
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSaveMessage("");
-      }, 3000);
+      toast({
+        title: "Success",
+        description: "All LOS reduction rules saved successfully!",
+      });
       
     } catch (error: any) {
       console.error("Error saving LOS reduction rules:", error);
@@ -301,7 +311,11 @@ export default function LosReductionRules() {
         errorMessage = error.response.data.message;
       }
       
-      setErrorMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -341,34 +355,11 @@ export default function LosReductionRules() {
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-medium">Loading LOS reduction rules...</span>
+                <span className="text-blue-800 font-normal">Loading LOS reduction rules...</span>
               </div>
             </div>
           )}
 
-          {/* Success Message */}
-          {saveMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <span className="text-white text-xs">✓</span>
-                </div>
-                <span className="text-green-800 font-medium">{saveMessage}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <span className="text-white text-xs">✕</span>
-                </div>
-                <span className="text-red-800 font-medium">{errorMessage}</span>
-              </div>
-            </div>
-          )}
 
           {/* Info Section */}
           <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6 mb-8">
@@ -482,7 +473,7 @@ export default function LosReductionRules() {
               <button 
                 onClick={handleSaveAll}
                 disabled={isSaving || isLoading}
-                className="flex items-center gap-2 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>

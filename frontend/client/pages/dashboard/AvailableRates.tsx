@@ -7,9 +7,7 @@ import { PropertyContext } from "../../../shared/PropertyContext";
 export default function AvailableRates() {
   const [rates, setRates] = useState<UnifiedRoomRate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const { property } = useContext(PropertyContext) ?? {};
 
   // Local state for editable fields
@@ -39,7 +37,6 @@ export default function AvailableRates() {
 
       try {
         setLoading(true);
-        setError(null);
         const response = await dynamicPricingService.getAvailableRates(property.id);
         setRates(response.rates);
         // Sort rates so base rate appears first
@@ -48,7 +45,6 @@ export default function AvailableRates() {
       } catch (err: any) {
         console.error('Error fetching available rates:', err);
         const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load available rates';
-        setError(backendMsg);
         toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
       } finally {
         setLoading(false);
@@ -60,12 +56,15 @@ export default function AvailableRates() {
 
   const handleSave = async () => {
     if (!property?.id) {
-      setSaveMessage("No property selected");
+      toast({
+        title: "Error",
+        description: "No property selected",
+        variant: "destructive",
+      });
       return;
     }
 
     setSaving(true);
-    setSaveMessage(null);
 
     try {
       // Prepare the data for the API
@@ -80,7 +79,10 @@ export default function AvailableRates() {
         rates: ratesData
       });
 
-      setSaveMessage(`Successfully updated ${response.updated_count} rates and created ${response.created_count} new configurations`);
+      toast({
+        title: "Success",
+        description: `Successfully updated ${response.updated_count} rates and created ${response.created_count} new configurations`,
+      });
       
       // Refresh the data to show updated values
       const updatedResponse = await dynamicPricingService.getAvailableRates(property.id);
@@ -89,15 +91,9 @@ export default function AvailableRates() {
       const sortedRates = sortRatesWithBaseFirst(updatedResponse.rates);
       setEditableRates(sortedRates);
       
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSaveMessage(null);
-      }, 3000);
-      
     } catch (err: any) {
       console.error('Error saving available rates:', err);
       const backendMsg = err?.response?.data?.message || err?.message || 'Failed to save available rates. Please try again.';
-      setSaveMessage(backendMsg);
       toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setSaving(false);
@@ -229,7 +225,7 @@ export default function AvailableRates() {
                 Available Rates
               </h2>
               <p className="text-[#8A8E94] font-bold text-lg">
-                Price variations depending on room type. {!loading && !error && `(${editableRates.length} rates)`}
+                Price variations depending on room type. {!loading && `(${editableRates.length} rates)`}
               </p>
             </div>
           </div>
@@ -256,10 +252,6 @@ export default function AvailableRates() {
               {loading ? (
                 <div className="text-center py-8">
                   <div className="text-gray-500">Loading available rates...</div>
-                </div>
-              ) : error ? (
-                <div className="text-center py-8">
-                  <div className="text-red-500">{error}</div>
                 </div>
               ) : editableRates.length === 0 ? (
                 <div className="text-center py-8">
@@ -342,22 +334,13 @@ export default function AvailableRates() {
 
           {/* Action Buttons */}
           <div className="flex flex-col items-end mb-8 space-y-4">
-            {saveMessage && (
-              <div className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                saveMessage.includes("Successfully") 
-                  ? "bg-green-100 text-green-800" 
-                  : "bg-red-100 text-red-800"
-              }`}>
-                {saveMessage}
-              </div>
-            )}
             <button 
               onClick={handleSave}
               disabled={saving || loading}
               className={`flex items-center gap-5 px-7 py-3 rounded-lg font-semibold transition-colors ${
                 saving || loading
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed" 
-                  : "bg-[#2B6CEE] text-white hover:bg-blue-600"
+                  : "bg-[#294758] text-white hover:bg-[#234149]"
               }`}
             >
               <Save size={24} />

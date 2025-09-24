@@ -191,6 +191,69 @@ class EmailVerificationCode(models.Model):
         return f"Verification code for {self.email} ({self.code})"
 
 
+class SupportTicket(models.Model):
+    """
+    Model to store support tickets with issue types, descriptions, and screenshots
+    """
+    ISSUE_TYPES = [
+        ('general_question', 'General Question'),
+        ('technical_issue', 'Technical Issue'),
+        ('billing_question', 'Billing Question'),
+        ('feature_request', 'Feature Request'),
+        ('bug_report', 'Bug Report'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_tickets')
+    issue_type = models.CharField(max_length=20, choices=ISSUE_TYPES, default='general_question')
+    title = models.CharField(max_length=200, help_text="Brief title for the support ticket")
+    description = models.TextField(help_text="Detailed description of the issue")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    screenshot = models.ImageField(upload_to='support_screenshots/', null=True, blank=True, help_text="Optional screenshot of the issue")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Support Ticket'
+        verbose_name_plural = 'Support Tickets'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['status', 'priority']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Support Ticket #{self.id} - {self.title} ({self.get_status_display()})"
+    
+    def mark_as_resolved(self):
+        """Mark the ticket as resolved"""
+        from django.utils import timezone
+        self.status = 'resolved'
+        self.resolved_at = timezone.now()
+        self.save()
+    
+    def mark_as_closed(self):
+        """Mark the ticket as closed"""
+        self.status = 'closed'
+        self.save()
+
+
 class Payment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="payments")
     stripe_customer_id = models.CharField(max_length=255, default='', blank=True, null=True)

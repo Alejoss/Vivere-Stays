@@ -37,7 +37,7 @@ const Gauge = ({
       {/* Center label */}
       <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
         <div className="flex flex-col items-center leading-tight">
-          <div className="text-[18px] font-bold text-[#2A3B47]">
+          <div className="text-lg font-bold text-[#2A3B47]">
             {centerText ?? `${value}%`}
           </div>
           {subText ? (
@@ -123,7 +123,6 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
   const [propertyId, setPropertyId] = React.useState<string | null>(null);
   const [pickupSeries, setPickupSeries] = React.useState<Array<{ name: string; value: number; stly: number }>>([]);
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
   const [pickupTotals, setPickupTotals] = React.useState<{ current: number; stly: number; delta_pct: number | null }>({ current: 0, stly: 0, delta_pct: null });
   const [metric, setMetric] = React.useState<'bookings' | 'room_nights'>('room_nights');
   // Occupancy state from backend (left = period-to-date, right = forecast/Bob)
@@ -226,7 +225,6 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      setError(null);
       try {
         const value = metric === 'bookings' ? 'bookings' : 'room_nights';
         const resp = await analyticsService.getPickup({ days: parseInt(days, 10), value });
@@ -251,7 +249,6 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
         }
       } catch (e: any) {
         console.error("Failed to load pickup", e);
-        if (!cancelled) setError(e?.error || "Failed to load pickup");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -271,7 +268,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
           <Card className="bg-white rounded-2xl border-0 w-full mt-0 shadow-[0_10px_30px_rgba(2,8,23,0.08),0_2px_8px_rgba(2,8,23,0.06)]">
             <CardContent className="p-5 space-y-4">
               {/* Header */}
-              <div className="text-[20px] font-semibold text-gray-700">Pickup</div>
+              <div className="text-xl font-semibold text-gray-700">Pickup</div>
               <div className="h-[1px] bg-gray-300" />
 
               {/* Sub header */}
@@ -332,7 +329,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
                 ) : (
                   <div>
                     <div className="text-gray-600">{metric === 'bookings' ? 'Bookings made' : 'Room nights sold'}</div>
-                    <div className="text-[#2E8BC0] text-[22px] font-semibold leading-tight">{pickupTotals.current}</div>
+                    <div className="text-[#2E8BC0] text-2xl font-semibold leading-tight">{pickupTotals.current}</div>
                     <div className={`${getDeltaClass(pickupTotals.delta_pct)} text-sm font-semibold flex items-center gap-1`}>
                       {pickupTotals.delta_pct !== null ? `${pickupTotals.delta_pct > 0 ? "+" : ""}${pickupTotals.delta_pct}%` : "-"}
                       <span className="font-normal text-gray-600">vs STLY</span>
@@ -390,7 +387,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
         <CardContent className="p-5">
           {/* Header */}
           <div className="flex items-center justify-between text-gray-700">
-            <div className="text-[20px] font-semibold">Occupancy</div>
+            <div className="text-xl font-semibold">Occupancy</div>
             {/* Removed repeated headline value */}
           </div>
           <div className="h-[1px] bg-gray-300 my-3" />
@@ -399,7 +396,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
           <div className="grid grid-cols-2 gap-10 flex items-center justify-center">
             {/* Period-to-Date */}
             <div className="flex flex-col items-center">
-              <div className="text-gray-700 font-medium mb-3">Period-to-Date</div>
+              <div className="text-gray-700 font-semibold mb-3">Period-to-Date</div>
               <div className="relative scale-[1.0]">
                 <Gauge
                   value={mtd.value}
@@ -423,7 +420,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
 
             {/* Business on Books */}
             <div className="flex flex-col items-center">
-              <div className="text-gray-700 font-medium mb-3">Business on Books</div>
+              <div className="text-gray-700 font-semibold mb-3">Business on Books</div>
               <div className="relative scale-[1.0]">
                 <Gauge
                   value={forecast.value}
@@ -456,7 +453,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
           {/* Header */}
           
           <div className="flex items-center justify-between text-gray-700">
-            <div className="text-[20px] font-semibold">Revenue</div>
+            <div className="text-xl font-semibold">Revenue</div>
           </div>
           <div className="h-[1px] bg-gray-300" />
 
@@ -527,7 +524,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
         <CardContent className="p-3 space-y-3">
           {/* Header */}
           <div className="flex items-center justify-between text-gray-700">
-            <div className="text-[20px] font-semibold">Average Daily Rate</div>
+            <div className="text-xl font-semibold">Average Daily Rate</div>
           </div>
           <div className="h-[1px] bg-gray-300" />
 
@@ -598,7 +595,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
         <CardContent className="p-3 space-y-3">
           {/* Header */}
           <div className="flex items-center justify-between text-gray-700">
-            <div className="text-[20px] font-semibold">RevPar</div>
+            <div className="text-xl font-semibold">RevPar</div>
           </div>
           <div className="h-[1px] bg-gray-300" />
 
@@ -668,7 +665,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
         <Card className="bg-white rounded-2xl border-0 w-full mt-6 col-span-1 md:col-span-2 2xl:col-span-5 shadow-[0_10px_30px_rgba(2,8,23,0.08),0_2px_8px_rgba(2,8,23,0.06)]">
           <CardContent className="p-5 space-y-4">
             {/* Header */}
-            <div className="text-[20px] font-semibold text-gray-700">Pickup</div>
+            <div className="text-xl font-semibold text-gray-700">Pickup</div>
             <div className="h-[1px] bg-gray-300" />
 
             {/* Sub header */}
@@ -729,7 +726,7 @@ export default function Analytics({ mode = 'full' }: { mode?: 'full' | 'performa
               ) : (
                 <div>
                   <div className="text-gray-600">{metric === 'bookings' ? 'Bookings made' : 'Room nights sold'}</div>
-                  <div className="text-[#2E8BC0] text-[22px] font-semibold leading-tight">{pickupTotals.current}</div>
+                  <div className="text-[#2E8BC0] text-2xl font-semibold leading-tight">{pickupTotals.current}</div>
                   <div className={`${getDeltaClass(pickupTotals.delta_pct)} text-sm font-semibold flex items-center gap-1`}>
                     {pickupTotals.delta_pct !== null ? `${pickupTotals.delta_pct > 0 ? "+" : ""}${pickupTotals.delta_pct}%` : "—"}
                     <span className="font-normal text-gray-600">vs STLY</span>

@@ -50,8 +50,6 @@ export default function DynamicSetup() {
   const [rules, setRules] = useState<DynamicRule[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   // Load existing rules on component mount
   useEffect(() => {
@@ -64,13 +62,11 @@ export default function DynamicSetup() {
     if (!property?.id) return;
     
     setLoading(true);
-    setError(null);
     try {
       const response = await dynamicPricingService.getDynamicRules(property.id);
       setRules(response.rules.map(rule => ({ ...rule, isNew: false })));
     } catch (err: any) {
       const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load dynamic rules';
-      setError(backendMsg);
       toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -104,9 +100,16 @@ export default function DynamicSetup() {
       
       try {
         await dynamicPricingService.deleteDynamicRule(property.id, rule.id);
-        setSuccess('Rule deleted successfully');
+        toast({
+          title: "Success",
+          description: "Rule deleted successfully",
+        });
       } catch (err: any) {
-        setError(err.message || 'Failed to delete rule');
+        toast({
+          title: "Error",
+          description: err.message || 'Failed to delete rule',
+          variant: "destructive",
+        });
         return;
       }
     }
@@ -120,8 +123,6 @@ export default function DynamicSetup() {
     if (!property?.id) return;
     
     setSaving(true);
-    setError(null);
-    setSuccess(null);
     
     try {
       const newRules = rules.filter(rule => rule.isNew);
@@ -157,11 +158,13 @@ export default function DynamicSetup() {
         }
       }
       
-      setSuccess('Dynamic rules saved successfully');
+      toast({
+        title: "Success",
+        description: "Dynamic rules saved successfully",
+      });
       loadRules(); // Reload to get updated data
     } catch (err: any) {
       const backendMsg = err?.response?.data?.message || err?.message || 'Failed to save dynamic rules';
-      setError(backendMsg);
       toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
     } finally {
       setSaving(false);
@@ -235,22 +238,16 @@ export default function DynamicSetup() {
           {/* Section Header */}
           <div className="flex items-center gap-3 mb-8">
             <TrendingUp size={34} className="text-[#287CAC]" />
-            <h2 className="text-3xl font-bold text-[#287CAC]">
-              Dynamic Set Up
-            </h2>
+            <div>
+              <h2 className="text-3xl font-bold text-[#287CAC]">
+                Dynamic Set Up
+              </h2>
+              <p className="text-[#8A8E94] font-bold text-lg">
+                Configure dynamic pricing rules based on occupancy and lead time
+              </p>
+            </div>
           </div>
 
-          {/* Error/Success Messages */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-          {success && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-600 text-sm">{success}</p>
-            </div>
-          )}
 
           {/* Rules Table */}
           <div className="mb-8">
@@ -348,7 +345,7 @@ export default function DynamicSetup() {
             <button 
               onClick={saveRules}
               disabled={saving || rules.length === 0}
-              className="flex items-center gap-5 px-9 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-5 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={24} />
               {saving ? 'Saving...' : 'Save Rules'}

@@ -13,6 +13,7 @@ export default function PropertyDashboard() {
     year: string;
   } | null>(null);
   const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
+  const [selectedPriceOption, setSelectedPriceOption] = useState("Average Daily Rate");
 
   // Get property from context
   const { property } = useContext(PropertyContext) ?? {};
@@ -27,6 +28,10 @@ export default function PropertyDashboard() {
 
   const handlePriceUpdate = () => setCalendarRefreshKey((k) => k + 1);
 
+  const handlePriceOptionChange = (option: string) => {
+    setSelectedPriceOption(option);
+  };
+
   // Show loading state while property is not loaded
   if (!property) {
     return (
@@ -36,7 +41,7 @@ export default function PropertyDashboard() {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-                <p className="text-[16px] text-[#485567]">Loading property details...</p>
+                <p className="text-base text-[#485567]">Loading property details...</p>
               </div>
             </div>
           </div>
@@ -53,7 +58,12 @@ export default function PropertyDashboard() {
       <div className="flex-1 p-3 lg:p-6 overflow-auto">
         <div className="w-full">         
           {/* Price Calendar */}
-          <PriceCalendar onDateClick={handleDateClick} propertyId={propertyId} refreshKey={calendarRefreshKey} />
+          <PriceCalendar 
+            onDateClick={handleDateClick} 
+            propertyId={propertyId} 
+            refreshKey={calendarRefreshKey}
+            onPriceOptionChange={handlePriceOptionChange}
+          />
         </div>
       </div>
 
@@ -64,6 +74,7 @@ export default function PropertyDashboard() {
           propertyId={propertyId} 
           onPriceUpdate={handlePriceUpdate} 
           hasPMS={!!property.pms}
+          selectedPriceOption={selectedPriceOption}
         />
       </div>
     </div>

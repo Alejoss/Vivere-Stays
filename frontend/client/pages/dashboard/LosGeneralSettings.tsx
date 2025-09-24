@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { Settings, Info } from "lucide-react";
+import { toast } from "../../hooks/use-toast";
 
 export default function LosGeneralSettings() {
   const { property } = useContext(PropertyContext) ?? {};
@@ -9,8 +10,6 @@ export default function LosGeneralSettings() {
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
 
   // State management
   const [competitorCount, setCompetitorCount] = useState("2");
@@ -27,7 +26,6 @@ export default function LosGeneralSettings() {
     if (!property?.id) return;
     
     setIsLoading(true);
-    setErrorMessage("");
     
     try {
       const generalSettings = await dynamicPricingService.getGeneralSettings(property.id);
@@ -35,7 +33,11 @@ export default function LosGeneralSettings() {
       setAggregationMethod(generalSettings.los_aggregation || "min");
     } catch (error) {
       console.error("Error loading general settings:", error);
-      setErrorMessage("Failed to load general settings");
+      toast({
+        title: "Error",
+        description: "Failed to load general settings",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -43,13 +45,15 @@ export default function LosGeneralSettings() {
 
   const handleSave = async () => {
     if (!property?.id) {
-      setErrorMessage("No property selected");
+      toast({
+        title: "Error",
+        description: "No property selected",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSaving(true);
-    setSaveMessage("");
-    setErrorMessage("");
 
     try {
       await dynamicPricingService.updateGeneralSettings(property.id, {
@@ -57,16 +61,18 @@ export default function LosGeneralSettings() {
         los_aggregation: aggregationMethod
       });
       
-      setSaveMessage("General settings saved successfully!");
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSaveMessage("");
-      }, 3000);
+      toast({
+        title: "Success",
+        description: "General settings saved successfully!",
+      });
       
     } catch (error) {
       console.error("Error saving general settings:", error);
-      setErrorMessage("Failed to save general settings. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to save general settings. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -106,34 +112,11 @@ export default function LosGeneralSettings() {
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-medium">Loading general settings...</span>
+                <span className="text-blue-800 font-normal">Loading general settings...</span>
               </div>
             </div>
           )}
 
-          {/* Success Message */}
-          {saveMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <span className="text-white text-xs">✓</span>
-                </div>
-                <span className="text-green-800 font-medium">{saveMessage}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <span className="text-white text-xs">✕</span>
-                </div>
-                <span className="text-red-800 font-medium">{errorMessage}</span>
-              </div>
-            </div>
-          )}
 
           {/* Info Section */}
           <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6 mb-8">
@@ -154,7 +137,7 @@ export default function LosGeneralSettings() {
             <div className="space-y-6">
               {/* Number of Competitors */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Number of Competitors
                 </label>
                 <div className="flex items-center gap-3">
@@ -175,7 +158,7 @@ export default function LosGeneralSettings() {
 
               {/* LOS Aggregation Method */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   LOS Aggregation Method
                 </label>
                 <div className="flex items-center gap-3">
@@ -201,7 +184,7 @@ export default function LosGeneralSettings() {
               <button 
                 onClick={handleSave}
                 disabled={isSaving || isLoading}
-                className="flex items-center gap-2 px-6 py-3 bg-[#2B6CEE] text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>

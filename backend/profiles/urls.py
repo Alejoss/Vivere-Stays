@@ -4,7 +4,8 @@ from .views import (
     GetCsrfToken, ProfileView, LogoutView, CheckUserExistsView, RegisterView, 
     RefreshTokenView, GoogleLoginView, PMSIntegrationRequirementView,
     SendVerificationEmailView, VerifyEmailCodeView,
-    OnboardingProgressView, TestEmailView, ChangePasswordView, stripe_webhook, CreateCheckoutSession
+    OnboardingProgressView, TestEmailView, ChangePasswordView, stripe_webhook, CreateCheckoutSession,
+    SupportTicketView
 )
 
 urlpatterns = [
@@ -32,6 +33,9 @@ urlpatterns = [
     
     # Password change endpoint
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+    
+    # Support ticket endpoints
+    path('support-tickets/', SupportTicketView.as_view(), name='support-tickets'),
 
     path("create-checkout-session/",CreateCheckoutSession.as_view(), name="create-checkout-session"),
     path('webhook/', stripe_webhook, name='stripe_webhook'),

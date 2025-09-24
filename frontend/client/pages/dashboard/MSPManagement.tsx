@@ -8,6 +8,7 @@ import {
 import { format } from "date-fns";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { PropertyContext } from "../../../shared/PropertyContext";
+import { toast } from "../../hooks/use-toast";
 
 interface MSPPeriod {
   id: string;
@@ -23,8 +24,6 @@ export default function MSPManagement() {
   const [openCalendar, setOpenCalendar] = useState<{ [key: string]: boolean }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   // Helper function to get current date in dd/MM/yyyy format
   const getCurrentDate = () => {
@@ -46,7 +45,6 @@ export default function MSPManagement() {
     if (!property?.id) return;
     
     setIsLoading(true);
-    setError("");
     try {
       const response = await dynamicPricingService.getPropertyMSPEntries(property.id);
       console.log("Loading existing MSP entries:", response.msp_entries);
@@ -63,7 +61,11 @@ export default function MSPManagement() {
       setPeriods(existingPeriods);
     } catch (err: any) {
       console.error("Error loading MSP entries:", err);
-      setError(err.message || 'Failed to load MSP entries');
+      toast({
+        title: "Error",
+        description: err.message || 'Failed to load MSP entries',
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -72,9 +74,6 @@ export default function MSPManagement() {
   const handleSave = async () => {
     if (!property?.id) return;
     
-    setError("");
-    setSuccess("");
-    
     // Require at least one valid period
     if (
       periods.length === 0 ||
@@ -82,7 +81,11 @@ export default function MSPManagement() {
         (p) => !p.fromDate.trim() || !p.toDate.trim() || !p.price.trim() || isNaN(Number(p.price))
       )
     ) {
-      setError("Please add at least one valid period with dates and price.");
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one valid period with dates and price.",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -100,7 +103,11 @@ export default function MSPManagement() {
     
     if (invalidPeriods.length > 0) {
       const invalidPeriod = invalidPeriods[0]; // Show first invalid period
-      setError(`Invalid date range: The end date (${invalidPeriod.toDate}) must be after the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`);
+      toast({
+        title: "Validation Error",
+        description: `Invalid date range: The end date (${invalidPeriod.toDate}) must be after the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`,
+        variant: "destructive",
+      });
       return;
     }
     
@@ -110,14 +117,21 @@ export default function MSPManagement() {
       const result = await dynamicPricingService.createPropertyMSP(property.id, { periods });
       
       if (result.errors && result.errors.length > 0) {
-        setError(`Some periods could not be saved: ${result.errors.join(', ')}`);
+        toast({
+          title: "Partial Success",
+          description: `Some periods could not be saved: ${result.errors.join(', ')}`,
+          variant: "destructive",
+        });
         return;
       }
       
       console.log("MSP periods saved successfully:", result);
       console.log(`Created: ${result.created_entries?.length || 0} entries`);
       
-      setSuccess('MSP periods saved successfully');
+      toast({
+        title: "Success",
+        description: "MSP periods saved successfully",
+      });
       loadMSPEntries(); // Reload to get updated data
     } catch (err: any) {
       console.error("Error saving MSP periods:", err);
@@ -164,7 +178,11 @@ export default function MSPManagement() {
         }
       }
       
-      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -264,7 +282,7 @@ export default function MSPManagement() {
       <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-          <p className="text-[16px] text-[#485567]">Loading MSP periods...</p>
+          <p className="text-base text-[#485567]">Loading MSP periods...</p>
         </div>
       </div>
     );
@@ -329,21 +347,10 @@ export default function MSPManagement() {
             </div>
           </div>
 
-          {/* Error/Success Messages */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-          {success && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-600 text-sm">{success}</p>
-            </div>
-          )}
 
           {/* Header */}
           <div className="mb-8">
-            <h3 className="text-[18px] font-bold text-black mb-6">
+            <h3 className="text-lg font-bold text-black mb-6">
               MSP Configuration
             </h3>
           </div>
@@ -351,22 +358,22 @@ export default function MSPManagement() {
           {/* Table Headers */}
           <div className="flex items-center gap-[10px] mb-4">
             <div className="w-[448px]">
-              <span className="text-[16px] font-bold text-[#485567]">
+              <span className="text-base font-bold text-[#485567]">
                 From
               </span>
             </div>
             <div className="w-[448px]">
-              <span className="text-[16px] font-bold text-[#485567]">
+              <span className="text-base font-bold text-[#485567]">
                 To
               </span>
             </div>
             <div className="w-[448px]">
-              <span className="text-[16px] font-bold text-[#485567]">
+              <span className="text-base font-bold text-[#485567]">
                 Price
               </span>
             </div>
             <div className="w-[448px]">
-              <span className="text-[16px] font-bold text-[#485567]">
+              <span className="text-base font-bold text-[#485567]">
                 Period Name (Optional)
               </span>
             </div>
@@ -383,7 +390,7 @@ export default function MSPManagement() {
                 <div className="w-[448px]">
                   <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
                     <div
-                      className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-[16px] ${
+                      className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base ${
                         period.fromDate
                           ? "text-[#1E1E1E]"
                           : "text-[#9CAABD]"
@@ -410,7 +417,7 @@ export default function MSPManagement() {
                     >
                       <PopoverTrigger asChild>
                         <button
-                          className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-[16px] focus:outline-none ${
+                          className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base focus:outline-none ${
                             period.toDate
                               ? "text-[#1E1E1E]"
                               : "text-[#9CAABD]"
@@ -449,7 +456,7 @@ export default function MSPManagement() {
                         updatePeriod(period.id, "price", e.target.value)
                       }
                       placeholder="Enter price"
-                      className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-[16px] focus:outline-none text-[#1E1E1E]"
+                      className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
                     />
                   </div>
                 </div>
@@ -464,7 +471,7 @@ export default function MSPManagement() {
                         updatePeriod(period.id, "periodTitle", e.target.value)
                       }
                       placeholder="e.g., Summer Season, High Season"
-                      className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-[16px] focus:outline-none text-[#1E1E1E]"
+                      className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
                     />
                   </div>
                 </div>
@@ -531,7 +538,7 @@ export default function MSPManagement() {
           <div className="flex justify-end items-center">
             <button
               onClick={handleSave}
-              className={`px-[54px] py-[10px] rounded-md text-[12px] font-semibold shadow-[0_4px_10px_0_rgba(0,0,0,0.25)] transition-colors flex items-center justify-center gap-2 ${
+              className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
                 isSaving ? "bg-gray-400 cursor-not-allowed text-white" : "bg-[#294758] text-white hover:bg-[#234149]"
               }`}
               disabled={isSaving}

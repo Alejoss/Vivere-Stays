@@ -30,7 +30,6 @@ export default function Competitors() {
   const [processedCompetitors, setProcessedCompetitors] = useState<PropertyCompetitor[]>([]);
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
   const [isLoadingProcessed, setIsLoadingProcessed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   
   // AI suggestion state
   const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false);
@@ -193,7 +192,6 @@ export default function Competitors() {
     if (!property) return;
     
     setIsLoadingCandidates(true);
-    setError(null);
     
     try {
       const response = await dynamicPricingService.getCompetitorCandidates(property.id);
@@ -201,13 +199,7 @@ export default function Competitors() {
     } catch (error: any) {
       console.error("Error fetching competitor candidates:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to fetch competitor candidates";
-      setError(backendMsg);
       toast({ title: "Error", description: backendMsg, variant: "destructive" });
-      toast({
-        title: "Error",
-        description: backendMsg,
-        variant: "destructive",
-      });
     } finally {
       setIsLoadingCandidates(false);
     }
@@ -218,7 +210,6 @@ export default function Competitors() {
     if (!property) return;
     
     setIsLoadingProcessed(true);
-    setError(null);
     
     try {
       const response = await dynamicPricingService.getPropertyCompetitors(property.id);
@@ -226,13 +217,7 @@ export default function Competitors() {
     } catch (error: any) {
       console.error("Error fetching processed competitors:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to fetch processed competitors";
-      setError(backendMsg);
       toast({ title: "Error", description: backendMsg, variant: "destructive" });
-      toast({
-        title: "Error",
-        description: backendMsg,
-        variant: "destructive",
-      });
     } finally {
       setIsLoadingProcessed(false);
     }
@@ -250,7 +235,6 @@ export default function Competitors() {
     }
 
     setIsLoadingAISuggestions(true);
-    setError(null);
 
     try {
       // Get property location data
@@ -971,7 +955,7 @@ export default function Competitors() {
       <div className="px-6 py-8">
         <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
           {/* Section Header */}
-          <div className="flex items-center mb-6">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <svg
                 width="30"
@@ -1004,6 +988,35 @@ export default function Competitors() {
                   Manage your competitor tracking
                 </p>
               </div>
+            </div>
+            
+            {/* AI Suggestion Button */}
+            <div className="flex items-center">
+              <button 
+                onClick={handleAISuggestions}
+                disabled={isLoadingAISuggestions}
+                className={`flex items-center gap-3 px-4 py-2 border rounded-lg transition-colors ${
+                  isLoadingAISuggestions 
+                    ? 'bg-gray-100 border-gray-300 cursor-not-allowed' 
+                    : 'bg-[#E7D7FE] border-[#422C61] hover:bg-[#DCC7FE]'
+                }`}
+              >
+                {isLoadingAISuggestions ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#422C61]"></div>
+                    <span className="text-[#422C61] font-bold text-base">
+                      Finding...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Bot size={20} className="text-[#422C61]" />
+                    <span className="text-[#422C61] font-bold text-base">
+                      Use AI to suggest competitors
+                    </span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
@@ -1078,35 +1091,6 @@ export default function Competitors() {
             </div>
           </div>
 
-          {/* AI Suggestion Button */}
-          <div className="flex justify-center mb-8">
-            <button 
-              onClick={handleAISuggestions}
-              disabled={isLoadingAISuggestions}
-              className={`flex items-center gap-4 px-5 py-3 border rounded-lg transition-colors ${
-                isLoadingAISuggestions 
-                  ? 'bg-gray-100 border-gray-300 cursor-not-allowed' 
-                  : 'bg-[#E7D7FE] border-[#422C61] hover:bg-[#DCC7FE]'
-              }`}
-            >
-              {isLoadingAISuggestions ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#422C61]"></div>
-                  <span className="text-[#422C61] font-bold text-lg">
-                    Finding competitors...
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Bot size={24} className="text-[#422C61]" />
-                  <span className="text-[#422C61] font-bold text-lg">
-                    Use AI to suggest competitors
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
-
 
           {/* Competitors List */}
           <div className="space-y-6 mb-8">
@@ -1118,12 +1102,6 @@ export default function Competitors() {
               </div>
             )}
 
-            {/* Error state */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-600">{error}</p>
-              </div>
-            )}
 
             {/* Processed Competitors Section */}
             {processedCompetitors.length > 0 && (
@@ -1220,7 +1198,7 @@ export default function Competitors() {
                   className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                     isCreatingCompetitor || !newCompetitorName.trim()
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-[#2B6CEE] text-white hover:bg-blue-600'
+                      : 'bg-[#294758] text-white hover:bg-[#234149]'
                   }`}
                 >
                   {isCreatingCompetitor ? (
@@ -1247,7 +1225,7 @@ export default function Competitors() {
               className={`flex items-center gap-3 px-5 py-3 rounded-lg font-semibold transition-colors ${
                 showAddForm 
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                  : 'bg-[#2B6CEE] text-white hover:bg-blue-600'
+                  : 'bg-[#294758] text-white hover:bg-[#234149]'
               }`}
             >
               <Plus size={24} />
