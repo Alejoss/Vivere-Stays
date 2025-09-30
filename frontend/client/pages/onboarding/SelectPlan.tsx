@@ -33,6 +33,7 @@ export default function SelectPlan() {
   const [tempRoomCount, setTempRoomCount] = useState<number>(1);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [pmsSelectionType, setPmsSelectionType] = useState<string | null>(null);
+  // Removed inline tab system in favor of dedicated PlanInformation page
 
   // Pricing calculation function
   const calculatePrice = (pricePerRoom: number, rooms: number): number => {
@@ -484,9 +485,17 @@ export default function SelectPlan() {
         {/* Title and Description */}
         <div className="text-center mb-8">
           <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-2">Plans</h1>
-          <p className="text-[18px] text-[#485567] mb-4">
-            Choose your plan and complete your registration
-          </p>
+          <div className="flex flex-col items-center gap-2 mb-4">
+            <p className="text-[18px] text-[#485567]">
+              Choose your plan and complete your registration
+            </p>
+            <button
+              onClick={() => navigate('/plan-information')}
+              className="text-[14px] text-[#294758] underline hover:text-[#1e3340]"
+            >
+              More information
+            </button>
+          </div>
           <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4">
             <div className="flex items-center justify-between">
               <p className="text-[14px] text-[#64748B]">
@@ -502,7 +511,7 @@ export default function SelectPlan() {
           </div>
         </div>
 
-
+        {/* Removed inline tabs in favor of a dedicated page */}
 
         {/* Information for custom/no PMS users */}
         {pmsSelectionType === "custom_or_none" && (

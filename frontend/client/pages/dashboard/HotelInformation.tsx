@@ -313,6 +313,7 @@ export default function HotelInformation() {
         [field]: undefined,
       }));
     }
+
   };
 
   const handleSave = async () => {

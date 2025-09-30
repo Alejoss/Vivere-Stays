@@ -335,6 +335,7 @@ export default function HotelInformationOnboarding() {
         [field]: undefined,
       }));
     }
+
   };
 
   const handleContinue = async () => {
@@ -488,33 +489,9 @@ export default function HotelInformationOnboarding() {
           <div className="space-y-5 max-w-2xl mx-auto">
             {/* Hotel Name */}
             <div className="space-y-[14px]">
-              <div className="flex items-center gap-2">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M8.33335 18.333V12.858M10 9.16634H10.0084M10 5.83301H10.0084M11.6667 12.858V18.333M12.5 13.333C11.7788 12.7921 10.9016 12.4997 10 12.4997C9.09848 12.4997 8.22125 12.7921 7.50002 13.333M13.3334 9.16634H13.3417M13.3334 5.83301H13.3417M6.66669 9.16634H6.67502M6.66669 5.83301H6.67502"
-                    stroke="black"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M15 1.6665H5.00001C4.07954 1.6665 3.33334 2.4127 3.33334 3.33317V16.6665C3.33334 17.587 4.07954 18.3332 5.00001 18.3332H15C15.9205 18.3332 16.6667 17.587 16.6667 16.6665V3.33317C16.6667 2.4127 15.9205 1.6665 15 1.6665Z"
-                    stroke="black"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <label className="text-[16px] text-[#485567] font-medium">
-                  Hotel Name*
-                </label>
-              </div>
+              <label className="text-[16px] text-[#485567] font-medium">
+                Hotel Name*
+              </label>
               <div className="space-y-1">
                 <input
                   type="text"
@@ -545,80 +522,7 @@ export default function HotelInformationOnboarding() {
               </div>
             </div>
 
-            {/* Booking.com URL */}
-            <div className="space-y-[14px]">
-              <div className="flex items-center gap-2">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <g clipPath="url(#clip0_74_59970)">
-                    <path
-                      d="M1.25 10C1.25 12.3206 2.17187 14.5462 3.81282 16.1872C5.45376 17.8281 7.67936 18.75 10 18.75C12.3206 18.75 14.5462 17.8281 16.1872 16.1872C17.8281 14.5462 18.75 12.3206 18.75 10C18.75 7.67936 17.8281 5.45376 16.1872 3.81282C14.5462 2.17187 12.3206 1.25 10 1.25C7.67936 1.25 5.45376 2.17187 3.81282 3.81282C2.17187 5.45376 1.25 7.67936 1.25 10Z"
-                      stroke="black"
-                      strokeWidth="1.5"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M6.25 10C6.25 7.67936 6.64509 5.45376 7.34835 3.81282C8.05161 2.17187 9.00544 1.25 10 1.25C10.9946 1.25 11.9484 2.17187 12.6516 3.81282C13.3549 5.45376 13.75 7.67936 13.75 10C13.75 12.3206 13.3549 14.5462 12.6516 16.1872C11.9484 17.8281 10.9946 18.75 10 18.75C9.00544 18.75 8.05161 17.8281 7.34835 16.1872C6.64509 14.5462 6.25 12.3206 6.25 10Z"
-                      stroke="black"
-                      strokeWidth="1.5"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M1.875 12.9168H18.125M1.875 7.0835H18.125"
-                      stroke="black"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </g>
-                  <defs>
-                    <clipPath id="clip0_74_59970">
-                      <rect width="20" height="20" fill="white" />
-                    </clipPath>
-                  </defs>
-                </svg>
-                <label className="text-[16px] text-[#485567] font-medium">
-                  Booking.com URL of your property
-                </label>
-              </div>
-              <div className="space-y-1">
-                <input
-                  type="text"
-                  value={formData.bookingUrl}
-                  onChange={(e) => handleInputChange("bookingUrl", e.target.value)}
-                  placeholder="https://www.booking.com/hotel/es/..."
-                  className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("bookingUrl")} ${getFieldTextColor("bookingUrl")}`}
-                />
-                {hasSubmitted && errors.bookingUrl && (
-                  <div className="flex items-center gap-1">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z"
-                        fill="#FF0404"
-                      />
-                    </svg>
-                    <span className="text-[12px] text-[#FF0404]">
-                      {errors.bookingUrl}
-                    </span>
-                  </div>
-                )}
-              </div>
-                            {formData.bookingUrl.trim() && !errors.bookingUrl ? (
-                <p className="text-[14px] text-[#16B257]">
-                  Using your Booking URL, we'll automatically find your competitors.
-                </p>
-              ) : null}
-          </div>
+            
 
           {/* Street Address */}
           <div className="space-y-[14px]">
@@ -853,6 +757,82 @@ export default function HotelInformationOnboarding() {
             </div>
           </div>
 
+          {/* Booking.com URL - moved to bottom */}
+          <div className="space-y-[14px]">
+            <div className="flex items-center gap-2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g clipPath="url(#clip0_74_59970)">
+                  <path
+                    d="M1.25 10C1.25 12.3206 2.17187 14.5462 3.81282 16.1872C5.45376 17.8281 7.67936 18.75 10 18.75C12.3206 18.75 14.5462 17.8281 16.1872 16.1872C17.8281 14.5462 18.75 12.3206 18.75 10C18.75 7.67936 17.8281 5.45376 16.1872 3.81282C14.5462 2.17187 12.3206 1.25 10 1.25C7.67936 1.25 5.45376 2.17187 3.81282 3.81282C2.17187 5.45376 1.25 7.67936 1.25 10Z"
+                    stroke="black"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.25 10C6.25 7.67936 6.64509 5.45376 7.34835 3.81282C8.05161 2.17187 9.00544 1.25 10 1.25C10.9946 1.25 11.9484 2.17187 12.6516 3.81282C13.3549 5.45376 13.75 7.67936 13.75 10C13.75 12.3206 13.3549 14.5462 12.6516 16.1872C11.9484 17.8281 10.9946 18.75 10 18.75C9.00544 18.75 8.05161 17.8281 7.34835 16.1872C6.64509 14.5462 6.25 12.3206 6.25 10Z"
+                    stroke="black"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M1.875 12.9168H18.125M1.875 7.0835H18.125"
+                    stroke="black"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip0_74_59970">
+                    <rect width="20" height="20" fill="white" />
+                  </clipPath>
+                </defs>
+              </svg>
+              <label className="text-[16px] text-[#485567] font-medium">
+                Booking.com URL of your property
+              </label>
+            </div>
+            <div className="space-y-1">
+              <input
+                type="text"
+                value={formData.bookingUrl}
+                onChange={(e) => handleInputChange("bookingUrl", e.target.value)}
+                placeholder="https://www.booking.com/hotel/es/..."
+                className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("bookingUrl")} ${getFieldTextColor("bookingUrl")}`}
+              />
+              {hasSubmitted && errors.bookingUrl && (
+                <div className="flex items-center gap-1">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z"
+                      fill="#FF0404"
+                    />
+                  </svg>
+                  <span className="text-[12px] text-[#FF0404]">
+                    {errors.bookingUrl}
+                  </span>
+                </div>
+              )}
+            </div>
+            {formData.bookingUrl.trim() && !errors.bookingUrl ? (
+              <p className="text-[14px] text-[#16B257]">
+                Using your Booking URL, we'll automatically find your competitors.
+              </p>
+            ) : null}
+          </div>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex items-center pt-8">
             <button
@@ -875,7 +855,6 @@ export default function HotelInformationOnboarding() {
         )}
       </div>
         
-      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import HotelInformationOnboarding from "./pages/onboarding/HotelInformationOnboa
 import PMSIntegration from "./pages/onboarding/PMSIntegration";
 import PMSInformation from "./pages/onboarding/PMSInformation";
 import SelectPlan from "./pages/onboarding/SelectPlan";
+import PlanInformation from "./pages/onboarding/PlanInformation";
 import Payment from "./pages/onboarding/Payment";
 import ContactSalesOnboarding from "./pages/onboarding/ContactSalesOnboarding";
 import AddCompetitor from "./pages/onboarding/AddCompetitor";
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/pms-integration" element={<OnboardingLayout><PMSIntegration /></OnboardingLayout>} />
             <Route path="/pms-information" element={<OnboardingLayout><PMSInformation /></OnboardingLayout>} />
             <Route path="/select-plan" element={<OnboardingLayout><SelectPlan /></OnboardingLayout>} />
+            <Route path="/plan-information" element={<OnboardingLayout><PlanInformation /></OnboardingLayout>} />
             <Route path="/payment" element={<OnboardingLayout><Payment /></OnboardingLayout>} />
             <Route path="/contact-sales" element={<OnboardingLayout><ContactSalesOnboarding /></OnboardingLayout>} />
             <Route path="/add-competitor" element={<OnboardingLayout><AddCompetitor /></OnboardingLayout>} />
