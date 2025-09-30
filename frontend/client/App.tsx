@@ -31,7 +31,6 @@ import DashboardRedirect from "./pages/dashboard/DashboardRedirect";
 import PropertyList from "./pages/dashboard/PropertyList";
 import PropertyDashboard from "./pages/dashboard/PropertyDashboard";
 import ChangePrices from "./pages/dashboard/ChangePrices";
-import Analytics from "./pages/dashboard/Analytics";
 import AnalyticsPerformance from "./pages/dashboard/AnalyticsPerformance";
 import AnalyticsPickup from "./pages/dashboard/AnalyticsPickup";
 import HotelManagement from "./pages/dashboard/HotelInformation";
@@ -81,7 +80,7 @@ const App = () => (
             <Route path="/dashboard/property/:propertyId" element={<DashboardLayout><PropertyDashboard /></DashboardLayout>} />
             <Route path="/dashboard/change-prices/:propertyId" element={<DashboardLayout><ChangePrices /></DashboardLayout>} />
             {/* <Route path="/dashboard/change-prices" element={<DashboardLayout><ChangePrices /></DashboardLayout>} /> */}
-            <Route path="/dashboard/analytics" element={<DashboardLayout><Analytics /></DashboardLayout>} />
+            <Route path="/dashboard/analytics" element={<DashboardLayout><AnalyticsPerformance /></DashboardLayout>} />
             <Route path="/dashboard/analytics/performance" element={<DashboardLayout><AnalyticsPerformance /></DashboardLayout>} />
             <Route path="/dashboard/analytics/pickup" element={<DashboardLayout><AnalyticsPickup /></DashboardLayout>} />
             
