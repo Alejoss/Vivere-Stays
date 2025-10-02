@@ -15,6 +15,7 @@ docker-compose exec vivere_backend python manage.py populate_daily_performance
 https://vivere-fe.algobeat.com/
 https://vivere-stays.algobeat.com/
 ssh root@46.62.171.162
+docker-compose down
 ./deploy-all.sh
 docker-compose logs -f vivere_backend
 populate do

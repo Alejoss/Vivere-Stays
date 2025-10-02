@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -7,11 +7,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { useDynamicMSPEntries } from "../../../shared/api/hooks";
+import { usePropertyMSPEntries } from "../../../shared/api/hooks";
 import { removeLocalStorageItem, HOTEL_INFO_KEY, setLocalStorageItem } from "../../../shared/localStorage";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
-import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { profilesService } from "../../../shared/api/profiles";
 
 interface MSPPeriod {
   id: string;
@@ -23,14 +23,38 @@ interface MSPPeriod {
 
 export default function MSP() {
   const navigate = useNavigate();
-  const { property } = useContext(PropertyContext) ?? {};
-  const { data: mspEntriesData, isLoading: mspEntriesLoading } = useDynamicMSPEntries();
+  const [property, setProperty] = useState<any>(null);
+  const [isLoadingProperty, setIsLoadingProperty] = useState(true);
   
-  // Debug: Log context on mount
+  // Use property-specific MSP entries hook once we have the property
+  const { data: mspEntriesData, isLoading: mspEntriesLoading } = usePropertyMSPEntries(property?.id || '');
+  
+  // Fetch user's properties from backend
   useEffect(() => {
-    console.log('[MSPOnboarding] Mount');
-    console.log('[MSPOnboarding] PropertyContext.property:', property);
-  }, [property]);
+    const fetchUserProperty = async () => {
+      try {
+        console.log('[MSPOnboarding] Fetching user properties from backend');
+        const response = await profilesService.getUserProperties();
+        
+        if (response.properties && response.properties.length > 0) {
+          // Get the most recent property (first in the list as they're ordered by creation date)
+          const latestProperty = response.properties[0];
+          console.log('[MSPOnboarding] Found property:', latestProperty);
+          setProperty(latestProperty);
+        } else {
+          console.log('[MSPOnboarding] No properties found for user');
+          setProperty(null);
+        }
+      } catch (error) {
+        console.error('[MSPOnboarding] Error fetching user properties:', error);
+        setProperty(null);
+      } finally {
+        setIsLoadingProperty(false);
+      }
+    };
+
+    fetchUserProperty();
+  }, []);
   
   // Helper function to get current date in dd/MM/yyyy format
   const getCurrentDate = () => {
@@ -124,11 +148,11 @@ export default function MSP() {
     }
     // Debug: Log property prior to guard
     console.log('[MSPOnboarding] handleFinish invoked');
-    console.log('[MSPOnboarding] PropertyContext.property:', property);
+    console.log('[MSPOnboarding] Property:', property);
 
-    // Ensure we have a property id from context
+    // Ensure we have a property id
     if (!property?.id) {
-      setError("Missing property context. Please go back and ensure the property is selected/created.");
+      setError("No property found. Please complete the hotel setup first.");
       return;
     }
 
@@ -149,9 +173,7 @@ export default function MSP() {
       // Persist selected property for deterministic dashboard redirect
       try {
         setLocalStorageItem("selectedPropertyId", property.id);
-        if (property) {
-          setLocalStorageItem("property_data", property as any);
-        }
+        setLocalStorageItem("property_data", property);
         console.log('[MSPOnboarding] Persisted selectedPropertyId and property_data to localStorage');
       } catch (storageErr) {
         console.warn('[MSPOnboarding] Failed to persist property selection:', storageErr);
@@ -301,13 +323,43 @@ export default function MSP() {
     }
   };
 
-  // Show loading state while fetching MSP entries
-  if (mspEntriesLoading) {
+  // Show loading state while fetching property or MSP entries
+  if (isLoadingProperty || mspEntriesLoading) {
     return (
       <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center px-4 py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-          <p className="text-[16px] text-[#485567]">Loading existing MSP periods...</p>
+          <p className="text-[16px] text-[#485567]">
+            {isLoadingProperty ? 'Loading property information...' : 'Loading existing MSP periods...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if no property found
+  if (!property) {
+    return (
+      <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center px-4 py-8">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 rounded-[10px] p-6 max-w-md">
+            <div className="flex items-center gap-2 mb-4">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" stroke="#EF4444" strokeWidth="1.5"/>
+                <path d="M10 6.66667V10M10 13.3333H10.0083" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="text-[16px] text-[#EF4444] font-medium">No Property Found</span>
+            </div>
+            <p className="text-[14px] text-[#6B7280] mb-4">
+              No properties were found for your account. Please complete the hotel setup first.
+            </p>
+            <button
+              onClick={() => navigate('/hotel-information')}
+              className="px-4 py-2 bg-[#294758] text-white rounded-md text-[14px] font-medium hover:bg-[#234149] transition-colors"
+            >
+              Go to Hotel Setup
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -240,6 +240,15 @@ export const useDynamicMSPEntries = () => {
   });
 };
 
+export const usePropertyMSPEntries = (propertyId: string) => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'property-msp-entries', propertyId],
+    queryFn: () => dynamicPricingService.getPropertyMSPEntries(propertyId),
+    enabled: !!propertyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
 export const useCreateDynamicMSP = () => {
   const queryClient = useQueryClient();
   
