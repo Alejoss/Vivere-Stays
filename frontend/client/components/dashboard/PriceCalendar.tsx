@@ -192,14 +192,6 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     }
   }, [selectedPropertyId]);
 
-    // Debug: Log the price history data and the entry for August 23
-  if (priceHistoryData && priceHistoryData.price_history) {
-    console.log('[PriceCalendar] priceHistoryData:', priceHistoryData);
-    // Find entry for August 23 (month 7 in JS is August, but API uses 1-indexed)
-    const targetDate = `${currentYear}-08-23`;
-    const aug23 = priceHistoryData.price_history.find((entry: any) => entry.checkin_date === targetDate);
-    console.log('[PriceCalendar] Entry for 2025-08-23:', aug23);
-  }
 
   // Set the first property as selected when properties are loaded (only if no propertyId is provided)
   useEffect(() => {
@@ -207,6 +199,13 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       setSelectedPropertyId(userPropertiesData.properties[0].id);
     }
   }, [userPropertiesData, selectedPropertyId, propertyId]);
+
+  // Update selectedPropertyId when propertyId prop changes
+  useEffect(() => {
+    if (propertyId && propertyId !== selectedPropertyId) {
+      setSelectedPropertyId(propertyId);
+    }
+  }, [propertyId, selectedPropertyId]);
 
   const calendarData = generateCalendarData(
     currentYear, 

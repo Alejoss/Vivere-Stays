@@ -1,0 +1,68 @@
+<!-- Support Ticket Received (content-only, used with Vivere Stays layout) -->
+<!-- Variables:
+     - user_name
+     - ticket_id
+     - issue_type
+     - description_excerpt
+     - support_email
+     - portal_url
+-->
+
+<!-- Optional Title -->
+<h1 style="font-size: 24px; font-weight: 700; color: #1E1E1E; margin: 0 0 8px 0; text-align: center;">
+  We've received your support request
+</h1>
+<p style="font-size: 16px; color: #485567; text-align: center; margin: 0 0 24px 0;">
+  Our team is reviewing it and will get back to you shortly.
+</p>
+
+<div class="content-section" style="margin: 24px 0;">
+  <p style="font-size: 16px; color: #485567; line-height: 1.6; margin: 0 0 16px 0;">
+    Hi {{user_name}},
+  </p>
+
+  <p style="font-size: 16px; color: #485567; line-height: 1.6; margin: 0 0 20px 0;">
+    Thanks for reaching out to Vivere Stays Support. Here's a summary of your request:
+  </p>
+
+  <!-- Ticket Summary -->
+  <div style="background-color: #F8FAFC; border: 1px solid #D7DAE0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 12px 0;">
+      Ticket Details
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; width: 140px; padding: 4px 0;">Ticket ID</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">#{{ticket_id}}</td>
+      </tr>
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; padding: 4px 0;">Issue Type</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">{{issue_type}}</td>
+      </tr>
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; vertical-align: top; padding: 4px 0;">Summary</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">
+          {{description_excerpt}}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Next Steps -->
+  <div style="background-color: #EEF9FF; border: 1px solid #D8E9FE; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 8px 0;">
+      What happens next?
+    </p>
+    <ul style="font-size: 14px; color: #485567; line-height: 1.6; margin: 0; padding-left: 18px;">
+      <li>We'll review your request.</li>
+      <li>We'll follow up by email if we need more details or once we have an update.</li>
+      <li>You can reply to this email to add more information.</li>
+    </ul>
+  </div>
+
+  <!-- Footer/help -->
+  <p style="font-size: 14px; color: #9CAABD; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">
+    Need help? Reply to this email or contact us at
+    <a href="mailto:support@viverestays.com" style="color: #294758; text-decoration: none;">support@viverestays.com</a>
+  </p>
+</div>

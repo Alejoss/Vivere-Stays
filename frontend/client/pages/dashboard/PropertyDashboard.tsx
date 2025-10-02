@@ -18,6 +18,9 @@ export default function PropertyDashboard() {
   // Get property from context
   const { property } = useContext(PropertyContext) ?? {};
 
+  // Use property ID from context instead of URL params to ensure we have the correct property after fallback
+  const effectivePropertyId = property?.id || propertyId;
+
   const handleDateClick = (
     day: number,
     month: string = "September",
@@ -60,7 +63,7 @@ export default function PropertyDashboard() {
           {/* Price Calendar */}
           <PriceCalendar 
             onDateClick={handleDateClick} 
-            propertyId={propertyId} 
+            propertyId={effectivePropertyId} 
             refreshKey={calendarRefreshKey}
             onPriceOptionChange={handlePriceOptionChange}
           />
@@ -71,7 +74,7 @@ export default function PropertyDashboard() {
       <div className="lg:block md:block sm:hidden">        
         <RightSidebar 
           selectedDate={selectedDate} 
-          propertyId={propertyId} 
+          propertyId={effectivePropertyId} 
           onPriceUpdate={handlePriceUpdate} 
           hasPMS={!!property.pms}
           selectedPriceOption={selectedPriceOption}

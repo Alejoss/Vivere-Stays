@@ -336,6 +336,15 @@ class PropertyDetailView(APIView):
         Retrieve a specific property by ID
         """
         try:
+            user_profile = request.user.profile
+            
+            # Check if user has access to this property
+            if not user_profile.properties.filter(id=property_id).exists():
+                logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership")
+                return Response({
+                    'message': 'Property not found or access denied'
+                }, status=status.HTTP_404_NOT_FOUND)
+
             property_instance = get_object_or_404(Property, id=property_id)
             serializer = PropertyDetailSerializer(property_instance)
             
@@ -768,22 +777,41 @@ class PriceHistoryView(APIView):
         Retrieve price history data for a specific property
         Returns the most recent price data for each checkin_date
         """
+        print(f"[PriceHistoryView] GET request - User: {request.user.username}, Property ID: {property_id}")
+        logger.info(f"Price history requested - User: {request.user.username}, Property ID: {property_id}")
+        
         try:
             user_profile = request.user.profile
+            print(f"[PriceHistoryView] User profile ID: {user_profile.id}")
+            
+            # Get user's properties for debugging
+            user_properties = user_profile.get_properties()
+            user_property_ids = list(user_properties.values_list('id', flat=True))
+            print(f"[PriceHistoryView] User has {user_properties.count()} properties: {user_property_ids}")
+            logger.info(f"User {request.user.username} has {user_properties.count()} properties: {user_property_ids}")
+            
             if not user_profile.properties.filter(id=property_id).exists():
-                logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership")
+                print(f"[PriceHistoryView] ACCESS DENIED - Property {property_id} not found in user's properties")
+                logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership. User properties: {user_property_ids}")
                 return Response({
                     'message': 'Property not found or access denied'
                 }, status=status.HTTP_404_NOT_FOUND)
 
+            print(f"[PriceHistoryView] ACCESS GRANTED - Property {property_id} found in user's properties")
+            logger.info(f"Access granted to property {property_id} for user {request.user.username}")
+            
             property_obj = get_object_or_404(Property, id=property_id)
+            print(f"[PriceHistoryView] Property found: {property_obj.name}")
 
             year = request.query_params.get('year', timezone.now().year)
             month = request.query_params.get('month', timezone.now().month)
+            print(f"[PriceHistoryView] Query params - Year: {year}, Month: {month}")
             try:
                 year = int(year)
                 month = int(month)
+                print(f"[PriceHistoryView] Parsed params - Year: {year}, Month: {month}")
             except ValueError:
+                print(f"[PriceHistoryView] Invalid year/month parameters: {year}, {month}")
                 return Response({
                     'message': 'Invalid year or month parameter'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -808,21 +836,28 @@ class PriceHistoryView(APIView):
                     price_history.append(serializer.data)
 
             price_history.sort(key=lambda x: x['checkin_date'])
+            print(f"[PriceHistoryView] Returning {len(price_history)} price history entries")
 
-            return Response({
+            response_data = {
                 'property_id': property_id,
                 'property_name': property_obj.name,
                 'year': year,
                 'month': month,
                 'price_history': price_history,
                 'count': len(price_history)
-            }, status=status.HTTP_200_OK)
+            }
+            print(f"[PriceHistoryView] SUCCESS - Returning response with {len(price_history)} entries")
+            logger.info(f"Successfully returned {len(price_history)} price history entries for property {property_id}")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
         except Property.DoesNotExist:
-            logger.warning(f"Property {property_id} not found")
+            print(f"[PriceHistoryView] ERROR - Property {property_id} does not exist in database")
+            logger.warning(f"Property {property_id} not found in database")
             return Response({
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            print(f"[PriceHistoryView] ERROR - Exception occurred: {str(e)}")
             logger.error(f"Error retrieving price history for property {property_id}: {str(e)}", exc_info=True)
             return Response({
                 'message': 'An error occurred while retrieving price history',

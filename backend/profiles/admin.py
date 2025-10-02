@@ -25,8 +25,8 @@ class PMSIntegrationRequirementAdmin(admin.ModelAdmin):
 
 @admin.register(SupportTicket)
 class SupportTicketAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'title', 'issue_type', 'status', 'priority', 'created_at')
-    list_filter = ('issue_type', 'status', 'priority', 'created_at')
+    list_display = ('id', 'user', 'title', 'issue_type', 'status', 'created_at')
+    list_filter = ('issue_type', 'status', 'created_at')
     search_fields = ('user__username', 'user__email', 'title', 'description')
     readonly_fields = ('created_at', 'updated_at', 'resolved_at')
     ordering = ('-created_at',)
@@ -36,8 +36,8 @@ class SupportTicketAdmin(admin.ModelAdmin):
         ('Basic Information', {
             'fields': ('user', 'title', 'issue_type', 'description')
         }),
-        ('Status & Priority', {
-            'fields': ('status', 'priority')
+        ('Status', {
+            'fields': ('status',)
         }),
         ('Screenshot', {
             'fields': ('screenshot',)

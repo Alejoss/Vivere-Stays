@@ -210,19 +210,12 @@ class SupportTicket(models.Model):
         ('closed', 'Closed'),
     ]
     
-    PRIORITY_CHOICES = [
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-        ('urgent', 'Urgent'),
-    ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_tickets')
     issue_type = models.CharField(max_length=20, choices=ISSUE_TYPES, default='general_question')
     title = models.CharField(max_length=200, help_text="Brief title for the support ticket")
     description = models.TextField(help_text="Detailed description of the issue")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
-    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     screenshot = models.ImageField(upload_to='support_screenshots/', null=True, blank=True, help_text="Optional screenshot of the issue")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -234,7 +227,6 @@ class SupportTicket(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'status']),
-            models.Index(fields=['status', 'priority']),
             models.Index(fields=['created_at']),
         ]
     

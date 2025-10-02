@@ -173,7 +173,6 @@ class SupportTicketSerializer(serializers.ModelSerializer):
     """
     issue_type_display = serializers.CharField(source='get_issue_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     user_email = serializers.CharField(source='user.email', read_only=True)
     user_username = serializers.CharField(source='user.username', read_only=True)
     
@@ -181,7 +180,7 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         model = SupportTicket
         fields = [
             'id', 'user', 'user_email', 'user_username', 'issue_type', 'issue_type_display',
-            'title', 'description', 'status', 'status_display', 'priority', 'priority_display',
+            'title', 'description', 'status', 'status_display',
             'screenshot', 'created_at', 'updated_at', 'resolved_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'resolved_at']

@@ -138,8 +138,6 @@ export interface SupportTicketData {
   description: string;
   status?: 'open' | 'in_progress' | 'resolved' | 'closed';
   status_display?: string;
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  priority_display?: string;
   screenshot?: File | string | null;
   created_at?: string;
   updated_at?: string;
@@ -150,8 +148,21 @@ export interface SupportTicketCreateRequest {
   issue_type: 'general_question' | 'technical_issue' | 'billing_question' | 'feature_request' | 'bug_report';
   title?: string;
   description: string;
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
   screenshot?: File;
+}
+
+export interface OnboardingPMSSupportRequest {
+  message?: string;
+  property_id?: string;
+}
+
+export interface OnboardingEmailVerificationSupportRequest {
+  message?: string;
+}
+
+export interface OnboardingContactSalesRequest {
+  message?: string;
+  property_id?: string;
 }
 
 export interface SupportTicketResponse {
@@ -376,9 +387,7 @@ export const profilesService = {
       formData.append('title', data.title);
     }
     
-    if (data.priority) {
-      formData.append('priority', data.priority);
-    }
+    // priority removed
     
     if (data.screenshot) {
       formData.append('screenshot', data.screenshot);
@@ -398,6 +407,30 @@ export const profilesService = {
     return apiRequest<SupportTicketsListResponse>({
       method: 'GET',
       url: '/profiles/support-tickets/',
+    });
+  },
+
+  async sendOnboardingPMSSupport(data: OnboardingPMSSupportRequest): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>({
+      method: 'POST',
+      url: '/profiles/onboarding-pms-support/',
+      data,
+    });
+  },
+
+  async sendOnboardingEmailVerificationSupport(data: OnboardingEmailVerificationSupportRequest): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>({
+      method: 'POST',
+      url: '/profiles/onboarding-email-verification-support/',
+      data,
+    });
+  },
+
+  async sendOnboardingContactSales(data: OnboardingContactSalesRequest): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>({
+      method: 'POST',
+      url: '/profiles/onboarding-contact-sales/',
+      data,
     });
   },
 }; 

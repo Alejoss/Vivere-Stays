@@ -40,7 +40,9 @@ const createAxiosInstance = (): AxiosInstance => {
 
   // Response interceptor for error handling
   instance.interceptors.response.use(
-    (response: AxiosResponse) => response,
+    (response: AxiosResponse) => {
+      return response;
+    },
     async (error) => {
       const originalRequest = error.config;
 

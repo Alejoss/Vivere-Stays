@@ -5,7 +5,7 @@ from .views import (
     RefreshTokenView, GoogleLoginView, PMSIntegrationRequirementView,
     SendVerificationEmailView, VerifyEmailCodeView,
     OnboardingProgressView, TestEmailView, ChangePasswordView, stripe_webhook, CreateCheckoutSession,
-    SupportTicketView
+    SupportTicketView, OnboardingPMSSupportView, OnboardingEmailVerificationSupportView, OnboardingContactSalesView
 )
 
 urlpatterns = [
@@ -36,6 +36,9 @@ urlpatterns = [
     
     # Support ticket endpoints
     path('support-tickets/', SupportTicketView.as_view(), name='support-tickets'),
+    path('onboarding-pms-support/', OnboardingPMSSupportView.as_view(), name='onboarding-pms-support'),
+    path('onboarding-email-verification-support/', OnboardingEmailVerificationSupportView.as_view(), name='onboarding-email-verification-support'),
+    path('onboarding-contact-sales/', OnboardingContactSalesView.as_view(), name='onboarding-contact-sales'),
 
     path("create-checkout-session/",CreateCheckoutSession.as_view(), name="create-checkout-session"),
     path('webhook/', stripe_webhook, name='stripe_webhook'),

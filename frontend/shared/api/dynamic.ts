@@ -315,8 +315,8 @@ export interface DeleteDynamicRuleResponse {
 export interface LosReductionRule {
   id: number;
   property_id: string;
-  lead_time_days: number;
-  occupancy_level: string;
+  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
   los_value: number;
   created_at: string;
   updated_at: string;
@@ -329,8 +329,8 @@ export interface LosReductionRulesResponse {
 
 export interface CreateLosReductionRuleRequest {
   property_id: string;
-  lead_time_days: number;
-  occupancy_level: string;
+  lead_time_category: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  occupancy_category: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
   los_value: number;
 }
 
@@ -356,8 +356,8 @@ export interface BulkCreateLosReductionRulesResponse {
 }
 
 export interface UpdateLosReductionRuleRequest {
-  lead_time_days?: number;
-  occupancy_level?: string;
+  lead_time_category?: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+  occupancy_category?: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
   los_value?: number;
 }
 

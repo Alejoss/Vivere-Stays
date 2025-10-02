@@ -74,10 +74,10 @@ class DpLosSetupAdmin(admin.ModelAdmin):
 
 @admin.register(DpLosReduction)
 class DpLosReductionAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'lead_time_days', 'occupancy_level', 'los_value')
-    list_filter = ('lead_time_days', 'occupancy_level', 'created_at')
+    list_display = ('property_id', 'lead_time_category', 'occupancy_category', 'los_value')
+    list_filter = ('lead_time_category', 'occupancy_category', 'created_at')
     search_fields = ('property_id__name',)
-    ordering = ('property_id', 'lead_time_days', 'occupancy_level')
+    ordering = ('property_id', 'lead_time_category', 'occupancy_category')
 
 
 @admin.register(DpMinimumSellingPrice)

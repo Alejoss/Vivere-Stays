@@ -230,19 +230,20 @@ class DpLosReduction(models.Model):
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='los_reductions', help_text="User who owns this property")
-    lead_time_days = models.IntegerField(default=7)
-    occupancy_level = models.CharField(max_length=255, default='50-70')
+    # Mirror categories from DpDynamicIncrementsV2
+    lead_time_category = models.CharField(max_length=10, choices=DpDynamicIncrementsV2.LEAD_TIME_CATEGORIES, default='3-7', help_text="Lead time category")
+    occupancy_category = models.CharField(max_length=10, choices=DpDynamicIncrementsV2.OCCUPANCY_CATEGORIES, default='50-70', help_text="Occupancy level category")
     los_value = models.IntegerField(default=1)       
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('property_id', 'occupancy_level', 'lead_time_days')
+        unique_together = ('property_id', 'occupancy_category', 'lead_time_category')
         verbose_name = 'LOS Reduction'
         verbose_name_plural = 'LOS Reductions'
 
     def __str__(self):
-        return f"{self.property_id.name} - Lead {self.lead_time_days} days, Occupancy {self.occupancy_level}"
+        return f"{self.property_id.name} - Lead {self.get_lead_time_category_display()}, Occupancy {self.get_occupancy_category_display()}"
 
 
 class DpMinimumSellingPrice(models.Model):
@@ -486,12 +487,6 @@ class UnifiedRoomsAndRates(models.Model):
         on_delete=models.CASCADE,
         db_column='property_id',
         help_text='Internal property ID (unique across all PMSs)'
-    )
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='unified_rooms_and_rates',
-        help_text="User who owns this property"
     )
     pms_source = models.CharField(max_length=50, choices=PMS_SOURCE_CHOICES)
     pms_hotel_id = models.CharField(max_length=255)

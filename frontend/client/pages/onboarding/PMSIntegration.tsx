@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreatePMSIntegration, useCreateHotel, usePMSList } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import ContactSupportModal from "../../components/onboarding/ContactSupportModal";
 import { getHotelDataForAPI, setLocalStorageItem, getLocalStorageItem } from "../../../shared/localStorage";
+import { profilesService } from "../../../shared/api/profiles";
+import { toast } from "../../hooks/use-toast";
 
 type PMSOption = "mews" | "cloudbeds" | "opera" | "other" | "none" | null;
 
@@ -13,6 +16,9 @@ export default function PMSIntegration() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [hotelData, setHotelData] = useState<any>({});
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [propertyId, setPropertyId] = useState<string | null>(null);
 
   const createPMSIntegration = useCreatePMSIntegration();
   const createHotelMutation = useCreateHotel();
@@ -39,8 +45,51 @@ export default function PMSIntegration() {
     }
   }, []);
 
+  // Load user email and property ID
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Get user email from profile
+        const profile = await profilesService.getProfile();
+        setUserEmail(profile.user.email);
+        
+        // Get property ID from localStorage
+        const storedPropertyId = getLocalStorageItem<string>('selectedPropertyId');
+        if (storedPropertyId) {
+          setPropertyId(storedPropertyId);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
   const handleBack = () => {
     navigate("/hotel-information");
+  };
+
+  const handleSupportSubmit = async (message: string) => {
+    try {
+      await profilesService.sendOnboardingPMSSupport({
+        message,
+        property_id: propertyId || undefined,
+      });
+      
+      toast({
+        title: "Success",
+        description: "Support request sent successfully! Our team will contact you soon.",
+      });
+    } catch (error: any) {
+      console.error("Error sending support request:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to send support request. Please try again.",
+        variant: "destructive",
+      });
+      throw error; // Re-throw to let the modal handle the error state
+    }
   };
 
   const handleContinue = async () => {
@@ -465,7 +514,10 @@ export default function PMSIntegration() {
         </div>
 
         {/* Contact Support */}
-        <div className="flex items-center gap-[7px] mt-8 justify-center">
+        <button
+          onClick={() => setIsSupportModalOpen(true)}
+          className="flex items-center gap-[7px] mt-8 justify-center mx-auto hover:opacity-75 transition-opacity"
+        >
           <span className="text-[14px] text-[#485567] opacity-55">
             Contact Support
           </span>
@@ -545,8 +597,17 @@ export default function PMSIntegration() {
               strokeLinejoin="round"
             />
           </svg>
-        </div>
+        </button>
       </div>
+
+      {/* Contact Support Modal */}
+      <ContactSupportModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+        userEmail={userEmail}
+        propertyId={propertyId}
+        onSubmit={handleSupportSubmit}
+      />
     </div>
   );
 }

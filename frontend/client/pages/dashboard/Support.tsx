@@ -44,13 +44,21 @@ export default function Support() {
       return;
     }
 
+    if (description.trim().length < 10) {
+      toast({
+        title: "Error",
+        description: "Description must be at least 10 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const supportData: SupportTicketCreateRequest = {
         issue_type: issueTypeMapping[selectedIssue] as any,
         description: description.trim(),
-        priority: "medium", // Default priority
         screenshot: screenshot || undefined,
       };
 
@@ -68,9 +76,38 @@ export default function Support() {
       
     } catch (error: any) {
       console.error("Error submitting support ticket:", error);
+      
+      // Extract error message from response
+      let errorMessage = "Failed to submit support ticket. Please try again.";
+      
+      if (error.response?.data) {
+        const responseData = error.response.data;
+        
+        // Check for validation errors in details
+        if (responseData.details) {
+          const details = responseData.details;
+          const errorMessages = [];
+          
+          // Extract validation errors for each field
+          Object.keys(details).forEach(field => {
+            if (Array.isArray(details[field])) {
+              errorMessages.push(...details[field]);
+            } else {
+              errorMessages.push(details[field]);
+            }
+          });
+          
+          if (errorMessages.length > 0) {
+            errorMessage = errorMessages.join('. ');
+          }
+        } else if (responseData.error) {
+          errorMessage = responseData.error;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: error.response?.data?.error || "Failed to submit support ticket. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -206,8 +243,11 @@ export default function Support() {
                 rows={6}
                 maxLength={500}
               />
-              <div className="mt-2 text-[12px] text-[#71717A]">
-                {description.length}/500 characters
+              <div className={`mt-2 text-[12px] ${description.length < 10 && description.length > 0 ? 'text-[#FF0404]' : 'text-[#71717A]'}`}>
+                {description.length}/500 characters (minimum 10 required)
+                {description.length < 10 && description.length > 0 && (
+                  <span className="ml-2 text-[#FF0404]">• Too short</span>
+                )}
               </div>
             </div>
 

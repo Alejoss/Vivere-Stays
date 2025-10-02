@@ -119,7 +119,12 @@ class Command(BaseCommand):
                     )
                     records_to_create.append(record)
                 if not dry_run:
-                    DpHistoricalCompetitorPrice.objects.bulk_create(records_to_create, batch_size=1000)
+                    # Ignore duplicates based on unique constraints (e.g., competitor, checkin_date, room_name)
+                    DpHistoricalCompetitorPrice.objects.bulk_create(
+                        records_to_create,
+                        batch_size=1000,
+                        ignore_conflicts=True,
+                    )
                     total_prices_created += len(records_to_create)
                 else:
                     total_prices_created += len(records_to_create)

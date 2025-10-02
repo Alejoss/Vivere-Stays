@@ -910,8 +910,8 @@ class DpLosReductionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DpLosReduction
         fields = [
-            'id', 'property_id', 'user', 'lead_time_days', 
-            'occupancy_level', 'los_value', 'created_at', 'updated_at'
+            'id', 'property_id', 'user', 'lead_time_category', 
+            'occupancy_category', 'los_value', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'property_id', 'user', 'created_at', 'updated_at']
 
@@ -1035,12 +1035,12 @@ class BulkDpLosReductionSerializer(serializers.Serializer):
                 error_message = str(e)
                 # Check for unique constraint violation
                 if 'unique constraint' in error_message.lower() or 'duplicate key' in error_message.lower():
-                    error_message = f"A rule with lead time {reduction_data.get('lead_time_days', 'Unknown')} days and occupancy {reduction_data.get('occupancy_level', 'Unknown')} already exists for this property."
+                    error_message = f"A rule with lead time {reduction_data.get('lead_time_category', 'Unknown')} and occupancy {reduction_data.get('occupancy_category', 'Unknown')} already exists for this property."
                 
                 errors.append({
                     'reduction_index': i,
-                    'lead_time_days': reduction_data.get('lead_time_days', 'Unknown'),
-                    'occupancy_level': reduction_data.get('occupancy_level', 'Unknown'),
+                    'lead_time_category': reduction_data.get('lead_time_category', 'Unknown'),
+                    'occupancy_category': reduction_data.get('occupancy_category', 'Unknown'),
                     'error': error_message
                 })
         

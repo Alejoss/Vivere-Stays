@@ -78,16 +78,14 @@ export default function AnalyticsPerformance() {
     <div className="p-6 pt-12">
       <DateRangePicker range={range} onChange={setRange} />
 
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 2xl:grid-cols-5">
+      <div className="flex flex-col gap-6">
         {/* Occupancy */}
         <OccupancyCard mtd={mtd} forecast={forecast} />
 
-        {/* KPI Cards */}
-        <div className="contents 2xl:grid 2xl:col-span-3 2xl:grid-cols-2 2xl:gap-6">
-          <KPIBarCard title="Revenue" top={charts.revenue.top} bottom={charts.revenue.bottom} />
-          <KPIBarCard title="Average Daily Rate" top={charts.adr.top} bottom={charts.adr.bottom} />
-          <KPIBarCard title="RevPAR" top={charts.revpar.top} bottom={charts.revpar.bottom} />
-        </div>
+        {/* KPI Cards - stacked one per row */}
+        <KPIBarCard title="Revenue" top={charts.revenue.top} bottom={charts.revenue.bottom} />
+        <KPIBarCard title="Average Daily Rate" top={charts.adr.top} bottom={charts.adr.bottom} />
+        <KPIBarCard title="RevPAR" top={charts.revpar.top} bottom={charts.revpar.bottom} />
       </div>
     </div>
   );

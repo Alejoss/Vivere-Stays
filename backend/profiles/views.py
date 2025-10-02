@@ -45,7 +45,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from stripe import Webhook
-from stripe.error import SignatureVerificationError
+import stripe
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 endpoint_secret = settings.STRIPE_WEBHOOK_SECRET 
@@ -132,7 +132,7 @@ def stripe_webhook(request):
     except ValueError as e:
         print(f"❌ Invalid payload: {e}")
         return JsonResponse({"error": "Invalid payload"}, status=400)
-    except stripe.error.SignatureVerificationError as e:
+    except stripe.SignatureVerificationError as e:
         print(f"❌ Invalid signature: {e}")
         return JsonResponse({"error": "Invalid signature"}, status=400)
 
@@ -1459,6 +1459,64 @@ class SupportTicketView(APIView):
                 support_ticket = serializer.save()
                 
                 logger.info(f"Support ticket created: {support_ticket.id} by user {request.user.username}")
+                # Send notification email to analytics mailbox using template (non-blocking)
+                try:
+                    from .email_service import email_service
+                    issue_type_display = support_ticket.get_issue_type_display() if hasattr(support_ticket, 'get_issue_type_display') else data.get('issue_type')
+                    
+                    # Build description excerpt for the template
+                    description_lines = [
+                        f"User: {request.user.first_name or request.user.username} ({request.user.email})",
+                        f"User ID: {request.user.id}",
+                        f"Ticket ID: {support_ticket.id}",
+                        "",
+                        "This is a support ticket from the main dashboard support center.",
+                        "The user has submitted a detailed support request.",
+                        "",
+                        "Description:",
+                        data.get('description', 'No description provided'),
+                    ]
+                    description_excerpt = "\n".join(description_lines)
+
+                    # Use template-based email for consistency with onboarding support
+                    success, message_id_or_error = email_service.send_support_confirmation_email(
+                        to_email="analytics@viverestays.com",
+                        user_name="Support Team",
+                        ticket_id=support_ticket.id,
+                        issue_type=f"Dashboard Support - {issue_type_display}",
+                        description_excerpt=description_excerpt,
+                        support_email="analytics@viverestays.com",
+                        portal_url=getattr(settings, 'FRONTEND_URL', '').rstrip('/') + '/support',
+                    )
+                    
+                    if success:
+                        logger.info(f"Support ticket notification email sent for ticket {support_ticket.id}, MessageID: {message_id_or_error}")
+                    else:
+                        logger.error(f"Failed to send support ticket notification for ticket {support_ticket.id}: {message_id_or_error}")
+                except Exception as email_exc:
+                    logger.error(f"Failed to send support ticket notification for ticket {support_ticket.id}: {email_exc}", exc_info=True)
+
+                # Send confirmation email to the user (non-blocking)
+                try:
+                    from .email_service import email_service
+                    user_email = request.user.email
+                    user_name = request.user.first_name or request.user.username
+                    issue_type_display = support_ticket.get_issue_type_display() if hasattr(support_ticket, 'get_issue_type_display') else data.get('issue_type')
+                    description_excerpt = (data.get('description', '') or '')
+                    if len(description_excerpt) > 200:
+                        description_excerpt = description_excerpt[:197] + '...'
+
+                    email_service.send_support_confirmation_email(
+                        to_email=user_email,
+                        user_name=user_name,
+                        ticket_id=support_ticket.id,
+                        issue_type=issue_type_display,
+                        description_excerpt=description_excerpt,
+                        support_email=getattr(settings, 'SUPPORT_EMAIL', 'support@viverestays.com'),
+                        portal_url=getattr(settings, 'FRONTEND_URL', '').rstrip('/') + '/support',
+                    )
+                except Exception as user_email_exc:
+                    logger.error(f"Failed to send support confirmation email for ticket {support_ticket.id}: {user_email_exc}", exc_info=True)
                 
                 return Response({
                     'message': 'Support ticket created successfully',
@@ -1493,4 +1551,172 @@ class SupportTicketView(APIView):
             logger.error(f"Error retrieving support tickets for user {request.user.username}: {str(e)}", exc_info=True)
             return Response({
                 'error': 'Failed to retrieve support tickets'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OnboardingPMSSupportView(APIView):
+    """
+    API view for sending PMS support requests during onboarding
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Send a PMS support request during onboarding
+        """
+        try:
+            data = request.data
+            message = data.get('message', '')
+            property_id = data.get('property_id')
+            
+            # Get user information
+            user = request.user
+            user_name = user.first_name or user.username
+            user_email = user.email
+            
+            # Build email content
+            subject = f"PMS Support Request from {user_name} during Onboarding"
+            
+            # Build email body
+            lines = [
+                f"User: {user_name} ({user_email})",
+                f"User ID: {user.id}",
+                f"Property ID: {property_id or 'Not provided'}",
+                "",
+                "Message:",
+                message if message else "No additional message provided",
+                "",
+                "This is a PMS support request from the onboarding flow.",
+                "The user needs help choosing a compatible PMS system.",
+            ]
+            text_body = "\n".join([str(x) for x in lines if x is not None])
+            
+            # Send email to analytics team
+            try:
+                from .email_service import email_service
+                
+                # Use template-based email to ensure Postmark template renders
+                success, message_id_or_error = email_service.send_onboarding_pms_support_email(
+                    user_name=user_name,
+                    user_email=user_email,
+                    user_id=user.id,
+                    property_id=property_id,
+                    message=message,
+                    to_email="analytics@viverestays.com",
+                )
+                if success:
+                    logger.info(f"PMS support request email sent for user {user.username}")
+                else:
+                    logger.error(f"Failed to send PMS support request email for user {user.username}: {message_id_or_error}")
+            except Exception as email_exc:
+                logger.error(f"Failed to send PMS support request email for user {user.username}: {email_exc}", exc_info=True)
+            
+            return Response({
+                'message': 'PMS support request sent successfully. Our team will contact you soon.'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error processing PMS support request for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to send PMS support request'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OnboardingEmailVerificationSupportView(APIView):
+    """
+    API view for sending email verification support requests during onboarding
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Send an email verification support request during onboarding
+        """
+        try:
+            data = request.data
+            message = data.get('message', '')
+            
+            # Get user information
+            user = request.user
+            user_name = user.first_name or user.username
+            user_email = user.email
+            
+            # Send email to analytics team
+            try:
+                from .email_service import email_service
+                
+                # Use template-based email to ensure Postmark template renders
+                success, message_id_or_error = email_service.send_onboarding_email_verification_support_email(
+                    user_name=user_name,
+                    user_email=user_email,
+                    user_id=user.id,
+                    message=message,
+                    to_email="analytics@viverestays.com",
+                )
+                if success:
+                    logger.info(f"Email verification support request email sent for user {user.username}")
+                else:
+                    logger.error(f"Failed to send email verification support request email for user {user.username}: {message_id_or_error}")
+            except Exception as email_exc:
+                logger.error(f"Failed to send email verification support request email for user {user.username}: {email_exc}", exc_info=True)
+            
+            return Response({
+                'message': 'Support request sent successfully. Our team will contact you soon.'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error processing email verification support request for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to send support request'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OnboardingContactSalesView(APIView):
+    """
+    API view for sending contact sales requests during onboarding
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Send a contact sales request during onboarding
+        """
+        try:
+            data = request.data
+            message = data.get('message', '')
+            property_id = data.get('property_id')
+            
+            # Get user information
+            user = request.user
+            user_name = user.first_name or user.username
+            user_email = user.email
+            
+            # Send email to sales team
+            try:
+                from .email_service import email_service
+                
+                # Use template-based email to ensure Postmark template renders
+                success, message_id_or_error = email_service.send_onboarding_contact_sales_email(
+                    user_name=user_name,
+                    user_email=user_email,
+                    user_id=user.id,
+                    message=message,
+                    property_id=property_id,
+                    to_email="sales@viverestays.com",
+                )
+                if success:
+                    logger.info(f"Contact sales request email sent for user {user.username}")
+                else:
+                    logger.error(f"Failed to send contact sales request email for user {user.username}: {message_id_or_error}")
+            except Exception as email_exc:
+                logger.error(f"Failed to send contact sales request email for user {user.username}: {email_exc}", exc_info=True)
+            
+            return Response({
+                'message': 'Sales request sent successfully. Our sales team will contact you soon.'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error processing contact sales request for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to send sales request'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

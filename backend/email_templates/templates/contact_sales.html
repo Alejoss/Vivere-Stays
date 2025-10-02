@@ -1,0 +1,84 @@
+<!-- Contact Sales Confirmation (content-only, used with Vivere Stays layout) -->
+<!-- Variables:
+     - user_name
+     - ticket_id
+     - property_id
+     - support_email
+     - portal_url
+-->
+
+<!-- Title -->
+<h1 style="font-size: 24px; font-weight: 700; color: #1E1E1E; margin: 0 0 8px 0; text-align: center;">
+  We've received your sales request
+</h1>
+<p style="font-size: 16px; color: #485567; text-align: center; margin: 0 0 24px 0;">
+  Our sales team will get in touch with you within 24 hours.
+</p>
+
+<div class="content-section" style="margin: 24px 0;">
+  <p style="font-size: 16px; color: #485567; line-height: 1.6; margin: 0 0 16px 0;">
+    Hi {{user_name}},
+  </p>
+  
+  <p style="font-size: 16px; color: #485567; line-height: 1.6; margin: 0 0 20px 0;">
+    Thanks for reaching out to Vivere Stays Sales. We've received your request and our sales team will contact you soon to discuss your specific needs and help you choose the perfect solution for your property.
+  </p>
+  
+  <!-- Request Summary -->
+  <div style="background-color: #F8FAFC; border: 1px solid #D7DAE0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 12px 0;">Request Details</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; width: 140px; padding: 4px 0;">Reference ID</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">#{{ticket_id}}</td>
+      </tr>
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; padding: 4px 0;">Request Type</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">Sales Consultation</td>
+      </tr>
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; padding: 4px 0;">Property ID</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">{{property_id}}</td>
+      </tr>
+    </table>
+  </div>
+  
+  <!-- What happens next -->
+  <div style="background-color: #EEF9FF; border: 1px solid #D8E9FE; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 8px 0;">What happens next?</p>
+    <ul style="font-size: 14px; color: #485567; line-height: 1.6; margin: 0; padding-left: 18px;">
+      <li>Our sales team will review your onboarding progress and property details.</li>
+      <li>We'll contact you within 24 hours via email or phone.</li>
+      <li>We'll discuss your specific needs and requirements.</li>
+      <li>We'll help you choose the perfect plan and integration options.</li>
+      <li>We'll guide you through the rest of your onboarding process.</li>
+    </ul>
+  </div>
+  
+  <!-- 24-hour commitment -->
+  <div style="background-color: #F0F9FF; border: 1px solid #0EA5E9; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <!-- Clock Icon -->
+      <div style="margin-top: 2px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="10" cy="10" r="9" stroke="#0EA5E9" stroke-width="1.5"/>
+          <path d="M10 6V10L13 13" stroke="#0EA5E9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <p style="font-size: 14px; color: #0C4A6E; font-weight: 600; margin: 0 0 8px 0;">
+          24-Hour Response Guarantee
+        </p>
+        <p style="font-size: 14px; color: #0C4A6E; line-height: 1.5; margin: 0;">
+          Our sales team is committed to contacting you within 24 hours to ensure you get the personalized assistance you need for your property management setup.
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Footer/help -->
+  <p style="font-size: 14px; color: #9CAABD; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">
+    Need immediate assistance? Reply to this email or contact us at
+    <a href="mailto:{{support_email}}" style="color: #294758; text-decoration: none;">{{support_email}}</a>
+  </p>
+</div>

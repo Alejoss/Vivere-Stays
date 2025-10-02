@@ -3,12 +3,17 @@ import { useNavigate } from "react-router-dom";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { useProfile } from "../../../shared/api/hooks";
 import { getLocalStorageItem } from "../../../shared/localStorage";
+import { profilesService } from "../../../shared/api/profiles";
+import { toast } from "../../hooks/use-toast";
 
 export default function ContactSalesOnboarding() {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string>("");
   const [pmsSelectionType, setPmsSelectionType] = useState<string | null>(null);
   const [customPmsName, setCustomPmsName] = useState<string | null>(null);
+  const [propertyId, setPropertyId] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   // Fetch user profile to get email
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -21,7 +26,7 @@ export default function ContactSalesOnboarding() {
     console.log("Profile data:", profile); // Debug log
   }, [profile]);
 
-  // Load PMS selection data from localStorage
+  // Load PMS selection data and property ID from localStorage
   useEffect(() => {
     try {
       const pmsType = getLocalStorageItem<string>('pmsSelectionType');
@@ -34,8 +39,14 @@ export default function ContactSalesOnboarding() {
       if (customPms) {
         setCustomPmsName(customPms);
       }
+
+      // Get property ID from localStorage
+      const storedPropertyId = getLocalStorageItem<string>('selectedPropertyId');
+      if (storedPropertyId) {
+        setPropertyId(storedPropertyId);
+      }
     } catch (error) {
-      console.error('Error loading PMS data from localStorage:', error);
+      console.error('Error loading data from localStorage:', error);
     }
   }, []);
 
@@ -48,13 +59,42 @@ export default function ContactSalesOnboarding() {
     navigate("/add-competitor");
   };
 
-  // Show loading state while fetching profile
-  if (profileLoading) {
+  // Automatically send contact sales email when component mounts
+  useEffect(() => {
+    const sendContactSalesEmail = async () => {
+      // Only send if we have user email and haven't sent already
+      if (userEmail && !emailSent && !isSendingEmail) {
+        setIsSendingEmail(true);
+        
+        try {
+          await profilesService.sendOnboardingContactSales({
+            message: `User has reached the contact sales page during onboarding. Our sales team will get in touch within 24 hours.`,
+            property_id: propertyId || undefined,
+          });
+          
+          setEmailSent(true);
+          console.log("Contact sales email sent automatically");
+        } catch (error: any) {
+          console.error("Error sending automatic sales request:", error);
+          // Don't show error toast for automatic sending to avoid disrupting UX
+        } finally {
+          setIsSendingEmail(false);
+        }
+      }
+    };
+
+    sendContactSalesEmail();
+  }, [userEmail, emailSent, isSendingEmail, propertyId]);
+
+  // Show loading state while fetching profile or sending email
+  if (profileLoading || isSendingEmail) {
     return (
       <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center justify-center px-4 py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-          <p className="text-[16px] text-[#485567]">Loading your information...</p>
+          <p className="text-[16px] text-[#485567]">
+            {profileLoading ? "Loading your information..." : "Notifying our sales team..."}
+          </p>
         </div>
       </div>
     );
@@ -121,9 +161,9 @@ export default function ContactSalesOnboarding() {
         </div>
 
         {/* Information Box */}
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-6 mb-8">
+        <div className="bg-[#F0F9FF] border border-[#0EA5E9] rounded-lg p-6 mb-8">
           <div className="flex items-start gap-4">
-            <div className="w-8 h-8 bg-[#294758] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+            <div className="w-8 h-8 bg-[#0EA5E9] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
               <svg
                 width="16"
                 height="16"
@@ -138,14 +178,15 @@ export default function ContactSalesOnboarding() {
               </svg>
             </div>
             <div>
-              <h3 className="text-[16px] font-semibold text-[#1E1E1E] mb-2">
-                Custom Integration Support
+              <h3 className="text-[16px] font-semibold text-[#0C4A6E] mb-2">
+                Sales Team Notified
               </h3>
-              <p className="text-[14px] text-[#485567] leading-relaxed">
+              <p className="text-[14px] text-[#0C4A6E] leading-relaxed">
+                Our sales team has been automatically notified about your onboarding progress. 
                 {customPmsName 
-                  ? `Our sales team will help you set up the perfect integration for your ${customPmsName} property management system.`
-                  : "Our sales team will help you set up the perfect integration for a property management system."
-                } We'll work with you to ensure a smooth onboarding experience tailored to your specific needs.
+                  ? ` We'll help you set up the perfect integration for your ${customPmsName} property management system.`
+                  : " We'll help you set up the perfect integration for your property management system."
+                } <strong>Our sales team will get in touch with you within 24 hours</strong> to discuss your specific needs and ensure a smooth onboarding experience.
               </p>
             </div>
           </div>

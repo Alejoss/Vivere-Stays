@@ -9,6 +9,8 @@ import {
   ChevronDown,
   Settings,
   Edit3,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as React from "react";
@@ -41,6 +43,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
   const [hotelManagementOpen, setHotelManagementOpen] = React.useState(() => location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management"));
+  const [isMinimized, setIsMinimized] = React.useState(false);
   
   // Get property from context
   const { property } = useContext(PropertyContext) ?? {};
@@ -54,19 +57,51 @@ export default function Sidebar() {
     }
   };
 
+  const handleMinimizedClick = (path: string) => {
+    if (isMinimized) {
+      // When minimized, expand the sidebar and navigate
+      setIsMinimized(false);
+      // Small delay to allow the sidebar to expand before navigation
+      setTimeout(() => handleNavigation(path), 100);
+    } else {
+      handleNavigation(path);
+    }
+  };
+
   return (
-    <div className="w-[277px] lg:w-[277px] md:w-64 sm:w-16 h-screen bg-hotel-sidebar-bg border-r border-hotel-sidebar-border flex flex-col overflow-hidden">
+    <div className={`${isMinimized ? 'w-16' : 'w-[277px] lg:w-[277px] md:w-64'} h-screen bg-hotel-sidebar-bg border-r border-hotel-sidebar-border flex flex-col overflow-hidden transition-all duration-300 ease-in-out`}>
       {/* Logo */}
       <div className="flex justify-center items-center px-[10px] pt-[34px] pb-[24px]">
-        <img
-          src="https://api.builder.io/api/v1/image/assets/TEMP/ccc50d58fcb7f83e65dfa6899517f0bb70d365f9?width=374"
-          alt="Vivere Stays Logo"
-          className="w-[187px] h-16"
-        />
+        {!isMinimized ? (
+          <img
+            src="https://api.builder.io/api/v1/image/assets/TEMP/ccc50d58fcb7f83e65dfa6899517f0bb70d365f9?width=374"
+            alt="Vivere Stays Logo"
+            className="w-[187px] h-16"
+          />
+        ) : (
+          <div className="w-8 h-8 bg-hotel-brand-dark rounded flex items-center justify-center">
+            <span className="text-white font-bold text-sm">V</span>
+          </div>
+        )}
       </div>
 
       {/* Divider */}
-      <div className="w-[257px] h-px bg-hotel-divider mx-[10px] mb-[10px]" />
+      <div className={`${isMinimized ? 'w-12' : 'w-[257px]'} h-px bg-hotel-divider mx-[10px] mb-[10px]`} />
+
+      {/* Toggle Button */}
+      <div className="flex justify-end px-2 mb-2">
+        <button
+          onClick={() => setIsMinimized(!isMinimized)}
+          className="p-1 rounded hover:bg-gray-200 transition-colors"
+          title={isMinimized ? "Expand sidebar" : "Minimize sidebar"}
+        >
+          {isMinimized ? (
+            <ChevronsRight size={16} className="text-gray-600" />
+          ) : (
+            <ChevronsLeft size={16} className="text-gray-600" />
+          )}
+        </button>
+      </div>
 
       {/* Main Navigation */}
       <div className="flex flex-col gap-[2px] px-[10px]">
@@ -77,12 +112,15 @@ export default function Sidebar() {
             <button
               key={item.id}
               onClick={() => handleNavigation(item.path)}
-              className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
+              className={`flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'gap-3 px-[11px]'} py-[10px] rounded border-0 transition-colors ${
                 isActive ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
               }`}
+              title={isMinimized ? item.label : undefined}
             >
               <item.icon size={18} color={isActive ? "white" : "black"} />
-              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">{item.label}</span>
+              {!isMinimized && (
+                <span className="text-[15px] font-semibold leading-none">{item.label}</span>
+              )}
             </button>
           );
         })}
@@ -96,37 +134,45 @@ export default function Sidebar() {
               navigate("/dashboard/change-prices");
             }
           }}
-          className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
+          className={`flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'gap-3 px-[11px]'} py-[10px] rounded border-0 transition-colors ${
             location.pathname.startsWith("/dashboard/change-prices") 
               ? "bg-hotel-brand-dark text-white" 
               : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
           }`}
+          title={isMinimized ? "Change Prices" : undefined}
         >
           <Edit3 size={18} color={location.pathname.startsWith("/dashboard/change-prices") ? "white" : "black"} />
-          <span className="text-[15px] font-semibold leading-none sm:hidden md:block">Change Prices</span>
+          {!isMinimized && (
+            <span className="text-[15px] font-semibold leading-none">Change Prices</span>
+          )}
         </button>
 
 
         {/* Analytics submenu */}
         <div className="mt-[2px]">
           <button
-            onClick={() => setAnalyticsOpen((o) => !o)}
+            onClick={() => isMinimized ? handleMinimizedClick("/dashboard/analytics/performance") : setAnalyticsOpen((o) => !o)}
             aria-expanded={analyticsOpen}
-            className={`w-full flex items-center justify-between px-[11px] py-[10px] rounded border-0 transition-colors ${
+            className={`w-full flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'justify-between px-[11px]'} py-[10px] rounded border-0 transition-colors ${
               location.pathname.startsWith("/dashboard/analytics") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
             }`}
+            title={isMinimized ? "Analytics" : undefined}
           >
-            <span className="flex items-center gap-3">
+            <span className={`flex items-center ${isMinimized ? 'justify-center' : 'gap-3'}`}>
               <BarChart3 size={18} color={location.pathname.startsWith("/dashboard/analytics") ? "white" : "black"} />
-              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">Analytics</span>
+              {!isMinimized && (
+                <span className="text-[15px] font-semibold leading-none">Analytics</span>
+              )}
             </span>
-            <ChevronDown
-              size={18}
-              className={`transition-transform duration-200 ${analyticsOpen ? "rotate-180" : "rotate-0"}`}
-              color={location.pathname.startsWith("/dashboard/analytics") ? "white" : "black"}
-            />
+            {!isMinimized && (
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${analyticsOpen ? "rotate-180" : "rotate-0"}`}
+                color={location.pathname.startsWith("/dashboard/analytics") ? "white" : "black"}
+              />
+            )}
           </button>
-          {analyticsOpen && (
+          {analyticsOpen && !isMinimized && (
             <div className="mt-1 pl-9 pr-2 flex flex-col gap-1">
               {/* Performance */}
               <button
@@ -136,7 +182,7 @@ export default function Sidebar() {
                 }`}
               >
                 <BarChart3 size={16} color={location.pathname === "/dashboard/analytics/performance" ? "white" : "black"} />
-                <span className="sm:hidden md:block">Performance</span>
+                <span>Performance</span>
               </button>
               {/* Pickup */}
               <button
@@ -146,7 +192,7 @@ export default function Sidebar() {
                 }`}
               >
                 <TrendingUp size={16} color={location.pathname === "/dashboard/analytics/pickup" ? "white" : "black"} />
-                <span className="sm:hidden md:block">Pickup</span>
+                <span>Pickup</span>
               </button>
             </div>
           )}
@@ -155,27 +201,32 @@ export default function Sidebar() {
         {/* Hotel Management Section */}
         <div className="mt-[10px]">
           <button
-            onClick={() => setHotelManagementOpen((o) => !o)}
+            onClick={() => isMinimized ? handleMinimizedClick("/dashboard/hotel-information") : setHotelManagementOpen((o) => !o)}
             aria-expanded={hotelManagementOpen}
-            className={`w-full flex items-center justify-between px-[11px] py-[10px] rounded border-0 transition-colors ${
+            className={`w-full flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'justify-between px-[11px]'} py-[10px] rounded border-0 transition-colors ${
               location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
             }`}
+            title={isMinimized ? "Hotel Management" : undefined}
           >
-            <span className="flex items-center gap-3">
+            <span className={`flex items-center ${isMinimized ? 'justify-center' : 'gap-3'}`}>
               <Settings size={18} color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "white" : "black"} />
-              <span className="text-[15px] font-semibold leading-none sm:hidden md:block">
-                Hotel Management
-              </span>
+              {!isMinimized && (
+                <span className="text-[15px] font-semibold leading-none">
+                  Hotel Management
+                </span>
+              )}
             </span>
-            <ChevronDown
-              size={18}
-              className={`transition-transform duration-200 ${hotelManagementOpen ? "rotate-180" : "rotate-0"}`}
-              color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "white" : "black"}
-            />
+            {!isMinimized && (
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${hotelManagementOpen ? "rotate-180" : "rotate-0"}`}
+                color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "white" : "black"}
+              />
+            )}
           </button>
           
           {/* Hotel Management Sub-options */}
-          {hotelManagementOpen && (
+          {hotelManagementOpen && !isMinimized && (
             <div className="mt-1 pl-9 pr-2 flex flex-col gap-1">
               {hotelManagementItems.map((item) => {
                 const isActive = location.pathname === item.path;
@@ -189,7 +240,7 @@ export default function Sidebar() {
                         : "hover:bg-gray-100 text-black"
                     }`}
                   >
-                    <span className="sm:hidden md:block">{item.label}</span>
+                    <span>{item.label}</span>
                   </button>
                 );
               })}
@@ -199,7 +250,7 @@ export default function Sidebar() {
       </div>
 
       {/* Divider */}
-      <div className="w-[257px] h-px bg-hotel-divider mx-[10px] my-[10px]" />
+      <div className={`${isMinimized ? 'w-12' : 'w-[257px]'} h-px bg-hotel-divider mx-[10px] my-[10px]`} />
 
       {/* Account Navigation */}
       <div className="flex flex-col gap-[2px] px-[10px]">
@@ -209,14 +260,17 @@ export default function Sidebar() {
             <button
               key={item.id}
               onClick={() => handleNavigation(item.path)}
-              className={`flex items-center gap-3 px-[11px] py-[10px] rounded border-0 transition-colors ${
+              className={`flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'gap-3 px-[11px]'} py-[10px] rounded border-0 transition-colors ${
                 isActive ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
               }`}
+              title={isMinimized ? item.label : undefined}
             >
               <item.icon size={18} color={isActive ? "white" : "black"} />
-              <span className="text-[15px] font-normal leading-none sm:hidden md:block">
-                {item.label}
-              </span>
+              {!isMinimized && (
+                <span className="text-[15px] font-normal leading-none">
+                  {item.label}
+                </span>
+              )}
             </button>
           );
         })}

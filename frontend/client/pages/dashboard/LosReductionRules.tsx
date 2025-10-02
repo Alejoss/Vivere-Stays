@@ -27,6 +27,17 @@ export default function LosReductionRules() {
     { value: '100+', label: '100%+' },
   ];
 
+  const leadTimeCategories = [
+    { value: '0-1', label: '0-1 days' },
+    { value: '1-3', label: '1-3 days' },
+    { value: '3-7', label: '3-7 days' },
+    { value: '7-14', label: '7-14 days' },
+    { value: '14-30', label: '14-30 days' },
+    { value: '30-45', label: '30-45 days' },
+    { value: '45-60', label: '45-60 days' },
+    { value: '60+', label: '60+ days' },
+  ];
+
   // State management
   const [reductionRules, setReductionRules] = useState<LosReductionRule[]>([]);
 
@@ -58,14 +69,16 @@ export default function LosReductionRules() {
   };
 
   const addReductionRule = () => {
-    const newRule: Partial<LosReductionRule> = {
+    const newRule: LosReductionRule = {
       id: `temp_${Date.now()}` as any,
       property_id: property?.id || "",
-      lead_time_days: 7,
-      occupancy_level: "50-70",
+      lead_time_category: '3-7',
+      occupancy_category: "50-70",
       los_value: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-    setReductionRules([...reductionRules, newRule as LosReductionRule]);
+    setReductionRules([...reductionRules, newRule]);
   };
 
   const removeReductionRule = async (id: number | string) => {
@@ -154,8 +167,8 @@ export default function LosReductionRules() {
         // This is a new rule - create it
         const createData: CreateLosReductionRuleRequest = {
           property_id: property.id,
-          lead_time_days: rule.lead_time_days,
-          occupancy_level: rule.occupancy_level,
+          lead_time_category: rule.lead_time_category,
+          occupancy_category: rule.occupancy_category,
           los_value: rule.los_value,
         };
 
@@ -168,8 +181,8 @@ export default function LosReductionRules() {
       } else {
         // This is an existing rule - update it
         const updateData: UpdateLosReductionRuleRequest = {
-          lead_time_days: rule.lead_time_days,
-          occupancy_level: rule.occupancy_level,
+          lead_time_category: rule.lead_time_category,
+          occupancy_category: rule.occupancy_category,
           los_value: rule.los_value,
         };
 
@@ -394,11 +407,11 @@ export default function LosReductionRules() {
               {/* Table Headers */}
               <div className="grid grid-cols-4 gap-0">
                 <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold">Lead Time (Days)</span>
+                  <span className="text-base font-semibold">Lead Time Category</span>
                   <Info size={20} className="text-white" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold">Occupancy Level</span>
+                  <span className="text-base font-semibold">Occupancy Category</span>
                   <Info size={20} className="text-white" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
@@ -413,20 +426,23 @@ export default function LosReductionRules() {
               {reductionRules.map((rule, index) => (
                 <div key={rule.id || index} className="grid grid-cols-4 gap-0">
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
-                    <input
-                      type="number"
-                      value={rule.lead_time_days}
-                      onChange={(e) => updateReductionRule(rule.id, 'lead_time_days', parseInt(e.target.value))}
+                    <select
+                      value={rule.lead_time_category}
+                      onChange={(e) => updateReductionRule(rule.id, 'lead_time_category', e.target.value)}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      min="1"
-                      placeholder="Days"
-                    />
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {leadTimeCategories.map((category) => (
+                        <option key={category.value} value={category.value}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
                     <select
-                      value={rule.occupancy_level}
-                      onChange={(e) => updateReductionRule(rule.id, 'occupancy_level', e.target.value)}
+                      value={rule.occupancy_category}
+                      onChange={(e) => updateReductionRule(rule.id, 'occupancy_category', e.target.value)}
                       disabled={isLoading || isSaving}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >

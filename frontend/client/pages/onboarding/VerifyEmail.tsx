@@ -3,6 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { apiClient } from "../../../shared/api/client";
 import { useCurrentUser } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import ContactSupportModal from "../../components/onboarding/ContactSupportModal";
+import { profilesService } from "../../../shared/api/profiles";
+import { toast } from "../../hooks/use-toast";
 
 // Success Overlay Component
 const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
@@ -67,6 +70,7 @@ export default function VerifyEmail() {
   const [isVerified, setIsVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState("");
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   // Get email from authenticated user
   const email = user?.email || "";
@@ -144,8 +148,25 @@ export default function VerifyEmail() {
     }
   };
 
-  const handleContactSupport = () => {
-    alert("Contact support functionality would be implemented here.");
+  const handleSupportSubmit = async (message: string) => {
+    try {
+      await profilesService.sendOnboardingEmailVerificationSupport({
+        message,
+      });
+      
+      toast({
+        title: "Success",
+        description: "Support request sent successfully! Our team will contact you soon.",
+      });
+    } catch (error: any) {
+      console.error("Error sending support request:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to send support request. Please try again.",
+        variant: "destructive",
+      });
+      throw error; // Re-throw to let the modal handle the error state
+    }
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -343,7 +364,7 @@ export default function VerifyEmail() {
             <div className="space-y-5 pt-5">
               <div className="w-full h-[1.5px] bg-[#D7DFE8]"></div>
               <button
-                onClick={handleContactSupport}
+                onClick={() => setIsSupportModalOpen(true)}
                 className="w-full text-[16px] text-[#294859] hover:underline transition-colors"
               >
                 Need help? Contact Support
@@ -355,6 +376,15 @@ export default function VerifyEmail() {
 
       {/* Success Overlay */}
       {isVerified && <SuccessOverlay onComplete={handleVerificationComplete} />}
+
+      {/* Contact Support Modal */}
+      <ContactSupportModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+        userEmail={email}
+        propertyId={null}
+        onSubmit={handleSupportSubmit}
+      />
     </div>
   );
 }

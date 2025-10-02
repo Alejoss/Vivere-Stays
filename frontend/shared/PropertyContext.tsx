@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "./localStorage";
 import { PropertyDetailResponse, dynamicPricingService } from "./api/dynamic";
+import { profilesService } from "./api/profiles";
 
 export interface PropertyContextType {
   property: PropertyDetailResponse | null;
@@ -22,32 +23,79 @@ export const PropertyContext = createContext<PropertyContextType | undefined>(un
 
 export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps) => {
   const [property, setProperty] = useState<PropertyDetailResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Function to load property from localStorage or backend
   const loadProperty = async (selectedPropertyId: string) => {
-    if (!selectedPropertyId) return;
-    
-    const propertyData = getLocalStorageItem<any>(PROPERTY_DATA_KEY);
-    console.log('[PropertyContext] Loaded propertyData from localStorage:', propertyData, 'Type:', typeof propertyData);
-    
-    // Only use localStorage data if it matches the current propertyId
-    if (isValidProperty(propertyData) && propertyData.id === selectedPropertyId) {
-      setProperty(propertyData);
-      console.log('[PropertyContext] setProperty called with (from localStorage):', propertyData);
-    } else {
-      // Fetch from backend if not in localStorage, invalid, or different property
-      try {
-        console.log('[PropertyContext] Fetching property from backend for id:', selectedPropertyId);
+    if (!selectedPropertyId) {
+      return;
+    }
+
+    // Prevent infinite loops - don't load if already loading or if we already have the correct property
+    if (isLoading) {
+      return;
+    }
+
+    if (property && property.id === selectedPropertyId) {
+      return;
+    }
+      
+    // Always fetch from backend to ensure we have the correct property for the current user
+    setIsLoading(true);
+    try {
         const backendData = await dynamicPricingService.getProperty(selectedPropertyId);
+        
         // Flatten if wrapped in 'property' key
         const flatProperty = backendData.property ? backendData.property : backendData;
-        console.log('[PropertyContext] Fetched property from backend (flat):', flatProperty);
+        
         setProperty(flatProperty);
         setLocalStorageItem(PROPERTY_DATA_KEY, flatProperty);
-        console.log('[PropertyContext] setProperty called with (from backend):', flatProperty);
+        setIsLoading(false);
       } catch (err) {
-        console.error('[PropertyContext] Error fetching property from backend:', err);
-      }
+        // Check if it's a 404 error (property not found or access denied)
+        const is404Error = (
+          // Check if it's an error object with status 404
+          (err && typeof err === 'object' && err.status === 404) ||
+          // Check if it's an Error instance with 404 in message
+          (err instanceof Error && (
+            err.message.includes('404') || 
+            err.message.includes('not found') || 
+            err.message.includes('access denied') ||
+            err.message.includes('Property not found or access denied')
+          )) ||
+          // Check if error message contains the access denied message
+          (err && typeof err === 'object' && err.error && err.error.includes('Property not found or access denied'))
+        );
+        
+        if (is404Error) {
+          // Fallback to user's properties
+          try {
+            const userPropertiesResponse = await profilesService.getUserProperties();
+            const userProperties = userPropertiesResponse.properties;
+            
+            if (userProperties && userProperties.length > 0) {
+              // Take the first (most recent) property
+              const fallbackProperty = userProperties[0];
+              
+              // Fetch full property details for the fallback property
+              const fullPropertyData = await dynamicPricingService.getProperty(fallbackProperty.id);
+              const flatProperty = fullPropertyData.property ? fullPropertyData.property : fullPropertyData;
+              
+              // Update context and localStorage with the correct property
+              setProperty(flatProperty);
+              setLocalStorageItem(PROPERTY_DATA_KEY, flatProperty);
+              setLocalStorageItem("selectedPropertyId", flatProperty.id);
+              
+              setIsLoading(false);
+             } else {
+               setIsLoading(false);
+             }
+           } catch (fallbackErr) {
+             setIsLoading(false);
+           }
+         } else {
+           setIsLoading(false);
+       }
     }
   };
 
@@ -57,74 +105,18 @@ export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps
     if (!selectedPropertyId) {
       // Use standardized JSON storage method
       selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
-      console.log('[PropertyContext] No propertyId in URL, using from localStorage:', selectedPropertyId);
     } else {
-      console.log('[PropertyContext] Using propertyId from URL:', selectedPropertyId);
       setLocalStorageItem("selectedPropertyId", selectedPropertyId);
     }
     
     loadProperty(selectedPropertyId);
   }, [propertyId]);
 
-  // Listen for localStorage changes to detect when property is created/updated
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      // Only handle changes to our property-related keys
-      if (e.key === 'selectedPropertyId' || e.key === PROPERTY_DATA_KEY) {
-        console.log('[PropertyContext] localStorage changed:', e.key, e.newValue);
-        
-        // If selectedPropertyId changed, load the new property
-        if (e.key === 'selectedPropertyId' && e.newValue) {
-          loadProperty(e.newValue);
-        }
-        // If property_data changed, update the context
-        else if (e.key === PROPERTY_DATA_KEY && e.newValue) {
-          try {
-            const newPropertyData = JSON.parse(e.newValue);
-            if (isValidProperty(newPropertyData)) {
-              setProperty(newPropertyData);
-              console.log('[PropertyContext] Updated property from storage event:', newPropertyData);
-            }
-          } catch (err) {
-            console.error('[PropertyContext] Error parsing property data from storage event:', err);
-          }
-        }
-      }
-    };
+  // Removed localStorage event listeners to prevent infinite loops
 
-    // Listen for storage events (changes from other tabs/windows)
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom events for same-tab changes
-    const handleCustomStorageChange = (e: CustomEvent) => {
-      console.log('[PropertyContext] Custom storage event:', e.detail);
-      if (e.detail.key === 'selectedPropertyId' && e.detail.value) {
-        loadProperty(e.detail.value);
-      } else if (e.detail.key === PROPERTY_DATA_KEY && e.detail.value) {
-        if (isValidProperty(e.detail.value)) {
-          setProperty(e.detail.value);
-          console.log('[PropertyContext] Updated property from custom storage event:', e.detail.value);
-        }
-      }
-    };
+  // Removed automatic localStorage updates to prevent infinite loops
+  // localStorage is now only updated explicitly in loadProperty function
 
-    window.addEventListener('localStorageChange', handleCustomStorageChange as EventListener);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('localStorageChange', handleCustomStorageChange as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (property && property.id) {
-      setLocalStorageItem("selectedPropertyId", property.id);
-      setLocalStorageItem(PROPERTY_DATA_KEY, property);
-      console.log('[PropertyContext] Updated localStorage with property:', property);
-    }
-  }, [property]);
-
-  console.log('[PropertyContext] Rendering with property:', property);
   return (
     <PropertyContext.Provider value={{ property, setProperty }}>
       {children}
