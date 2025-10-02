@@ -60,10 +60,10 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profile-completion" element={<ProfileCompletion />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/register" element={<OnboardingLayout><Register /></OnboardingLayout>} />
+            <Route path="/profile-completion" element={<OnboardingLayout><ProfileCompletion /></OnboardingLayout>} />
+            <Route path="/terms" element={<OnboardingLayout><Terms /></OnboardingLayout>} />
+            <Route path="/verify-email" element={<OnboardingLayout><VerifyEmail /></OnboardingLayout>} />
             <Route path="/hotel-information" element={<OnboardingLayout><HotelInformationOnboarding /></OnboardingLayout>} />
             <Route path="/pms-integration" element={<OnboardingLayout><PMSIntegration /></OnboardingLayout>} />
             <Route path="/pms-information" element={<OnboardingLayout><PMSInformation /></OnboardingLayout>} />
