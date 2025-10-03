@@ -159,9 +159,9 @@ export default function Support() {
       </div>
 
       {/* Main Content */}
-      <div className="flex gap-8 px-6">
+      <div className="flex flex-col lg:flex-row gap-8 px-6">
         {/* Form Section */}
-        <div className="flex-1 max-w-[600px]">
+        <div className="flex-1 lg:max-w-[600px]">
           {/* Create Support Ticket Header */}
           <div className="bg-[#294859] text-white px-8 py-4 rounded-t-md mb-6">
             <div className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function Support() {
         </div>
 
         {/* Tips Sidebar */}
-        <div className="w-[281px]">
+        <div className="w-full lg:w-[281px]">
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#20C25E] to-[#069768] px-8 py-6">

@@ -232,8 +232,8 @@ export default function AvailableRates() {
 
           {/* Rates Table */}
           <div className="mb-8">
-            {/* Table Headers */}
-            <div className="grid grid-cols-8 gap-4 mb-4 text-[#375A7D] font-bold text-base">
+            {/* Desktop Table Headers */}
+            <div className="hidden lg:grid grid-cols-8 gap-4 mb-4 text-[#375A7D] font-bold text-base">
               <div>Room ID</div>
               <div>Room Name</div>
               <div>Rate ID</div>
@@ -259,72 +259,156 @@ export default function AvailableRates() {
                 </div>
               ) : (
                 editableRates.map((rate) => (
-                  <div
-                    key={rate.id}
-                    className={`grid grid-cols-8 gap-4 items-center p-3 rounded-lg transition-colors ${
-                      rate.is_base_rate 
-                        ? 'bg-blue-50 border border-blue-200' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    {/* Room ID */}
-                    <div>
-                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
-                        {rate.room_id}
+                  <div key={rate.id}>
+                    {/* Desktop Layout */}
+                    <div
+                      className={`hidden lg:grid grid-cols-8 gap-4 items-center p-3 rounded-lg transition-colors ${
+                        rate.is_base_rate 
+                          ? 'bg-blue-50 border border-blue-200' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      {/* Room ID */}
+                      <div>
+                        <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                          {rate.room_id}
+                        </div>
+                      </div>
+
+                      {/* Room Name */}
+                      <div>
+                        <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                          {rate.room_name}
+                        </div>
+                      </div>
+
+                      {/* Rate ID */}
+                      <div>
+                        <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                          {rate.rate_id}
+                        </div>
+                      </div>
+
+                      {/* Rate Name */}
+                      <div>
+                        <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
+                          {rate.rate_name}
+                        </div>
+                      </div>
+
+                      {/* Rate Category */}
+                      <div>
+                        <CategorySelector
+                          category={rate.rate_category || 'Not specified'}
+                          hasDropdown={true}
+                        />
+                      </div>
+
+                      {/* Increment Type */}
+                      <div>
+                        <IncrementTypeSelector 
+                          type={rate.increment_type} 
+                          onChange={(newType) => updateIncrementType(rate.rate_id, newType)}
+                        />
+                      </div>
+
+                      {/* Increment Value */}
+                      <div>
+                        <input
+                          type="number"
+                          value={rate.increment_value}
+                          onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
+                          className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
+                          min="0"
+                        />
+                      </div>
+
+                      {/* Select as Base */}
+                      <div className="flex items-center justify-center">
+                        <ToggleSwitch enabled={rate.is_base_rate} onChange={() => toggleBaseRate(rate.rate_id)} />
                       </div>
                     </div>
 
-                    {/* Room Name */}
-                    <div>
-                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
-                        {rate.room_name}
+                    {/* Mobile Layout */}
+                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg p-4 space-y-4 ${
+                      rate.is_base_rate ? 'bg-blue-50 border-blue-200' : ''
+                    }`}>
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-semibold text-gray-700">
+                          {rate.room_name}
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Base Rate</span>
+                          <ToggleSwitch enabled={rate.is_base_rate} onChange={() => toggleBaseRate(rate.rate_id)} />
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Rate ID */}
-                    <div>
-                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
-                        {rate.rate_id}
+                      {/* Room and Rate Info */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Room ID
+                          </label>
+                          <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600">
+                            {rate.room_id}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Rate ID
+                          </label>
+                          <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600">
+                            {rate.rate_id}
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Rate Name */}
-                    <div>
-                      <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600 cursor-not-allowed">
-                        {rate.rate_name}
+                      {/* Rate Name and Category */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Rate Name
+                          </label>
+                          <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600">
+                            {rate.rate_name}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Rate Category
+                          </label>
+                          <CategorySelector
+                            category={rate.rate_category || 'Not specified'}
+                            hasDropdown={true}
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Rate Category */}
-                    <div>
-                      <CategorySelector
-                        category={rate.rate_category || 'Not specified'}
-                        hasDropdown={true}
-                      />
-                    </div>
-
-                    {/* Increment Type */}
-                    <div>
-                      <IncrementTypeSelector 
-                        type={rate.increment_type} 
-                        onChange={(newType) => updateIncrementType(rate.rate_id, newType)}
-                      />
-                    </div>
-
-                    {/* Increment Value */}
-                    <div>
-                      <input
-                        type="number"
-                        value={rate.increment_value}
-                        onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
-                        className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
-                        min="0"
-                      />
-                    </div>
-
-                    {/* Select as Base */}
-                    <div className="flex items-center justify-center">
-                      <ToggleSwitch enabled={rate.is_base_rate} onChange={() => toggleBaseRate(rate.rate_id)} />
+                      {/* Increment Type and Value */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Increment Type
+                          </label>
+                          <IncrementTypeSelector 
+                            type={rate.increment_type} 
+                            onChange={(newType) => updateIncrementType(rate.rate_id, newType)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Increment Value
+                          </label>
+                          <input
+                            type="number"
+                            value={rate.increment_value}
+                            onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
+                            className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
+                            min="0"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))

@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PriceCalendar from "../../components/dashboard/PriceCalendar";
 import RightSidebar from "../../components/dashboard/RightSidebar";
+import DateDetailsModal from "../../components/dashboard/DateDetailsModal";
 import { PropertyContext } from "../../../shared/PropertyContext";
 
 export default function PropertyDashboard() {
@@ -14,6 +15,7 @@ export default function PropertyDashboard() {
   } | null>(null);
   const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
   const [selectedPriceOption, setSelectedPriceOption] = useState("Average Daily Rate");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Get property from context
   const { property } = useContext(PropertyContext) ?? {};
@@ -27,12 +29,20 @@ export default function PropertyDashboard() {
     year: string = "2025",
   ) => {
     setSelectedDate({ day, month, year });
+    // Open modal only on smaller screens when sidebar is hidden
+    if (window.innerWidth < 1280) {
+      setIsModalOpen(true);
+    }
   };
 
   const handlePriceUpdate = () => setCalendarRefreshKey((k) => k + 1);
 
   const handlePriceOptionChange = (option: string) => {
     setSelectedPriceOption(option);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
   };
 
   // Show loading state while property is not loaded
@@ -53,10 +63,10 @@ export default function PropertyDashboard() {
     );
   }
 
-  console.log('[PropertyDashboard] property.pms:', property.pms);
+  console.log('[PropertyDashboard] property.pms_name:', property.pms_name);
 
   return (
-    <div className="flex-1 flex lg:flex-row flex-col overflow-hidden">
+    <div className="flex-1 flex overflow-hidden">
       {/* Calendar Area */}
       <div className="flex-1 p-3 lg:p-6 overflow-auto">
         <div className="w-full">         
@@ -70,16 +80,27 @@ export default function PropertyDashboard() {
         </div>
       </div>
 
-      {/* Right Sidebar */}
-      <div className="lg:block md:block sm:hidden">        
+      {/* Right Sidebar - Only show on large screens */}
+      <div className="hidden xl:block">        
         <RightSidebar 
           selectedDate={selectedDate} 
           propertyId={effectivePropertyId} 
           onPriceUpdate={handlePriceUpdate} 
-          hasPMS={!!property.pms}
+          hasPMS={!!property.pms_name}
           selectedPriceOption={selectedPriceOption}
         />
       </div>
+
+      {/* Modal for smaller screens */}
+      <DateDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        selectedDate={selectedDate}
+        propertyId={effectivePropertyId}
+        onPriceUpdate={handlePriceUpdate}
+        hasPMS={!!property.pms_name}
+        selectedPriceOption={selectedPriceOption}
+      />
     </div>
   );
 }

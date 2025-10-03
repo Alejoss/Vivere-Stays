@@ -43,7 +43,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
   const [hotelManagementOpen, setHotelManagementOpen] = React.useState(() => location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management"));
-  const [isMinimized, setIsMinimized] = React.useState(false);
+  const [isMinimized, setIsMinimized] = React.useState(true);
   
   // Get property from context
   const { property } = useContext(PropertyContext) ?? {};
@@ -58,14 +58,8 @@ export default function Sidebar() {
   };
 
   const handleMinimizedClick = (path: string) => {
-    if (isMinimized) {
-      // When minimized, expand the sidebar and navigate
-      setIsMinimized(false);
-      // Small delay to allow the sidebar to expand before navigation
-      setTimeout(() => handleNavigation(path), 100);
-    } else {
-      handleNavigation(path);
-    }
+    // When minimized, just navigate without expanding
+    handleNavigation(path);
   };
 
   return (
@@ -201,7 +195,16 @@ export default function Sidebar() {
         {/* Hotel Management Section */}
         <div className="mt-[10px]">
           <button
-            onClick={() => isMinimized ? handleMinimizedClick("/dashboard/hotel-information") : setHotelManagementOpen((o) => !o)}
+            onClick={() => {
+              if (isMinimized) {
+                // If minimized, expand the sidebar and open hotel management
+                setIsMinimized(false);
+                setHotelManagementOpen(true);
+              } else {
+                // If expanded, just toggle hotel management
+                setHotelManagementOpen((o) => !o);
+              }
+            }}
             aria-expanded={hotelManagementOpen}
             className={`w-full flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'justify-between px-[11px]'} py-[10px] rounded border-0 transition-colors ${
               location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"

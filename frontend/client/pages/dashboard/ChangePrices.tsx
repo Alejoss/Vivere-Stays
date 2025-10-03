@@ -100,6 +100,12 @@ function WeeklyPriceOverview({
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [localPrices, setLocalPrices] = useState<{ [key: string]: string }>({});
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [mobileDayIndex, setMobileDayIndex] = useState(0); // Track which 3-day window we're showing
+  
+  // Touch/swipe state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
 
   // Calculate week dates
   const weekDates = generateWeekDates(currentWeek);
@@ -140,6 +146,7 @@ function WeeklyPriceOverview({
   // Reset local prices when data refreshes
   useEffect(() => {
     setLocalPrices({});
+    setMobileDayIndex(0); // Reset mobile view to first 3 days
     // Don't clear success message - let it stay visible for user to see
   }, [refreshKey]);
 
@@ -173,6 +180,18 @@ function WeeklyPriceOverview({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMonthDropdown]);
+
+  // Handle window resize to reset mobile view when switching to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setMobileDayIndex(0); // Reset to show all days on desktop
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Handle price change (local state only)
   const handlePriceChange = (index: number, newValue: string) => {
@@ -266,6 +285,76 @@ function WeeklyPriceOverview({
     setCurrentWeek(Math.min(53, currentWeek + 1));
   };
 
+  // Mobile navigation functions
+  const goToPreviousDays = () => {
+    setMobileDayIndex(Math.max(0, mobileDayIndex - 1));
+  };
+
+  const goToNextDays = () => {
+    setMobileDayIndex(Math.min(4, mobileDayIndex + 1)); // Max index is 4 (shows days 4,5,6)
+  };
+
+  // Get visible days based on screen size and mobile index
+  const getVisibleDays = () => {
+    if (!competitorData?.dates) return [];
+    
+    // On desktop (lg+), show all 7 days
+    if (window.innerWidth >= 1024) {
+      return competitorData.dates.map((date, index) => ({ date, index }));
+    }
+    
+    // On mobile, show 3 days starting from mobileDayIndex
+    return competitorData.dates
+      .slice(mobileDayIndex, mobileDayIndex + 3)
+      .map((date, originalIndex) => ({ 
+        date, 
+        index: mobileDayIndex + originalIndex 
+      }));
+  };
+
+  const visibleDays = getVisibleDays();
+
+  // Touch event handlers for swipe functionality
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) {
+      setIsSwiping(false);
+      return;
+    }
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50; // Minimum swipe distance
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && mobileDayIndex < 4) {
+      // Swipe left - go to next days
+      setMobileDayIndex(prev => Math.min(4, prev + 1));
+    } else if (isRightSwipe && mobileDayIndex > 0) {
+      // Swipe right - go to previous days
+      setMobileDayIndex(prev => Math.max(0, prev - 1));
+    }
+
+    setIsSwiping(false);
+  };
+
+  // Prevent page scroll during swipe
+  const handleTouchStartPrevent = (e: React.TouchEvent) => {
+    handleTouchStart(e);
+    // Only prevent default if we're on mobile
+    if (window.innerWidth < 1024) {
+      e.preventDefault();
+    }
+  };
+
   // Get the month name for the current week
   const getCurrentMonthYear = (week: number) => {
     const weekStart = getWeekStartDate(2025, week);
@@ -331,14 +420,14 @@ function WeeklyPriceOverview({
   return (
     <div className="w-full bg-white rounded-lg shadow-lg">
       {/* Header */}
-      <div className="bg-hotel-brand rounded-t-lg p-6 flex items-center justify-between">
+      <div className="bg-hotel-brand rounded-t-lg p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Calendar className="text-white" size={20} />
-          <span className="text-white text-xl font-bold">
+          <Calendar className="hidden lg:block text-white" size={20} />
+          <span className="hidden lg:block text-white text-xl font-bold">
             Weekly Price Overview
           </span>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center justify-center lg:justify-end gap-6">
           <button
             onClick={goToPreviousWeek}
             className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
@@ -362,7 +451,7 @@ function WeeklyPriceOverview({
       </div>
 
       {/* Month/Year Dropdown */}
-      <div className="px-6 py-4 bg-hotel-brand relative month-dropdown-container">
+      <div className="px-6 py-4 bg-hotel-brand relative month-dropdown-container flex justify-center lg:justify-start">
         <button
           onClick={() => setShowMonthDropdown(!showMonthDropdown)}
           className="flex items-center gap-2 px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm text-hotel-brand text-xl font-bold hover:bg-white transition-colors"
@@ -404,8 +493,73 @@ function WeeklyPriceOverview({
             Hotel
           </span>
         </div>
-        <div className="flex-1 flex items-center justify-between px-4">
-          {competitorData.dates.map((date, index) => {
+        <div 
+          className="flex-1 flex flex-col items-center justify-center px-4 lg:hidden"
+          onTouchStart={handleTouchStartPrevent}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{ touchAction: 'pan-y' }} // Allow vertical scroll but handle horizontal swipes
+        >
+          {/* Main content row */}
+          <div className="flex items-center justify-between w-full">
+            {/* Mobile navigation buttons - only show on mobile */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goToPreviousDays}
+                disabled={mobileDayIndex === 0}
+                className="w-8 h-8 rounded-full bg-hotel-brand/20 hover:bg-hotel-brand/30 text-hotel-brand transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            </div>
+            
+            {/* Date headers */}
+            <div className="flex-1 flex items-center justify-center gap-4">
+              {visibleDays.map(({ date, index }) => {
+                const d = new Date(date);
+                const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+                return (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center gap-3 w-[78px] lg:w-[90px] xl:w-[110px]"
+                  >
+                    <span className="text-hotel-brand text-2xl font-bold">{dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}</span>
+                    <span className="text-gray-700 text-lg font-semibold">{d.getDate().toString().padStart(2, '0')}</span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Mobile navigation buttons - only show on mobile */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goToNextDays}
+                disabled={mobileDayIndex >= 4}
+                className="w-8 h-8 rounded-full bg-hotel-brand/20 hover:bg-hotel-brand/30 text-hotel-brand transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+          
+          {/* Swipe indicators */}
+          <div className="flex items-center gap-1 mt-2">
+            {[0, 1, 2, 3, 4].map((indicator) => (
+              <div
+                key={indicator}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  mobileDayIndex === indicator 
+                    ? 'bg-hotel-brand' 
+                    : 'bg-gray-300'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+        
+        {/* Desktop date headers - no touch events */}
+        <div className="hidden lg:flex flex-1 items-center justify-between px-4">
+          {competitorData?.dates.map((date, index) => {
             const d = new Date(date);
             const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
             return (
@@ -425,32 +579,113 @@ function WeeklyPriceOverview({
       {competitorData.competitors.map((competitor, rowIndex) => (
         <div
           key={rowIndex}
-          className="flex items-center border-b border-gray-200 px-4 py-4"
+          className="flex items-center border-b border-gray-200 px-4 py-4 lg:hidden"
+          onTouchStart={handleTouchStartPrevent}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{ touchAction: 'pan-y' }}
         >
           <div className="w-[140px]">
             <span className="text-black text-base font-normal">
               {competitor.name}
             </span>
           </div>
-          <div className="flex-1 flex items-center justify-between px-4">
-            {competitor.prices.map((value, index) => (
-              <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
-                <div className="px-3 py-1 bg-gray-100 rounded text-[13px] text-gray-600">
-                  {value !== null && value !== undefined ? `$${value}` : '--'}
+          <div className="flex-1 flex items-center justify-center px-4">
+            {visibleDays.map(({ date, index }) => {
+              const value = competitor.prices[index];
+              return (
+                <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
+                  <div className="px-3 py-1 bg-gray-100 rounded text-[13px] text-gray-600">
+                    {value !== null && value !== undefined ? `$${value}` : '--'}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}
 
-      {/* Your Price Row (dynamic) */}
-      <div className="flex items-center bg-gray-50 border-b-2 border-hotel-brand px-4 py-5 rounded-b-lg">
+      {/* Desktop Competitor Rows - no touch events */}
+      {competitorData.competitors.map((competitor, rowIndex) => (
+        <div
+          key={`desktop-${rowIndex}`}
+          className="hidden lg:flex items-center border-b border-gray-200 px-4 py-4"
+        >
+          <div className="w-[140px]">
+            <span className="text-black text-base font-normal">
+              {competitor.name}
+            </span>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-4">
+            {competitorData.dates.map((date, index) => {
+              const value = competitor.prices[index];
+              return (
+                <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
+                  <div className="px-3 py-1 bg-gray-100 rounded text-[13px] text-gray-600">
+                    {value !== null && value !== undefined ? `$${value}` : '--'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {/* Your Price Row (dynamic) - Mobile */}
+      <div 
+        className="flex items-center bg-gray-50 border-b-2 border-hotel-brand px-4 py-5 rounded-b-lg lg:hidden"
+        onTouchStart={handleTouchStartPrevent}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: 'pan-y' }}
+      >
         <div className="w-[140px]">
           <span className="text-black text-xl font-bold">Your Price</span>
         </div>
-        <div className="flex-1 flex items-center justify-between px-4">
-          {competitorData.dates.map((date, index) => {
+        <div className="flex-1 flex items-center justify-center px-4">
+          {visibleDays.map(({ date, index }) => {
+            // Find the price for this specific date from price history
+            const priceData = priceHistoryData?.price_history?.find(
+              (entry: any) => entry.checkin_date === date
+            );
+            const apiPrice = priceData ? priceData.price.toString() : "200"; // Default price if no data found
+            
+            // Use local price if available, otherwise use API price
+            const price = localPrices[date] !== undefined ? localPrices[date] : apiPrice;
+            
+            // Determine if the date is in the past
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isPast = new Date(date) < today;
+            return (
+              <div key={index} className="w-[100px] lg:w-[120px] xl:w-[140px] flex justify-center">
+                <div className="relative flex items-center w-full">
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-lg text-[#294859] font-bold z-10">$</span>
+                  <input
+                    type="text"
+                    value={price}
+                    onChange={(e) => handlePriceChange(index, e.target.value)}
+                    onBlur={() => handlePriceBlur(index)}
+                    className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-xl font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
+                    style={{ minWidth: 70, maxWidth: 110 }}
+                    maxLength={5}
+                    disabled={isPast}
+                    title={isPast ? 'Cannot edit past prices' : ''}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Your Price Row (dynamic) - Desktop */}
+      <div className="hidden lg:flex items-center bg-gray-50 border-b-2 border-hotel-brand px-4 py-5 rounded-b-lg">
+        <div className="w-[140px]">
+          <span className="text-black text-xl font-bold">Your Price</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-4">
+          {competitorData?.dates.map((date, index) => {
             // Find the price for this specific date from price history
             const priceData = priceHistoryData?.price_history?.find(
               (entry: any) => entry.checkin_date === date
@@ -625,7 +860,7 @@ function StayPeriodSelector({
   };
 
   return (
-    <div className="w-[275px] h-[460px] bg-white rounded-lg border border-gray-200 shadow-lg">
+    <div className="w-full max-w-md lg:w-[275px] h-[460px] bg-white rounded-lg border border-gray-200 shadow-lg">
       {/* Header */}
       <div className="bg-[#0073D9] p-[25px_22px] rounded-t-lg h-[72px] flex items-center">
         <div className="flex items-center gap-1">
@@ -825,8 +1060,26 @@ export default function ChangePrices() {
         </div>
       </div>
       {/* Main Content */}
-      <div className="flex gap-6 p-6">
-        <div className="flex-1">
+      <div className="flex flex-col lg:flex-row gap-6 p-6">
+        {/* StayPeriodSelector - appears first on mobile, second on desktop */}
+        <div className="flex-shrink-0 lg:order-2 flex justify-center lg:justify-start">
+          <div className="w-full max-w-md lg:w-auto">
+            <StayPeriodSelector
+              onStartDateChange={handleStartDateChange}
+              propertyId={propertyId}
+              onSuccess={() => setRefreshKey((k) => k + 1)}
+              setSuccessMsg={setSuccessMsg}
+            />
+            {successMsg && (
+              <div className="w-full lg:w-[275px] mt-4 mx-auto px-4 py-2 bg-green-100 text-green-800 text-center text-sm font-semibold rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
+                {successMsg}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* WeeklyPriceOverview - appears second on mobile, first on desktop */}
+        <div className="flex-1 lg:order-1">
           <WeeklyPriceOverview
             currentWeek={currentWeek}
             setCurrentWeek={setCurrentWeek}
@@ -834,19 +1087,6 @@ export default function ChangePrices() {
             refreshKey={refreshKey}
             onPriceChange={() => setRefreshKey((k) => k + 1)}
           />
-        </div>
-        <div className="flex-shrink-0">
-          <StayPeriodSelector
-            onStartDateChange={handleStartDateChange}
-            propertyId={propertyId}
-            onSuccess={() => setRefreshKey((k) => k + 1)}
-            setSuccessMsg={setSuccessMsg}
-          />
-          {successMsg && (
-            <div className="w-[275px] mt-4 mx-auto px-4 py-2 bg-green-100 text-green-800 text-center text-sm font-semibold rounded break-words whitespace-pre-line" style={{wordBreak: 'break-word'}}>
-              {successMsg}
-            </div>
-          )}
         </div>
       </div>
     </div>

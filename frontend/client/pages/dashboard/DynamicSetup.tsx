@@ -251,8 +251,8 @@ export default function DynamicSetup() {
 
           {/* Rules Table */}
           <div className="mb-8">
-            {/* Table Headers */}
-            <div className="grid grid-cols-5 gap-6 mb-4 text-[#494951] font-semibold text-base">
+            {/* Desktop Table Headers */}
+            <div className="hidden lg:grid grid-cols-5 gap-6 mb-4 text-[#494951] font-semibold text-base">
               <div>Occupancy</div>
               <div>Lead Time</div>
               <div>Increment Type</div>
@@ -275,57 +275,126 @@ export default function DynamicSetup() {
                 </div>
               ) : (
                 rules.map((rule, index) => (
-                  <div
-                    key={rule.id || `new-${index}`}
-                    className={`grid grid-cols-5 gap-6 items-center p-3 rounded-lg ${
-                      rule.isNew ? 'bg-blue-50 border border-blue-200' : 'bg-white'
-                    }`}
-                  >
-                    {/* Occupancy */}
-                    <div>
-                      <OccupancySelector
-                        value={rule.occupancy_category}
-                        onChange={(value) => updateRule(index, 'occupancy_category', value)}
-                      />
+                  <div key={rule.id || `new-${index}`}>
+                    {/* Desktop Layout */}
+                    <div
+                      className={`hidden lg:grid grid-cols-5 gap-6 items-center p-3 rounded-lg ${
+                        rule.isNew ? 'bg-blue-50 border border-blue-200' : 'bg-white'
+                      }`}
+                    >
+                      {/* Occupancy */}
+                      <div>
+                        <OccupancySelector
+                          value={rule.occupancy_category}
+                          onChange={(value) => updateRule(index, 'occupancy_category', value)}
+                        />
+                      </div>
+
+                      {/* Lead Time */}
+                      <div>
+                        <LeadTimeSelector
+                          value={rule.lead_time_category}
+                          onChange={(value) => updateRule(index, 'lead_time_category', value)}
+                        />
+                      </div>
+
+                      {/* Increment Type */}
+                      <div>
+                        <IncrementTypeSelector
+                          value={rule.increment_type}
+                          onChange={(value) => updateRule(index, 'increment_type', value)}
+                        />
+                      </div>
+
+                      {/* Increment Value */}
+                      <div>
+                        <input
+                          type="number"
+                          value={rule.increment_value}
+                          onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          min="0"
+                          className="w-full px-3 py-[11px] text-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
+                        />
+                      </div>
+
+                      {/* Actions */}
+                      <div>
+                        <button 
+                          onClick={() => removeRule(index)}
+                          className="px-3 py-[10px] border border-gray-300 rounded bg-white text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors min-w-[80px] flex items-center justify-center"
+                          title="Delete rule"
+                        >
+                          <Trash2 size={20} className="text-red-500" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Lead Time */}
-                    <div>
-                      <LeadTimeSelector
-                        value={rule.lead_time_category}
-                        onChange={(value) => updateRule(index, 'lead_time_category', value)}
-                      />
-                    </div>
+                    {/* Mobile Layout */}
+                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg p-4 space-y-4 ${
+                      rule.isNew ? 'bg-blue-50 border-blue-200' : ''
+                    }`}>
+                      {/* Header with delete button */}
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-semibold text-gray-700">
+                          Rule {index + 1}
+                        </h4>
+                        <button 
+                          onClick={() => removeRule(index)}
+                          className="w-8 h-8 p-1 border border-red-300 bg-red-50 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors"
+                          title="Delete rule"
+                        >
+                          <Trash2 size={16} className="text-red-500" />
+                        </button>
+                      </div>
 
-                    {/* Increment Type */}
-                    <div>
-                      <IncrementTypeSelector
-                        value={rule.increment_type}
-                        onChange={(value) => updateRule(index, 'increment_type', value)}
-                      />
-                    </div>
+                      {/* Occupancy and Lead Time */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Occupancy
+                          </label>
+                          <OccupancySelector
+                            value={rule.occupancy_category}
+                            onChange={(value) => updateRule(index, 'occupancy_category', value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Lead Time
+                          </label>
+                          <LeadTimeSelector
+                            value={rule.lead_time_category}
+                            onChange={(value) => updateRule(index, 'lead_time_category', value)}
+                          />
+                        </div>
+                      </div>
 
-                    {/* Increment Value */}
-                    <div>
-                      <input
-                        type="number"
-                        value={rule.increment_value}
-                        onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
-                        placeholder="0"
-                        min="0"
-                        className="w-full px-3 py-[11px] text-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
-                      />
-                    </div>
-
-                    {/* Actions */}
-                    <div>
-                      <button 
-                        onClick={() => removeRule(index)}
-                        className="px-3 py-[10px] border border-gray-300 rounded bg-white text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors min-w-[80px] flex items-center justify-center"
-                        title="Delete rule"
-                      >
-                        <Trash2 size={20} className="text-red-500" />
-                      </button>
+                      {/* Increment Type and Value */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Increment Type
+                          </label>
+                          <IncrementTypeSelector
+                            value={rule.increment_type}
+                            onChange={(value) => updateRule(index, 'increment_type', value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Increment Value
+                          </label>
+                          <input
+                            type="number"
+                            value={rule.increment_value}
+                            onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            min="0"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))

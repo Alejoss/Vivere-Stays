@@ -451,7 +451,8 @@ export default function LosSetupRules() {
               )}
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-[#D0DFE6] mb-6">
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] mb-6">
               {/* Table Headers */}
               <div className="grid grid-cols-5 gap-0">
                 <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
@@ -535,6 +536,103 @@ export default function LosSetupRules() {
                     >
                       <Trash2 size={20} />
                     </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile Layout */}
+            <div className="lg:hidden space-y-4 mb-6">
+              {fields.map((rule, index) => (
+                <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg p-4 space-y-4">
+                  {/* Header with delete button */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-gray-700">
+                      Rule {index + 1}
+                    </h4>
+                    <button
+                      onClick={() => removeSetupRule(index)}
+                      disabled={isLoading || isSaving}
+                      className="w-8 h-8 p-1 border border-red-300 bg-red-50 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 size={16} className="text-red-500" />
+                    </button>
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        From Date
+                        <Info size={14} className="inline ml-1 text-gray-600" />
+                      </label>
+                      <input
+                        type="date"
+                        {...form.register(`rules.${index}.valid_from` as const)}
+                        disabled={isLoading || isSaving}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      {formState.errors?.rules?.[index]?.valid_from?.message && (
+                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        To Date
+                        <Info size={14} className="inline ml-1 text-gray-600" />
+                      </label>
+                      <input
+                        type="date"
+                        {...form.register(`rules.${index}.valid_until` as const)}
+                        disabled={isLoading || isSaving}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      {formState.errors?.rules?.[index]?.valid_until?.message && (
+                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Day and LOS Value */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Day
+                        <Info size={14} className="inline ml-1 text-gray-600" />
+                      </label>
+                      <select
+                        {...form.register(`rules.${index}.day_of_week` as const)}
+                        disabled={isLoading || isSaving}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                        <option value="Sunday">Sunday</option>
+                      </select>
+                      {formState.errors?.rules?.[index]?.day_of_week?.message && (
+                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        LOS Value
+                        <Info size={14} className="inline ml-1 text-gray-600" />
+                      </label>
+                      <input
+                        type="number"
+                        {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
+                        disabled={isLoading || isSaving}
+                        className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        min="1"
+                      />
+                      {formState.errors?.rules?.[index]?.los_value?.message && (
+                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.los_value?.message)}</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -403,7 +403,8 @@ export default function LosReductionRules() {
               )}
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-[#D0DFE6] mb-6">
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] mb-6">
               {/* Table Headers */}
               <div className="grid grid-cols-4 gap-0">
                 <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
@@ -471,6 +472,84 @@ export default function LosReductionRules() {
                     >
                       <Trash2 size={20} />
                     </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile Layout */}
+            <div className="lg:hidden space-y-4 mb-6">
+              {reductionRules.map((rule, index) => (
+                <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg p-4 space-y-4">
+                  {/* Header with delete button */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-gray-700">
+                      Rule {index + 1}
+                    </h4>
+                    <button
+                      onClick={() => removeReductionRule(rule.id)}
+                      disabled={isLoading || isSaving}
+                      className="w-8 h-8 p-1 border border-red-300 bg-red-50 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 size={16} className="text-red-500" />
+                    </button>
+                  </div>
+
+                  {/* Lead Time and Occupancy Categories */}
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Lead Time Category
+                        <Info size={14} className="inline ml-1 text-gray-600" />
+                      </label>
+                      <select
+                        value={rule.lead_time_category}
+                        onChange={(e) => updateReductionRule(rule.id, 'lead_time_category', e.target.value)}
+                        disabled={isLoading || isSaving}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {leadTimeCategories.map((category) => (
+                          <option key={category.value} value={category.value}>
+                            {category.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Occupancy Category
+                        <Info size={14} className="inline ml-1 text-gray-600" />
+                      </label>
+                      <select
+                        value={rule.occupancy_category}
+                        onChange={(e) => updateReductionRule(rule.id, 'occupancy_category', e.target.value)}
+                        disabled={isLoading || isSaving}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {occupancyCategories.map((category) => (
+                          <option key={category.value} value={category.value}>
+                            {category.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* LOS Reduction */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      LOS Reduction
+                      <Info size={14} className="inline ml-1 text-gray-600" />
+                    </label>
+                    <input
+                      type="number"
+                      value={rule.los_value}
+                      onChange={(e) => updateReductionRule(rule.id, 'los_value', parseFloat(e.target.value) || 0)}
+                      disabled={isLoading || isSaving}
+                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      min="0"
+                      step="0.01"
+                    />
                   </div>
                 </div>
               ))}

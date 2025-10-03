@@ -352,8 +352,8 @@ export default function SpecialOffers() {
 
           {/* Offers Table */}
           <div className="mb-8">
-            {/* Table Headers */}
-            <div className="grid grid-cols-8 gap-4 mb-4 text-black/70 font-bold text-base">
+            {/* Desktop Table Headers */}
+            <div className="hidden lg:grid grid-cols-8 gap-4 mb-4 text-black/70 font-bold text-base">
               <div>Offer Name*</div>
               <div>Valid From*</div>
               <div>Valid Until*</div>
@@ -386,113 +386,249 @@ export default function SpecialOffers() {
                 </div>
               ) : (
                 fields.map((offer, index) => (
-                  <div
-                    key={offer.id || `new-${index}`}
-                    className={`grid grid-cols-8 gap-4 items-center p-3 rounded-lg ${
-                      offer.id ? 'bg-white' : 'bg-blue-50 border border-blue-200'
-                    }`}
-                  >
-                    {/* Offer Name */}
-                    <div>
-                      <input
-                        type="text"
-                        {...register(`offers.${index}.offer_name` as const)}
-                        placeholder="Discount Name"
-                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {formState.errors?.offers?.[index]?.offer_name?.message ? (
-                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
-                      ) : null}
+                  <div key={offer.id || `new-${index}`}>
+                    {/* Desktop Layout */}
+                    <div
+                      className={`hidden lg:grid grid-cols-8 gap-4 items-center p-3 rounded-lg ${
+                        offer.id ? 'bg-white' : 'bg-blue-50 border border-blue-200'
+                      }`}
+                    >
+                      {/* Offer Name */}
+                      <div>
+                        <input
+                          type="text"
+                          {...register(`offers.${index}.offer_name` as const)}
+                          placeholder="Discount Name"
+                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {formState.errors?.offers?.[index]?.offer_name?.message ? (
+                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
+                        ) : null}
+                      </div>
+
+                      {/* Valid From */}
+                      <div>
+                        <input
+                          type="date"
+                          {...register(`offers.${index}.valid_from` as const)}
+                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
+                          placeholder="Select start date"
+                        />
+                        {formState.errors?.offers?.[index]?.valid_from?.message ? (
+                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
+                        ) : null}
+                      </div>
+
+                      {/* Valid Until */}
+                      <div>
+                        <input
+                          type="date"
+                          {...register(`offers.${index}.valid_until` as const)}
+                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
+                          placeholder="Select end date"
+                        />
+                        {formState.errors?.offers?.[index]?.valid_until?.message ? (
+                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
+                        ) : null}
+                      </div>
+
+                      {/* Available From Days */}
+                      <div>
+                        <input
+                          type="number"
+                          {...register(`offers.${index}.applied_from_days` as const)}
+                          placeholder="0"
+                          min="0"
+                          className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
+                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
+                        ) : null}
+                      </div>
+
+                      {/* Available Until Days */}
+                      <div>
+                        <input
+                          type="number"
+                          {...register(`offers.${index}.applied_until_days` as const)}
+                          placeholder="0"
+                          min="0"
+                          className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
+                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
+                        ) : null}
+                      </div>
+
+                      {/* Type */}
+                      <div>
+                        <select
+                          {...register(`offers.${index}.increment_type` as const)}
+                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black appearance-none"
+                        >
+                          <option value="Percentage">Percentage</option>
+                          <option value="Additional">Additional</option>
+                        </select>
+                      </div>
+
+                      {/* Value */}
+                      <div>
+                        <input
+                          type="number"
+                          {...register(`offers.${index}.increment_value` as const)}
+                          placeholder="0"
+                          min="0"
+                          className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {formState.errors?.offers?.[index]?.increment_value?.message ? (
+                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
+                        ) : null}
+                      </div>
+
+                      {/* Actions */}
+                      <div>
+                        <button 
+                          onClick={() => removeOffer(index)}
+                          className="w-full px-5 py-2 border border-red-500 bg-red-50 rounded flex items-center justify-center hover:bg-red-100 transition-colors"
+                          title="Delete offer"
+                        >
+                          <Trash2 size={20} className="text-red-500" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Valid From */}
-                    <div>
-                      <input
-                        type="date"
-                        {...register(`offers.${index}.valid_from` as const)}
-                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
-                        placeholder="Select start date"
-                      />
-                      {formState.errors?.offers?.[index]?.valid_from?.message ? (
-                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
-                      ) : null}
-                    </div>
+                    {/* Mobile Layout */}
+                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg p-4 space-y-4 ${
+                      offer.id ? '' : 'bg-blue-50 border-blue-200'
+                    }`}>
+                      {/* Header with delete button */}
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-semibold text-gray-700">
+                          Offer {index + 1}
+                        </h4>
+                        <button 
+                          onClick={() => removeOffer(index)}
+                          className="w-8 h-8 p-1 border border-red-300 bg-red-50 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors"
+                          title="Delete offer"
+                        >
+                          <Trash2 size={16} className="text-red-500" />
+                        </button>
+                      </div>
 
-                    {/* Valid Until */}
-                    <div>
-                      <input
-                        type="date"
-                        {...register(`offers.${index}.valid_until` as const)}
-                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
-                        placeholder="Select end date"
-                      />
-                      {formState.errors?.offers?.[index]?.valid_until?.message ? (
-                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
-                      ) : null}
-                    </div>
+                      {/* Offer Name */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Offer Name*
+                        </label>
+                        <input
+                          type="text"
+                          {...register(`offers.${index}.offer_name` as const)}
+                          placeholder="Discount Name"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        {formState.errors?.offers?.[index]?.offer_name?.message ? (
+                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
+                        ) : null}
+                      </div>
 
-                    {/* Available From Days */}
-                    <div>
-                      <input
-                        type="number"
-                        {...register(`offers.${index}.applied_from_days` as const)}
-                        placeholder="0"
-                        min="0"
-                        className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
-                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
-                      ) : null}
-                    </div>
+                      {/* Date Range */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Valid From*
+                          </label>
+                          <input
+                            type="date"
+                            {...register(`offers.${index}.valid_from` as const)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black"
+                            placeholder="Select start date"
+                          />
+                          {formState.errors?.offers?.[index]?.valid_from?.message ? (
+                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
+                          ) : null}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Valid Until*
+                          </label>
+                          <input
+                            type="date"
+                            {...register(`offers.${index}.valid_until` as const)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black"
+                            placeholder="Select end date"
+                          />
+                          {formState.errors?.offers?.[index]?.valid_until?.message ? (
+                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
+                          ) : null}
+                        </div>
+                      </div>
 
-                    {/* Available Until Days */}
-                    <div>
-                      <input
-                        type="number"
-                        {...register(`offers.${index}.applied_until_days` as const)}
-                        placeholder="0"
-                        min="0"
-                        className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
-                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
-                      ) : null}
-                    </div>
+                      {/* Availability Days */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Available From Days
+                            <Info size={14} className="inline ml-1 text-gray-600" />
+                          </label>
+                          <input
+                            type="number"
+                            {...register(`offers.${index}.applied_from_days` as const)}
+                            placeholder="0"
+                            min="0"
+                            className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
+                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
+                          ) : null}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Available Until Days
+                            <Info size={14} className="inline ml-1 text-gray-600" />
+                          </label>
+                          <input
+                            type="number"
+                            {...register(`offers.${index}.applied_until_days` as const)}
+                            placeholder="0"
+                            min="0"
+                            className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
+                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
+                          ) : null}
+                        </div>
+                      </div>
 
-                    {/* Type */}
-                    <div>
-                      <select
-                        {...register(`offers.${index}.increment_type` as const)}
-                        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black appearance-none"
-                      >
-                        <option value="Percentage">Percentage</option>
-                        <option value="Additional">Additional</option>
-                      </select>
-                    </div>
-
-                    {/* Value */}
-                    <div>
-                      <input
-                        type="number"
-                        {...register(`offers.${index}.increment_value` as const)}
-                        placeholder="0"
-                        min="0"
-                        className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {formState.errors?.offers?.[index]?.increment_value?.message ? (
-                        <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
-                      ) : null}
-                    </div>
-
-                    {/* Actions */}
-                    <div>
-                      <button 
-                        onClick={() => removeOffer(index)}
-                        className="w-full px-5 py-2 border border-red-500 bg-red-50 rounded flex items-center justify-center hover:bg-red-100 transition-colors"
-                        title="Delete offer"
-                      >
-                        <Trash2 size={20} className="text-red-500" />
-                      </button>
+                      {/* Type and Value */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Type
+                          </label>
+                          <select
+                            {...register(`offers.${index}.increment_type` as const)}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black appearance-none"
+                          >
+                            <option value="Percentage">Percentage</option>
+                            <option value="Additional">Additional</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Value*
+                          </label>
+                          <input
+                            type="number"
+                            {...register(`offers.${index}.increment_value` as const)}
+                            placeholder="0"
+                            min="0"
+                            className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          {formState.errors?.offers?.[index]?.increment_value?.message ? (
+                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
+                          ) : null}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))

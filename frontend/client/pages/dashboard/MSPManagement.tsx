@@ -356,7 +356,7 @@ export default function MSPManagement() {
           </div>
 
           {/* Table Headers */}
-          <div className="flex items-center gap-[10px] mb-4">
+          <div className="hidden lg:flex items-center gap-[10px] mb-4">
             <div className="w-[448px]">
               <span className="text-base font-bold text-[#485567]">
                 From
@@ -385,117 +385,251 @@ export default function MSPManagement() {
           {/* Periods List */}
           <div className="space-y-5 mb-8">
             {periods.map((period, index) => (
-              <div key={period.id} className="flex items-start gap-[10px]">
-                {/* FROM Column */}
-                <div className="w-[448px]">
-                  <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
-                    <div
-                      className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base ${
-                        period.fromDate
-                          ? "text-[#1E1E1E]"
-                          : "text-[#9CAABD]"
-                      }`}
-                    >
-                      {period.fromDate
-                        ? formatDateForDisplay(period.fromDate)
-                        : "Select date"}
+              <div key={period.id}>
+                {/* Desktop Layout */}
+                <div className="hidden lg:flex items-start gap-[10px]">
+                  {/* FROM Column */}
+                  <div className="w-[448px]">
+                    <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
+                      <div
+                        className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base ${
+                          period.fromDate
+                            ? "text-[#1E1E1E]"
+                            : "text-[#9CAABD]"
+                        }`}
+                      >
+                        {period.fromDate
+                          ? formatDateForDisplay(period.fromDate)
+                          : "Select date"}
+                      </div>
                     </div>
                   </div>
+
+                  {/* TO Column */}
+                  <div className="w-[448px]">
+                    <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
+                      <Popover
+                        open={openCalendar[`${period.id}-to`]}
+                        onOpenChange={(open) =>
+                          setOpenCalendar({
+                            ...openCalendar,
+                            [`${period.id}-to`]: open,
+                          })
+                        }
+                      >
+                        <PopoverTrigger asChild>
+                          <button
+                            className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base focus:outline-none ${
+                              period.toDate
+                                ? "text-[#1E1E1E]"
+                                : "text-[#9CAABD]"
+                            }`}
+                          >
+                            {period.toDate
+                              ? formatDateForDisplay(period.toDate)
+                              : "Select date"}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={parseDate(period.toDate)}
+                            onSelect={(date) =>
+                              handleDateSelect(date, period.id, "toDate")
+                            }
+                            disabled={(date) =>
+                              date < new Date("1900-01-01") ||
+                              date > new Date("2100-12-31")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  {/* PRICE Column */}
+                  <div className="w-[448px]">
+                    <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
+                      <input
+                        type="number"
+                        value={period.price}
+                        onChange={(e) =>
+                          updatePeriod(period.id, "price", e.target.value)
+                        }
+                        placeholder="Enter price"
+                        className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* PERIOD TITLE Column */}
+                  <div className="w-[448px]">
+                    <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
+                      <input
+                        type="text"
+                        value={period.periodTitle}
+                        onChange={(e) =>
+                          updatePeriod(period.id, "periodTitle", e.target.value)
+                        }
+                        placeholder="e.g., Summer Season, High Season"
+                        className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Remove Button */}
+                  {periods.length > 1 && (
+                    <button
+                      onClick={() => removePeriod(period.id)}
+                      className="w-[60px] h-[60px] p-[10px] border border-[#D7DFE8] bg-white rounded-[10px] flex items-center justify-center hover:bg-red-50 transition-colors"
+                    >
+                      <svg
+                        width="40"
+                        height="40"
+                        viewBox="0 0 40 40"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M27.2895 27.4737C27.2895 28.3426 26.9443 29.176 26.3299 29.7904C25.7154 30.4048 24.8821 30.75 24.0132 30.75H16.3684C15.4995 30.75 14.6661 30.4048 14.0517 29.7904C13.4373 29.176 13.0921 28.3426 13.0921 27.4737V14.3684H12V11.0921H16.9145L18.0066 10H22.375L23.4671 11.0921H28.3816V14.3684H27.2895V27.4737ZM14.1842 14.3684V27.4737C14.1842 28.053 14.4143 28.6085 14.824 29.0182C15.2336 29.4278 15.7891 29.6579 16.3684 29.6579H24.0132C24.5924 29.6579 25.148 29.4278 25.5576 29.0182C25.9672 28.6085 26.1974 28.053 26.1974 27.4737V14.3684H14.1842ZM27.2895 13.2763V12.1842H22.9211L21.8289 11.0921H18.5526L17.4605 12.1842H13.0921V13.2763H27.2895ZM16.3684 16.5526H17.4605V27.4737H16.3684V16.5526ZM22.9211 16.5526H24.0132V27.4737H22.9211V16.5526Z"
+                          fill="#EF4444"
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </div>
 
-                {/* TO Column */}
-                <div className="w-[448px]">
-                  <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
-                    <Popover
-                      open={openCalendar[`${period.id}-to`]}
-                      onOpenChange={(open) =>
-                        setOpenCalendar({
-                          ...openCalendar,
-                          [`${period.id}-to`]: open,
-                        })
-                      }
-                    >
-                      <PopoverTrigger asChild>
-                        <button
-                          className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base focus:outline-none ${
-                            period.toDate
+                {/* Mobile Layout */}
+                <div className="lg:hidden bg-white border border-[#D7DFE8] rounded-lg p-4 space-y-4">
+                  {/* Header with remove button */}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-[#485567]">
+                      Period {index + 1}
+                    </h4>
+                    {periods.length > 1 && (
+                      <button
+                        onClick={() => removePeriod(period.id)}
+                        className="w-8 h-8 p-1 border border-red-300 bg-red-50 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors"
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 40 40"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M27.2895 27.4737C27.2895 28.3426 26.9443 29.176 26.3299 29.7904C25.7154 30.4048 24.8821 30.75 24.0132 30.75H16.3684C15.4995 30.75 14.6661 30.4048 14.0517 29.7904C13.4373 29.176 13.0921 28.3426 13.0921 27.4737V14.3684H12V11.0921H16.9145L18.0066 10H22.375L23.4671 11.0921H28.3816V14.3684H27.2895V27.4737ZM14.1842 14.3684V27.4737C14.1842 28.053 14.4143 28.6085 14.824 29.0182C15.2336 29.4278 15.7891 29.6579 16.3684 29.6579H24.0132C24.5924 29.6579 25.148 29.4278 25.5576 29.0182C25.9672 28.6085 26.1974 28.053 26.1974 27.4737V14.3684H14.1842ZM27.2895 13.2763V12.1842H22.9211L21.8289 11.0921H18.5526L17.4605 12.1842H13.0921V13.2763H27.2895ZM16.3684 16.5526H17.4605V27.4737H16.3684V16.5526ZM22.9211 16.5526H24.0132V27.4737H22.9211V16.5526Z"
+                            fill="#EF4444"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Date Range Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#485567] mb-2">
+                        From Date
+                      </label>
+                      <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
+                        <div
+                          className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base ${
+                            period.fromDate
                               ? "text-[#1E1E1E]"
                               : "text-[#9CAABD]"
                           }`}
                         >
-                          {period.toDate
-                            ? formatDateForDisplay(period.toDate)
+                          {period.fromDate
+                            ? formatDateForDisplay(period.fromDate)
                             : "Select date"}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={parseDate(period.toDate)}
-                          onSelect={(date) =>
-                            handleDateSelect(date, period.id, "toDate")
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#485567] mb-2">
+                        To Date
+                      </label>
+                      <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
+                        <Popover
+                          open={openCalendar[`${period.id}-to`]}
+                          onOpenChange={(open) =>
+                            setOpenCalendar({
+                              ...openCalendar,
+                              [`${period.id}-to`]: open,
+                            })
                           }
-                          disabled={(date) =>
-                            date < new Date("1900-01-01") ||
-                            date > new Date("2100-12-31")
+                        >
+                          <PopoverTrigger asChild>
+                            <button
+                              className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base focus:outline-none ${
+                                period.toDate
+                                  ? "text-[#1E1E1E]"
+                                  : "text-[#9CAABD]"
+                              }`}
+                            >
+                              {period.toDate
+                                ? formatDateForDisplay(period.toDate)
+                                : "Select date"}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={parseDate(period.toDate)}
+                              onSelect={(date) =>
+                                handleDateSelect(date, period.id, "toDate")
+                              }
+                              disabled={(date) =>
+                                date < new Date("1900-01-01") ||
+                                date > new Date("2100-12-31")
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Price and Title Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#485567] mb-2">
+                        Price
+                      </label>
+                      <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
+                        <input
+                          type="number"
+                          value={period.price}
+                          onChange={(e) =>
+                            updatePeriod(period.id, "price", e.target.value)
                           }
-                          initialFocus
+                          placeholder="Enter price"
+                          className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
                         />
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#485567] mb-2">
+                        Period Name (Optional)
+                      </label>
+                      <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
+                        <input
+                          type="text"
+                          value={period.periodTitle}
+                          onChange={(e) =>
+                            updatePeriod(period.id, "periodTitle", e.target.value)
+                          }
+                          placeholder="e.g., Summer Season"
+                          className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* PRICE Column */}
-                <div className="w-[448px]">
-                  <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
-                    <input
-                      type="number"
-                      value={period.price}
-                      onChange={(e) =>
-                        updatePeriod(period.id, "price", e.target.value)
-                      }
-                      placeholder="Enter price"
-                      className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
-                    />
-                  </div>
-                </div>
-
-                {/* PERIOD TITLE Column */}
-                <div className="w-[448px]">
-                  <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
-                    <input
-                      type="text"
-                      value={period.periodTitle}
-                      onChange={(e) =>
-                        updatePeriod(period.id, "periodTitle", e.target.value)
-                      }
-                      placeholder="e.g., Summer Season, High Season"
-                      className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
-                    />
-                  </div>
-                </div>
-
-                {/* Remove Button */}
-                {periods.length > 1 && (
-                  <button
-                    onClick={() => removePeriod(period.id)}
-                    className="w-[60px] h-[60px] p-[10px] border border-[#D7DFE8] bg-white rounded-[10px] flex items-center justify-center hover:bg-red-50 transition-colors"
-                  >
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 40 40"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M27.2895 27.4737C27.2895 28.3426 26.9443 29.176 26.3299 29.7904C25.7154 30.4048 24.8821 30.75 24.0132 30.75H16.3684C15.4995 30.75 14.6661 30.4048 14.0517 29.7904C13.4373 29.176 13.0921 28.3426 13.0921 27.4737V14.3684H12V11.0921H16.9145L18.0066 10H22.375L23.4671 11.0921H28.3816V14.3684H27.2895V27.4737ZM14.1842 14.3684V27.4737C14.1842 28.053 14.4143 28.6085 14.824 29.0182C15.2336 29.4278 15.7891 29.6579 16.3684 29.6579H24.0132C24.5924 29.6579 25.148 29.4278 25.5576 29.0182C25.9672 28.6085 26.1974 28.053 26.1974 27.4737V14.3684H14.1842ZM27.2895 13.2763V12.1842H22.9211L21.8289 11.0921H18.5526L17.4605 12.1842H13.0921V13.2763H27.2895ZM16.3684 16.5526H17.4605V27.4737H16.3684V16.5526ZM22.9211 16.5526H24.0132V27.4737H22.9211V16.5526Z"
-                        fill="#EF4444"
-                      />
-                    </svg>
-                  </button>
-                )}
               </div>
             ))}
           </div>

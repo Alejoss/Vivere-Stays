@@ -300,15 +300,15 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   return (
     <div className="w-full max-w-none bg-white border border-hotel-border-light rounded-[9px] p-4 lg:p-[26px]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-[57px]">
-        <div className="flex items-center gap-4">
-          <h2 className="text-[24px] font-bold text-gray-700">Price Calendar</h2>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-[57px]">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <h2 className="text-[20px] sm:text-[24px] font-bold text-gray-700">Price Calendar</h2>
           
           {/* Price Type Dropdown */}
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center justify-between px-[15px] py-[13px] border border-hotel-border-light rounded-md bg-white hover:bg-gray-50 transition-colors min-w-[180px]"
+              className="flex items-center justify-between px-[15px] py-[13px] border border-hotel-border-light rounded-md bg-white hover:bg-gray-50 transition-colors w-full sm:min-w-[180px]"
             >
               <span className="text-[14px] font-normal text-black">
                 {selectedPrice}
@@ -339,13 +339,13 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Property Selector - only show if no propertyId is provided */}
             {!propertyId && userPropertiesData?.properties && (
               <select
                 value={selectedPropertyId || ''}
                 onChange={(e) => setSelectedPropertyId(e.target.value)}
-                className="px-3 py-2 border border-[#E7E7EA] rounded-[5px] bg-white text-black"
+                className="px-3 py-2 border border-[#E7E7EA] rounded-[5px] bg-white text-black w-full sm:w-auto"
               >
                 {userPropertiesData.properties.map((property) => (
                   <option key={property.id} value={property.id}>
@@ -355,85 +355,88 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
               </select>
             )}
 
-          {/* Navigation buttons */}
-          <button
-            onClick={goToPreviousMonth}
-            className="flex items-center justify-center w-[45px] h-[38px] border border-[#E7E7EA] rounded-[5px] bg-white hover:bg-gray-50 transition-colors"
-          >
-            <ChevronLeft size={12} className="text-black" />
-          </button>
-
-          {/* Month/Year display - Clickable with fixed width */}
-          <div className="relative">
+          {/* Navigation controls */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Navigation buttons */}
             <button
-              onClick={toggleMonthPicker}
-              className="flex items-center justify-center gap-1 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors w-[180px]"
+              onClick={goToPreviousMonth}
+              className="flex items-center justify-center w-[45px] h-[38px] border border-[#E7E7EA] rounded-[5px] bg-white hover:bg-gray-50 transition-colors"
             >
-              <span className="text-[19px] font-semibold text-black">
-                {monthNames[currentMonth]} {currentYear}
-              </span>
-              <ChevronUp
-                size={20}
-                className={`text-black transition-transform ${showMonthPicker ? "rotate-180" : ""}`}
-              />
+              <ChevronLeft size={12} className="text-black" />
             </button>
 
-            {/* Month/Year Picker Dropdown */}
-            {showMonthPicker && (
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
-                {/* Year Selector */}
-                <div className="flex items-center justify-between mb-4">
-                  <button
-                    onClick={() => setTempYear(tempYear - 1)}
-                    className="p-1 rounded hover:bg-gray-100"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-lg font-semibold">{tempYear}</span>
-                  <button
-                    onClick={() => setTempYear(tempYear + 1)}
-                    className="p-1 rounded hover:bg-gray-100"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
+            {/* Month/Year display - Clickable with responsive width */}
+            <div className="relative">
+              <button
+                onClick={toggleMonthPicker}
+                className="flex items-center justify-center gap-1 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors w-[140px] sm:w-[180px]"
+              >
+                <span className="text-[16px] sm:text-[19px] font-semibold text-black">
+                  {monthNames[currentMonth]} {currentYear}
+                </span>
+                <ChevronUp
+                  size={16}
+                  className={`text-black transition-transform ${showMonthPicker ? "rotate-180" : ""}`}
+                />
+              </button>
 
-                {/* Month Grid */}
-                <div className="grid grid-cols-3 gap-2">
-                  {monthNames.map((month, index) => (
+              {/* Month/Year Picker Dropdown */}
+              {showMonthPicker && (
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
+                  {/* Year Selector */}
+                  <div className="flex items-center justify-between mb-4">
                     <button
-                      key={month}
-                      onClick={() => handleMonthSelect(index)}
-                      className={`p-2 text-sm rounded hover:bg-blue-50 transition-colors ${
-                        index === currentMonth && tempYear === currentYear
-                          ? "bg-blue-100 text-blue-700 font-semibold"
-                          : "text-gray-700"
-                      }`}
+                      onClick={() => setTempYear(tempYear - 1)}
+                      className="p-1 rounded hover:bg-gray-100"
                     >
-                      {month}
+                      <ChevronLeft size={16} />
                     </button>
-                  ))}
-                </div>
+                    <span className="text-lg font-semibold">{tempYear}</span>
+                    <button
+                      onClick={() => setTempYear(tempYear + 1)}
+                      className="p-1 rounded hover:bg-gray-100"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
 
-                {/* Close button */}
-                <div className="flex justify-end mt-4">
-                  <button
-                    onClick={() => setShowMonthPicker(false)}
-                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    Close
-                  </button>
+                  {/* Month Grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {monthNames.map((month, index) => (
+                      <button
+                        key={month}
+                        onClick={() => handleMonthSelect(index)}
+                        className={`p-2 text-sm rounded hover:bg-blue-50 transition-colors ${
+                          index === currentMonth && tempYear === currentYear
+                            ? "bg-blue-100 text-blue-700 font-semibold"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {month}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Close button */}
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={() => setShowMonthPicker(false)}
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            <button
+              onClick={goToNextMonth}
+              className="flex items-center justify-center w-[45px] h-[38px] border border-[#E7E7EA] rounded-[5px] bg-white hover:bg-gray-50 transition-colors"
+            >
+              <ChevronRight size={12} className="text-black" />
+            </button>
           </div>
-
-          <button
-            onClick={goToNextMonth}
-            className="flex items-center justify-center w-[45px] h-[38px] border border-[#E7E7EA] rounded-[5px] bg-white hover:bg-gray-50 transition-colors"
-          >
-            <ChevronRight size={12} className="text-black" />
-          </button>
         </div>
       </div>
       {/* Dynamic PMS warning */}
@@ -444,9 +447,9 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       )}
 
       {/* Calendar */}
-      <div className="flex flex-col gap-[14px]">
+      <div className="flex flex-col gap-[14px] overflow-x-auto">
         {/* Day Headers */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 min-w-[700px]">
           {dayHeaders.map((day) => (
             <div
               key={day}
@@ -460,7 +463,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 min-w-[700px]">
           {calendarData.map((week, weekIndex) => (
             <div key={weekIndex} className="flex items-center gap-1">
               {week.map((cell, cellIndex) =>
@@ -486,7 +489,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-5 mt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 mt-4">
           <div className="flex items-center gap-2">
             <div className="w-[18px] h-[18px] bg-hotel-occupancy-low" />
             <span className="text-[14px] font-normal text-black">
