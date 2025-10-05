@@ -182,7 +182,7 @@ export default function DynamicSetup() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
-      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
+      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px] sm:min-w-[140px]"
     >
       <option value="Percentage">Percentage</option>
       <option value="Additional">Additional</option>
@@ -199,7 +199,7 @@ export default function DynamicSetup() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[177px]"
+      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[100px] sm:min-w-[177px]"
     >
       <option value="">Select occupancy</option>
       {OCCUPANCY_CATEGORIES.map(category => (
@@ -220,7 +220,7 @@ export default function DynamicSetup() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[217px]"
+      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px] sm:min-w-[217px]"
     >
       <option value="">Select lead time</option>
       {LEAD_TIME_CATEGORIES.map(category => (
@@ -404,7 +404,7 @@ export default function DynamicSetup() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col lg:flex-row justify-between items-center container-margin-sm form-gap-base">
+          <div className="flex flex-col lg:flex-row justify-between items-center mt-8 mb-4 space-y-4 lg:space-y-0">
             <button 
               onClick={addNewRule}
               className="flex items-center gap-3 btn-padding-base bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors text-responsive-base"

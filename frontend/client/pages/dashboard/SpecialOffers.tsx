@@ -361,13 +361,13 @@ export default function SpecialOffers() {
               <div className="text-center">
                 <div className="flex items-center gap-1">
                   <span>Available From Days</span>
-                  <Info size={17} className="text-gray-600" />
+                  <Info size={17} className="text-gray-600 hidden lg:inline" />
                 </div>
               </div>
               <div className="text-center">
                 <div className="flex items-center gap-1">
                   <span>Available Until Days</span>
-                  <Info size={17} className="text-gray-600" />
+                  <Info size={17} className="text-gray-600 hidden lg:inline" />
                 </div>
               </div>
               <div>Type</div>
@@ -490,10 +490,10 @@ export default function SpecialOffers() {
                       <div>
                         <button 
                           onClick={() => removeOffer(index)}
-                          className="w-full btn-padding-base border border-red-500 bg-red-50 rounded flex items-center justify-center hover:bg-red-100 transition-colors text-responsive-base"
+                          className="w-full px-3 py-2 border border-red-500 bg-red-50 rounded flex items-center justify-center hover:bg-red-100 transition-colors"
                           title="Delete offer"
                         >
-                          <Trash2 size={20} className="text-red-500" />
+                          <Trash2 size={24} className="text-red-500" />
                         </button>
                       </div>
                     </div>
@@ -569,7 +569,7 @@ export default function SpecialOffers() {
                         <div>
                           <label className="form-label">
                             Available From Days
-                            <Info size={14} className="inline ml-1 text-gray-600" />
+                            <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
                           <input
                             type="number"
@@ -585,7 +585,7 @@ export default function SpecialOffers() {
                         <div>
                           <label className="form-label">
                             Available Until Days
-                            <Info size={14} className="inline ml-1 text-gray-600" />
+                            <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
                           <input
                             type="number"
@@ -638,7 +638,7 @@ export default function SpecialOffers() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col lg:flex-row justify-between items-center container-margin-sm form-gap-base">
+          <div className="flex flex-col lg:flex-row justify-between items-center mt-8 mb-4 space-y-4 lg:space-y-0">
             <button 
               onClick={addNewOffer}
               className="flex items-center gap-3 btn-padding-base bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors text-responsive-base"
@@ -703,7 +703,7 @@ export default function SpecialOffers() {
         {/* Tips Section */}
         <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
           <div className="flex items-center gap-3 container-margin-sm">
-            <Info size={25} className="text-[#294758]" />
+            <Info size={25} className="text-[#294758] hidden lg:inline" />
             <h3 className="text-responsive-lg font-bold text-[#294758]">
               Tips for Creating Special Offers
             </h3>

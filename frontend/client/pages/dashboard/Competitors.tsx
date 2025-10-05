@@ -107,7 +107,7 @@ export default function Competitors() {
       default:
         return (
           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-            <Info size={20} className="text-gray-600" />
+            <Info size={20} className="text-gray-600 hidden lg:inline" />
           </div>
         );
     }
@@ -875,44 +875,64 @@ export default function Competitors() {
             </div>
           </div>
 
-          {/* Controls - Only show for processed competitors */}
-          {isProcessed && (
-            <div className="flex flex-col items-center form-gap-base">
-              <ToggleSwitch 
-                enabled={processed?.only_follow || false} 
-                onChange={(enabled) => handleOnlyFollowToggle(processed?.id || '', enabled)}
-              />
-              <div className="text-center">
-                <span className="text-[#8D9094] font-bold text-responsive-sm">
-                  Only
-                </span>
-                <br />
-                <span className="text-[#8D9094] font-bold text-responsive-sm">
-                  Follow
-                </span>
+          {/* Controls and Actions - Desktop layout */}
+          <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
+            {/* Follow Toggle - Only show for processed competitors */}
+            {isProcessed && (
+              <div className="flex flex-col items-center form-gap-base">
+                <ToggleSwitch 
+                  enabled={processed?.only_follow || false} 
+                  onChange={(enabled) => handleOnlyFollowToggle(processed?.id || '', enabled)}
+                />
+                <div className="text-center">
+                  <span className="text-[#8D9094] font-bold text-responsive-sm">
+                    Only
+                  </span>
+                  <br />
+                  <span className="text-[#8D9094] font-bold text-responsive-sm">
+                    Follow
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Action Icons */}
-          <div className="flex form-gap-base">
-            <button className="text-gray-500 hover:text-gray-700">
-              <Info size={20} />
-            </button>
-            <button 
-              onClick={() => {
-                if (isProcessed) {
-                  handleDeleteCompetitor(competitor.id, processed?.competitor_name || 'Unknown');
-                } else {
-                  handleDeleteCandidate(competitor.id, candidate?.competitor_name || 'Unknown');
-                }
-              }}
-              className="text-red-500 hover:text-red-700 transition-colors"
-              title={`Delete ${isProcessed ? 'competitor' : 'candidate'}`}
-            >
-              <Trash2 size={24} />
-            </button>
+            {/* Action Icons - Desktop only */}
+            <div className="hidden lg:flex form-gap-base">
+              <button className="text-gray-500 hover:text-gray-700">
+                <Info size={20} />
+              </button>
+              <button 
+                onClick={() => {
+                  if (isProcessed) {
+                    handleDeleteCompetitor(competitor.id, processed?.competitor_name || 'Unknown');
+                  } else {
+                    handleDeleteCandidate(competitor.id, candidate?.competitor_name || 'Unknown');
+                  }
+                }}
+                className="text-red-500 hover:text-red-700 transition-colors"
+                title={`Delete ${isProcessed ? 'competitor' : 'candidate'}`}
+              >
+                <Trash2 size={24} />
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* Mobile Delete Button - Bottom right corner */}
+        <div className="lg:hidden flex justify-end mt-4">
+          <button 
+            onClick={() => {
+              if (isProcessed) {
+                handleDeleteCompetitor(competitor.id, processed?.competitor_name || 'Unknown');
+              } else {
+                handleDeleteCandidate(competitor.id, candidate?.competitor_name || 'Unknown');
+              }
+            }}
+            className="text-red-500 hover:text-red-700 transition-colors p-2"
+            title={`Delete ${isProcessed ? 'competitor' : 'candidate'}`}
+          >
+            <Trash2 size={24} />
+          </button>
         </div>
 
         {/* Additional info for candidates */}
@@ -1237,7 +1257,7 @@ export default function Competitors() {
           {/* Tips Section */}
           <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base">
             <div className="flex items-center gap-3 container-margin-sm">
-              <Info size={25} className="text-[#294758]" />
+              <Info size={25} className="text-[#294758] hidden lg:inline" />
               <h3 className="text-responsive-lg font-bold text-[#294758]">
                 Tips for Choosing Competitors
               </h3>

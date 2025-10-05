@@ -170,7 +170,7 @@ export default function AvailableRates() {
       <select
         value={type}
         onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
-        className="w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE] appearance-none cursor-pointer"
+        className="w-full input-padding-sm pr-8 text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE] appearance-none cursor-pointer"
       >
         <option value="Percentage">Percentage</option>
         <option value="Additional">Additional</option>
@@ -417,7 +417,7 @@ export default function AvailableRates() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col items-end mb-8 space-y-4">
+          <div className="flex flex-col items-end mt-8 mb-4 space-y-4">
             <button 
               onClick={handleSave}
               disabled={saving || loading}

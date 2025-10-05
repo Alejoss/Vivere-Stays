@@ -150,7 +150,7 @@ export default function LosGeneralSettings() {
                     className="w-32 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     min="1"
                   />
-                  <Info size={20} className="text-gray-500" />
+                  <Info size={20} className="text-gray-500 hidden lg:inline" />
                   <span className="text-responsive-sm text-gray-600">
                     Minimum competitors required to apply competitor-based LOS
                   </span>
@@ -172,7 +172,7 @@ export default function LosGeneralSettings() {
                     <option value="min">Minimum</option>
                     <option value="max">Maximum</option>
                   </select>
-                  <Info size={20} className="text-gray-500" />
+                  <Info size={20} className="text-gray-500 hidden lg:inline" />
                   <span className="text-responsive-sm text-gray-600">
                     How to combine competitor LOS values
                   </span>
@@ -181,7 +181,7 @@ export default function LosGeneralSettings() {
             </div>
 
             {/* Save Button */}
-            <div className="container-margin-sm">
+            <div className="mt-8 mb-4">
               <button 
                 onClick={handleSave}
                 disabled={isSaving || isLoading}

@@ -458,19 +458,19 @@ export default function LosSetupRules() {
               <div className="grid grid-cols-5 gap-0">
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
                   <span className="text-responsive-base font-semibold">From</span>
-                  <Info size={20} className="text-white" />
+                  <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
                   <span className="text-responsive-base font-semibold">To</span>
-                  <Info size={20} className="text-white" />
+                  <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
                   <span className="text-responsive-base font-semibold text-center">Day</span>
-                  <Info size={20} className="text-white" />
+                  <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
                   <span className="text-responsive-base font-semibold text-center">LOS Value</span>
-                  <Info size={20} className="text-white" />
+                  <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base">
                 </div>
@@ -565,7 +565,7 @@ export default function LosSetupRules() {
                     <div>
                       <label className="form-label">
                         From Date
-                        <Info size={14} className="inline ml-1 text-gray-600" />
+                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <input
                         type="date"
@@ -580,7 +580,7 @@ export default function LosSetupRules() {
                     <div>
                       <label className="form-label">
                         To Date
-                        <Info size={14} className="inline ml-1 text-gray-600" />
+                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <input
                         type="date"
@@ -599,7 +599,7 @@ export default function LosSetupRules() {
                     <div>
                       <label className="form-label">
                         Day
-                        <Info size={14} className="inline ml-1 text-gray-600" />
+                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <select
                         {...form.register(`rules.${index}.day_of_week` as const)}
@@ -621,7 +621,7 @@ export default function LosSetupRules() {
                     <div>
                       <label className="form-label">
                         LOS Value
-                        <Info size={14} className="inline ml-1 text-gray-600" />
+                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <input
                         type="number"
@@ -639,7 +639,7 @@ export default function LosSetupRules() {
               ))}
             </div>
 
-            <div className="flex flex-col lg:flex-row justify-between items-center form-gap-base">
+            <div className="flex flex-col lg:flex-row justify-between items-center mt-8 mb-4 space-y-4 lg:space-y-0">
               <button 
                 onClick={addSetupRule}
                 disabled={isLoading || isSaving}

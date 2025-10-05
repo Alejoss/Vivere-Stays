@@ -123,19 +123,19 @@ function CalendarCell({
   return (
     <button
       onClick={onClick}
-      className={`flex w-[100px] sm:w-[80px] md:w-[100px] lg:w-[120px] xl:w-[140px] h-[59px] sm:h-[50px] md:h-[59px] lg:h-[70px] xl:h-[80px] rounded-lg ${getOccupancyColor(occupancy)} p-[10px] sm:p-[8px] md:p-[10px] lg:p-[12px] xl:p-[14px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-4 border-yellow-400 z-10' : ''}`}
+      className={`flex w-[45px] sm:w-[60px] md:w-[80px] lg:w-[100px] xl:w-[120px] h-[45px] sm:h-[55px] md:h-[65px] lg:h-[75px] xl:h-[85px] rounded-lg ${getOccupancyColor(occupancy)} p-[4px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-4 border-yellow-400 z-10' : ''}`}
     >
       {/* Lock icon at top right if overwrite is true */}
       {overwrite && (
-        <span className="absolute top-1 right-1 text-white opacity-80">
-          <Lock size={16} />
+        <span className="absolute top-0.5 right-0.5 text-white opacity-80">
+          <Lock size={10} className="sm:w-3 sm:h-3 md:w-4 md:h-4" />
         </span>
       )}
-      <div className="flex flex-col items-center gap-[5px] sm:gap-[3px] md:gap-[5px] text-white">
-        <span className="text-[16px] sm:text-[14px] md:text-[16px] font-normal">
+      <div className="flex flex-col items-center gap-[2px] sm:gap-[3px] md:gap-[4px] text-white">
+        <span className="text-[8px] sm:text-[10px] md:text-[12px] lg:text-[14px] xl:text-[16px] font-normal leading-tight">
           {price}
         </span>
-        <span className="text-[12px] sm:text-[10px] md:text-[12px] font-normal">
+        <span className="text-[10px] sm:text-[11px] md:text-[12px] lg:text-[13px] xl:text-[14px] font-normal leading-tight">
           {day}
         </span>
       </div>
@@ -447,15 +447,15 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       )}
 
       {/* Calendar */}
-      <div className="flex flex-col gap-[14px] overflow-x-auto">
+      <div className="flex flex-col gap-[8px] sm:gap-[12px] md:gap-[14px] overflow-x-auto">
         {/* Day Headers */}
-        <div className="flex items-center gap-1 min-w-[700px]">
+        <div className="flex items-center gap-[2px] sm:gap-1 min-w-[315px] sm:min-w-[420px] md:min-w-[560px] lg:min-w-[700px]">
           {dayHeaders.map((day) => (
             <div
               key={day}
-              className="flex w-[100px] sm:w-[80px] md:w-[100px] lg:w-[120px] xl:w-[140px] justify-center items-center py-1"
+              className="flex w-[45px] sm:w-[60px] md:w-[80px] lg:w-[100px] xl:w-[120px] justify-center items-center py-1"
             >
-              <span className="text-[16px] sm:text-[14px] md:text-[16px] font-medium text-gray-500">
+              <span className="text-[10px] sm:text-[12px] md:text-[14px] lg:text-[16px] font-medium text-gray-500">
                 {day}
               </span>
             </div>
@@ -463,9 +463,9 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex flex-col gap-1 min-w-[700px]">
+        <div className="flex flex-col gap-[2px] sm:gap-1 min-w-[315px] sm:min-w-[420px] md:min-w-[560px] lg:min-w-[700px]">
           {calendarData.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex items-center gap-1">
+            <div key={weekIndex} className="flex items-center gap-[2px] sm:gap-1">
               {week.map((cell, cellIndex) =>
                 cell ? (
                   <CalendarCell
@@ -480,7 +480,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
                 ) : (
                   <div
                     key={`empty-${weekIndex}-${cellIndex}`}
-                    className="w-[100px] sm:w-[80px] md:w-[100px] lg:w-[120px] xl:w-[140px] h-[59px] sm:h-[50px] md:h-[59px] lg:h-[70px] xl:h-[80px]"
+                    className="w-[45px] sm:w-[60px] md:w-[80px] lg:w-[100px] xl:w-[120px] h-[45px] sm:h-[55px] md:h-[65px] lg:h-[75px] xl:h-[85px]"
                   />
                 ),
               )}
@@ -489,23 +489,23 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         </div>
 
         {/* Legend */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 mt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-4">
           <div className="flex items-center gap-2">
-            <div className="w-[18px] h-[18px] bg-hotel-occupancy-low" />
-            <span className="text-[14px] font-normal text-black">
-              0-35% (Low occupancy)
+            <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-low" />
+            <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
+              0-35% (Low)
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-[18px] h-[18px] bg-hotel-occupancy-medium" />
-            <span className="text-[14px] font-normal text-black">
-              36-69% (Medium occupancy)
+            <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-medium" />
+            <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
+              36-69% (Medium)
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-[18px] h-[18px] bg-hotel-occupancy-high" />
-            <span className="text-[14px] font-normal text-black">
-              70%+ (High occupancy)
+            <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-high" />
+            <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
+              70%+ (High)
             </span>
           </div>
         </div>

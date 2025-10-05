@@ -410,15 +410,15 @@ export default function LosReductionRules() {
               <div className="grid grid-cols-4 gap-0">
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
                   <span className="text-responsive-base font-semibold">Lead Time Category</span>
-                  <Info size={20} className="text-white" />
+                  <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
                   <span className="text-responsive-base font-semibold">Occupancy Category</span>
-                  <Info size={20} className="text-white" />
+                  <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
                   <span className="text-responsive-base font-semibold">LOS Reduction</span>
-                  <Info size={20} className="text-white" />
+                  <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base">
                 </div>
@@ -501,7 +501,7 @@ export default function LosReductionRules() {
                     <div>
                       <label className="form-label">
                         Lead Time Category
-                        <Info size={14} className="inline ml-1 text-gray-600" />
+                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <select
                         value={rule.lead_time_category}
@@ -519,7 +519,7 @@ export default function LosReductionRules() {
                     <div>
                       <label className="form-label">
                         Occupancy Category
-                        <Info size={14} className="inline ml-1 text-gray-600" />
+                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <select
                         value={rule.occupancy_category}
@@ -540,7 +540,7 @@ export default function LosReductionRules() {
                   <div>
                     <label className="form-label">
                       LOS Reduction
-                      <Info size={14} className="inline ml-1 text-gray-600" />
+                      <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                     </label>
                     <input
                       type="number"
@@ -556,7 +556,7 @@ export default function LosReductionRules() {
               ))}
             </div>
 
-            <div className="flex flex-col lg:flex-row justify-between items-center form-gap-base">
+            <div className="flex flex-col lg:flex-row justify-between items-center mt-8 mb-4 space-y-4 lg:space-y-0">
               <button 
                 onClick={addReductionRule}
                 disabled={isLoading || isSaving}

@@ -670,7 +670,7 @@ export default function MSPManagement() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end items-center">
+          <div className="flex justify-end items-center mt-8 mb-4">
             <button
               onClick={handleSave}
               className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${

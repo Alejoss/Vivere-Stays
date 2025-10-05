@@ -655,7 +655,7 @@ export default function HotelInformation() {
           </div>
 
           {/* Save Button and Message */}
-          <div className="flex flex-col items-end container-margin-lg form-gap-base">
+          <div className="flex flex-col items-end mt-8 mb-4">
             <button 
               onClick={handleSave}
               disabled={isSaving}
