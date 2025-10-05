@@ -12,6 +12,7 @@ import { removeLocalStorageItem, HOTEL_INFO_KEY, setLocalStorageItem } from "../
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { profilesService } from "../../../shared/api/profiles";
+import "../../styles/responsive-utilities.css";
 
 interface MSPPeriod {
   id: string;
@@ -329,7 +330,7 @@ export default function MSP() {
       <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center px-4 py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-          <p className="text-[16px] text-[#485567]">
+          <p className="text-responsive-base text-[#485567]">
             {isLoadingProperty ? 'Loading property information...' : 'Loading existing MSP periods...'}
           </p>
         </div>
@@ -348,14 +349,14 @@ export default function MSP() {
                 <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" stroke="#EF4444" strokeWidth="1.5"/>
                 <path d="M10 6.66667V10M10 13.3333H10.0083" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className="text-[16px] text-[#EF4444] font-medium">No Property Found</span>
+              <span className="text-responsive-base text-[#EF4444] font-medium">No Property Found</span>
             </div>
-            <p className="text-[14px] text-[#6B7280] mb-4">
+            <p className="text-responsive-sm text-[#6B7280] mb-4">
               No properties were found for your account. Please complete the hotel setup first.
             </p>
             <button
               onClick={() => navigate('/hotel-information')}
-              className="px-4 py-2 bg-[#294758] text-white rounded-md text-[14px] font-medium hover:bg-[#234149] transition-colors"
+              className="btn-padding-sm bg-[#294758] text-white rounded-md text-responsive-sm font-medium hover:bg-[#234149] transition-colors"
             >
               Go to Hotel Setup
             </button>
@@ -369,16 +370,16 @@ export default function MSP() {
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
       <OnboardingProgressTracker currentStep="msp" />
       {/* Logo */}
-      <div className="text-center mb-10">
+      <div className="text-center container-margin-base">
         <img
           src="https://api.builder.io/api/v1/image/assets/TEMP/45994adad9b2b36a95d20ee6e1b3521891b0bf6a?width=480"
           alt="Vivere Stays"
-          className="w-[240px] h-[121px]"
+          className="logo-base"
         />
       </div>
 
       {/* Progress Bar */}
-      <div className="flex justify-center items-center mb-10 w-full max-w-[1245px]">
+      <div className="flex justify-center items-center container-margin-base w-full max-w-[1245px]">
         {/* Payment - Completed */}
         <div className="flex items-center gap-[14px]">
           <div className="flex justify-center items-center gap-2">
@@ -398,7 +399,7 @@ export default function MSP() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-[18px] font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257]">
               Payment
             </span>
           </div>
@@ -424,7 +425,7 @@ export default function MSP() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-[18px] font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257]">
               Add Competitor Hotels
             </span>
           </div>
@@ -459,44 +460,44 @@ export default function MSP() {
                 </clipPath>
               </defs>
             </svg>
-            <span className="text-[18px] font-medium text-[#9CAABD]">MSP</span>
+            <span className="text-responsive-lg font-medium text-[#9CAABD]">MSP</span>
           </div>
         </div>
       </div>
 
       {/* Title and Description */}
-      <div className="text-center mb-12">
-        <h1 className="text-[32px] font-bold text-black mb-4">
+      <div className="text-center container-margin-base">
+        <h1 className="text-responsive-3xl font-bold text-black mb-4">
           Setting Minimum Prices
         </h1>
-        <p className="text-[16px] text-black">
+        <p className="text-responsive-base text-black">
           Defines minimum prices (MSP) by date period
         </p>
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white rounded-[20px] border border-[#E2E8F0] w-full max-w-[1414px] p-[53px] relative">
+      <div className="bg-white rounded-[20px] border border-[#E2E8F0] w-full max-w-[1414px] container-padding-lg relative">
         {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-[18px] font-bold text-black mb-6">
+        <div className="container-margin-sm">
+          <h2 className="text-responsive-lg font-bold text-black mb-6">
             MSP Configuration
           </h2>
         </div>
 
         {/* Periods List */}
-        <div className="space-y-5 mb-8">
+        <div className="space-y-5 container-margin-sm">
           {periods.map((period, index) => (
-            <div key={period.id} className="flex items-start gap-[10px]">
+            <div key={period.id} className="flex flex-col lg:flex-row items-start form-gap-sm">
               {/* FROM Column */}
-              <div className="flex flex-col gap-3 w-[448px]">
+              <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
-                  <span className="text-[16px] font-bold text-[#485567]">
+                  <span className="form-label">
                     From
                   </span>
                 </div>
                 <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
                   <div
-                    className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-[16px] ${
+                    className={`w-full input-height-base input-padding-base border-none rounded-lg text-left text-responsive-base ${
                       period.fromDate
                         ? "text-[#1E1E1E]"
                         : "text-[#9CAABD]"
@@ -510,9 +511,9 @@ export default function MSP() {
               </div>
 
               {/* TO Column */}
-              <div className="flex flex-col gap-3 w-[448px]">
+              <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
-                  <span className="text-[16px] font-bold text-[#485567]">
+                  <span className="form-label">
                     To
                   </span>
                 </div>
@@ -528,7 +529,7 @@ export default function MSP() {
                   >
                     <PopoverTrigger asChild>
                       <button
-                        className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-[16px] focus:outline-none ${
+                        className={`w-full input-height-base input-padding-base border-none rounded-lg text-left text-responsive-base focus:outline-none ${
                           period.toDate
                             ? "text-[#1E1E1E]"
                             : "text-[#9CAABD]"
@@ -558,9 +559,9 @@ export default function MSP() {
               </div>
 
               {/* PRICE Column */}
-              <div className="flex flex-col gap-3 w-[448px]">
+              <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
-                  <span className="text-[16px] font-bold text-[#485567]">
+                  <span className="form-label">
                     Price
                   </span>
                 </div>
@@ -572,15 +573,15 @@ export default function MSP() {
                       updatePeriod(period.id, "price", e.target.value)
                     }
                     placeholder="Enter price"
-                    className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-[16px] focus:outline-none text-[#1E1E1E]"
+                    className="w-full input-height-base input-padding-base border-none rounded-lg text-responsive-base focus:outline-none text-[#1E1E1E]"
                   />
                 </div>
               </div>
 
               {/* PERIOD TITLE Column */}
-              <div className="flex flex-col gap-3 w-[448px]">
+              <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
-                  <span className="text-[16px] font-bold text-[#485567]">
+                  <span className="form-label">
                     Period Name (Optional)
                   </span>
                 </div>
@@ -592,7 +593,7 @@ export default function MSP() {
                       updatePeriod(period.id, "periodTitle", e.target.value)
                     }
                     placeholder="e.g., Summer Season, High Season"
-                    className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-[16px] focus:outline-none text-[#1E1E1E]"
+                    className="w-full input-height-base input-padding-base border-none rounded-lg text-responsive-base focus:outline-none text-[#1E1E1E]"
                   />
                 </div>
               </div>
@@ -601,7 +602,7 @@ export default function MSP() {
               {periods.length > 1 && (
                 <button
                   onClick={() => removePeriod(period.id)}
-                  className="w-[60px] h-[60px] p-[10px] border border-[#D7DFE8] bg-white rounded-[10px] flex items-center justify-center hover:bg-red-50 transition-colors mt-8"
+                  className="w-12 h-12 sm:w-14 sm:h-14 md:w-[60px] md:h-[60px] p-2 sm:p-3 md:p-[10px] border border-[#D7DFE8] bg-white rounded-[10px] flex items-center justify-center hover:bg-red-50 transition-colors mt-8"
                 >
                   <svg
                     width="40"
@@ -622,10 +623,10 @@ export default function MSP() {
         </div>
 
         {/* Add Period Button */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center container-margin-sm">
           <button
             onClick={addPeriod}
-            className="flex items-center gap-1 px-[28px] py-[7px] border border-[#294859] bg-[#E8F0FE] rounded-md text-[12px] font-semibold text-[#1E1E1E] hover:bg-[#d7e6fc] transition-colors"
+            className="flex items-center gap-1 btn-padding-sm border border-[#294859] bg-[#E8F0FE] rounded-md text-responsive-xs font-semibold text-[#1E1E1E] hover:bg-[#d7e6fc] transition-colors"
           >
             <svg
               width="20"
@@ -647,19 +648,19 @@ export default function MSP() {
         </div>
 
         {/* Divider and Tip */}
-        <div className="flex flex-col items-center gap-3 mb-8">
+        <div className="flex flex-col items-center gap-3 container-margin-sm">
           <div className="w-full h-[1px] bg-[#D7E4EB]"></div>
-          <p className="text-[10px] text-[#757575] text-center">
+          <p className="text-responsive-xs text-[#757575] text-center">
             💡 The price is automatically recommended when selecting the final
             date
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center">
+        <div className="action-buttons">
           <button
             onClick={handleBack}
-            className="flex items-center gap-2 px-[28px] py-[10px] border border-[#D9D9D9] bg-white rounded-md text-[12px] font-semibold text-[#294758] hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 btn-padding-sm border border-[#D9D9D9] bg-white rounded-md text-responsive-xs font-semibold text-[#294758] hover:bg-gray-50 transition-colors"
           >
             <svg
               width="20"
@@ -681,7 +682,7 @@ export default function MSP() {
           
           <button
             onClick={handleFinish}
-            className={`px-[54px] py-[10px] rounded-md text-[12px] font-semibold shadow-[0_4px_10px_0_rgba(0,0,0,0.25)] transition-colors flex items-center justify-center gap-2 ${
+            className={`btn-padding-base rounded-md text-responsive-xs font-semibold shadow-[0_4px_10px_0_rgba(0,0,0,0.25)] transition-colors flex items-center justify-center gap-2 ${
               isLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-[#294758] text-white hover:bg-[#234149]"
             }`}
             disabled={isLoading}
@@ -703,7 +704,7 @@ export default function MSP() {
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 10.4478 2.78778 8.002C2.78778 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 8.002C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z" fill="#FF0404" />
             </svg>
-            <span className="text-[14px] text-[#FF0404] font-medium">{error}</span>
+            <span className="text-responsive-sm text-[#FF0404] font-medium">{error}</span>
           </div>
         </div>
       )}

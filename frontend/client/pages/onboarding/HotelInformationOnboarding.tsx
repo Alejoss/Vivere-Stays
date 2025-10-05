@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelInformationData, setHotelInformationData, HotelInformationData } from '../../../shared/localStorage';
+import "../../styles/responsive-utilities.css";
 
 interface FormData {
   hotelName: string;
@@ -405,7 +406,7 @@ export default function HotelInformationOnboarding() {
                     fill="#16B257"
                   />
                 </svg>
-                <span className="text-[18px] text-[#16B257] font-medium">
+                <span className="text-responsive-lg text-[#16B257] font-medium">
                   Account
                 </span>
               </div>
@@ -418,7 +419,7 @@ export default function HotelInformationOnboarding() {
                 <div className="w-5 h-5 border-[1.67px] border-[#294859] rounded-full flex items-center justify-center">
                   <div className="w-2 h-2 bg-[#294859] rounded-full"></div>
                 </div>
-                <span className="text-[18px] text-[#294859] font-medium">
+                <span className="text-responsive-lg text-[#294859] font-medium">
                   Hotel Details
                 </span>
               </div>
@@ -436,7 +437,7 @@ export default function HotelInformationOnboarding() {
               <div key={step} className="flex items-center gap-[14px]">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 border border-[#9CAABD] rounded-full"></div>
-                  <span className="text-[18px] text-[#9CAABD] font-medium">
+                  <span className="text-responsive-lg text-[#9CAABD] font-medium">
                     {step}
                   </span>
                 </div>
@@ -449,7 +450,7 @@ export default function HotelInformationOnboarding() {
         </div>
 
         {/* Main Form Card */}
-        <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 w-full max-w-3xl relative">
+        <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-3xl relative">
           {/* Hotel Icon */}
           <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-gradient-to-r from-[#D7E4EB] to-[#CEF4FC] border-[0.5px] border-[#9CAABD] rounded-[10px] flex items-center justify-center">
             <svg
@@ -477,19 +478,19 @@ export default function HotelInformationOnboarding() {
           </div>
 
           {/* Header */}
-          <div className="text-center mt-16 mb-8">
-            <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
+          <div className="text-center mt-16 container-margin-sm">
+            <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
               Hotel Information
             </h1>
-            <p className="text-[18px] text-[#485567]">
+            <p className="text-responsive-lg text-[#485567]">
               Tell us about your property to customize your experience
             </p>
           </div>
 
           <div className="space-y-5 max-w-2xl mx-auto">
             {/* Hotel Name */}
-            <div className="space-y-[14px]">
-              <label className="text-[16px] text-[#485567] font-medium">
+            <div className="form-field">
+              <label className="form-label">
                 Hotel Name*
               </label>
               <div className="space-y-1">
@@ -498,7 +499,7 @@ export default function HotelInformationOnboarding() {
                   value={formData.hotelName}
                   onChange={(e) => handleInputChange("hotelName", e.target.value)}
                   placeholder="Casa Batllo Hotel"
-                  className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("hotelName")} ${getFieldTextColor("hotelName")}`}
+                  className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("hotelName")} ${getFieldTextColor("hotelName")}`}
                 />
                 {hasSubmitted && errors.hotelName && (
                   <div className="flex items-center gap-1">
@@ -514,7 +515,7 @@ export default function HotelInformationOnboarding() {
                         fill="#FF0404"
                       />
                     </svg>
-                    <span className="text-[12px] text-[#FF0404]">
+                    <span className="error-message">
                       {errors.hotelName}
                     </span>
                   </div>
@@ -525,7 +526,7 @@ export default function HotelInformationOnboarding() {
             
 
           {/* Street Address */}
-          <div className="space-y-[14px]">
+          <div className="form-field">
             <div className="flex items-center gap-2">
               <svg
                 width="20"
@@ -553,7 +554,7 @@ export default function HotelInformationOnboarding() {
                   handleInputChange("streetAddress", e.target.value)
                 }
                 placeholder="Passeig de Gracia,43"
-                className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("streetAddress")} ${getFieldTextColor("streetAddress")}`}
+                className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("streetAddress")} ${getFieldTextColor("streetAddress")}`}
               />
               {hasSubmitted && errors.streetAddress && (
                 <div className="flex items-center gap-1">
@@ -567,7 +568,7 @@ export default function HotelInformationOnboarding() {
                     <path
                       d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z" fill="#FF0404" />
                   </svg>
-                  <span className="text-[12px] text-[#FF0404]">
+                  <span className="error-message">
                     {errors.streetAddress}
                   </span>
                 </div>
@@ -576,9 +577,9 @@ export default function HotelInformationOnboarding() {
           </div>
 
           {/* City, Country, Postal Code Row */}
-          <div className="flex items-start gap-[13px]">
+          <div className="flex flex-col lg:flex-row items-start form-gap-base">
             <div className="flex-1 space-y-2">
-              <label className="text-[16px] text-[#485567] font-medium">
+              <label className="form-label">
                 City*
               </label>
               <div className="space-y-1">
@@ -587,24 +588,24 @@ export default function HotelInformationOnboarding() {
                   value={formData.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
                   placeholder="Barcelona"
-                  className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("city")} ${getFieldTextColor("city")}`}
+                  className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("city")} ${getFieldTextColor("city")}`}
                 />
                 {hasSubmitted && errors.city && (
-                  <span className="text-[12px] text-[#FF0404]">
+                  <span className="error-message">
                     {errors.city}
                   </span>
                 )}
               </div>
             </div>
             <div className="flex-1 space-y-2">
-              <label className="text-[16px] text-[#485567] font-medium">
+              <label className="form-label">
                 Country*
               </label>
               <div className="space-y-1">
                 <select
                   value={formData.country}
                   onChange={(e) => handleInputChange("country", e.target.value)}
-                  className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] focus:outline-none transition-colors ${
+                  className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base focus:outline-none transition-colors ${
                     formData.country
                       ? `${getFieldBorderColor("country")} text-[#1E1E1E]`
                       : "border-[#D7DFE8] text-[#1E1E1E]"
@@ -618,14 +619,14 @@ export default function HotelInformationOnboarding() {
                   ))}
                 </select>
                 {hasSubmitted && errors.country && (
-                  <span className="text-[12px] text-[#FF0404]">
+                  <span className="error-message">
                     {errors.country}
                   </span>
                 )}
               </div>
             </div>
             <div className="flex-1 space-y-2">
-              <label className="text-[16px] text-[#485567] font-medium">
+              <label className="form-label">
                 Postal Code*
               </label>
               <div className="space-y-1">
@@ -636,10 +637,10 @@ export default function HotelInformationOnboarding() {
                     handleInputChange("postalCode", e.target.value)
                   }
                   placeholder="08007"
-                  className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("postalCode")} ${getFieldTextColor("postalCode")}`}
+                  className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("postalCode")} ${getFieldTextColor("postalCode")}`}
                 />
                 {hasSubmitted && errors.postalCode && (
-                  <span className="text-[12px] text-[#FF0404]">
+                  <span className="error-message">
                     {errors.postalCode}
                   </span>
                 )}
@@ -648,9 +649,9 @@ export default function HotelInformationOnboarding() {
           </div>
 
           {/* Phone Number and Website Row */}
-          <div className="flex items-start gap-[30px]">
-            <div className="w-[190px] space-y-2">
-              <label className="text-[16px] text-[#485567] font-medium">
+          <div className="flex flex-col lg:flex-row items-start form-gap-base">
+            <div className="w-full lg:w-[190px] space-y-2">
+              <label className="form-label">
                 Phone Number*
               </label>
               <div className="space-y-1">
@@ -661,17 +662,17 @@ export default function HotelInformationOnboarding() {
                     handleInputChange("phoneNumber", e.target.value)
                   }
                   placeholder="+34 93 216 0306"
-                  className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("phoneNumber")} ${getFieldTextColor("phoneNumber")}`}
+                  className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("phoneNumber")} ${getFieldTextColor("phoneNumber")}`}
                 />
                 {hasSubmitted && errors.phoneNumber && (
-                  <span className="text-[12px] text-[#FF0404]">
+                  <span className="error-message">
                     {errors.phoneNumber}
                   </span>
                 )}
               </div>
             </div>
             <div className="flex-1 space-y-2">
-              <label className="text-[16px] text-[#485567] font-medium">
+              <label className="form-label">
                 Website (Optional)
               </label>
               <input
@@ -679,15 +680,15 @@ export default function HotelInformationOnboarding() {
                 value={formData.website}
                 onChange={(e) => handleInputChange("website", e.target.value)}
                 placeholder="www.yourhotel.com"
-                className="w-full h-[60px] px-4 py-[17px] border border-[#D7DFE8] rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors"
+                className="w-full input-height-lg input-padding-base border border-[#D7DFE8] rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors"
               />
             </div>
           </div>
 
           {/* CIF and Number of Rooms Row */}
-          <div className="flex items-start gap-[72px]">
-            <div className="w-[265px] space-y-2">
-              <label className="text-[16px] text-[#485567] font-medium">
+          <div className="flex flex-col lg:flex-row items-start form-gap-base">
+            <div className="w-full lg:w-[265px] space-y-2">
+              <label className="form-label">
                 CIF (Optional)
               </label>
               <input
@@ -695,11 +696,11 @@ export default function HotelInformationOnboarding() {
                 value={formData.cif}
                 onChange={(e) => handleInputChange("cif", e.target.value)}
                 placeholder="B12345678"
-                className="w-full h-[60px] px-4 py-[17px] border border-[#D7DFE8] rounded-[10px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors"
+                className="w-full input-height-lg input-padding-base border border-[#D7DFE8] rounded-[10px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors"
               />
             </div>
-            <div className="w-[265px] space-y-2">
-              <label className="text-[16px] text-[#485567] font-medium">
+            <div className="w-full lg:w-[265px] space-y-2">
+              <label className="form-label">
                 Number of Rooms*
               </label>
               <div className="space-y-1">
@@ -710,14 +711,14 @@ export default function HotelInformationOnboarding() {
                     handleInputChange("numberOfRooms", e.target.value)
                   }
                   placeholder="2"
-                  className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                  className={`w-full input-height-lg input-padding-base border rounded-[10px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                     formData.numberOfRooms
                       ? `${getFieldBorderColor("numberOfRooms")} text-[#1E1E1E]`
                       : "border-[#D7DFE8] text-[#1E1E1E]"
                   }`}
                 />
                 {hasSubmitted && errors.numberOfRooms && (
-                  <span className="text-[12px] text-[#FF0404]">
+                  <span className="error-message">
                     {errors.numberOfRooms}
                   </span>
                 )}
@@ -726,8 +727,8 @@ export default function HotelInformationOnboarding() {
           </div>
 
           {/* Property Type */}
-          <div className="space-y-[14px]">
-            <label className="text-[16px] text-[#485567] font-medium">
+          <div className="form-field">
+            <label className="form-label">
               Property Type*
             </label>
             <div className="space-y-1">
@@ -736,7 +737,7 @@ export default function HotelInformationOnboarding() {
                 onChange={(e) =>
                   handleInputChange("propertyType", e.target.value)
                 }
-                className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] focus:outline-none transition-colors ${
+                className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base focus:outline-none transition-colors ${
                   formData.propertyType
                     ? `${getFieldBorderColor("propertyType")} text-[#1E1E1E]`
                     : "border-[#D7DFE8] text-[#1E1E1E]"
@@ -750,7 +751,7 @@ export default function HotelInformationOnboarding() {
                 <option value="guesthouse">Guest House</option>
               </select>
               {hasSubmitted && errors.propertyType && (
-                <span className="text-[12px] text-[#FF0404]">
+                <span className="error-message">
                   {errors.propertyType}
                 </span>
               )}
@@ -758,7 +759,7 @@ export default function HotelInformationOnboarding() {
           </div>
 
           {/* Booking.com URL - moved to bottom */}
-          <div className="space-y-[14px]">
+          <div className="form-field">
             <div className="flex items-center gap-2">
               <svg
                 width="20"
@@ -793,7 +794,7 @@ export default function HotelInformationOnboarding() {
                   </clipPath>
                 </defs>
               </svg>
-              <label className="text-[16px] text-[#485567] font-medium">
+              <label className="form-label">
                 Booking.com URL of your property
               </label>
             </div>
@@ -803,7 +804,7 @@ export default function HotelInformationOnboarding() {
                 value={formData.bookingUrl}
                 onChange={(e) => handleInputChange("bookingUrl", e.target.value)}
                 placeholder="https://www.booking.com/hotel/es/..."
-                className={`w-full h-[60px] px-4 py-[17px] border rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("bookingUrl")} ${getFieldTextColor("bookingUrl")}`}
+                className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("bookingUrl")} ${getFieldTextColor("bookingUrl")}`}
               />
               {hasSubmitted && errors.bookingUrl && (
                 <div className="flex items-center gap-1">
@@ -819,14 +820,14 @@ export default function HotelInformationOnboarding() {
                       fill="#FF0404"
                     />
                   </svg>
-                  <span className="text-[12px] text-[#FF0404]">
+                  <span className="error-message">
                     {errors.bookingUrl}
                   </span>
                 </div>
               )}
             </div>
             {formData.bookingUrl.trim() && !errors.bookingUrl ? (
-              <p className="text-[14px] text-[#16B257]">
+              <p className="text-responsive-sm text-[#16B257]">
                 Using your Booking URL, we'll automatically find your competitors.
               </p>
             ) : null}
@@ -837,7 +838,7 @@ export default function HotelInformationOnboarding() {
           <div className="flex items-center pt-8">
             <button
               onClick={handleContinue}
-              className="w-full h-[55px] px-[69px] py-[18px] rounded-[10px] text-[16px] font-bold bg-[#294758] text-white hover:bg-[#1e3340] transition-colors flex items-center justify-center gap-2"
+              className="w-full btn-height-lg btn-padding-base rounded-[10px] text-responsive-base font-bold bg-[#294758] text-white hover:bg-[#1e3340] transition-colors flex items-center justify-center gap-2"
             >
               Continue to PMS Integration
             </button>
@@ -849,7 +850,7 @@ export default function HotelInformationOnboarding() {
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z" fill="#FF0404" />
               </svg>
-              <span className="text-[14px] text-[#FF0404] font-medium">{formError}</span>
+              <span className="text-responsive-sm text-[#FF0404] font-medium">{formError}</span>
             </div>
           </div>
         )}

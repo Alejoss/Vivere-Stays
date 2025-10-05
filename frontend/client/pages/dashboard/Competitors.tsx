@@ -17,6 +17,7 @@ import { useState, useEffect, useContext } from "react";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService, CompetitorCandidate, PropertyCompetitor } from "../../../shared/api/dynamic";
 import { toast } from "../../hooks/use-toast";
+import "../../styles/responsive-utilities.css";
 
 export default function Competitors() {
   const { property } = useContext(PropertyContext)!;
@@ -797,20 +798,20 @@ export default function Competitors() {
     return (
       <div
         key={competitor.id}
-        className="border border-[#B6C4DA] rounded-lg p-6"
+        className="border border-[#B6C4DA] rounded-lg container-padding-base"
       >
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
           {/* Status Icon */}
           {isProcessed ? getProcessedStatusIcon() : getStatusIcon(candidate?.status || 'processing')}
 
           {/* Competitor Details */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 form-gap-base">
             {/* Name Field */}
-            <div className="space-y-2">
-              <label className="block text-[#70787C] font-bold text-lg">
+            <div className="form-field">
+              <label className="form-label">
                 Competitor Name
               </label>
-              <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+              <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                 <input
                   type="text"
                   value={currentName || ''}
@@ -833,18 +834,18 @@ export default function Competitors() {
                     }));
                   }}
                   onBlur={() => handleFieldBlur('name', currentName || '')}
-                  className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                  className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
                   placeholder="Enter competitor name"
                 />
               </div>
             </div>
 
             {/* URL Field */}
-            <div className="space-y-2">
-              <label className="block text-[#70787C] font-bold text-lg">
+            <div className="form-field">
+              <label className="form-label">
                 Link (URL)
               </label>
-              <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+              <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                 <input
                   type="url"
                   value={currentUrl || ''}
@@ -867,7 +868,7 @@ export default function Competitors() {
                     }));
                   }}
                   onBlur={() => handleFieldBlur('url', currentUrl || '')}
-                  className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                  className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
                   placeholder="Enter booking URL"
                 />
               </div>
@@ -876,17 +877,17 @@ export default function Competitors() {
 
           {/* Controls - Only show for processed competitors */}
           {isProcessed && (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center form-gap-base">
               <ToggleSwitch 
                 enabled={processed?.only_follow || false} 
                 onChange={(enabled) => handleOnlyFollowToggle(processed?.id || '', enabled)}
               />
               <div className="text-center">
-                <span className="text-[#8D9094] font-bold text-sm">
+                <span className="text-[#8D9094] font-bold text-responsive-sm">
                   Only
                 </span>
                 <br />
-                <span className="text-[#8D9094] font-bold text-sm">
+                <span className="text-[#8D9094] font-bold text-responsive-sm">
                   Follow
                 </span>
               </div>
@@ -894,7 +895,7 @@ export default function Competitors() {
           )}
 
           {/* Action Icons */}
-          <div className="flex gap-3">
+          <div className="flex form-gap-base">
             <button className="text-gray-500 hover:text-gray-700">
               <Info size={20} />
             </button>
@@ -916,8 +917,8 @@ export default function Competitors() {
 
         {/* Additional info for candidates */}
         {isCandidate && candidate && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="container-margin-sm pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 form-gap-base text-responsive-sm">
               <div>
                 <span className="font-semibold text-gray-600">Status: </span>
                 <span className={`capitalize ${
@@ -952,10 +953,10 @@ export default function Competitors() {
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
             <div className="flex items-center gap-3">
               <svg
                 width="30"
@@ -981,21 +982,21 @@ export default function Competitors() {
                 </defs>
               </svg>
               <div>
-                <h2 className="text-3xl font-bold text-[#287CAC]">
+                <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                   Competitors
                 </h2>
-                <p className="text-[#8A8E94] font-bold text-lg">
+                <p className="text-[#8A8E94] font-bold text-responsive-lg">
                   Manage your competitor tracking
                 </p>
               </div>
             </div>
             
             {/* AI Suggestion Button */}
-            <div className="flex items-center">
+            <div className="flex items-center mt-4 lg:mt-0">
               <button 
                 onClick={handleAISuggestions}
                 disabled={isLoadingAISuggestions}
-                className={`flex items-center gap-3 px-4 py-2 border rounded-lg transition-colors ${
+                className={`flex items-center gap-3 btn-padding-base border rounded-lg transition-colors ${
                   isLoadingAISuggestions 
                     ? 'bg-gray-100 border-gray-300 cursor-not-allowed' 
                     : 'bg-[#E7D7FE] border-[#422C61] hover:bg-[#DCC7FE]'
@@ -1004,14 +1005,14 @@ export default function Competitors() {
                 {isLoadingAISuggestions ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#422C61]"></div>
-                    <span className="text-[#422C61] font-bold text-base">
+                    <span className="text-[#422C61] font-bold text-responsive-base">
                       Finding...
                     </span>
                   </>
                 ) : (
                   <>
                     <Bot size={20} className="text-[#422C61]" />
-                    <span className="text-[#422C61] font-bold text-base">
+                    <span className="text-[#422C61] font-bold text-responsive-base">
                       Use AI to suggest competitors
                     </span>
                   </>
@@ -1021,9 +1022,9 @@ export default function Competitors() {
           </div>
 
           {/* Competitor Price Aggregation */}
-          <div className="bg-white rounded-lg border border-black/10 p-6 mb-8">
+          <div className="bg-white rounded-lg border border-black/10 container-padding-base container-margin-sm">
             <div className="max-w-lg">
-              <label className="block text-[#6D6D77] font-bold text-lg mb-2">
+              <label className="form-label">
                 Competitor Price Aggregation
               </label>
               <div className="relative">
@@ -1035,13 +1036,13 @@ export default function Competitors() {
                     }
                   }}
                   disabled={isUpdating}
-                  className={`flex items-center justify-between w-full px-8 py-3 border border-[#9CAABD] rounded-lg bg-white mb-3 hover:border-[#287CAC] transition-colors ${
+                  className={`flex items-center justify-between w-full input-padding-base input-height-lg border border-[#9CAABD] rounded-lg bg-white container-margin-sm hover:border-[#287CAC] transition-colors ${
                     isUpdating ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
                   <div className="flex items-center gap-5">
                     {getAggregationIcon(selectedAggregation)}
-                    <span className="text-[#60615F] font-bold text-lg">
+                    <span className="text-[#60615F] font-bold text-responsive-lg">
                       {selectedAggregation}
                     </span>
                     {isUpdating && (
@@ -1066,12 +1067,12 @@ export default function Competitors() {
                           handleAggregationChange(option);
                         }}
                         disabled={isUpdating}
-                        className={`w-full px-8 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-5 ${
+                        className={`w-full input-padding-base input-height-lg text-left hover:bg-gray-50 transition-colors flex items-center gap-5 ${
                           option === selectedAggregation ? "bg-blue-50" : ""
                         } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {getAggregationIcon(option)}
-                        <span className="text-[#60615F] font-bold text-lg">
+                        <span className="text-[#60615F] font-bold text-responsive-lg">
                           {option}
                         </span>
                       </button>
@@ -1079,12 +1080,12 @@ export default function Competitors() {
                   </div>
                 )}
               </div>
-              <p className="text-[#9CAABD] text-xs">
+              <p className="text-[#9CAABD] text-responsive-xs">
                 Defines how to reference your prices compared to competitors
                 (Maximum, Average, Median, Minimum). Default: Minimum
               </p>
               {!property && (
-                <p className="text-red-500 text-xs mt-2">
+                <p className="error-message">
                   Please select a property to configure competitor price aggregation.
                 </p>
               )}
@@ -1093,20 +1094,20 @@ export default function Competitors() {
 
 
           {/* Competitors List */}
-          <div className="space-y-6 mb-8">
+          <div className="form-gap-base container-margin-sm">
             {/* Loading states */}
             {(isLoadingProcessed || isLoadingCandidates) && (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#287CAC] mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading competitors...</p>
+                <p className="text-gray-600 text-responsive-base">Loading competitors...</p>
               </div>
             )}
 
 
             {/* Processed Competitors Section */}
             {processedCompetitors.length > 0 && (
-              <div className="mb-8">
-                <div className="space-y-6">
+              <div className="container-margin-sm">
+                <div className="form-gap-base">
                   {processedCompetitors.map((competitor) => 
                     renderCompetitorItem(competitor, true)
                   )}
@@ -1117,7 +1118,7 @@ export default function Competitors() {
             {/* Competitor Candidates Section */}
             {competitorCandidates.length > 0 && (
               <div>
-                <div className="space-y-6">
+                <div className="form-gap-base">
                   {competitorCandidates.map((candidate) => 
                     renderCompetitorItem(candidate, false)
                   )}
@@ -1128,17 +1129,17 @@ export default function Competitors() {
             {/* No competitors message */}
             {!isLoadingProcessed && !isLoadingCandidates && processedCompetitors.length === 0 && competitorCandidates.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500">No competitors found for this property.</p>
-                <p className="text-gray-400 text-sm mt-2">Use the AI suggestion button above to find competitors.</p>
+                <p className="text-gray-500 text-responsive-base">No competitors found for this property.</p>
+                <p className="text-gray-400 text-responsive-sm container-margin-sm">Use the AI suggestion button above to find competitors.</p>
               </div>
             )}
           </div>
 
           {/* Add Competitor Form */}
           {showAddForm && (
-            <div className="bg-white rounded-lg border border-black/10 p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">Add New Competitor</h3>
+            <div className="bg-white rounded-lg border border-black/10 container-padding-base container-margin-sm">
+              <div className="flex items-center justify-between container-margin-sm">
+                <h3 className="text-responsive-xl font-semibold text-gray-800">Add New Competitor</h3>
                 <button
                   onClick={handleCancelAddCompetitor}
                   className="text-gray-500 hover:text-gray-700"
@@ -1147,18 +1148,18 @@ export default function Competitors() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 form-gap-base">
                 {/* Competitor Name Field */}
-                <div className="space-y-2">
-                  <label className="block text-[#70787C] font-bold text-lg">
+                <div className="form-field">
+                  <label className="form-label">
                     Competitor Name *
                   </label>
-                  <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                  <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                     <input
                       type="text"
                       value={newCompetitorName}
                       onChange={(e) => setNewCompetitorName(e.target.value)}
-                      className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                      className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
                       placeholder="Enter competitor name"
                       disabled={isCreatingCompetitor}
                     />
@@ -1166,16 +1167,16 @@ export default function Competitors() {
                 </div>
 
                 {/* URL Field */}
-                <div className="space-y-2">
-                  <label className="block text-[#70787C] font-bold text-lg">
+                <div className="form-field">
+                  <label className="form-label">
                     Link (URL)
                   </label>
-                  <div className="px-5 py-4 bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                  <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                     <input
                       type="url"
                       value={newCompetitorUrl}
                       onChange={(e) => setNewCompetitorUrl(e.target.value)}
-                      className="w-full bg-transparent text-[#4C5155] font-bold text-lg border-none outline-none"
+                      className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
                       placeholder="Enter booking URL (optional)"
                       disabled={isCreatingCompetitor}
                     />
@@ -1184,18 +1185,18 @@ export default function Competitors() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex justify-end form-gap-base container-margin-sm">
                 <button
                   onClick={handleCancelAddCompetitor}
                   disabled={isCreatingCompetitor}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="btn-padding-base text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-responsive-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddCompetitor}
                   disabled={isCreatingCompetitor || !newCompetitorName.trim()}
-                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  className={`btn-padding-base rounded-lg transition-colors flex items-center gap-2 text-responsive-base ${
                     isCreatingCompetitor || !newCompetitorName.trim()
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-[#294758] text-white hover:bg-[#234149]'
@@ -1218,11 +1219,11 @@ export default function Competitors() {
           )}
 
           {/* Add Competitor Button */}
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center container-margin-sm">
             <button 
               onClick={() => setShowAddForm(true)}
               disabled={showAddForm}
-              className={`flex items-center gap-3 px-5 py-3 rounded-lg font-semibold transition-colors ${
+              className={`flex items-center gap-3 btn-padding-base rounded-lg font-semibold transition-colors text-responsive-base ${
                 showAddForm 
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                   : 'bg-[#294758] text-white hover:bg-[#234149]'
@@ -1234,14 +1235,14 @@ export default function Competitors() {
           </div>
 
           {/* Tips Section */}
-          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base">
+            <div className="flex items-center gap-3 container-margin-sm">
               <Info size={25} className="text-[#294758]" />
-              <h3 className="text-lg font-bold text-[#294758]">
+              <h3 className="text-responsive-lg font-bold text-[#294758]">
                 Tips for Choosing Competitors
               </h3>
             </div>
-            <div className="text-black/60 leading-relaxed">
+            <div className="text-black/60 leading-relaxed text-responsive-base">
               <p>
                 • Choose properties in the same geographical area as your hotel
               </p>

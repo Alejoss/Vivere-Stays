@@ -6,6 +6,7 @@ import OnboardingProgressTracker from "../../components/OnboardingProgressTracke
 import ContactSupportModal from "../../components/onboarding/ContactSupportModal";
 import { profilesService } from "../../../shared/api/profiles";
 import { toast } from "../../hooks/use-toast";
+import "../../styles/responsive-utilities.css";
 
 // Success Overlay Component
 const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
@@ -21,9 +22,9 @@ const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
       </div>
 
       {/* Success Message Card */}
-      <div className="bg-white border border-[#16B257] rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] p-8 text-center max-w-2xl mx-4 relative">
+      <div className="bg-white border border-[#16B257] rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base text-center max-w-2xl mx-4 relative">
         {/* Success Icon */}
-        <div className="mb-6">
+        <div className="container-margin-sm">
           <div className="w-[78px] h-[78px] bg-[#D7FBE6] rounded-full flex items-center justify-center mx-auto">
             <svg
               width="39"
@@ -41,17 +42,17 @@ const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
         </div>
 
         {/* Success Text */}
-        <h1 className="text-[28px] font-bold text-black mb-4">
+        <h1 className="text-responsive-2xl font-bold text-black mb-4">
           Email Verified Successfully!
         </h1>
-        <p className="text-[18px] text-[#16B257] mb-6">
+        <p className="text-responsive-lg text-[#16B257] mb-6">
           Your email has been verified. You can now proceed to set up your hotel details.
         </p>
         
         {/* Manual Continue Button */}
         <button
           onClick={onComplete}
-          className="px-6 py-3 bg-[#16B257] text-white font-medium rounded-[10px] hover:bg-[#14A04A] transition-colors"
+          className="btn-padding-sm bg-[#16B257] text-white font-medium rounded-[10px] hover:bg-[#14A04A] transition-colors"
         >
           Continue
         </button>
@@ -190,7 +191,7 @@ export default function VerifyEmail() {
         </div>
 
         {/* Main Card */}
-        <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 relative max-w-2xl mx-auto">
+        <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base relative max-w-2xl mx-auto">
           {/* User Icon */}
           <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-gradient-to-r from-[#D7E4EB] to-[#CEF4FC] border border-[#9CAABD] rounded-[10px] flex items-center justify-center">
             <svg
@@ -215,11 +216,11 @@ export default function VerifyEmail() {
           </div>
 
           {/* Header */}
-          <div className="text-center mt-16 mb-8">
-            <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
+          <div className="text-center mt-16 container-margin-sm">
+            <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
               Verify Your Email
             </h1>
-            <p className="text-[18px] text-[#485567] leading-normal max-w-md mx-auto">
+            <p className="text-responsive-lg text-[#485567] leading-normal max-w-md mx-auto">
               We've sent a 5-digit verification code to your email address.
               Please enter it below to continue.
             </p>
@@ -228,7 +229,7 @@ export default function VerifyEmail() {
           <div className="space-y-5 max-w-xl mx-auto">
             {/* Verification Code Input */}
             <div className="space-y-[14px]">
-              <label className="text-[16px] text-[#485567] font-medium">
+              <label className="form-label">
                 Verification Code
               </label>
               <div className="relative">
@@ -237,7 +238,7 @@ export default function VerifyEmail() {
                   value={verificationCode}
                   onChange={handleCodeChange}
                   placeholder="Enter 5-digit code"
-                  className={`w-full h-[73px] px-8 py-5 border rounded-[8px] bg-[#F8FAFC] text-[30px] text-center placeholder:text-[#9BA9BC] focus:outline-none transition-colors font-mono tracking-widest ${
+                  className={`w-full h-[73px] px-8 py-5 border rounded-[8px] bg-[#F8FAFC] text-responsive-2xl text-center placeholder:text-[#9BA9BC] focus:outline-none transition-colors font-mono tracking-widest ${
                     verificationCode.length === 5
                       ? "border-[#485567] text-[#1E1E1E]"
                       : "border-[#D7DFE8] focus:border-[#294859]"
@@ -253,7 +254,7 @@ export default function VerifyEmail() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z" fill="#FF0404" />
                   </svg>
-                  <span className="text-[14px] text-[#FF0404] font-medium">{error}</span>
+                  <span className="error-message">{error}</span>
                 </div>
               )}
             </div>
@@ -261,7 +262,7 @@ export default function VerifyEmail() {
             {/* Verify Button */}
             <button
               onClick={handleVerifyEmail}
-              className={`w-full h-[55px] text-white font-bold text-[16px] rounded-[10px] transition-colors flex items-center justify-center gap-2 ${
+              className={`w-full btn-height-lg text-white font-bold text-responsive-base rounded-[10px] transition-colors flex items-center justify-center gap-2 ${
                 isVerifying
                   ? "bg-[#4B6472] cursor-not-allowed"
                   : verificationCode.length === 5
@@ -314,7 +315,7 @@ export default function VerifyEmail() {
 
             {/* Didn't receive code section */}
             <div className="text-center space-y-5">
-              <p className="text-[16px] text-[#294859]">
+              <p className="text-responsive-base text-[#294859]">
                 Didn't receive the code?
               </p>
 
@@ -322,7 +323,7 @@ export default function VerifyEmail() {
               <button
                 onClick={handleResendCode}
                 disabled={!canResend}
-                className={`inline-flex items-center gap-2 px-6 py-3 border border-[#D7DFE8] rounded-[9px] bg-white text-[16px] font-medium transition-colors ${
+                className={`inline-flex items-center gap-2 btn-padding-sm border border-[#D7DFE8] rounded-[9px] bg-white text-responsive-base font-medium transition-colors ${
                   canResend
                     ? "text-[#294859] hover:bg-gray-50 cursor-pointer"
                     : "text-[#9CAABD] cursor-not-allowed"
@@ -365,7 +366,7 @@ export default function VerifyEmail() {
               <div className="w-full h-[1.5px] bg-[#D7DFE8]"></div>
               <button
                 onClick={() => setIsSupportModalOpen(true)}
-                className="w-full text-[16px] text-[#294859] hover:underline transition-colors"
+                className="w-full text-responsive-base text-[#294859] hover:underline transition-colors"
               >
                 Need help? Contact Support
               </button>

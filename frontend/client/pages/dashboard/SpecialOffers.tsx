@@ -15,6 +15,7 @@ import { dynamicPricingService, SpecialOffer, CreateSpecialOfferRequest } from "
 import { z } from "zod";
 import { toast } from "../../hooks/use-toast";
 import { PropertyContext } from "../../../shared/PropertyContext";
+import "../../styles/responsive-utilities.css";
 
 interface OfferFormData {
   id?: number;
@@ -277,7 +278,7 @@ export default function SpecialOffers() {
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
+        className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black"
         placeholder={placeholder}
       />
       <Calendar size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -294,7 +295,7 @@ export default function SpecialOffers() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
-      className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black appearance-none"
+      className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none"
     >
       <option value="Percentage">Percentage</option>
       <option value="Additional">Additional</option>
@@ -304,10 +305,10 @@ export default function SpecialOffers() {
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
             <div className="flex items-center gap-3">
               <svg
                 width="30"
@@ -339,10 +340,10 @@ export default function SpecialOffers() {
                 />
               </svg>
               <div>
-                <h2 className="text-3xl font-bold text-[#287CAC]">
+                <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                   Special Offers
                 </h2>
-                <p className="text-[#8A8E94] font-bold text-lg">
+                <p className="text-[#8A8E94] font-bold text-responsive-lg">
                   Manage your special offers and discounts
                 </p>
               </div>
@@ -351,9 +352,9 @@ export default function SpecialOffers() {
 
 
           {/* Offers Table */}
-          <div className="mb-8">
+          <div className="container-margin-sm">
             {/* Desktop Table Headers */}
-            <div className="hidden lg:grid grid-cols-8 gap-4 mb-4 text-black/70 font-bold text-base">
+            <div className="hidden lg:grid grid-cols-8 form-gap-base container-margin-sm text-black/70 font-bold text-responsive-base">
               <div>Offer Name*</div>
               <div>Valid From*</div>
               <div>Valid Until*</div>
@@ -375,21 +376,21 @@ export default function SpecialOffers() {
             </div>
 
             {/* Table Rows */}
-            <div className="space-y-2">
+            <div className="form-gap-base">
               {loading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Loading offers...</p>
+                  <p className="text-gray-500 text-responsive-base">Loading offers...</p>
                 </div>
               ) : fields.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No offers found. Click "Add Offer" to create your first special offer.</p>
+                  <p className="text-gray-500 text-responsive-base">No offers found. Click "Add Offer" to create your first special offer.</p>
                 </div>
               ) : (
                 fields.map((offer, index) => (
                   <div key={offer.id || `new-${index}`}>
                     {/* Desktop Layout */}
                     <div
-                      className={`hidden lg:grid grid-cols-8 gap-4 items-center p-3 rounded-lg ${
+                      className={`hidden lg:grid grid-cols-8 form-gap-base items-center container-padding-sm rounded-lg ${
                         offer.id ? 'bg-white' : 'bg-blue-50 border border-blue-200'
                       }`}
                     >
@@ -399,7 +400,7 @@ export default function SpecialOffers() {
                           type="text"
                           {...register(`offers.${index}.offer_name` as const)}
                           placeholder="Discount Name"
-                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formState.errors?.offers?.[index]?.offer_name?.message ? (
                           <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
@@ -411,7 +412,7 @@ export default function SpecialOffers() {
                         <input
                           type="date"
                           {...register(`offers.${index}.valid_from` as const)}
-                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
+                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black"
                           placeholder="Select start date"
                         />
                         {formState.errors?.offers?.[index]?.valid_from?.message ? (
@@ -424,7 +425,7 @@ export default function SpecialOffers() {
                         <input
                           type="date"
                           {...register(`offers.${index}.valid_until` as const)}
-                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black"
+                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black"
                           placeholder="Select end date"
                         />
                         {formState.errors?.offers?.[index]?.valid_until?.message ? (
@@ -439,7 +440,7 @@ export default function SpecialOffers() {
                           {...register(`offers.${index}.applied_from_days` as const)}
                           placeholder="0"
                           min="0"
-                          className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
                           <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
@@ -453,7 +454,7 @@ export default function SpecialOffers() {
                           {...register(`offers.${index}.applied_until_days` as const)}
                           placeholder="0"
                           min="0"
-                          className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
                           <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
@@ -464,7 +465,7 @@ export default function SpecialOffers() {
                       <div>
                         <select
                           {...register(`offers.${index}.increment_type` as const)}
-                          className="w-full px-3 py-2 text-xs border border-gray-300 rounded bg-white text-black appearance-none"
+                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none"
                         >
                           <option value="Percentage">Percentage</option>
                           <option value="Additional">Additional</option>
@@ -478,7 +479,7 @@ export default function SpecialOffers() {
                           {...register(`offers.${index}.increment_value` as const)}
                           placeholder="0"
                           min="0"
-                          className="w-full px-3 py-2 text-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formState.errors?.offers?.[index]?.increment_value?.message ? (
                           <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
@@ -489,7 +490,7 @@ export default function SpecialOffers() {
                       <div>
                         <button 
                           onClick={() => removeOffer(index)}
-                          className="w-full px-5 py-2 border border-red-500 bg-red-50 rounded flex items-center justify-center hover:bg-red-100 transition-colors"
+                          className="w-full btn-padding-base border border-red-500 bg-red-50 rounded flex items-center justify-center hover:bg-red-100 transition-colors text-responsive-base"
                           title="Delete offer"
                         >
                           <Trash2 size={20} className="text-red-500" />
@@ -498,12 +499,12 @@ export default function SpecialOffers() {
                     </div>
 
                     {/* Mobile Layout */}
-                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg p-4 space-y-4 ${
+                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg container-padding-base form-gap-base ${
                       offer.id ? '' : 'bg-blue-50 border-blue-200'
                     }`}>
                       {/* Header with delete button */}
                       <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-semibold text-gray-700">
+                        <h4 className="text-responsive-lg font-semibold text-gray-700">
                           Offer {index + 1}
                         </h4>
                         <button 
@@ -517,14 +518,14 @@ export default function SpecialOffers() {
 
                       {/* Offer Name */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="form-label">
                           Offer Name*
                         </label>
                         <input
                           type="text"
                           {...register(`offers.${index}.offer_name` as const)}
                           placeholder="Discount Name"
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formState.errors?.offers?.[index]?.offer_name?.message ? (
                           <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
@@ -532,15 +533,15 @@ export default function SpecialOffers() {
                       </div>
 
                       {/* Date Range */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 form-gap-base">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Valid From*
                           </label>
                           <input
                             type="date"
                             {...register(`offers.${index}.valid_from` as const)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black"
+                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
                             placeholder="Select start date"
                           />
                           {formState.errors?.offers?.[index]?.valid_from?.message ? (
@@ -548,13 +549,13 @@ export default function SpecialOffers() {
                           ) : null}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Valid Until*
                           </label>
                           <input
                             type="date"
                             {...register(`offers.${index}.valid_until` as const)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black"
+                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
                             placeholder="Select end date"
                           />
                           {formState.errors?.offers?.[index]?.valid_until?.message ? (
@@ -564,9 +565,9 @@ export default function SpecialOffers() {
                       </div>
 
                       {/* Availability Days */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 form-gap-base">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Available From Days
                             <Info size={14} className="inline ml-1 text-gray-600" />
                           </label>
@@ -575,14 +576,14 @@ export default function SpecialOffers() {
                             {...register(`offers.${index}.applied_from_days` as const)}
                             placeholder="0"
                             min="0"
-                            className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                           {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
                             <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
                           ) : null}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Available Until Days
                             <Info size={14} className="inline ml-1 text-gray-600" />
                           </label>
@@ -591,7 +592,7 @@ export default function SpecialOffers() {
                             {...register(`offers.${index}.applied_until_days` as const)}
                             placeholder="0"
                             min="0"
-                            className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                           {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
                             <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
@@ -600,21 +601,21 @@ export default function SpecialOffers() {
                       </div>
 
                       {/* Type and Value */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 form-gap-base">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Type
                           </label>
                           <select
                             {...register(`offers.${index}.increment_type` as const)}
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black appearance-none"
+                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black appearance-none"
                           >
                             <option value="Percentage">Percentage</option>
                             <option value="Additional">Additional</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Value*
                           </label>
                           <input
@@ -622,7 +623,7 @@ export default function SpecialOffers() {
                             {...register(`offers.${index}.increment_value` as const)}
                             placeholder="0"
                             min="0"
-                            className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                           {formState.errors?.offers?.[index]?.increment_value?.message ? (
                             <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
@@ -637,10 +638,10 @@ export default function SpecialOffers() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-center container-margin-sm form-gap-base">
             <button 
               onClick={addNewOffer}
-              className="flex items-center gap-3 px-5 py-3 bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors"
+              className="flex items-center gap-3 btn-padding-base bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors text-responsive-base"
             >
               <Plus size={24} />
               Add Offer
@@ -665,7 +666,7 @@ export default function SpecialOffers() {
                 }
               })}
               disabled={saving || fields.length === 0}
-              className="flex items-center gap-4 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-4 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
             >
               <Save size={24} />
               {saving ? 'Saving...' : 'Save Special Offers'}
@@ -674,11 +675,11 @@ export default function SpecialOffers() {
 
           {/* Created Offers Summary */}
           {fields.length > 0 && (
-            <div className="bg-[#F9FAFB] border border-[#EBEDF0] rounded-lg p-4 mb-8">
-              <h3 className="text-base font-bold text-gray-900 mb-4">
+            <div className="bg-[#F9FAFB] border border-[#EBEDF0] rounded-lg container-padding-base container-margin-sm">
+              <h3 className="text-responsive-base font-bold text-gray-900 container-margin-sm">
                 Created Offers Summary
               </h3>
-              <div className="space-y-2 text-sm">
+              <div className="form-gap-base text-responsive-sm">
                 {fields.filter((offer: any) => offer.id).map((offer: any, index) => (
                   <p key={offer.id || index}>
                     <span className="text-gray-900 font-semibold">{offer.offer_name || 'Unnamed Offer'}</span>
@@ -700,14 +701,14 @@ export default function SpecialOffers() {
         </div>
 
         {/* Tips Section */}
-        <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6 mt-8">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
+          <div className="flex items-center gap-3 container-margin-sm">
             <Info size={25} className="text-[#294758]" />
-            <h3 className="text-lg font-bold text-[#294758]">
+            <h3 className="text-responsive-lg font-bold text-[#294758]">
               Tips for Creating Special Offers
             </h3>
           </div>
-          <div className="text-black/60 leading-relaxed space-y-1">
+          <div className="text-black/60 leading-relaxed form-gap-base text-responsive-base">
             <p>
               • Define clear start and end dates to avoid overlapping promotions
             </p>

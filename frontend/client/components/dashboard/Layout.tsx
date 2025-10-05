@@ -23,7 +23,7 @@ export default function Layout({ children }: LayoutProps) {
             <Header />
 
             {/* Page Content */}
-            <div className="flex-1 overflow-auto">{children}</div>
+            <div className="flex-1 overflow-auto pt-16 lg:pt-0">{children}</div>
           </div>
         </div>
       </PropertyProvider>

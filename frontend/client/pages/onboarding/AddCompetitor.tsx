@@ -5,6 +5,7 @@ import { dynamicPricingService } from "../../../shared/api/dynamic";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelDataForAPI, getLocalStorageItem } from "../../../shared/localStorage";
 import { PropertyContext } from "../../../shared/PropertyContext";
+import "../../styles/responsive-utilities.css";
 
 interface CompetitorHotel {
   id: string;
@@ -242,16 +243,16 @@ export default function AddCompetitor() {
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
       <OnboardingProgressTracker currentStep="add_competitor" />
       {/* Logo */}
-      <div className="mb-8">
+      <div className="container-margin-sm">
         <img
           src="https://api.builder.io/api/v1/image/assets/TEMP/45994adad9b2b36a95d20ee6e1b3521891b0bf6a?width=480"
           alt="Vivere Stays"
-          className="w-[240px] h-[121px]"
+          className="logo-base"
         />
       </div>
 
       {/* Progress Bar */}
-      <div className="flex justify-center items-center mb-10 w-full max-w-[1245px]">
+      <div className="flex justify-center items-center container-margin-base w-full max-w-[1245px]">
         {/* Payment - Completed */}
         <div className="flex items-center gap-[14px]">
           <div className="flex justify-center items-center gap-2">
@@ -271,7 +272,7 @@ export default function AddCompetitor() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-[18px] font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257]">
               Payment
             </span>
           </div>
@@ -306,7 +307,7 @@ export default function AddCompetitor() {
                 </clipPath>
               </defs>
             </svg>
-            <span className="text-[18px] font-medium text-[#9CAABD]">
+            <span className="text-responsive-lg font-medium text-[#9CAABD]">
               Add Competitor Hotels
             </span>
           </div>
@@ -340,19 +341,19 @@ export default function AddCompetitor() {
                 </clipPath>
               </defs>
             </svg>
-            <span className="text-[18px] font-medium text-[#9CAABD]">MSP</span>
+            <span className="text-responsive-lg font-medium text-[#9CAABD]">MSP</span>
           </div>
         </div>
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] w-full max-w-[724px] px-[58px] py-[51px]">
+      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] w-full max-w-[724px] container-padding-base">
         {/* Title and Description */}
-        <div className="text-center mb-12">
-          <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
+        <div className="text-center container-margin-lg">
+          <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
             Add Competitor Hotels
           </h1>
-          <p className="text-[18px] text-[#485567]">
+          <p className="text-responsive-lg text-[#485567]">
             Add names of competitor hotels you want to monitor and compare.
           </p>
         </div>
@@ -376,11 +377,11 @@ export default function AddCompetitor() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className="text-[18px] font-semibold text-[#1E1E1E]">
+              <span className="text-responsive-lg font-semibold text-[#1E1E1E]">
                 AI-Powered Recommendations
               </span>
             </div>
-            <p className="text-[14px] text-[#1E1E1E] leading-normal">
+            <p className="text-responsive-sm text-[#1E1E1E] leading-normal">
               We recommend competitors using AI based on your property location and characteristics. 
               However, feel free to add and remove competitors so that this list matches your actual competition. 
               You will be able to perfect it later.
@@ -390,13 +391,13 @@ export default function AddCompetitor() {
           {/* Competitor Hotels Section */}
           <div className="space-y-[14px]">
             <div className="flex items-center gap-2">
-              <span className="text-[16px] font-bold text-[#485567]">
+              <span className="text-responsive-base font-bold text-[#485567]">
                 Competitor Hotel Names
               </span>
               {isLoadingNearbyHotels && (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#294758]"></div>
-                  <span className="text-[12px] text-[#485567]">Finding nearby hotels...</span>
+                  <span className="text-responsive-xs text-[#485567]">Finding nearby hotels...</span>
                 </div>
               )}
             </div>
@@ -408,7 +409,7 @@ export default function AddCompetitor() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 10.4478 2.78778 8.002C2.78778 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 8.002C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z" fill="#FF0404" />
                   </svg>
-                  <span className="text-[14px] text-[#FF0404] font-medium">{error}</span>
+                  <span className="error-message">{error}</span>
                 </div>
               </div>
             )}
@@ -426,7 +427,7 @@ export default function AddCompetitor() {
                           updateCompetitorHotel(hotel.id, e.target.value)
                         }
                         placeholder="Hotel Name (e.g., Hotel Barcelona)"
-                        className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-[16px] focus:outline-none ${
+                        className={`w-full input-height-lg input-padding-base border-none rounded-lg text-responsive-base focus:outline-none ${
                           hotel.name
                             ? "text-[#1E1E1E]"
                             : "text-[#9CAABD] placeholder:text-[#9CAABD]"
@@ -460,7 +461,7 @@ export default function AddCompetitor() {
             {/* Add Another Competitor Button */}
             <button
               onClick={addCompetitorHotel}
-              className="w-full flex items-center justify-center gap-[14px] py-[17px] border border-[#9CAABD] bg-white rounded-lg text-[16px] text-[#485567] hover:border-[#485567] transition-colors"
+              className="w-full flex items-center justify-center gap-[14px] input-padding-base border border-[#9CAABD] bg-white rounded-lg text-responsive-base text-[#485567] hover:border-[#485567] transition-colors"
             >
               <svg
                 width="20"
@@ -485,11 +486,11 @@ export default function AddCompetitor() {
           <div className="border border-[#BFC8D5] bg-[#F9FBFD] rounded-lg p-[19px]">
             <div className="space-y-[10px]">
               <div className="flex items-center gap-[6px]">
-                <span className="text-[18px] text-[#64748B]">
+                <span className="text-responsive-lg text-[#64748B]">
                   Tips for choosing competitors:
                 </span>
               </div>
-              <div className="text-[14px] text-[#64748B] leading-normal space-y-1">
+              <div className="text-responsive-sm text-[#64748B] leading-normal space-y-1">
                 <div>• Choose hotels in the same area</div>
                 <div>• Similar type and size of property</div>
                 <div>• Similar amenities and features</div>
@@ -502,7 +503,7 @@ export default function AddCompetitor() {
           <div className="flex justify-center pt-5">
             <button
               onClick={handleContinue}
-              className={`flex items-center gap-2 px-[143px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors ${
+              className={`flex items-center gap-2 btn-padding-base rounded-[10px] text-responsive-base font-bold transition-colors ${
                 isLoading ? "bg-gray-400 cursor-not-allowed text-white" : "bg-[#294758] text-white hover:bg-[#234149]"
               }`}
               disabled={isLoading || createCompetitorCandidates.isPending}

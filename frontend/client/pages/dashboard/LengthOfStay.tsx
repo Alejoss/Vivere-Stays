@@ -3,6 +3,7 @@ import { PropertyContext } from "../../../shared/PropertyContext";
 import LosGeneralSettings from "./LosGeneralSettings";
 import LosSetupRules from "./LosSetupRules";
 import LosReductionRules from "./LosReductionRules";
+import "../../styles/responsive-utilities.css";
 
 export default function LengthOfStay() {
   const { property } = useContext(PropertyContext) ?? {};
@@ -13,8 +14,8 @@ export default function LengthOfStay() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg text-gray-600 mb-4">No property selected</div>
-          <div className="text-sm text-gray-500">Please select a property to configure LOS settings</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
+          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS settings</div>
         </div>
       </div>
     );
@@ -22,14 +23,14 @@ export default function LengthOfStay() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-6 py-8">
+      <div className="container-padding-base">
         {/* Tab Navigation */}
-        <div className="mb-8">
+        <div className="container-margin-sm">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+            <nav className="-mb-px flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-8">
               <button
                 onClick={() => setActiveTab('general')}
-                className={`py-2 px-1 border-b-2 font-semibold text-sm ${
+                className={`py-2 px-1 border-b-2 font-semibold text-responsive-sm ${
                   activeTab === 'general'
                     ? 'border-[#287CAC] text-[#287CAC]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -39,7 +40,7 @@ export default function LengthOfStay() {
               </button>
               <button
                 onClick={() => setActiveTab('setup')}
-                className={`py-2 px-1 border-b-2 font-semibold text-sm ${
+                className={`py-2 px-1 border-b-2 font-semibold text-responsive-sm ${
                   activeTab === 'setup'
                     ? 'border-[#287CAC] text-[#287CAC]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -49,7 +50,7 @@ export default function LengthOfStay() {
               </button>
               <button
                 onClick={() => setActiveTab('reduction')}
-                className={`py-2 px-1 border-b-2 font-semibold text-sm ${
+                className={`py-2 px-1 border-b-2 font-semibold text-responsive-sm ${
                   activeTab === 'reduction'
                     ? 'border-[#287CAC] text-[#287CAC]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

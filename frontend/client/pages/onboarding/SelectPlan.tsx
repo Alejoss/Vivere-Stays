@@ -8,6 +8,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { paymentService } from "@shared/api/payments";
 import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import "../../styles/responsive-utilities.css";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
 
@@ -237,16 +238,16 @@ export default function SelectPlan() {
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
       <OnboardingProgressTracker currentStep="select_plan" />
       {/* Logo */}
-      <div className="mb-8">
+      <div className="container-margin-sm">
         <img
           src="https://api.builder.io/api/v1/image/assets/TEMP/45994adad9b2b36a95d20ee6e1b3521891b0bf6a?width=480"
           alt="Vivere Stays"
-          className="w-[240px] h-[121px]"
+          className="logo-base"
         />
       </div>
 
       {/* Progress Bar */}
-      <div className="flex justify-center items-center mb-10 w-full max-w-[1235px]">
+      <div className="flex justify-center items-center container-margin-base w-full max-w-[1235px]">
         {/* Account - Completed */}
         <div className="flex items-center gap-[14px]">
           <div className="flex justify-center items-center gap-2">
@@ -266,7 +267,7 @@ export default function SelectPlan() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-[18px] font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257]">
               Account
             </span>
           </div>
@@ -292,7 +293,7 @@ export default function SelectPlan() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-[18px] font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257]">
               Hotel Details
             </span>
           </div>
@@ -318,7 +319,7 @@ export default function SelectPlan() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-[18px] font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257]">
               PMS Integration
             </span>
           </div>
@@ -352,7 +353,7 @@ export default function SelectPlan() {
               </clipPath>
             </defs>
           </svg>
-          <span className="text-[18px] font-medium text-[#9CAABD]">
+          <span className="text-responsive-lg font-medium text-[#9CAABD]">
             Select Plan
           </span>
         </div>
@@ -385,7 +386,7 @@ export default function SelectPlan() {
                 </clipPath>
               </defs>
             </svg>
-            <span className="text-[18px] font-medium text-[#9CAABD]">
+            <span className="text-responsive-lg font-medium text-[#9CAABD]">
               Payment
             </span>
           </div>
@@ -419,7 +420,7 @@ export default function SelectPlan() {
                 </clipPath>
               </defs>
             </svg>
-            <span className="text-[18px] font-medium text-[#9CAABD]">
+            <span className="text-responsive-lg font-medium text-[#9CAABD]">
               Add Competitor
             </span>
           </div>
@@ -453,13 +454,13 @@ export default function SelectPlan() {
                 </clipPath>
               </defs>
             </svg>
-            <span className="text-[18px] font-medium text-[#9CAABD]">MSP</span>
+            <span className="text-responsive-lg font-medium text-[#9CAABD]">MSP</span>
           </div>
         </div>
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] w-full max-w-[603px] px-[68px] py-[30px]">
+      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] w-full max-w-[603px] container-padding-base">
         {/* Header Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-[56px] h-[56px] p-[14px] rounded-[10px] border-[0.5px] border-[#9CAABD] bg-gradient-to-r from-[#D7E4EB] to-[#CEF4FC] flex items-center justify-center">
@@ -483,27 +484,27 @@ export default function SelectPlan() {
         </div>
 
         {/* Title and Description */}
-        <div className="text-center mb-8">
-          <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-2">Plans</h1>
+        <div className="text-center container-margin-sm">
+          <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-2">Plans</h1>
           <div className="flex flex-col items-center gap-2 mb-4">
-            <p className="text-[18px] text-[#485567]">
+            <p className="text-responsive-lg text-[#485567]">
               Choose your plan and complete your registration
             </p>
             <button
               onClick={() => navigate('/plan-information')}
-              className="text-[14px] text-[#294758] underline hover:text-[#1e3340]"
+              className="text-responsive-sm text-[#294758] underline hover:text-[#1e3340]"
             >
               More information
             </button>
           </div>
           <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4">
             <div className="flex items-center justify-between">
-              <p className="text-[14px] text-[#64748B]">
+              <p className="text-responsive-sm text-[#64748B]">
                 Pricing calculated for {numberOfRooms} {numberOfRooms === 1 ? 'room' : 'rooms'}
               </p>
               <button
                 onClick={handleOpenRoomModal}
-                className="text-[14px] text-[#294758] font-medium hover:text-[#1e3340] underline"
+                className="text-responsive-sm text-[#294758] font-medium hover:text-[#1e3340] underline"
               >
                 Change
               </button>
@@ -529,7 +530,7 @@ export default function SelectPlan() {
                   fill="#C2410C"
                 />
               </svg>
-              <p className="text-[14px] text-[#C2410C] font-medium">
+              <p className="text-responsive-sm text-[#C2410C] font-medium">
                 Our sales team will help you integrate Vivere Stays based on your specific PMS integration needs.
               </p>
             </div>
@@ -551,17 +552,17 @@ export default function SelectPlan() {
               onClick={() => pmsSelectionType !== "custom_or_none" && handleSelectPlan(plan.id)}
             >
               <div className="flex-1">
-                <h3 className="text-[18px] font-semibold text-black mb-[6px]">
+                <h3 className="text-responsive-lg font-semibold text-black mb-[6px]">
                   {plan.name}
                 </h3>
-                <p className="text-[16px] text-[#64748B] mb-[6px]">
+                <p className="text-responsive-base text-[#64748B] mb-[6px]">
                   {plan.description}
                 </p>
-                <p className="text-[20px] font-bold text-black">{plan.price}</p>
+                <p className="text-responsive-xl font-bold text-black">{plan.price}</p>
               </div>
               {/* Only show selection buttons for standard PMS users */}
               {pmsSelectionType !== "custom_or_none" && (
-                <button className="bg-[#2C4E60] text-white px-[17px] py-[11px] rounded-[9px] text-[14px] font-normal hover:bg-[#234149] transition-colors">
+                <button className="bg-[#2C4E60] text-white btn-padding-sm rounded-[9px] text-responsive-sm font-normal hover:bg-[#234149] transition-colors">
                   {plan.id === "pro" ? "Contact Sales" : "Select"}
                 </button>
               )}
@@ -570,11 +571,11 @@ export default function SelectPlan() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col items-center gap-[13px]">
+        <div className="action-buttons">
           <div className="flex justify-center items-center gap-[13px]">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 px-[70px] py-[18px] border border-[#D9D9D9] bg-white rounded-[10px] text-[16px] font-bold text-[#294758] hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 btn-padding-base border border-[#D9D9D9] bg-white rounded-[10px] text-responsive-base font-bold text-[#294758] hover:bg-gray-50 transition-colors"
             >
               <svg
                 width="20"
@@ -596,7 +597,7 @@ export default function SelectPlan() {
             <button
               onClick={handleContinue}
               disabled={isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending}
-              className={`flex items-center gap-2 px-[36px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors ${
+              className={`flex items-center gap-2 btn-padding-base rounded-[10px] text-responsive-base font-bold transition-colors ${
                 isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending 
                   ? "bg-gray-400 cursor-not-allowed" 
                   : "bg-[#294758] text-white hover:bg-[#234149]"
@@ -633,7 +634,7 @@ export default function SelectPlan() {
           {/* Temporary Skip Payment Button */}
           <button
             onClick={() => navigate("/add-competitor")}
-            className="flex items-center gap-2 px-[36px] py-[12px] rounded-[10px] text-[14px] font-medium text-[#64748B] border border-[#E2E8F0] bg-white hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 btn-padding-sm rounded-[10px] text-responsive-sm font-medium text-[#64748B] border border-[#E2E8F0] bg-white hover:bg-gray-50 transition-colors"
           >
             Skip Payment (Temporary)
           </button>
@@ -643,18 +644,18 @@ export default function SelectPlan() {
       {/* Room Count Modal */}
       {showRoomModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] p-8 w-full max-w-md mx-4">
-            <div className="text-center mb-6">
-              <h2 className="text-[24px] font-bold text-[#1E1E1E] mb-2">
+          <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-md mx-4">
+            <div className="text-center container-margin-sm">
+              <h2 className="text-responsive-2xl font-bold text-[#1E1E1E] mb-2">
                 Update Room Count
               </h2>
-              <p className="text-[16px] text-[#485567]">
+              <p className="text-responsive-base text-[#485567]">
                 How many rooms does your property have?
               </p>
             </div>
 
             <div className="mb-6">
-              <label className="block text-[14px] text-[#485567] font-medium mb-2">
+              <label className="block form-label mb-2">
                 Number of Rooms
               </label>
               <input
@@ -663,7 +664,7 @@ export default function SelectPlan() {
                 max="1000"
                 value={tempRoomCount}
                 onChange={(e) => setTempRoomCount(parseInt(e.target.value) || 1)}
-                className="w-full h-[50px] px-4 border border-[#D7DFE8] rounded-[8px] bg-white text-[16px] focus:outline-none focus:border-[#294859] transition-colors"
+                className="w-full input-height-base input-padding-base border border-[#D7DFE8] rounded-[8px] bg-white text-responsive-base focus:outline-none focus:border-[#294859] transition-colors"
                 placeholder="Enter number of rooms"
               />
             </div>
@@ -671,14 +672,14 @@ export default function SelectPlan() {
             <div className="flex gap-3">
               <button
                 onClick={handleCloseRoomModal}
-                className="flex-1 h-[50px] bg-white border border-[#D9D9D9] text-[#294758] text-[16px] font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
+                className="flex-1 input-height-base bg-white border border-[#D9D9D9] text-[#294758] text-responsive-base font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveRoomCount}
                 disabled={updatePropertyMutation.isPending || tempRoomCount < 1}
-                className={`flex-1 h-[50px] rounded-[10px] text-[16px] font-bold transition-colors ${
+                className={`flex-1 input-height-base rounded-[10px] text-responsive-base font-bold transition-colors ${
                   updatePropertyMutation.isPending || tempRoomCount < 1
                     ? "bg-gray-400 cursor-not-allowed text-white"
                     : "bg-[#294758] text-white hover:bg-[#234149]"

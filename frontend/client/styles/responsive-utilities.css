@@ -1,0 +1,382 @@
+/* Responsive Utility Classes for Onboarding Pages */
+
+/* Typography Scale */
+.text-responsive-xs {
+  @apply text-xs sm:text-sm;
+}
+
+.text-responsive-sm {
+  @apply text-sm sm:text-base;
+}
+
+.text-responsive-base {
+  @apply text-sm sm:text-base md:text-lg;
+}
+
+.text-responsive-lg {
+  @apply text-base sm:text-lg md:text-xl;
+}
+
+.text-responsive-xl {
+  @apply text-lg sm:text-xl md:text-2xl;
+}
+
+.text-responsive-2xl {
+  @apply text-xl sm:text-2xl md:text-3xl;
+}
+
+.text-responsive-3xl {
+  @apply text-2xl sm:text-3xl md:text-4xl;
+}
+
+/* Input Field Heights */
+.input-height-sm {
+  @apply h-10 sm:h-12 md:h-14;
+}
+
+.input-height-base {
+  @apply h-12 sm:h-14 md:h-16;
+}
+
+.input-height-lg {
+  @apply h-14 sm:h-16 md:h-[60px];
+}
+
+/* Input Field Padding */
+.input-padding-sm {
+  @apply px-3 py-2 sm:px-4 sm:py-3;
+}
+
+.input-padding-base {
+  @apply px-3 py-2 sm:px-4 sm:py-3 md:px-4 md:py-[17px];
+}
+
+.input-padding-lg {
+  @apply px-4 py-3 sm:px-4 sm:py-4 md:px-4 md:py-[17px];
+}
+
+/* Button Heights */
+.btn-height-sm {
+  @apply h-10 sm:h-12 md:h-14;
+}
+
+.btn-height-base {
+  @apply h-12 sm:h-14 md:h-16;
+}
+
+.btn-height-lg {
+  @apply h-14 sm:h-16 md:h-[55px];
+}
+
+/* Button Padding */
+.btn-padding-sm {
+  @apply px-4 py-2 sm:px-6 sm:py-3;
+}
+
+.btn-padding-base {
+  @apply px-6 py-3 sm:px-8 sm:py-4 md:px-[70px] md:py-[18px];
+}
+
+.btn-padding-lg {
+  @apply px-8 py-4 sm:px-12 sm:py-5 md:px-[70px] md:py-[18px];
+}
+
+/* Container Padding */
+.container-padding-sm {
+  @apply p-4 sm:p-6 md:p-8;
+}
+
+.container-padding-base {
+  @apply p-4 sm:p-6 md:p-8 lg:p-12;
+}
+
+.container-padding-lg {
+  @apply p-6 sm:p-8 md:p-12 lg:p-16;
+}
+
+/* Container Margins */
+.container-margin-sm {
+  @apply mb-4 sm:mb-6 md:mb-8;
+}
+
+.container-margin-base {
+  @apply mb-6 sm:mb-8 md:mb-10 lg:mb-12;
+}
+
+.container-margin-lg {
+  @apply mb-8 sm:mb-10 md:mb-12 lg:mb-16;
+}
+
+/* Grid Gaps */
+.grid-gap-sm {
+  @apply gap-2 sm:gap-3 md:gap-4;
+}
+
+.grid-gap-base {
+  @apply gap-3 sm:gap-4 md:gap-5;
+}
+
+.grid-gap-lg {
+  @apply gap-4 sm:gap-5 md:gap-6;
+}
+
+/* Form Row Gaps */
+.form-gap-sm {
+  @apply gap-2 sm:gap-3 md:gap-[10px];
+}
+
+.form-gap-base {
+  @apply gap-3 sm:gap-4 md:gap-[13px];
+}
+
+.form-gap-lg {
+  @apply gap-4 sm:gap-5 md:gap-6;
+}
+
+/* Responsive Widths */
+.width-responsive-sm {
+  @apply w-full sm:w-48 md:w-56;
+}
+
+.width-responsive-base {
+  @apply w-full sm:w-64 md:w-72;
+}
+
+.width-responsive-lg {
+  @apply w-full sm:w-80 md:w-96;
+}
+
+.width-responsive-xl {
+  @apply w-full sm:w-96 md:w-[448px];
+}
+
+/* Card Max Widths */
+.card-max-width-sm {
+  @apply max-w-sm sm:max-w-md md:max-w-lg;
+}
+
+.card-max-width-base {
+  @apply max-w-md sm:max-w-lg md:max-w-2xl;
+}
+
+.card-max-width-lg {
+  @apply max-w-lg sm:max-w-2xl md:max-w-4xl;
+}
+
+.card-max-width-xl {
+  @apply max-w-2xl sm:max-w-4xl md:max-w-6xl;
+}
+
+/* Icon Sizes */
+.icon-sm {
+  @apply w-4 h-4 sm:w-5 sm:h-5;
+}
+
+.icon-base {
+  @apply w-5 h-5 sm:w-6 sm:h-6;
+}
+
+.icon-lg {
+  @apply w-6 h-6 sm:w-8 sm:h-8;
+}
+
+.icon-xl {
+  @apply w-8 h-8 sm:w-10 sm:h-10;
+}
+
+/* Progress Bar Heights */
+.progress-height-sm {
+  @apply h-1 sm:h-2 md:h-[10px];
+}
+
+.progress-height-base {
+  @apply h-2 sm:h-3 md:h-4;
+}
+
+/* Logo Sizes */
+.logo-sm {
+  @apply w-32 h-auto sm:w-48 md:w-60;
+}
+
+.logo-base {
+  @apply w-40 h-auto sm:w-56 md:w-72;
+}
+
+.logo-lg {
+  @apply w-48 h-auto sm:w-64 md:w-80;
+}
+
+/* Specialized Input Classes */
+.date-input {
+  @apply w-full h-10 sm:h-12 md:h-14 px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border rounded-lg;
+}
+
+.price-input {
+  @apply w-full h-10 sm:h-12 md:h-14 px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border rounded-lg;
+}
+
+.period-name-input {
+  @apply w-full h-10 sm:h-12 md:h-14 px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border rounded-lg;
+}
+
+/* Verification Code Input */
+.verification-input {
+  @apply w-full h-12 sm:h-16 md:h-[73px] px-4 py-3 sm:px-6 sm:py-4 text-lg sm:text-xl md:text-[30px] text-center border rounded-lg;
+}
+
+/* PMS Option Buttons */
+.pms-option-btn {
+  @apply w-full sm:w-40 md:w-[184px] h-12 sm:h-14 md:h-[54px] px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base border rounded-lg;
+}
+
+/* Plan Card Dimensions */
+.plan-card {
+  @apply w-full sm:w-64 md:w-80 p-4 sm:p-6 md:p-8 border rounded-lg;
+}
+
+/* Competitor Input */
+.competitor-input {
+  @apply w-full h-12 sm:h-14 md:h-[54px] px-4 py-3 text-sm sm:text-base border rounded-lg;
+}
+
+/* Tips and Info Boxes */
+.info-box {
+  @apply p-4 sm:p-6 md:p-8 border rounded-lg;
+}
+
+/* Action Button Groups */
+.action-buttons {
+  @apply flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6;
+}
+
+.action-button {
+  @apply w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base font-bold rounded-lg;
+}
+
+/* Form Field Spacing */
+.form-field {
+  @apply space-y-2 sm:space-y-3 md:space-y-[14px];
+}
+
+/* Label Styles */
+.form-label {
+  @apply text-sm sm:text-base text-[#485567] font-medium;
+}
+
+/* Error Message Styles */
+.error-message {
+  @apply text-xs sm:text-sm text-[#FF0404] font-normal;
+}
+
+/* Success Message Styles */
+.success-message {
+  @apply text-sm sm:text-base text-[#16B257] font-medium;
+}
+
+/* Divider Styles */
+.divider {
+  @apply h-px sm:h-[1.5px] bg-[#D7DFE8];
+}
+
+/* Progress Step Styles */
+.progress-step {
+  @apply text-sm sm:text-base text-black font-normal;
+}
+
+/* Custom PMS Input */
+.custom-pms-input {
+  @apply w-full h-12 sm:h-14 md:h-[60px] px-4 py-3 text-sm sm:text-base border rounded-lg;
+}
+
+/* Room Count Input */
+.room-count-input {
+  @apply w-full h-12 sm:h-14 md:h-16 px-4 py-3 text-sm sm:text-base border rounded-lg;
+}
+
+/* Country Select */
+.country-select {
+  @apply w-full h-12 sm:h-14 md:h-16 px-4 py-3 text-sm sm:text-base border rounded-lg;
+}
+
+/* Terms Checkbox */
+.terms-checkbox {
+  @apply w-4 h-4 sm:w-5 sm:h-5;
+}
+
+/* Terms Label */
+.terms-label {
+  @apply text-sm sm:text-base text-[#485567] font-normal;
+}
+
+/* Terms Small Text */
+.terms-small {
+  @apply text-xs sm:text-sm text-[#9CAABD] font-normal;
+}
+
+/* Data Protection Box */
+.data-protection-box {
+  @apply p-4 sm:p-6 md:p-8 border border-[#D7DFE8] bg-[#F6F9FD] rounded-lg;
+}
+
+/* AI Recommendations Box */
+.ai-recommendations-box {
+  @apply p-4 sm:p-6 md:p-8 border border-[#D8E9FE] bg-[#EEF9FF] rounded-lg;
+}
+
+/* Tips Box */
+.tips-box {
+  @apply p-4 sm:p-6 md:p-8 border border-[#D7DFE8] bg-[#F6F9FD] rounded-lg;
+}
+
+/* Warning Box */
+.warning-box {
+  @apply p-4 sm:p-6 md:p-8 border border-[#C2410C] bg-[#FFF9F1] rounded-lg;
+}
+
+/* Success Box */
+.success-box {
+  @apply p-4 sm:p-6 md:p-8 border border-[#16B257] bg-[#D7FBE6] rounded-lg;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  @apply w-6 h-6 sm:w-8 sm:h-8 border-2 border-white border-t-transparent rounded-full animate-spin;
+}
+
+/* Progress Bar */
+.progress-bar {
+  @apply w-full h-2 sm:h-3 md:h-[10px] bg-[#E2E8F0] rounded-md;
+}
+
+/* Progress Fill */
+.progress-fill {
+  @apply h-full bg-gradient-to-r from-[#285A6E] to-[#03CBF5] rounded-md transition-all duration-300;
+}
+
+/* Mobile-First Breakpoints */
+/* 
+  sm: 640px and up
+  md: 768px and up  
+  lg: 1024px and up
+  xl: 1280px and up
+*/
+
+/* Additional Mobile Optimizations */
+@media (max-width: 639px) {
+  /* Ensure minimum touch target size */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent horizontal scroll */
+  .no-scroll {
+    overflow-x: hidden;
+  }
+  
+  /* Optimize text for mobile reading */
+  .mobile-text {
+    line-height: 1.5;
+    letter-spacing: 0.025em;
+  }
+}

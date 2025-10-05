@@ -3,6 +3,7 @@ import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { Settings, Info } from "lucide-react";
 import { toast } from "../../hooks/use-toast";
+import "../../styles/responsive-utilities.css";
 
 export default function LosGeneralSettings() {
   const { property } = useContext(PropertyContext) ?? {};
@@ -83,8 +84,8 @@ export default function LosGeneralSettings() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg text-gray-600 mb-4">No property selected</div>
-          <div className="text-sm text-gray-500">Please select a property to configure LOS general settings</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
+          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS general settings</div>
         </div>
       </div>
     );
@@ -92,16 +93,16 @@ export default function LosGeneralSettings() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
             <Settings size={34} className="text-[#287CAC]" />
             <div>
-              <h2 className="text-3xl font-bold text-[#287CAC]">
+              <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 LOS General Settings
               </h2>
-              <p className="text-[#8A8E94] font-bold text-lg">
+              <p className="text-[#8A8E94] font-bold text-responsive-lg">
                 Configure global settings for Length of Stay calculations.
               </p>
             </div>
@@ -109,23 +110,23 @@ export default function LosGeneralSettings() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-3">
+            <div className="container-margin-sm container-padding-base bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center form-gap-base">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-normal">Loading general settings...</span>
+                <span className="text-blue-800 font-normal text-responsive-base">Loading general settings...</span>
               </div>
             </div>
           )}
 
 
           {/* Info Section */}
-          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-bold text-[#294758] mb-3">General Settings Overview</h3>
-            <div className="text-black/60 text-base leading-relaxed">
-              <p className="mb-2">
+          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
+            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">General Settings Overview</h3>
+            <div className="text-black/60 text-responsive-base leading-relaxed">
+              <p className="container-margin-sm">
                 These settings control how the LOS algorithm analyzes competitors and calculates requirements:
               </p>
-              <ul className="space-y-1 text-sm">
+              <ul className="form-gap-base text-responsive-sm">
                 <li>• <strong>Number of Competitors:</strong> Minimum competitors required to apply competitor-based LOS</li>
                 <li>• <strong>LOS Aggregation Method:</strong> How to combine competitor LOS values (minimum or maximum)</li>
               </ul>
@@ -134,23 +135,23 @@ export default function LosGeneralSettings() {
 
           {/* Settings Form */}
           <div className="max-w-2xl">
-            <div className="space-y-6">
+            <div className="form-gap-base">
               {/* Number of Competitors */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="form-label">
                   Number of Competitors
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
                   <input
                     type="number"
                     value={competitorCount}
                     onChange={(e) => setCompetitorCount(e.target.value)}
                     disabled={isLoading || isSaving}
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-32 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     min="1"
                   />
                   <Info size={20} className="text-gray-500" />
-                  <span className="text-sm text-gray-600">
+                  <span className="text-responsive-sm text-gray-600">
                     Minimum competitors required to apply competitor-based LOS
                   </span>
                 </div>
@@ -158,21 +159,21 @@ export default function LosGeneralSettings() {
 
               {/* LOS Aggregation Method */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="form-label">
                   LOS Aggregation Method
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
                   <select
                     value={aggregationMethod}
                     onChange={(e) => setAggregationMethod(e.target.value)}
                     disabled={isLoading || isSaving}
-                    className="w-48 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-48 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="min">Minimum</option>
                     <option value="max">Maximum</option>
                   </select>
                   <Info size={20} className="text-gray-500" />
-                  <span className="text-sm text-gray-600">
+                  <span className="text-responsive-sm text-gray-600">
                     How to combine competitor LOS values
                   </span>
                 </div>
@@ -180,11 +181,11 @@ export default function LosGeneralSettings() {
             </div>
 
             {/* Save Button */}
-            <div className="mt-8">
+            <div className="container-margin-sm">
               <button 
                 onClick={handleSave}
                 disabled={isSaving || isLoading}
-                className="flex items-center gap-2 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
               >
                 {isSaving ? (
                   <>

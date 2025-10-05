@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { toast } from "../../hooks/use-toast";
+import "../../styles/responsive-utilities.css";
 
 interface MSPPeriod {
   id: string;
@@ -282,7 +283,7 @@ export default function MSPManagement() {
       <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-          <p className="text-base text-[#485567]">Loading MSP periods...</p>
+          <p className="text-responsive-base text-[#485567]">Loading MSP periods...</p>
         </div>
       </div>
     );
@@ -293,8 +294,8 @@ export default function MSPManagement() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg text-gray-600 mb-4">No property selected</div>
-          <div className="text-sm text-gray-500">Please select a property to manage MSP settings</div>
+          <div className="text-responsive-lg text-gray-600 mb-4">No property selected</div>
+          <div className="text-responsive-sm text-gray-500">Please select a property to manage MSP settings</div>
         </div>
       </div>
     );
@@ -302,10 +303,10 @@ export default function MSPManagement() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
             <div className="flex items-center gap-3">
               <svg
                 width="30"
@@ -337,10 +338,10 @@ export default function MSPManagement() {
                 />
               </svg>
               <div>
-                <h2 className="text-3xl font-bold text-[#287CAC]">
+                <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                   MSP Management
                 </h2>
-                <p className="text-[#8A8E94] font-bold text-lg">
+                <p className="text-[#8A8E94] font-bold text-responsive-lg">
                   Manage minimum selling prices for {property.name}
                 </p>
               </div>
@@ -349,31 +350,31 @@ export default function MSPManagement() {
 
 
           {/* Header */}
-          <div className="mb-8">
-            <h3 className="text-lg font-bold text-black mb-6">
+          <div className="container-margin-sm">
+            <h3 className="text-responsive-lg font-bold text-black container-margin-sm">
               MSP Configuration
             </h3>
           </div>
 
           {/* Table Headers */}
-          <div className="hidden lg:flex items-center gap-[10px] mb-4">
+          <div className="hidden lg:flex items-center gap-[10px] container-margin-sm">
             <div className="w-[448px]">
-              <span className="text-base font-bold text-[#485567]">
+              <span className="form-label">
                 From
               </span>
             </div>
             <div className="w-[448px]">
-              <span className="text-base font-bold text-[#485567]">
+              <span className="form-label">
                 To
               </span>
             </div>
             <div className="w-[448px]">
-              <span className="text-base font-bold text-[#485567]">
+              <span className="form-label">
                 Price
               </span>
             </div>
             <div className="w-[448px]">
-              <span className="text-base font-bold text-[#485567]">
+              <span className="form-label">
                 Period Name (Optional)
               </span>
             </div>
@@ -383,7 +384,7 @@ export default function MSPManagement() {
           </div>
 
           {/* Periods List */}
-          <div className="space-y-5 mb-8">
+          <div className="form-gap-base container-margin-sm">
             {periods.map((period, index) => (
               <div key={period.id}>
                 {/* Desktop Layout */}
@@ -392,7 +393,7 @@ export default function MSPManagement() {
                   <div className="w-[448px]">
                     <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
                       <div
-                        className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base ${
+                        className={`w-full input-height-lg input-padding-base border-none rounded-lg text-left text-responsive-base ${
                           period.fromDate
                             ? "text-[#1E1E1E]"
                             : "text-[#9CAABD]"

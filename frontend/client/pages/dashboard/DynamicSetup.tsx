@@ -13,6 +13,7 @@ import {
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { toast } from "../../hooks/use-toast";
+import "../../styles/responsive-utilities.css";
 
 // Category definitions matching the backend model
 const OCCUPANCY_CATEGORIES = [
@@ -181,7 +182,7 @@ export default function DynamicSetup() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
-      className="w-full px-3 py-[10px] text-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
+      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[140px]"
     >
       <option value="Percentage">Percentage</option>
       <option value="Additional">Additional</option>
@@ -198,7 +199,7 @@ export default function DynamicSetup() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-[9px] text-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[177px]"
+      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[177px]"
     >
       <option value="">Select occupancy</option>
       {OCCUPANCY_CATEGORIES.map(category => (
@@ -219,7 +220,7 @@ export default function DynamicSetup() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-[9px] text-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[217px]"
+      className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[217px]"
     >
       <option value="">Select lead time</option>
       {LEAD_TIME_CATEGORIES.map(category => (
@@ -233,16 +234,16 @@ export default function DynamicSetup() {
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
             <TrendingUp size={34} className="text-[#287CAC]" />
             <div>
-              <h2 className="text-3xl font-bold text-[#287CAC]">
+              <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 Dynamic Set Up
               </h2>
-              <p className="text-[#8A8E94] font-bold text-lg">
+              <p className="text-[#8A8E94] font-bold text-responsive-lg">
                 Configure dynamic pricing rules based on occupancy and lead time
               </p>
             </div>
@@ -250,9 +251,9 @@ export default function DynamicSetup() {
 
 
           {/* Rules Table */}
-          <div className="mb-8">
+          <div className="container-margin-sm">
             {/* Desktop Table Headers */}
-            <div className="hidden lg:grid grid-cols-5 gap-6 mb-4 text-[#494951] font-semibold text-base">
+            <div className="hidden lg:grid grid-cols-5 form-gap-base container-margin-sm text-[#494951] font-semibold text-responsive-base">
               <div>Occupancy</div>
               <div>Lead Time</div>
               <div>Increment Type</div>
@@ -261,24 +262,24 @@ export default function DynamicSetup() {
             </div>
 
             {/* Divider Line */}
-            <div className="w-full h-px bg-hotel-divider mb-5"></div>
+            <div className="w-full h-px bg-hotel-divider container-margin-sm"></div>
 
             {/* Table Rows */}
-            <div className="space-y-5">
+            <div className="form-gap-base">
               {loading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Loading dynamic rules...</p>
+                  <p className="text-gray-500 text-responsive-base">Loading dynamic rules...</p>
                 </div>
               ) : rules.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No dynamic rules found. Click "Add Rule" to create your first dynamic pricing rule.</p>
+                  <p className="text-gray-500 text-responsive-base">No dynamic rules found. Click "Add Rule" to create your first dynamic pricing rule.</p>
                 </div>
               ) : (
                 rules.map((rule, index) => (
                   <div key={rule.id || `new-${index}`}>
                     {/* Desktop Layout */}
                     <div
-                      className={`hidden lg:grid grid-cols-5 gap-6 items-center p-3 rounded-lg ${
+                      className={`hidden lg:grid grid-cols-5 form-gap-base items-center container-padding-sm rounded-lg ${
                         rule.isNew ? 'bg-blue-50 border border-blue-200' : 'bg-white'
                       }`}
                     >
@@ -314,7 +315,7 @@ export default function DynamicSetup() {
                           onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
                           placeholder="0"
                           min="0"
-                          className="w-full px-3 py-[11px] text-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
+                          className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
                         />
                       </div>
 
@@ -322,7 +323,7 @@ export default function DynamicSetup() {
                       <div>
                         <button 
                           onClick={() => removeRule(index)}
-                          className="px-3 py-[10px] border border-gray-300 rounded bg-white text-red-500 font-semibold text-sm hover:bg-red-50 transition-colors min-w-[80px] flex items-center justify-center"
+                          className="input-padding-sm input-height-base border border-gray-300 rounded bg-white text-red-500 font-semibold text-responsive-sm hover:bg-red-50 transition-colors min-w-[80px] flex items-center justify-center"
                           title="Delete rule"
                         >
                           <Trash2 size={20} className="text-red-500" />
@@ -331,12 +332,12 @@ export default function DynamicSetup() {
                     </div>
 
                     {/* Mobile Layout */}
-                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg p-4 space-y-4 ${
+                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg container-padding-base form-gap-base ${
                       rule.isNew ? 'bg-blue-50 border-blue-200' : ''
                     }`}>
                       {/* Header with delete button */}
                       <div className="flex items-center justify-between">
-                        <h4 className="text-lg font-semibold text-gray-700">
+                        <h4 className="text-responsive-lg font-semibold text-gray-700">
                           Rule {index + 1}
                         </h4>
                         <button 
@@ -349,9 +350,9 @@ export default function DynamicSetup() {
                       </div>
 
                       {/* Occupancy and Lead Time */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 form-gap-base">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Occupancy
                           </label>
                           <OccupancySelector
@@ -360,7 +361,7 @@ export default function DynamicSetup() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Lead Time
                           </label>
                           <LeadTimeSelector
@@ -371,9 +372,9 @@ export default function DynamicSetup() {
                       </div>
 
                       {/* Increment Type and Value */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 form-gap-base">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Increment Type
                           </label>
                           <IncrementTypeSelector
@@ -382,7 +383,7 @@ export default function DynamicSetup() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="form-label">
                             Increment Value
                           </label>
                           <input
@@ -391,7 +392,7 @@ export default function DynamicSetup() {
                             onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
                             placeholder="0"
                             min="0"
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                       </div>
@@ -403,10 +404,10 @@ export default function DynamicSetup() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-center container-margin-sm form-gap-base">
             <button 
               onClick={addNewRule}
-              className="flex items-center gap-3 px-7 py-3 bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors"
+              className="flex items-center gap-3 btn-padding-base bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors text-responsive-base"
             >
               <Plus size={24} />
               Add Rule
@@ -414,7 +415,7 @@ export default function DynamicSetup() {
             <button 
               onClick={saveRules}
               disabled={saving || rules.length === 0}
-              className="flex items-center gap-5 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-5 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
             >
               <Save size={24} />
               {saving ? 'Saving...' : 'Save Rules'}
@@ -423,17 +424,17 @@ export default function DynamicSetup() {
         </div>
 
         {/* How It Works Section */}
-        <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-8 mt-8">
-          <div className="mb-3">
-            <h3 className="text-lg font-bold text-[#294758]">How It Works</h3>
+        <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
+          <div className="container-margin-sm">
+            <h3 className="text-responsive-lg font-bold text-[#294758]">How It Works</h3>
           </div>
-          <div className="text-black/60 leading-relaxed space-y-3">
+          <div className="text-black/60 leading-relaxed form-gap-base text-responsive-base">
             <p>
               The system automatically creates occupancy and lead time ranges
               from your threshold values and applies increments based on current
               conditions.
             </p>
-            <p className="text-xs">
+            <p className="text-responsive-xs">
               Example: At 50% occupancy (30-50% range) with 7 days lead time
               (3-7 days range): $20 additional charge
             </p>

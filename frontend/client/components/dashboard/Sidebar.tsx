@@ -11,11 +11,15 @@ import {
   Edit3,
   ChevronsLeft,
   ChevronsRight,
+  Menu,
+  X,
+  LogOut,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as React from "react";
 import { useContext } from "react";
-import { PropertyContext } from "../../../shared/PropertyContext";
+import { PropertyContext, PropertyContextType } from "../../../shared/PropertyContext";
+import { ConnectionContext } from '../../../shared/ConnectionContext';
 
 const navigationItems = [
   { id: "daily-prices", label: "Daily Prices", icon: Calendar, path: "/dashboard/property" },
@@ -44,9 +48,14 @@ export default function Sidebar() {
   const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
   const [hotelManagementOpen, setHotelManagementOpen] = React.useState(() => location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management"));
   const [isMinimized, setIsMinimized] = React.useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   
   // Get property from context
-  const { property } = useContext(PropertyContext) ?? {};
+  const context = useContext(PropertyContext) as PropertyContextType | undefined;
+  const connectionContext = useContext(ConnectionContext);
+  const property = context?.property;
+  const isConnected = connectionContext?.isConnected ?? true;
+  const setIsConnected = connectionContext?.setIsConnected ?? (() => {});
 
   const handleNavigation = (path: string) => {
     // For "Daily Prices", include the property ID if available
@@ -62,8 +71,260 @@ export default function Sidebar() {
     handleNavigation(path);
   };
 
+  const toggleConnection = () => {
+    setIsConnected(!isConnected);
+  };
+
+  const handleLogout = () => {
+    navigate("/logout");
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleMobileNavigation = (path: string) => {
+    handleNavigation(path);
+    closeMobileMenu();
+  };
+
   return (
-    <div className={`${isMinimized ? 'w-16' : 'w-[277px] lg:w-[277px] md:w-64'} h-screen bg-hotel-sidebar-bg border-r border-hotel-sidebar-border flex flex-col overflow-hidden transition-all duration-300 ease-in-out`}>
+    <>
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-hotel-border-light">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-hotel-brand-dark rounded flex items-center justify-center">
+              <span className="text-white font-bold text-sm">V</span>
+            </div>
+            <h1 className="text-lg font-bold text-hotel-brand">
+              {property?.name || "Hotel"}
+            </h1>
+          </div>
+
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <X size={24} className="text-gray-600" />
+            ) : (
+              <Menu size={24} className="text-gray-600" />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div className="fixed inset-0 z-40 bg-black bg-opacity-50" onClick={closeMobileMenu}>
+            <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+                <button
+                  onClick={closeMobileMenu}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
+
+              {/* Connection Status */}
+              <div className="p-4 border-b border-gray-200">
+                <button
+                  onClick={toggleConnection}
+                  className={`w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    isConnected
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full ${
+                      isConnected ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  />
+                  <span className="font-medium">
+                    {isConnected ? "Connected" : "Disconnected"}
+                  </span>
+                </button>
+              </div>
+
+              {/* Navigation Items */}
+              <div className="p-4 space-y-2">
+                {/* Daily Prices */}
+                {navigationItems.filter(item => item.id === "daily-prices").map((item) => {
+                  const isActive = location.pathname === item.path || location.pathname.startsWith("/dashboard/property/");
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleMobileNavigation(item.path)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        isActive ? "bg-hotel-brand-dark text-white" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <item.icon size={20} />
+                      <span className="font-medium">{item.label}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Change Prices */}
+                <button
+                  onClick={() => {
+                    if (property?.id) {
+                      handleMobileNavigation(`/dashboard/change-prices/${property.id}`);
+                    } else {
+                      handleMobileNavigation("/dashboard/change-prices");
+                    }
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    location.pathname.startsWith("/dashboard/change-prices") 
+                      ? "bg-hotel-brand-dark text-white" 
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <Edit3 size={20} />
+                  <span className="font-medium">Change Prices</span>
+                </button>
+
+                {/* Analytics */}
+                <div>
+                  <button
+                    onClick={() => setAnalyticsOpen(!analyticsOpen)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                      location.pathname.startsWith("/dashboard/analytics") 
+                        ? "bg-hotel-brand-dark text-white" 
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <BarChart3 size={20} />
+                      <span className="font-medium">Analytics</span>
+                    </div>
+                    <ChevronDown
+                      size={20}
+                      className={`transition-transform duration-200 ${analyticsOpen ? "rotate-180" : "rotate-0"}`}
+                    />
+                  </button>
+                  {analyticsOpen && (
+                    <div className="mt-2 ml-4 space-y-1">
+                      <button
+                        onClick={() => handleMobileNavigation("/dashboard/analytics/performance")}
+                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-colors ${
+                          location.pathname === "/dashboard/analytics/performance" 
+                            ? "bg-blue-600 text-white" 
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        <BarChart3 size={16} />
+                        <span>Performance</span>
+                      </button>
+                      <button
+                        onClick={() => handleMobileNavigation("/dashboard/analytics/pickup")}
+                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-colors ${
+                          location.pathname === "/dashboard/analytics/pickup" 
+                            ? "bg-blue-600 text-white" 
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        <TrendingUp size={16} />
+                        <span>Pickup</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Hotel Management */}
+                <div>
+                  <button
+                    onClick={() => setHotelManagementOpen(!hotelManagementOpen)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                      location.pathname.startsWith("/dashboard/hotel-information") || 
+                      location.pathname.startsWith("/dashboard/competitors") || 
+                      location.pathname.startsWith("/dashboard/special-offers") || 
+                      location.pathname.startsWith("/dashboard/dynamic-setup") || 
+                      location.pathname.startsWith("/dashboard/length-of-stay") || 
+                      location.pathname.startsWith("/dashboard/available-rates") || 
+                      location.pathname.startsWith("/dashboard/msp-management")
+                        ? "bg-hotel-brand-dark text-white" 
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Settings size={20} />
+                      <span className="font-medium">Hotel Management</span>
+                    </div>
+                    <ChevronDown
+                      size={20}
+                      className={`transition-transform duration-200 ${hotelManagementOpen ? "rotate-180" : "rotate-0"}`}
+                    />
+                  </button>
+                  {hotelManagementOpen && (
+                    <div className="mt-2 ml-4 space-y-1">
+                      {hotelManagementItems.map((item) => {
+                        const isActive = location.pathname === item.path;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => handleMobileNavigation(item.path)}
+                            className={`w-full flex items-center px-4 py-2 rounded-lg text-sm transition-colors ${
+                              isActive
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            <span>{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Account Items */}
+                <div className="pt-4 border-t border-gray-200">
+                  {accountItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleMobileNavigation(item.path)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                          isActive ? "bg-hotel-brand-dark text-white" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <item.icon size={20} />
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Logout */}
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      closeMobileMenu();
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                  >
+                    <LogOut size={20} />
+                    <span className="font-medium">Logout</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className={`hidden lg:block ${isMinimized ? 'w-16' : 'w-[277px]'} h-screen bg-hotel-sidebar-bg border-r border-hotel-sidebar-border flex flex-col overflow-hidden transition-all duration-300 ease-in-out`}>
       {/* Logo */}
       <div className="flex justify-center items-center px-[10px] pt-[34px] pb-[24px]">
         {!isMinimized ? (
@@ -283,5 +544,6 @@ export default function Sidebar() {
       <div className="flex-1" />
 
     </div>
+    </>
   );
 }

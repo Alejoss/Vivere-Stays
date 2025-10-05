@@ -3,6 +3,7 @@ import { Building2, Plus, Save, ChevronDown } from "lucide-react";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { toast } from "../../hooks/use-toast";
+import "../../styles/responsive-utilities.css";
 
 interface FormData {
   hotelName: string;
@@ -390,7 +391,7 @@ export default function HotelInformation() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2B6CEE] mx-auto mb-4"></div>
-          <p className="text-[#8A8E94] font-normal">Loading hotel information...</p>
+          <p className="text-responsive-base text-[#8A8E94] font-normal">Loading hotel information...</p>
         </div>
       </div>
     );
@@ -399,17 +400,17 @@ export default function HotelInformation() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hotel Information Form Section */}
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8 mb-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base container-margin-sm">
           {/* Section Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
             <div className="flex items-center gap-3">
               <Building2 size={40} className="text-[#294758]" />
-              <h2 className="text-3xl font-bold text-[#287CAC]">
+              <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 Hotel Information
               </h2>
             </div>
-            <button className="flex items-center gap-3 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors">
+            <button className="flex items-center gap-3 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors mt-4 lg:mt-0">
               <Plus size={24} />
               Add New Hotel
             </button>
@@ -417,24 +418,24 @@ export default function HotelInformation() {
 
 
           {/* Form Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16 form-gap-base">
             {/* Left Column */}
-            <div className="space-y-6">
+            <div className="form-field">
               {/* Hotel Name */}
-              <div className="space-y-2">
-                <label className="block text-sm font-normal text-black">
+              <div className="form-field">
+                <label className="form-label">
                   Hotel Name*
                 </label>
-                <div className="space-y-1">
+                <div className="form-field">
                   <input
                     type="text"
                     value={formData.hotelName}
                     onChange={(e) => handleInputChange("hotelName", e.target.value)}
                     placeholder="Enter hotel name"
-                    className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("hotelName")}`}
+                    className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("hotelName")}`}
                   />
                   {errors.hotelName && (
-                    <span className="text-[12px] text-[#FF0404]">
+                    <span className="error-message">
                       {errors.hotelName}
                     </span>
                   )}
@@ -442,20 +443,20 @@ export default function HotelInformation() {
               </div>
 
               {/* Address */}
-              <div className="space-y-2">
-                <label className="block text-sm font-normal text-black">
+              <div className="form-field">
+                <label className="form-label">
                   Address*
                 </label>
-                <div className="space-y-1">
+                <div className="form-field">
                   <input
                     type="text"
                     value={formData.streetAddress}
                     onChange={(e) => handleInputChange("streetAddress", e.target.value)}
                     placeholder="Enter street address"
-                    className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("streetAddress")}`}
+                    className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("streetAddress")}`}
                   />
                   {errors.streetAddress && (
-                    <span className="text-[12px] text-[#FF0404]">
+                    <span className="error-message">
                       {errors.streetAddress}
                     </span>
                   )}
@@ -463,35 +464,35 @@ export default function HotelInformation() {
               </div>
 
               {/* City and Country Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-normal text-black">
+              <div className="grid grid-cols-1 lg:grid-cols-2 form-gap-base">
+                <div className="form-field">
+                  <label className="form-label">
                     City*
                   </label>
-                  <div className="space-y-1">
+                  <div className="form-field">
                     <input
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleInputChange("city", e.target.value)}
                       placeholder="Enter city"
-                      className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("city")}`}
+                      className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("city")}`}
                     />
                     {errors.city && (
-                      <span className="text-[12px] text-[#FF0404]">
+                      <span className="error-message">
                         {errors.city}
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-normal text-black">
+                <div className="form-field">
+                  <label className="form-label">
                     Country*
                   </label>
-                  <div className="space-y-1">
+                  <div className="form-field">
                     <select
                       value={formData.country}
                       onChange={(e) => handleInputChange("country", e.target.value)}
-                      className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("country")}`}
+                      className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("country")}`}
                     >
                       <option value="">Select Country</option>
                       {COUNTRIES.map((country) => (
@@ -501,7 +502,7 @@ export default function HotelInformation() {
                       ))}
                     </select>
                     {errors.country && (
-                      <span className="text-[12px] text-[#FF0404]">
+                      <span className="error-message">
                         {errors.country}
                       </span>
                     )}
@@ -510,20 +511,20 @@ export default function HotelInformation() {
               </div>
 
               {/* Postal Code */}
-              <div className="space-y-2">
-                <label className="block text-sm font-normal text-black">
+              <div className="form-field">
+                <label className="form-label">
                   Postal Code*
                 </label>
-                <div className="space-y-1">
+                <div className="form-field">
                   <input
                     type="text"
                     value={formData.postalCode}
                     onChange={(e) => handleInputChange("postalCode", e.target.value)}
                     placeholder="Enter postal code"
-                    className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("postalCode")}`}
+                    className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("postalCode")}`}
                   />
                   {errors.postalCode && (
-                    <span className="text-[12px] text-[#FF0404]">
+                    <span className="error-message">
                       {errors.postalCode}
                     </span>
                   )}
@@ -531,9 +532,9 @@ export default function HotelInformation() {
               </div>
 
               {/* CIF and Number of Rooms Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-normal text-black">
+              <div className="grid grid-cols-1 lg:grid-cols-2 form-gap-base">
+                <div className="form-field">
+                  <label className="form-label">
                     CIF (Optional)
                   </label>
                   <input
@@ -541,24 +542,24 @@ export default function HotelInformation() {
                     value={formData.cif}
                     onChange={(e) => handleInputChange("cif", e.target.value)}
                     placeholder="Enter CIF"
-                    className="w-full px-4 py-3 bg-white border border-[#D7DAE0] rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors"
+                    className="w-full input-padding-base input-height-base bg-white border border-[#D7DAE0] rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-normal text-black">
+                <div className="form-field">
+                  <label className="form-label">
                     Number of Rooms*
                   </label>
-                  <div className="space-y-1">
+                  <div className="form-field">
                     <input
                       type="number"
                       value={formData.numberOfRooms}
                       readOnly
                       placeholder="Enter number of rooms"
                       min="1"
-                      className="w-full px-4 py-3 bg-gray-100 border border-[#D7DAE0] rounded-md text-[#1E1E1E] cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base bg-gray-100 border border-[#D7DAE0] rounded-md text-responsive-base cursor-not-allowed"
                     />
                     {errors.numberOfRooms && (
-                      <span className="text-[12px] text-[#FF0404]">
+                      <span className="error-message">
                         {errors.numberOfRooms}
                       </span>
                     )}
@@ -568,22 +569,22 @@ export default function HotelInformation() {
             </div>
 
             {/* Right Column */}
-            <div className="space-y-6">
+            <div className="form-field">
               {/* Phone */}
-              <div className="space-y-2">
-                <label className="block text-sm font-normal text-black">
+              <div className="form-field">
+                <label className="form-label">
                   Phone*
                 </label>
-                <div className="space-y-1">
+                <div className="form-field">
                   <input
                     type="text"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                     placeholder="Enter phone number"
-                    className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("phoneNumber")}`}
+                    className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("phoneNumber")}`}
                   />
                   {errors.phoneNumber && (
-                    <span className="text-[12px] text-[#FF0404]">
+                    <span className="error-message">
                       {errors.phoneNumber}
                     </span>
                   )}
@@ -591,8 +592,8 @@ export default function HotelInformation() {
               </div>
 
               {/* Website */}
-              <div className="space-y-2">
-                <label className="block text-sm font-normal text-black">
+              <div className="form-field">
+                <label className="form-label">
                   Website (Optional)
                 </label>
                 <input
@@ -600,25 +601,25 @@ export default function HotelInformation() {
                   value={formData.website}
                   onChange={(e) => handleInputChange("website", e.target.value)}
                   placeholder="Enter website URL"
-                  className="w-full px-4 py-3 bg-white border border-[#D7DAE0] rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors"
+                  className="w-full input-padding-base input-height-base bg-white border border-[#D7DAE0] rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors"
                 />
               </div>
 
               {/* Booking URL */}
-              <div className="space-y-2">
-                <label className="block text-sm font-normal text-black">
+              <div className="form-field">
+                <label className="form-label">
                   Booking.com URL (Optional)
                 </label>
-                <div className="space-y-1">
+                <div className="form-field">
                   <input
                     type="text"
                     value={formData.bookingUrl}
                     onChange={(e) => handleInputChange("bookingUrl", e.target.value)}
                     placeholder="https://www.booking.com/hotel/..."
-                    className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("bookingUrl")}`}
+                    className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("bookingUrl")}`}
                   />
                   {errors.bookingUrl && (
-                    <span className="text-[12px] text-[#FF0404]">
+                    <span className="error-message">
                       {errors.bookingUrl}
                     </span>
                   )}
@@ -626,15 +627,15 @@ export default function HotelInformation() {
               </div>
 
               {/* Property Type */}
-              <div className="space-y-2">
-                <label className="block text-sm font-normal text-black">
+              <div className="form-field">
+                <label className="form-label">
                   Property Type*
                 </label>
-                <div className="space-y-1">
+                <div className="form-field">
                   <select
                     value={formData.propertyType}
                     onChange={(e) => handleInputChange("propertyType", e.target.value)}
-                    className={`w-full px-4 py-3 bg-white border rounded-md text-[#1E1E1E] focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("propertyType")}`}
+                    className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("propertyType")}`}
                   >
                     <option value="">Select Property Type</option>
                     <option value="hotel">Hotel</option>
@@ -644,7 +645,7 @@ export default function HotelInformation() {
                     <option value="guesthouse">Guest House</option>
                   </select>
                   {errors.propertyType && (
-                    <span className="text-[12px] text-[#FF0404]">
+                    <span className="error-message">
                       {errors.propertyType}
                     </span>
                   )}
@@ -654,11 +655,11 @@ export default function HotelInformation() {
           </div>
 
           {/* Save Button and Message */}
-          <div className="flex flex-col items-end mt-12 space-y-4">
+          <div className="flex flex-col items-end container-margin-lg form-gap-base">
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className={`flex items-center gap-4 px-6 py-3 rounded-lg font-semibold transition-colors ${
+              className={`flex items-center gap-4 btn-padding-base rounded-lg font-semibold transition-colors text-responsive-base ${
                 isSaving 
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed" 
                   : "bg-[#294758] text-white hover:bg-[#234149]"
@@ -671,12 +672,12 @@ export default function HotelInformation() {
         </div>
 
         {/* Pricing Configuration Section */}
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header with Inline Input */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
               <Building2 size={40} className="text-[#294758]" />
-              <h2 className="text-3xl font-bold text-[#294758]">
+              <h2 className="text-responsive-3xl font-bold text-[#294758]">
                 Price Difference Between OTAs and Direct Channels
               </h2>
               <div className="relative">
@@ -709,17 +710,17 @@ export default function HotelInformation() {
                       setIsUpdatingOtas(false);
                     }
                   }}
-                  className={`w-36 px-4 py-3 text-xl font-bold text-center border-2 ${isUpdatingOtas ? 'border-gray-300' : 'border-[#287CAC]'} rounded-lg bg-white text-[#287CAC] focus:outline-none focus:ring-2 focus:ring-[#287CAC]/20 focus:border-[#287CAC] transition-all shadow-sm pr-8`}
+                  className={`w-36 input-padding-base input-height-base text-responsive-xl font-bold text-center border-2 ${isUpdatingOtas ? 'border-gray-300' : 'border-[#287CAC]'} rounded-lg bg-white text-[#287CAC] focus:outline-none focus:ring-2 focus:ring-[#287CAC]/20 focus:border-[#287CAC] transition-all shadow-sm pr-8`}
                   placeholder="0"
                 />
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xl font-bold text-[#287CAC] pointer-events-none">
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-responsive-xl font-bold text-[#287CAC] pointer-events-none">
                   %
                 </span>
               </div>
             </div>
           </div>
 
-          <p className="text-base text-[#4B5563] mb-8">
+          <p className="text-responsive-base text-[#4B5563] container-margin-sm">
             Configure how your hotel prices are calculated and compared to
             competitors.
           </p>

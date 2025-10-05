@@ -11,6 +11,7 @@ import type {
   CreateLosSetupRuleRequest,
   UpdateLosSetupRuleRequest,
 } from "../../../shared/api/dynamic";
+import "../../styles/responsive-utilities.css";
 
 export default function LosSetupRules() {
   const { property } = useContext(PropertyContext) ?? {};
@@ -403,8 +404,8 @@ export default function LosSetupRules() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg text-gray-600 mb-4">No property selected</div>
-          <div className="text-sm text-gray-500">Please select a property to configure LOS setup rules</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
+          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS setup rules</div>
         </div>
       </div>
     );
@@ -412,17 +413,17 @@ export default function LosSetupRules() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           <FormProvider {...form}>
           {/* Section Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
             <Calendar size={34} className="text-[#287CAC]" />
             <div>
-              <h2 className="text-3xl font-bold text-[#287CAC]">
+              <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 LOS Setup Rules
               </h2>
-              <p className="text-[#8A8E94] font-bold text-lg">
+              <p className="text-[#8A8E94] font-bold text-responsive-lg">
                 Configure length of stay requirements by weekday.
               </p>
             </div>
@@ -430,10 +431,10 @@ export default function LosSetupRules() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-3">
+            <div className="container-margin-sm container-padding-base bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center form-gap-base">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-normal">Loading LOS setup rules...</span>
+                <span className="text-blue-800 font-normal text-responsive-base">Loading LOS setup rules...</span>
               </div>
             </div>
           )}
@@ -441,70 +442,70 @@ export default function LosSetupRules() {
 
 
           {/* Setup Rules Table */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-black">Setup Rules</h3>
+          <div className="container-margin-sm">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
+              <h3 className="text-responsive-lg font-bold text-black">Setup Rules</h3>
               {fields.length > 0 && (
-                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                <span className="text-responsive-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                   {fields.length} rule{fields.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
 
             {/* Desktop Table */}
-            <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] mb-6">
+            <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] container-margin-sm">
               {/* Table Headers */}
               <div className="grid grid-cols-5 gap-0">
-                <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold">From</span>
+                <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
+                  <span className="text-responsive-base font-semibold">From</span>
                   <Info size={20} className="text-white" />
                 </div>
-                <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold">To</span>
+                <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
+                  <span className="text-responsive-base font-semibold">To</span>
                   <Info size={20} className="text-white" />
                 </div>
-                <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold text-center">Day</span>
+                <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
+                  <span className="text-responsive-base font-semibold text-center">Day</span>
                   <Info size={20} className="text-white" />
                 </div>
-                <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold text-center">LOS Value</span>
+                <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
+                  <span className="text-responsive-base font-semibold text-center">LOS Value</span>
                   <Info size={20} className="text-white" />
                 </div>
-                <div className="bg-hotel-brand-dark text-white p-4">
+                <div className="bg-hotel-brand-dark text-white container-padding-base">
                 </div>
               </div>
 
               {/* Table Rows */}
               {fields.map((rule, index) => (
                 <div key={rule.id || index} className="grid grid-cols-5 gap-0">
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <input
                       type="date"
                       {...form.register(`rules.${index}.valid_from` as const)}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     {formState.errors?.rules?.[index]?.valid_from?.message && (
-                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
+                      <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
                     )}
                   </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <input
                       type="date"
                       {...form.register(`rules.${index}.valid_until` as const)}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     {formState.errors?.rules?.[index]?.valid_until?.message && (
-                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
+                      <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
                     )}
                   </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <select
                       {...form.register(`rules.${index}.day_of_week` as const)}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {weekdays.map((day) => (
                         <option key={day} value={day}>
@@ -513,22 +514,22 @@ export default function LosSetupRules() {
                       ))}
                     </select>
                     {formState.errors?.rules?.[index]?.day_of_week?.message && (
-                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
+                      <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
                     )}
                   </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <input
                       type="number"
                       {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       min="1"
                     />
                     {formState.errors?.rules?.[index]?.los_value?.message && (
-                      <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.los_value?.message)}</div>
+                      <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.los_value?.message)}</div>
                     )}
                   </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6] flex justify-center">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6] flex justify-center">
                     <button
                       onClick={() => removeSetupRule(index)}
                       disabled={isLoading || isSaving}
@@ -542,12 +543,12 @@ export default function LosSetupRules() {
             </div>
 
             {/* Mobile Layout */}
-            <div className="lg:hidden space-y-4 mb-6">
+            <div className="lg:hidden form-gap-base container-margin-sm">
               {fields.map((rule, index) => (
-                <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg p-4 space-y-4">
+                <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg container-padding-base form-gap-base">
                   {/* Header with delete button */}
                   <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-gray-700">
+                    <h4 className="text-responsive-lg font-semibold text-gray-700">
                       Rule {index + 1}
                     </h4>
                     <button
@@ -560,9 +561,9 @@ export default function LosSetupRules() {
                   </div>
 
                   {/* Date Range */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 form-gap-base">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label">
                         From Date
                         <Info size={14} className="inline ml-1 text-gray-600" />
                       </label>
@@ -570,14 +571,14 @@ export default function LosSetupRules() {
                         type="date"
                         {...form.register(`rules.${index}.valid_from` as const)}
                         disabled={isLoading || isSaving}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       {formState.errors?.rules?.[index]?.valid_from?.message && (
-                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
+                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label">
                         To Date
                         <Info size={14} className="inline ml-1 text-gray-600" />
                       </label>
@@ -585,25 +586,25 @@ export default function LosSetupRules() {
                         type="date"
                         {...form.register(`rules.${index}.valid_until` as const)}
                         disabled={isLoading || isSaving}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       {formState.errors?.rules?.[index]?.valid_until?.message && (
-                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
+                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
                       )}
                     </div>
                   </div>
 
                   {/* Day and LOS Value */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 form-gap-base">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label">
                         Day
                         <Info size={14} className="inline ml-1 text-gray-600" />
                       </label>
                       <select
                         {...form.register(`rules.${index}.day_of_week` as const)}
                         disabled={isLoading || isSaving}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="Monday">Monday</option>
                         <option value="Tuesday">Tuesday</option>
@@ -614,11 +615,11 @@ export default function LosSetupRules() {
                         <option value="Sunday">Sunday</option>
                       </select>
                       {formState.errors?.rules?.[index]?.day_of_week?.message && (
-                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
+                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label">
                         LOS Value
                         <Info size={14} className="inline ml-1 text-gray-600" />
                       </label>
@@ -626,11 +627,11 @@ export default function LosSetupRules() {
                         type="number"
                         {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
                         disabled={isLoading || isSaving}
-                        className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                         min="1"
                       />
                       {formState.errors?.rules?.[index]?.los_value?.message && (
-                        <div className="mt-1 text-xs text-red-600">{String(formState.errors.rules[index]?.los_value?.message)}</div>
+                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.los_value?.message)}</div>
                       )}
                     </div>
                   </div>
@@ -638,11 +639,11 @@ export default function LosSetupRules() {
               ))}
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col lg:flex-row justify-between items-center form-gap-base">
               <button 
                 onClick={addSetupRule}
                 disabled={isLoading || isSaving}
-                className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-3 btn-padding-base bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
               >
                 <Plus size={20} />
                 Add Setup Rule
@@ -651,7 +652,7 @@ export default function LosSetupRules() {
               <button 
                 onClick={handleSubmit(onSubmit)}
                 disabled={isSaving || isLoading || !formState.isValid}
-                className="flex items-center gap-2 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
               >
                 {isSaving ? (
                   <>

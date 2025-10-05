@@ -8,6 +8,7 @@ import type {
   CreateLosReductionRuleRequest,
   UpdateLosReductionRuleRequest
 } from "../../../shared/api/dynamic";
+import "../../styles/responsive-utilities.css";
 
 export default function LosReductionRules() {
   const { property } = useContext(PropertyContext) ?? {};
@@ -339,8 +340,8 @@ export default function LosReductionRules() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-lg text-gray-600 mb-4">No property selected</div>
-          <div className="text-sm text-gray-500">Please select a property to configure LOS reduction rules</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
+          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS reduction rules</div>
         </div>
       </div>
     );
@@ -348,16 +349,16 @@ export default function LosReductionRules() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-6 py-8">
-        <div className="bg-white rounded-lg border border-black/10 shadow-lg p-8">
+      <div className="container-padding-base">
+        <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
             <Calendar size={34} className="text-[#287CAC]" />
             <div>
-              <h2 className="text-3xl font-bold text-[#287CAC]">
+              <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 LOS Reduction Rules
               </h2>
-              <p className="text-[#8A8E94] font-bold text-lg">
+              <p className="text-[#8A8E94] font-bold text-responsive-lg">
                 Configure conditions to reduce length of stay requirements.
               </p>
             </div>
@@ -365,73 +366,73 @@ export default function LosReductionRules() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-3">
+            <div className="container-margin-sm container-padding-base bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center form-gap-base">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-normal">Loading LOS reduction rules...</span>
+                <span className="text-blue-800 font-normal text-responsive-base">Loading LOS reduction rules...</span>
               </div>
             </div>
           )}
 
 
           {/* Info Section */}
-          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-bold text-[#294758] mb-3">How Reduction Rules Work</h3>
-            <div className="text-black/60 text-base leading-relaxed">
-              <p className="mb-2">
+          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
+            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">How Reduction Rules Work</h3>
+            <div className="text-black/60 text-responsive-base leading-relaxed">
+              <p className="container-margin-sm">
                 Reduction rules automatically reduce the LOS requirement when specific conditions are met:
               </p>
-              <ul className="space-y-1 text-sm">
+              <ul className="form-gap-base text-responsive-sm">
                 <li>• <strong>Lead Time:</strong> Days between booking and check-in</li>
                 <li>• <strong>Occupancy Level:</strong> Current occupancy percentage</li>
                 <li>• <strong>LOS Value:</strong> How much to reduce the LOS by</li>
               </ul>
-              <p className="mt-3 text-sm">
+              <p className="container-margin-sm text-responsive-sm">
                 <strong>Example:</strong> If lead time ≤ 7 days and occupancy ≤ 50% → reduce LOS by 1 night.
               </p>
             </div>
           </div>
 
           {/* Reduction Rules Table */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-black">Reduction Rules</h3>
+          <div className="container-margin-sm">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
+              <h3 className="text-responsive-lg font-bold text-black">Reduction Rules</h3>
               {reductionRules.length > 0 && (
-                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                <span className="text-responsive-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                   {reductionRules.length} rule{reductionRules.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
 
             {/* Desktop Table */}
-            <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] mb-6">
+            <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] container-margin-sm">
               {/* Table Headers */}
               <div className="grid grid-cols-4 gap-0">
-                <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold">Lead Time Category</span>
+                <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
+                  <span className="text-responsive-base font-semibold">Lead Time Category</span>
                   <Info size={20} className="text-white" />
                 </div>
-                <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold">Occupancy Category</span>
+                <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
+                  <span className="text-responsive-base font-semibold">Occupancy Category</span>
                   <Info size={20} className="text-white" />
                 </div>
-                <div className="bg-hotel-brand-dark text-white p-4 flex items-center gap-2">
-                  <span className="text-base font-semibold">LOS Reduction</span>
+                <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
+                  <span className="text-responsive-base font-semibold">LOS Reduction</span>
                   <Info size={20} className="text-white" />
                 </div>
-                <div className="bg-hotel-brand-dark text-white p-4">
+                <div className="bg-hotel-brand-dark text-white container-padding-base">
                 </div>
               </div>
 
               {/* Table Rows */}
               {reductionRules.map((rule, index) => (
                 <div key={rule.id || index} className="grid grid-cols-4 gap-0">
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <select
                       value={rule.lead_time_category}
                       onChange={(e) => updateReductionRule(rule.id, 'lead_time_category', e.target.value)}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {leadTimeCategories.map((category) => (
                         <option key={category.value} value={category.value}>
@@ -440,12 +441,12 @@ export default function LosReductionRules() {
                       ))}
                     </select>
                   </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <select
                       value={rule.occupancy_category}
                       onChange={(e) => updateReductionRule(rule.id, 'occupancy_category', e.target.value)}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {occupancyCategories.map((category) => (
                         <option key={category.value} value={category.value}>
@@ -454,17 +455,17 @@ export default function LosReductionRules() {
                       ))}
                     </select>
                   </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6]">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <input
                       type="number"
                       value={rule.los_value}
                       onChange={(e) => updateReductionRule(rule.id, 'los_value', parseInt(e.target.value))}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       min="1"
                     />
                   </div>
-                  <div className="bg-[#EFF6FF] p-3 border border-[#D0DFE6] flex justify-center">
+                  <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6] flex justify-center">
                     <button
                       onClick={() => removeReductionRule(rule.id)}
                       disabled={isLoading || isSaving}
@@ -478,12 +479,12 @@ export default function LosReductionRules() {
             </div>
 
             {/* Mobile Layout */}
-            <div className="lg:hidden space-y-4 mb-6">
+            <div className="lg:hidden form-gap-base container-margin-sm">
               {reductionRules.map((rule, index) => (
-                <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg p-4 space-y-4">
+                <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg container-padding-base form-gap-base">
                   {/* Header with delete button */}
                   <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-gray-700">
+                    <h4 className="text-responsive-lg font-semibold text-gray-700">
                       Rule {index + 1}
                     </h4>
                     <button
@@ -496,9 +497,9 @@ export default function LosReductionRules() {
                   </div>
 
                   {/* Lead Time and Occupancy Categories */}
-                  <div className="grid grid-cols-1 gap-4">
+                  <div className="grid grid-cols-1 form-gap-base">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label">
                         Lead Time Category
                         <Info size={14} className="inline ml-1 text-gray-600" />
                       </label>
@@ -506,7 +507,7 @@ export default function LosReductionRules() {
                         value={rule.lead_time_category}
                         onChange={(e) => updateReductionRule(rule.id, 'lead_time_category', e.target.value)}
                         disabled={isLoading || isSaving}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {leadTimeCategories.map((category) => (
                           <option key={category.value} value={category.value}>
@@ -516,7 +517,7 @@ export default function LosReductionRules() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="form-label">
                         Occupancy Category
                         <Info size={14} className="inline ml-1 text-gray-600" />
                       </label>
@@ -524,7 +525,7 @@ export default function LosReductionRules() {
                         value={rule.occupancy_category}
                         onChange={(e) => updateReductionRule(rule.id, 'occupancy_category', e.target.value)}
                         disabled={isLoading || isSaving}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {occupancyCategories.map((category) => (
                           <option key={category.value} value={category.value}>
@@ -537,7 +538,7 @@ export default function LosReductionRules() {
 
                   {/* LOS Reduction */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="form-label">
                       LOS Reduction
                       <Info size={14} className="inline ml-1 text-gray-600" />
                     </label>
@@ -546,7 +547,7 @@ export default function LosReductionRules() {
                       value={rule.los_value}
                       onChange={(e) => updateReductionRule(rule.id, 'los_value', parseFloat(e.target.value) || 0)}
                       disabled={isLoading || isSaving}
-                      className="w-full px-3 py-2 text-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       min="0"
                       step="0.01"
                     />
@@ -555,11 +556,11 @@ export default function LosReductionRules() {
               ))}
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col lg:flex-row justify-between items-center form-gap-base">
               <button 
                 onClick={addReductionRule}
                 disabled={isLoading || isSaving}
-                className="flex items-center gap-3 px-6 py-3 bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-3 btn-padding-base bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
               >
                 <Plus size={20} />
                 Add Reduction Rule
@@ -568,7 +569,7 @@ export default function LosReductionRules() {
               <button 
                 onClick={handleSaveAll}
                 disabled={isSaving || isLoading}
-                className="flex items-center gap-2 px-6 py-3 bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
               >
                 {isSaving ? (
                   <>

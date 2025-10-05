@@ -6,6 +6,7 @@ import { useRegister, useGoogleLogin } from "../../../shared/api/hooks";
 import { RegisterRequest } from "../../../shared/api/types";
 import { profilesService } from "../../../shared/api/profiles";
 import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
+import "../../styles/responsive-utilities.css";
 
 // Error Message Component
 const ErrorMessage = ({ message }: { message: string }) => {
@@ -25,7 +26,7 @@ const ErrorMessage = ({ message }: { message: string }) => {
           fill="#FF0404"
         />
       </svg>
-      <span className="text-[12px] text-[#FF0404] font-normal">{message}</span>
+      <span className="error-message">{message}</span>
     </div>
   );
 };
@@ -56,7 +57,7 @@ const PasswordStrengthIndicator = ({ password }: { password: string }) => {
         <circle cx="5" cy="5.5" r="5" fill={isValid ? "#16B257" : "#D7DFE8"} />
       </svg>
       <span
-        className={`text-[12px] font-normal ${isValid ? "text-[#16B257]" : "text-[#9CAABD]"}`}
+        className={`text-responsive-xs font-normal ${isValid ? "text-[#16B257]" : "text-[#9CAABD]"}`}
       >
         {label}
       </span>
@@ -380,32 +381,32 @@ export default function Register() {
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Logo */}
-        <div className="text-center mb-10">
+        <div className="text-center container-margin-base">
           <img
             src="/images/logo.png"
             alt="Vivere Stays Logo"
-            className="w-60 h-auto mx-auto"
+            className="logo-base mx-auto"
           />
         </div>
 
         <div className="max-w-2xl mx-auto">
           {/* Progress Header */}
-          <div className="flex justify-between items-center mb-10">
-            <span className="text-[16px] text-black font-normal">
+          <div className="flex justify-between items-center container-margin-base">
+            <span className="progress-step">
               Step 1 of 2
             </span>
-            <span className="text-[16px] text-black font-normal">
+            <span className="progress-step">
               50% Complete
             </span>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full h-[10px] bg-[#E2E8F0] rounded-[6px] mb-10 relative">
-            <div className="w-1/2 h-full bg-gradient-to-r from-[#285A6E] to-[#03CBF5] rounded-[6px]"></div>
+          <div className="progress-bar container-margin-base relative">
+            <div className="progress-fill w-1/2"></div>
           </div>
 
           {/* Main Card */}
-          <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 relative">
+          <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base relative">
             {/* User Icon */}
             <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-gradient-to-r from-[#D7E4EB] to-[#CEF4FC] border border-[#9CAABD] rounded-[10px] flex items-center justify-center">
               <svg
@@ -430,11 +431,11 @@ export default function Register() {
             </div>
 
             {/* Header */}
-            <div className="text-center mt-16 mb-12">
-              <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
+            <div className="text-center mt-16 container-margin-base">
+              <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
                 Create Your Account
               </h1>
-              <p className="text-[18px] text-[#485567]">
+              <p className="text-responsive-lg text-[#485567]">
                 Enter your personal details to get started
               </p>
             </div>
@@ -448,14 +449,14 @@ export default function Register() {
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z" fill="#FF0404" />
                     </svg>
-                    <span className="text-[14px] text-[#FF0404] font-medium">{formError}</span>
+                    <span className="text-responsive-sm text-[#FF0404] font-medium">{formError}</span>
                   </div>
                 </div>
               )}
               {/* First Name & Last Name Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-[14px]">
-                  <label className="text-[16px] text-[#485567] font-medium">
+              <div className="grid grid-cols-1 md:grid-cols-2 grid-gap-base">
+                <div className="form-field">
+                  <label className="form-label">
                     First Name*
                   </label>
                   <div>
@@ -465,7 +466,7 @@ export default function Register() {
                       onChange={handleInputChange("firstName")}
                       onBlur={handleBlur("firstName")}
                       placeholder="John"
-                      className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                      className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.firstName && touched.firstName
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
                           : isFieldValid("firstName")
@@ -478,8 +479,8 @@ export default function Register() {
                     />
                   </div>
                 </div>
-                <div className="space-y-[14px]">
-                  <label className="text-[16px] text-[#485567] font-medium">
+                <div className="form-field">
+                  <label className="form-label">
                     Last Name*
                   </label>
                   <div>
@@ -489,7 +490,7 @@ export default function Register() {
                       onChange={handleInputChange("lastName")}
                       onBlur={handleBlur("lastName")}
                       placeholder="Doe"
-                      className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                      className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.lastName && touched.lastName
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
                           : isFieldValid("lastName")
@@ -505,9 +506,9 @@ export default function Register() {
               </div>
 
               {/* DNI & Phone Number Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-[14px]">
-                  <label className="text-[16px] text-[#485567] font-medium">
+              <div className="grid grid-cols-1 md:grid-cols-2 grid-gap-base">
+                <div className="form-field">
+                  <label className="form-label">
                     DNI
                   </label>
                   <input
@@ -516,15 +517,15 @@ export default function Register() {
                     onChange={handleInputChange("dni")}
                     onBlur={handleBlur("dni")}
                     placeholder="12345678Z"
-                    className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                    className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       isFieldValid("dni")
                         ? "border-[#16B257] focus:border-[#16B257] text-[#1E1E1E]"
                         : "border-[#D7DFE8] focus:border-[#294859] text-[#1E1E1E]"
                     }`}
                   />
                 </div>
-                <div className="space-y-[14px]">
-                  <label className="text-[16px] text-[#485567] font-medium">
+                <div className="form-field">
+                  <label className="form-label">
                     Phone Number
                   </label>
                   <input
@@ -533,7 +534,7 @@ export default function Register() {
                     onChange={handleInputChange("phoneNumber")}
                     onBlur={handleBlur("phoneNumber")}
                     placeholder="+34 712 52 86 49"
-                    className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                    className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       isFieldValid("phoneNumber")
                         ? "border-[#16B257] focus:border-[#16B257] text-[#1E1E1E]"
                         : "border-[#D7DFE8] focus:border-[#294859] text-[#1E1E1E]"
@@ -543,7 +544,7 @@ export default function Register() {
               </div>
 
               {/* Email Field */}
-              <div className="space-y-[14px]">
+              <div className="form-field">
                 <div className="flex items-center gap-[11px]">
                   <svg
                     width="17"
@@ -561,7 +562,7 @@ export default function Register() {
                       fill="black"
                     />
                   </svg>
-                  <span className="text-[16px] text-[#485567] font-medium">
+                  <span className="form-label">
                     Email Address*
                   </span>
                 </div>
@@ -573,7 +574,7 @@ export default function Register() {
                       onChange={handleInputChange("email")}
                       onBlur={handleBlur("email")}
                       placeholder="john@company.com"
-                      className={`w-full h-[60px] px-4 py-[17px] pr-12 border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                      className={`w-full input-height-lg input-padding-base pr-12 border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.email && touched.email
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
                           : isFieldValid("email")
@@ -607,7 +608,7 @@ export default function Register() {
               </div>
 
               {/* Password Field */}
-              <div className="space-y-[14px]">
+              <div className="form-field">
                 <div className="flex items-center gap-2">
                   <svg
                     width="20"
@@ -642,7 +643,7 @@ export default function Register() {
                       </clipPath>
                     </defs>
                   </svg>
-                  <span className="text-[16px] text-[#485567] font-medium">
+                  <span className="form-label">
                     Password*
                   </span>
                 </div>
@@ -654,7 +655,7 @@ export default function Register() {
                       onChange={handleInputChange("password")}
                       onBlur={handleBlur("password")}
                       placeholder="Create strong password"
-                      className={`w-full h-[60px] px-4 py-[17px] pr-12 border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                      className={`w-full input-height-lg input-padding-base pr-12 border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.password && touched.password
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
                           : isFieldValid("password")
@@ -697,8 +698,8 @@ export default function Register() {
               </div>
 
               {/* Confirm Password Field */}
-              <div className="space-y-[14px]">
-                <label className="text-[16px] text-[#485567] font-medium">
+              <div className="form-field">
+                <label className="form-label">
                   Confirm password*
                 </label>
                 <div className="relative">
@@ -708,7 +709,7 @@ export default function Register() {
                     onChange={handleInputChange("confirmPassword")}
                     onBlur={handleBlur("confirmPassword")}
                     placeholder="Confirm your password"
-                    className={`w-full h-[60px] px-4 py-[17px] pr-12 border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
+                    className={`w-full input-height-lg input-padding-base pr-12 border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       errors.confirmPassword && touched.confirmPassword
                         ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
                         : isFieldValid("confirmPassword")
@@ -754,7 +755,7 @@ export default function Register() {
               <button
                 type="submit"
                 disabled={isLoading || checkUserExists.isPending}
-                className={`w-full h-[55px] text-white font-bold text-[16px] rounded-[10px] hover:bg-[#1e3340] transition-colors flex items-center justify-center gap-2 ${
+                className={`w-full btn-height-lg text-white font-bold text-responsive-base rounded-[10px] hover:bg-[#1e3340] transition-colors flex items-center justify-center gap-2 ${
                   isLoading || checkUserExists.isPending ? "bg-gray-400 cursor-not-allowed" : "bg-[#294758]"
                 }`}
               >
@@ -771,9 +772,9 @@ export default function Register() {
 
             {/* OR Divider */}
             <div className="flex items-center gap-[29px] my-5">
-              <div className="flex-1 h-[1.5px] bg-[#D7DFE8]"></div>
-              <span className="text-[16px] text-[#485567] font-medium">OR</span>
-              <div className="flex-1 h-[1.5px] bg-[#D7DFE8]"></div>
+              <div className="flex-1 divider"></div>
+              <span className="text-responsive-base text-[#485567] font-medium">OR</span>
+              <div className="flex-1 divider"></div>
             </div>
 
             {/* Google Sign Up Button */}
@@ -793,14 +794,14 @@ export default function Register() {
 
             {/* Bottom Divider and Sign In Link */}
             <div className="space-y-5">
-              <div className="w-full h-[1.5px] bg-[#D7DFE8]"></div>
+              <div className="w-full divider"></div>
               <div className="text-center">
-                <span className="text-[16px] text-[#294859]">
+                <span className="text-responsive-base text-[#294859]">
                   Already have an account?{" "}
                 </span>
                 <Link
                   to="/"
-                  className="text-[16px] text-[#294859] font-bold hover:underline"
+                  className="text-responsive-base text-[#294859] font-bold hover:underline"
                 >
                   Sign In
                 </Link>

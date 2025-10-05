@@ -22,7 +22,7 @@ export default function Header() {
   };
 
   return (
-    <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-hotel-border-light bg-white">
+    <div className="hidden lg:flex items-center justify-between px-4 lg:px-6 py-4 border-b border-hotel-border-light bg-white">
       {/* Hotel Name */}
       <h1 className="text-[18px] lg:text-[20px] font-bold text-hotel-brand">
         {propertyName}
