@@ -489,7 +489,7 @@ function WeeklyPriceOverview({
       {/* Date Headers */}
       <div className="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-4">
         <div className="w-[140px] flex items-center">
-          <span className="text-hotel-brand font-semibold text-base">
+          <span className="text-hotel-brand font-semibold text-base hidden lg:block">
             Hotel
           </span>
         </div>
@@ -521,10 +521,10 @@ function WeeklyPriceOverview({
                 return (
                   <div
                     key={index}
-                    className="flex flex-col items-center gap-3 w-[78px] lg:w-[90px] xl:w-[110px]"
+                    className="flex flex-col items-center gap-2 w-[78px] lg:w-[90px] xl:w-[110px]"
                   >
-                    <span className="text-hotel-brand text-2xl font-bold">{dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}</span>
-                    <span className="text-gray-700 text-lg font-semibold">{d.getDate().toString().padStart(2, '0')}</span>
+                    <span className="text-hotel-brand text-lg lg:text-2xl font-bold">{dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}</span>
+                    <span className="text-gray-700 text-sm lg:text-lg font-semibold">{d.getDate().toString().padStart(2, '0')}</span>
                   </div>
                 );
               })}
@@ -586,7 +586,7 @@ function WeeklyPriceOverview({
           style={{ touchAction: 'pan-y' }}
         >
           <div className="w-[140px]">
-            <span className="text-black text-base font-normal">
+            <span className="text-black text-sm font-normal">
               {competitor.name}
             </span>
           </div>
@@ -640,7 +640,7 @@ function WeeklyPriceOverview({
         style={{ touchAction: 'pan-y' }}
       >
         <div className="w-[140px]">
-          <span className="text-black text-xl font-bold">Your Price</span>
+          <span className="text-black text-sm font-bold">Your Price</span>
         </div>
         <div className="flex-1 flex items-center justify-center px-4">
           {visibleDays.map(({ date, index }) => {
@@ -658,16 +658,16 @@ function WeeklyPriceOverview({
             today.setHours(0, 0, 0, 0);
             const isPast = new Date(date) < today;
             return (
-              <div key={index} className="w-[100px] lg:w-[120px] xl:w-[140px] flex justify-center">
+              <div key={index} className="w-[80px] lg:w-[120px] xl:w-[140px] flex justify-center">
                 <div className="relative flex items-center w-full">
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-lg text-[#294859] font-bold z-10">$</span>
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-sm lg:text-lg text-[#294859] font-bold z-10">$</span>
                   <input
                     type="text"
                     value={price}
                     onChange={(e) => handlePriceChange(index, e.target.value)}
                     onBlur={() => handlePriceBlur(index)}
-                    className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-xl font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
-                    style={{ minWidth: 70, maxWidth: 110 }}
+                    className={`w-full pl-4 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-sm lg:text-xl font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
+                    style={{ minWidth: 60, maxWidth: 80 }}
                     maxLength={5}
                     disabled={isPast}
                     title={isPast ? 'Cannot edit past prices' : ''}
@@ -702,13 +702,13 @@ function WeeklyPriceOverview({
             return (
               <div key={index} className="w-[100px] lg:w-[120px] xl:w-[140px] flex justify-center">
                 <div className="relative flex items-center w-full">
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-lg text-[#294859] font-bold z-10">$</span>
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 text-base lg:text-lg text-[#294859] font-bold z-10">$</span>
                   <input
                     type="text"
                     value={price}
                     onChange={(e) => handlePriceChange(index, e.target.value)}
                     onBlur={() => handlePriceBlur(index)}
-                    className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-xl font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
+                    className={`w-full pl-5 pr-2 py-1 border-0 border-b-2 border-[#294859] bg-transparent text-center text-lg lg:text-xl font-bold focus:outline-none focus:border-blue-500 transition-colors duration-200 ${isPast ? 'text-gray-400 cursor-not-allowed bg-gray-50' : 'text-[#294859]'}`}
                     style={{ minWidth: 70, maxWidth: 110 }}
                     maxLength={5}
                     disabled={isPast}
