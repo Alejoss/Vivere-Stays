@@ -1,5 +1,5 @@
 from django.contrib import admin
-from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket
+from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket, Notification
 
 
 @admin.register(Profile)
@@ -50,6 +50,58 @@ class SupportTicketAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user')
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'type', 'category', 'priority', 'title', 'is_read', 'is_new', 'created_at')
+    list_filter = ('type', 'category', 'priority', 'is_read', 'is_new', 'created_at')
+    search_fields = ('user__username', 'user__email', 'title', 'description')
+    readonly_fields = ('created_at', 'updated_at', 'read_at')
+    ordering = ('-created_at',)
+    list_per_page = 50
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('user', 'type', 'category', 'priority', 'title', 'description')
+        }),
+        ('Status', {
+            'fields': ('is_read', 'is_new')
+        }),
+        ('Action & Metadata', {
+            'fields': ('action_url', 'metadata'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'read_at', 'expires_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+    
+    actions = ['mark_as_read', 'mark_as_unread', 'delete_selected']
+    
+    def mark_as_read(self, request, queryset):
+        """Admin action to mark selected notifications as read"""
+        updated = 0
+        for notification in queryset:
+            if not notification.is_read:
+                notification.mark_as_read()
+                updated += 1
+        self.message_user(request, f"{updated} notification(s) marked as read.")
+    mark_as_read.short_description = "Mark selected notifications as read"
+    
+    def mark_as_unread(self, request, queryset):
+        """Admin action to mark selected notifications as unread"""
+        updated = 0
+        for notification in queryset:
+            if notification.is_read:
+                notification.mark_as_unread()
+                updated += 1
+        self.message_user(request, f"{updated} notification(s) marked as unread.")
+    mark_as_unread.short_description = "Mark selected notifications as unread"
 
 
 admin.site.register(Payment)

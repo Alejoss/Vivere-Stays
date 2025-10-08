@@ -1,9 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock, Check, X } from "lucide-react";
+import { 
+  getNotifications, 
+  markNotificationAsRead, 
+  deleteNotification, 
+  markAllNotificationsAsRead,
+  type Notification as APINotification 
+} from "../../../shared/api/notifications";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
 
 interface Notification {
-  id: string;
-  type: "success" | "warning" | "info";
+  id: number;
+  type: "success" | "warning" | "info" | "error";
   title: string;
   description: string;
   timestamp: string;
@@ -11,62 +19,57 @@ interface Notification {
   isNew: boolean;
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "success",
-    title: "PMS connection restored",
-    description:
-      "The connection to your PMS system has been successfully restored. All price changes will sync automatically.",
-    timestamp: "07/05/2025, 10:20:00 AM",
-    isRead: false,
-    isNew: true,
-  },
-  {
-    id: "2",
-    type: "warning",
-    title: "MSP not configured",
-    description:
-      "You don't have a Minimum Selling Price (MSP) configured for next week. We recommend setting it up to optimize your revenue.",
-    timestamp: "07/05/2025, 10:20:00 AM",
-    isRead: false,
-    isNew: true,
-  },
-  {
-    id: "3",
-    type: "info",
-    title: "Incomplete profile",
-    description:
-      "Your hotel profile is incomplete. Complete the missing information to get better price recommendations.",
-    timestamp: "07/05/2025, 10:20:00 AM",
-    isRead: true,
-    isNew: false,
-  },
-  {
-    id: "4",
-    type: "success",
-    title: "Prices updated",
-    description: "Weekend prices have been successfully updated in your PMS.",
-    timestamp: "07/05/2025, 10:20:00 AM",
-    isRead: true,
-    isNew: false,
-  },
-  {
-    id: "5",
-    type: "warning",
-    title: "Competitor with lower prices",
-    description:
-      "Hotel La Canela has reduced their prices by 15% for the next two weeks. Consider adjusting your pricing strategy.",
-    timestamp: "07/05/2025, 10:20:00 AM",
-    isRead: false,
-    isNew: true,
-  },
-];
-
 export default function Notifications() {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(mockNotifications);
-  const [currentFilter, setCurrentFilter] = useState<"all" | "unread">("all");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [currentFilter, setCurrentFilter] = useState<"all" | "unread">("unread");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch notifications and trigger MSP check on component load
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // First, trigger MSP check for all user properties
+        // This will create notifications if MSP is missing
+        try {
+          await dynamicPricingService.checkMSPStatusAllProperties();
+          console.log('MSP check completed for all properties');
+        } catch (mspError) {
+          console.warn('MSP check failed (non-critical):', mspError);
+          // Don't fail the whole page if MSP check fails
+        }
+        
+        // Then fetch all notifications
+        const response = await getNotifications({ 
+          filter: currentFilter === 'unread' ? 'unread' : 'all',
+          limit: 100 
+        });
+        
+        // Map API notifications to local format
+        const mappedNotifications: Notification[] = response.notifications.map((n: APINotification) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          description: n.description,
+          timestamp: n.timestamp,
+          isRead: n.is_read,
+          isNew: n.is_new,
+        }));
+        
+        setNotifications(mappedNotifications);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Failed to load notifications:', err);
+        setError('Failed to load notifications. Please try again.');
+        setIsLoading(false);
+      }
+    }
+    
+    loadNotifications();
+  }, [currentFilter]); // Reload when filter changes
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
   const newCount = notifications.filter((n) => n.isNew).length;
@@ -77,20 +80,35 @@ export default function Notifications() {
       ? notifications.filter((n) => !n.isRead)
       : notifications;
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true, isNew: false } : n)),
-    );
+  const markAsRead = async (id: number) => {
+    try {
+      await markNotificationAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true, isNew: false } : n)),
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
   };
 
-  const dismissNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const dismissNotification = async (id: number) => {
+    try {
+      await deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, isRead: true, isNew: false })),
-    );
+  const markAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true, isNew: false })),
+      );
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
   };
 
   const getNotificationIcon = (type: string, isNew: boolean) => {
@@ -152,6 +170,27 @@ export default function Notifications() {
             />
           </svg>
         );
+      case "error":
+        return (
+          <svg
+            className={iconClass}
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 22C6.477 22 2 17.523 2 12C2 6.477 6.477 2 12 2C17.523 2 22 6.477 22 12C22 17.523 17.523 22 12 22ZM12 20C14.1217 20 16.1566 19.1571 17.6569 17.6569C19.1571 16.1566 20 14.1217 20 12C20 9.87827 19.1571 7.84344 17.6569 6.34315C16.1566 4.84285 14.1217 4 12 4C9.87827 4 7.84344 4.84285 6.34315 6.34315C4.84285 7.84344 4 9.87827 4 12C4 14.1217 4.84285 16.1566 6.34315 17.6569C7.84344 19.1571 9.87827 20 12 20Z"
+              fill="#DC2626"
+            />
+            <path
+              d="M12 8V12M12 16H12.01"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        );
       default:
         return null;
     }
@@ -175,108 +214,129 @@ export default function Notifications() {
           )}
         </div>
 
-        {/* Filter Tabs and Mark All Read */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentFilter("all")}
-              className={`px-4 py-3 rounded-md text-sm transition-colors ${
-                currentFilter === "all"
-                  ? "bg-[#294859] text-white"
-                  : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
-              }`}
-            >
-              All ({totalCount})
-            </button>
-            <button
-              onClick={() => setCurrentFilter("unread")}
-              className={`px-4 py-3 rounded-md text-sm transition-colors ${
-                currentFilter === "unread"
-                  ? "bg-[#294859] text-white"
-                  : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
-              }`}
-            >
-              Unread ({unreadCount})
-            </button>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
           </div>
+        )}
 
-          <button
-            onClick={markAllAsRead}
-            className="flex items-center gap-2 px-4 py-3 border border-[#DCE0E4] rounded-lg bg-white text-[#294859] text-sm font-semibold hover:bg-gray-50 transition-colors"
-          >
-            <Check size={20} />
-            Mark all as read
-          </button>
-        </div>
-
-        {/* Notifications List */}
-        <div className="space-y-4">
-          {filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`w-full rounded-md shadow-lg transition-all ${
-                notification.isRead
-                  ? "bg-white border border-[#D0D0D0]"
-                  : "bg-[#FAFCFF] border-l-4 border-l-[#294859]"
-              }`}
-            >
-              <div className="p-6">
-                {/* Header with icon, title, and status dot */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    {getNotificationIcon(notification.type, notification.isNew)}
-                    <h3 className="text-lg font-bold text-[#111827]">
-                      {notification.title}
-                    </h3>
-                    {notification.isNew && (
-                      <div className="w-[10px] h-[10px] bg-[#294758] rounded-full" />
-                    )}
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-3">
-                    {!notification.isRead && (
-                      <button
-                        onClick={() => markAsRead(notification.id)}
-                        className="text-black hover:text-gray-600 transition-colors"
-                        title="Mark as read"
-                      >
-                        <Check size={20} />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => dismissNotification(notification.id)}
-                      className="text-black/50 hover:text-black/70 transition-colors"
-                      title="Dismiss"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <p className="text-base text-[#485567] mb-4 leading-relaxed">
-                  {notification.description}
-                </p>
-
-                {/* Timestamp */}
-                <div className="flex items-center gap-2 text-[#6B7280] text-[12px]">
-                  <Clock size={13} />
-                  <span>{notification.timestamp}</span>
-                </div>
-              </div>
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#294758] mx-auto mb-4"></div>
+              <p className="text-[#6B7280] text-base">Loading notifications...</p>
             </div>
-          ))}
-        </div>
-
-        {filteredNotifications.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-[#6B7280] text-base">
-              {currentFilter === "unread"
-                ? "No unread notifications"
-                : "No notifications"}
-            </p>
           </div>
+        ) : (
+          <>
+            {/* Filter Tabs and Mark All Read */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentFilter("all")}
+                  className={`px-4 py-3 rounded-md text-sm transition-colors ${
+                    currentFilter === "all"
+                      ? "bg-[#294859] text-white"
+                      : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
+                  }`}
+                >
+                  All ({totalCount})
+                </button>
+                <button
+                  onClick={() => setCurrentFilter("unread")}
+                  className={`px-4 py-3 rounded-md text-sm transition-colors ${
+                    currentFilter === "unread"
+                      ? "bg-[#294859] text-white"
+                      : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
+                  }`}
+                >
+                  Unread ({unreadCount})
+                </button>
+              </div>
+
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="flex items-center gap-2 px-4 py-3 border border-[#DCE0E4] rounded-lg bg-white text-[#294859] text-sm font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  <Check size={20} />
+                  Mark all as read
+                </button>
+              )}
+            </div>
+
+            {/* Notifications List */}
+            {filteredNotifications.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-[#6B7280] text-base">
+                  {currentFilter === "unread"
+                    ? "No unread notifications"
+                    : "No notifications"}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`w-full rounded-md shadow-lg transition-all ${
+                      notification.isRead
+                        ? "bg-white border border-[#D0D0D0]"
+                        : "bg-[#FAFCFF] border-l-4 border-l-[#294859]"
+                    }`}
+                  >
+                    <div className="p-6">
+                      {/* Header with icon, title, and status dot */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {getNotificationIcon(notification.type, notification.isNew)}
+                          <h3 className="text-lg font-bold text-[#111827]">
+                            {notification.title}
+                          </h3>
+                          {notification.isNew && (
+                            <div className="w-[10px] h-[10px] bg-[#294758] rounded-full" />
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-3">
+                          {!notification.isRead && (
+                            <button
+                              onClick={() => markAsRead(notification.id)}
+                              className="text-black hover:text-gray-600 transition-colors"
+                              title="Mark as read"
+                            >
+                              <Check size={20} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => dismissNotification(notification.id)}
+                            className="text-black/50 hover:text-black/70 transition-colors"
+                            title="Dismiss"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-base text-[#485567] mb-4 leading-relaxed">
+                        {notification.description}
+                      </p>
+
+                      {/* Timestamp */}
+                      <div className="flex items-center gap-2 text-[#6B7280] text-[12px]">
+                        <Clock size={13} />
+                        <span>{notification.timestamp}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

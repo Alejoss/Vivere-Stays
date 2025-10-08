@@ -3,7 +3,7 @@ import logging
 
 from django.contrib.auth.models import User
 
-from profiles.models import Profile, PMSIntegrationRequirement, SupportTicket
+from profiles.models import Profile, PMSIntegrationRequirement, SupportTicket, Notification
 
 # Get logger for profiles serializers
 logger = logging.getLogger('academia_blockchain.profiles.serializers')
@@ -207,3 +207,127 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         if len(value.strip()) < 10:
             raise serializers.ValidationError("Description must be at least 10 characters long.")
         return value.strip()
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Notification model
+    """
+    type_display = serializers.CharField(source='get_type_display', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    is_expired = serializers.SerializerMethodField()
+    timestamp = serializers.DateTimeField(source='created_at', read_only=True, format='%m/%d/%Y, %I:%M:%S %p')
+    
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 'user', 'type', 'type_display', 'category', 'category_display',
+            'priority', 'priority_display', 'title', 'description', 'is_read', 
+            'is_new', 'action_url', 'metadata', 'created_at', 'updated_at', 
+            'read_at', 'expires_at', 'timestamp', 'is_expired'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'read_at', 'user']
+    
+    def get_is_expired(self, obj):
+        """
+        Check if notification is expired
+        """
+        return obj.is_expired()
+    
+    def validate_type(self, value):
+        """
+        Validate notification type
+        """
+        valid_types = [choice[0] for choice in Notification.NOTIFICATION_TYPES]
+        if value not in valid_types:
+            raise serializers.ValidationError(f"Invalid type. Must be one of: {valid_types}")
+        return value
+    
+    def validate_category(self, value):
+        """
+        Validate notification category
+        """
+        valid_categories = [choice[0] for choice in Notification.CATEGORY_CHOICES]
+        if value not in valid_categories:
+            raise serializers.ValidationError(f"Invalid category. Must be one of: {valid_categories}")
+        return value
+    
+    def validate_priority(self, value):
+        """
+        Validate notification priority
+        """
+        valid_priorities = [choice[0] for choice in Notification.PRIORITY_LEVELS]
+        if value not in valid_priorities:
+            raise serializers.ValidationError(f"Invalid priority. Must be one of: {valid_priorities}")
+        return value
+
+
+class NotificationCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating notifications
+    """
+    class Meta:
+        model = Notification
+        fields = [
+            'type', 'category', 'priority', 'title', 'description', 
+            'action_url', 'metadata', 'expires_at'
+        ]
+    
+    def validate_type(self, value):
+        """
+        Validate notification type
+        """
+        valid_types = [choice[0] for choice in Notification.NOTIFICATION_TYPES]
+        if value not in valid_types:
+            raise serializers.ValidationError(f"Invalid type. Must be one of: {valid_types}")
+        return value
+    
+    def validate_category(self, value):
+        """
+        Validate notification category
+        """
+        valid_categories = [choice[0] for choice in Notification.CATEGORY_CHOICES]
+        if value not in valid_categories:
+            raise serializers.ValidationError(f"Invalid category. Must be one of: {valid_categories}")
+        return value
+    
+    def validate_priority(self, value):
+        """
+        Validate notification priority
+        """
+        valid_priorities = [choice[0] for choice in Notification.PRIORITY_LEVELS]
+        if value not in valid_priorities:
+            raise serializers.ValidationError(f"Invalid priority. Must be one of: {valid_priorities}")
+        return value
+
+
+class NotificationUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating notifications (mainly for marking as read/unread)
+    """
+    class Meta:
+        model = Notification
+        fields = ['is_read', 'is_new']
+    
+    def update(self, instance, validated_data):
+        """
+        Custom update to handle marking as read with timestamp
+        """
+        is_read = validated_data.get('is_read', instance.is_read)
+        is_new = validated_data.get('is_new', instance.is_new)
+        
+        # If marking as read, use the model method to set timestamp
+        if is_read and not instance.is_read:
+            instance.mark_as_read()
+        elif not is_read and instance.is_read:
+            instance.mark_as_unread()
+        elif not is_new and instance.is_new and not is_read:
+            instance.acknowledge()
+        else:
+            # Update fields normally if no special logic needed
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+        
+        return instance

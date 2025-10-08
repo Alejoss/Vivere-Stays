@@ -160,7 +160,7 @@ class DpDynamicIncrementsV2(models.Model):
     ]
     
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dynamic_increments_v2', help_text="User who created this dynamic increment")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='dynamic_increments_v2', help_text="User who created this dynamic increment")
     occupancy_category = models.CharField(max_length=10, choices=OCCUPANCY_CATEGORIES, default='50-70', help_text="Occupancy level category")
     lead_time_category = models.CharField(max_length=10, choices=LEAD_TIME_CATEGORIES, default='3-7', help_text="Lead time category")
     increment_type = models.CharField(max_length=255, default='Additional')  # "Percentage" or "Additional"

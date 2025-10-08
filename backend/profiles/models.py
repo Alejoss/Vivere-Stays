@@ -265,3 +265,165 @@ class Payment(models.Model):
     raw_response = models.JSONField(default=dict, blank=True, null=True)
     def __str__(self):
         return f"Payment for {self.user.username} - {self.stripe_session_id}"
+
+
+class Notification(models.Model):
+    """
+    Model to store user notifications with various types and statuses
+    """
+    NOTIFICATION_TYPES = [
+        ('success', 'Success'),
+        ('warning', 'Warning'),
+        ('info', 'Info'),
+        ('error', 'Error'),
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    CATEGORY_CHOICES = [
+        ('pms', 'PMS Integration'),
+        ('pricing', 'Pricing'),
+        ('payment', 'Payment'),
+        ('profile', 'Profile'),
+        ('competitor', 'Competitor'),
+        ('system', 'System'),
+        ('general', 'General'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', 
+                           help_text="User who receives this notification")
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='info',
+                          help_text="Type of notification (success, warning, info, error)")
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='general',
+                              help_text="Category of the notification")
+    priority = models.CharField(max_length=20, choices=PRIORITY_LEVELS, default='medium',
+                              help_text="Priority level of the notification")
+    title = models.CharField(max_length=200, help_text="Notification title")
+    description = models.TextField(help_text="Detailed description of the notification")
+    
+    # Status flags
+    is_read = models.BooleanField(default=False, help_text="Whether the notification has been read")
+    is_new = models.BooleanField(default=True, help_text="Whether the notification is new (unacknowledged)")
+    
+    # Optional action URL for clickable notifications
+    action_url = models.CharField(max_length=500, blank=True, null=True,
+                                 help_text="Optional URL for notification action")
+    
+    # Metadata for extensibility
+    metadata = models.JSONField(default=dict, blank=True, null=True,
+                               help_text="Additional metadata for the notification")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    read_at = models.DateTimeField(null=True, blank=True,
+                                  help_text="Timestamp when notification was read")
+    expires_at = models.DateTimeField(null=True, blank=True,
+                                     help_text="Optional expiration timestamp for time-sensitive notifications")
+    
+    class Meta:
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', 'created_at']),
+            models.Index(fields=['user', 'is_new']),
+            models.Index(fields=['user', 'category']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_type_display()} - {self.title} (User: {self.user.username})"
+    
+    def mark_as_read(self):
+        """Mark notification as read"""
+        from django.utils import timezone
+        if not self.is_read:
+            self.is_read = True
+            self.is_new = False
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'is_new', 'read_at', 'updated_at'])
+    
+    def mark_as_unread(self):
+        """Mark notification as unread"""
+        if self.is_read:
+            self.is_read = False
+            self.is_new = True
+            self.read_at = None
+            self.save(update_fields=['is_read', 'is_new', 'read_at', 'updated_at'])
+    
+    def acknowledge(self):
+        """Acknowledge notification (remove 'new' flag but keep as unread)"""
+        if self.is_new:
+            self.is_new = False
+            self.save(update_fields=['is_new', 'updated_at'])
+    
+    def is_expired(self):
+        """Check if notification has expired"""
+        if not self.expires_at:
+            return False
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+    
+    @classmethod
+    def create_notification(cls, user, type, title, description, category='general', 
+                          priority='medium', action_url=None, metadata=None, expires_at=None):
+        """
+        Convenience method to create a notification
+        
+        Args:
+            user: User object or user ID
+            type: Notification type (success, warning, info, error)
+            title: Notification title
+            description: Notification description
+            category: Notification category (default: 'general')
+            priority: Priority level (default: 'medium')
+            action_url: Optional action URL
+            metadata: Optional metadata dictionary
+            expires_at: Optional expiration datetime
+            
+        Returns:
+            Created Notification object
+        """
+        if isinstance(user, int):
+            user = User.objects.get(id=user)
+        
+        notification = cls.objects.create(
+            user=user,
+            type=type,
+            category=category,
+            priority=priority,
+            title=title,
+            description=description,
+            action_url=action_url,
+            metadata=metadata or {},
+            expires_at=expires_at
+        )
+        return notification
+    
+    @classmethod
+    def get_user_unread_count(cls, user):
+        """Get count of unread notifications for a user"""
+        return cls.objects.filter(user=user, is_read=False).count()
+    
+    @classmethod
+    def get_user_new_count(cls, user):
+        """Get count of new notifications for a user"""
+        return cls.objects.filter(user=user, is_new=True).count()
+    
+    @classmethod
+    def mark_all_as_read(cls, user):
+        """Mark all notifications as read for a user"""
+        from django.utils import timezone
+        now = timezone.now()
+        return cls.objects.filter(user=user, is_read=False).update(
+            is_read=True,
+            is_new=False,
+            read_at=now,
+            updated_at=now
+        )

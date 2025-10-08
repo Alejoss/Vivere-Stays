@@ -680,6 +680,14 @@ class PropertyMSPView(APIView):
                     errors.append(f"Error processing period {period}: {str(e)}")
             
             if created_msp_entries or updated_msp_entries:
+                # After successful MSP creation/update, check and potentially dismiss related notifications
+                try:
+                    from .notification_triggers import check_and_notify_msp_status
+                    # This will check if MSP is still missing and create/update notifications accordingly
+                    check_and_notify_msp_status(request.user, property_instance)
+                except Exception as notification_error:
+                    logger.warning(f"Error updating MSP notifications after MSP save: {str(notification_error)}")
+                
                 return Response({
                     'message': f'Successfully processed MSP entries (Created: {len(created_msp_entries)}, Updated: {len(updated_msp_entries)})',
                     'created_entries': created_msp_entries,
@@ -3471,4 +3479,176 @@ class PropertyAvailableRatesUpdateView(APIView):
             return Response({
                 'message': 'An error occurred while updating available rates',
                 'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CheckMSPStatusView(APIView):
+    """
+    Check MSP configuration status and trigger notifications if needed
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id=None):
+        """
+        Check MSP status for a specific property or all user properties
+        
+        GET /dynamic-pricing/properties/{property_id}/check-msp/  - Check specific property
+        GET /dynamic-pricing/check-msp/  - Check all user properties
+        """
+        from .notification_triggers import (
+            check_and_notify_msp_status,
+            check_and_notify_msp_for_all_user_properties,
+            check_msp_for_upcoming_period
+        )
+        
+        try:
+            if property_id:
+                # Check specific property
+                property_instance = get_object_or_404(Property, id=property_id)
+                
+                # Verify user has access
+                user_profile = request.user.profile
+                if not user_profile.properties.filter(id=property_id).exists():
+                    return Response({
+                        'message': 'You do not have access to this property'
+                    }, status=status.HTTP_403_FORBIDDEN)
+                
+                # Check and create notifications if needed
+                notification_result = check_and_notify_msp_status(request.user, property_instance)
+                
+                # Get 30-day coverage statistics
+                coverage_stats = check_msp_for_upcoming_period(property_instance, days_ahead=30)
+                
+                return Response({
+                    'property_id': property_id,
+                    'property_name': property_instance.name,
+                    'notifications_created': notification_result['notifications_created'],
+                    'coverage_stats': coverage_stats
+                }, status=status.HTTP_200_OK)
+            else:
+                # Check all user properties
+                result = check_and_notify_msp_for_all_user_properties(request.user)
+                
+                return Response({
+                    'message': 'MSP check completed for all properties',
+                    'result': result
+                }, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            logger.error(f"Error checking MSP status: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'An error occurred while checking MSP status',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class InitializePropertyDefaultsView(APIView):
+    """
+    Initialize default dynamic pricing configuration for a property.
+    This endpoint is called when a user completes onboarding to set up:
+    - DpGeneralSettings with default values
+    - DpDynamicIncrementsV2 with all 56 default pricing increments
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, property_id):
+        """
+        POST /dynamic-pricing/properties/{property_id}/initialize-defaults/
+        
+        Creates default configuration for a property if it doesn't already exist.
+        """
+        from .default_values import DEFAULT_DYNAMIC_INCREMENTS, DEFAULT_GENERAL_SETTINGS
+        
+        try:
+            # Get the property
+            property_instance = get_object_or_404(Property, id=property_id)
+            logger.info(f"Initializing defaults for property: {property_id}")
+            
+            # Check if user has access to this property
+            if not property_instance.profiles.filter(user=request.user).exists():
+                logger.warning(f"User {request.user.id} does not have access to property {property_id}")
+                return Response({
+                    'error': 'You do not have permission to access this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            created_count = 0
+            skipped_count = 0
+            errors = []
+            
+            # 1. Create or update DpGeneralSettings
+            general_settings, settings_created = DpGeneralSettings.objects.get_or_create(
+                property_id=property_instance,
+                defaults={
+                    'user': request.user,
+                    **DEFAULT_GENERAL_SETTINGS
+                }
+            )
+            
+            if settings_created:
+                logger.info(f"Created DpGeneralSettings for property {property_id}")
+                created_count += 1
+            else:
+                logger.info(f"DpGeneralSettings already exists for property {property_id}")
+                skipped_count += 1
+            
+            # 2. Create DpDynamicIncrementsV2 entries (56 total)
+            increments_created = 0
+            increments_skipped = 0
+            
+            for increment_data in DEFAULT_DYNAMIC_INCREMENTS:
+                try:
+                    # Check if this combination already exists
+                    exists = DpDynamicIncrementsV2.objects.filter(
+                        property_id=property_instance,
+                        occupancy_category=increment_data['occupancy_category'],
+                        lead_time_category=increment_data['lead_time_category']
+                    ).exists()
+                    
+                    if not exists:
+                        DpDynamicIncrementsV2.objects.create(
+                            property_id=property_instance,
+                            user=request.user,
+                            occupancy_category=increment_data['occupancy_category'],
+                            lead_time_category=increment_data['lead_time_category'],
+                            increment_type=increment_data['increment_type'],
+                            increment_value=increment_data['increment_value']
+                        )
+                        increments_created += 1
+                    else:
+                        increments_skipped += 1
+                        
+                except Exception as e:
+                    error_msg = f"Error creating increment for {increment_data['occupancy_category']}/{increment_data['lead_time_category']}: {str(e)}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
+            
+            logger.info(f"Created {increments_created} dynamic increments, skipped {increments_skipped} existing ones")
+            
+            # Calculate totals
+            total_created = created_count + increments_created
+            total_skipped = skipped_count + increments_skipped
+            
+            return Response({
+                'message': 'Property defaults initialized successfully',
+                'property_id': property_id,
+                'summary': {
+                    'general_settings_created': settings_created,
+                    'dynamic_increments_created': increments_created,
+                    'dynamic_increments_skipped': increments_skipped,
+                    'total_created': total_created,
+                    'total_skipped': total_skipped
+                },
+                'errors': errors if errors else None
+            }, status=status.HTTP_201_CREATED if total_created > 0 else status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            logger.error(f"Property {property_id} not found")
+            return Response({
+                'error': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error initializing defaults for property {property_id}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'An error occurred while initializing property defaults',
+                'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

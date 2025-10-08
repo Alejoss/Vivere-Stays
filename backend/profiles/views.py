@@ -30,8 +30,8 @@ from datetime import datetime
 import jwt
 import json
 
-from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer, SupportTicketSerializer
-from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket
+from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer, SupportTicketSerializer, NotificationSerializer, NotificationCreateSerializer, NotificationUpdateSerializer
+from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket, Notification
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -1719,4 +1719,292 @@ class OnboardingContactSalesView(APIView):
             logger.error(f"Error processing contact sales request for user {request.user.username}: {str(e)}", exc_info=True)
             return Response({
                 'error': 'Failed to send sales request'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationListView(APIView):
+    """
+    API view for listing and creating notifications
+    GET: List all notifications for the authenticated user with optional filters
+    POST: Create a new notification for the authenticated user
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get notifications for the authenticated user with optional filters
+        
+        Query parameters:
+        - filter: 'all' (default), 'unread', 'read', 'new'
+        - category: Filter by category (pms, pricing, payment, etc.)
+        - priority: Filter by priority (low, medium, high, urgent)
+        - limit: Number of notifications to return (default: 50)
+        - offset: Pagination offset (default: 0)
+        """
+        try:
+            user = request.user
+            
+            # Get query parameters
+            filter_type = request.query_params.get('filter', 'all')
+            category = request.query_params.get('category', None)
+            priority = request.query_params.get('priority', None)
+            limit = int(request.query_params.get('limit', 50))
+            offset = int(request.query_params.get('offset', 0))
+            
+            # Base queryset
+            queryset = Notification.objects.filter(user=user)
+            
+            # Apply filters
+            if filter_type == 'unread':
+                queryset = queryset.filter(is_read=False)
+            elif filter_type == 'read':
+                queryset = queryset.filter(is_read=True)
+            elif filter_type == 'new':
+                queryset = queryset.filter(is_new=True)
+            
+            # Apply category filter
+            if category:
+                queryset = queryset.filter(category=category)
+            
+            # Apply priority filter
+            if priority:
+                queryset = queryset.filter(priority=priority)
+            
+            # Get counts
+            total_count = queryset.count()
+            unread_count = Notification.get_user_unread_count(user)
+            new_count = Notification.get_user_new_count(user)
+            
+            # Apply pagination
+            notifications = queryset[offset:offset + limit]
+            
+            # Serialize
+            serializer = NotificationSerializer(notifications, many=True)
+            
+            logger.info(f"Retrieved {len(serializer.data)} notifications for user {user.username} (filter: {filter_type})")
+            
+            return Response({
+                'notifications': serializer.data,
+                'total_count': total_count,
+                'unread_count': unread_count,
+                'new_count': new_count,
+                'limit': limit,
+                'offset': offset
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving notifications for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to retrieve notifications'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """
+        Create a new notification for the authenticated user
+        
+        Expected payload:
+        {
+            "type": "success|warning|info|error",
+            "category": "pms|pricing|payment|profile|competitor|system|general",
+            "priority": "low|medium|high|urgent",
+            "title": "Notification title",
+            "description": "Notification description",
+            "action_url": "Optional action URL",
+            "metadata": {"key": "value"},
+            "expires_at": "2024-12-31T23:59:59Z" (optional)
+        }
+        """
+        try:
+            # Add user to the data
+            data = request.data.copy()
+            
+            # Validate and create notification
+            serializer = NotificationCreateSerializer(data=data)
+            
+            if serializer.is_valid():
+                # Create notification with the authenticated user
+                notification = serializer.save(user=request.user)
+                
+                logger.info(f"Notification created: {notification.id} for user {request.user.username}")
+                
+                # Return full notification data
+                response_serializer = NotificationSerializer(notification)
+                
+                return Response({
+                    'message': 'Notification created successfully',
+                    'notification': response_serializer.data
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    'error': 'Invalid data provided',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating notification for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to create notification'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationDetailView(APIView):
+    """
+    API view for retrieving, updating, and deleting a specific notification
+    GET: Retrieve notification details
+    PATCH: Update notification (mark as read/unread)
+    DELETE: Delete notification
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, notification_id):
+        """
+        Get a specific notification
+        """
+        try:
+            notification = get_object_or_404(
+                Notification, 
+                id=notification_id, 
+                user=request.user
+            )
+            
+            serializer = NotificationSerializer(notification)
+            
+            return Response({
+                'notification': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving notification {notification_id} for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to retrieve notification'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request, notification_id):
+        """
+        Update a notification (mainly for marking as read/unread)
+        
+        Expected payload:
+        {
+            "is_read": true/false,
+            "is_new": true/false
+        }
+        """
+        try:
+            notification = get_object_or_404(
+                Notification, 
+                id=notification_id, 
+                user=request.user
+            )
+            
+            serializer = NotificationUpdateSerializer(
+                notification, 
+                data=request.data, 
+                partial=True
+            )
+            
+            if serializer.is_valid():
+                serializer.save()
+                
+                logger.info(f"Notification {notification_id} updated for user {request.user.username}")
+                
+                # Return full notification data
+                response_serializer = NotificationSerializer(notification)
+                
+                return Response({
+                    'message': 'Notification updated successfully',
+                    'notification': response_serializer.data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Invalid data provided',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error updating notification {notification_id} for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to update notification'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request, notification_id):
+        """
+        Delete a notification
+        """
+        try:
+            notification = get_object_or_404(
+                Notification, 
+                id=notification_id, 
+                user=request.user
+            )
+            
+            notification.delete()
+            
+            logger.info(f"Notification {notification_id} deleted for user {request.user.username}")
+            
+            return Response({
+                'message': 'Notification deleted successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error deleting notification {notification_id} for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to delete notification'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationMarkAllReadView(APIView):
+    """
+    API view for marking all notifications as read
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Mark all notifications as read for the authenticated user
+        """
+        try:
+            user = request.user
+            
+            # Mark all as read
+            updated_count = Notification.mark_all_as_read(user)
+            
+            logger.info(f"Marked {updated_count} notifications as read for user {user.username}")
+            
+            return Response({
+                'message': 'All notifications marked as read',
+                'updated_count': updated_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error marking all notifications as read for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to mark all notifications as read'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationUnreadCountView(APIView):
+    """
+    API view for getting the count of unread notifications
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get count of unread and new notifications for the authenticated user
+        """
+        try:
+            user = request.user
+            
+            unread_count = Notification.get_user_unread_count(user)
+            new_count = Notification.get_user_new_count(user)
+            
+            return Response({
+                'unread_count': unread_count,
+                'new_count': new_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error getting notification counts for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to get notification counts'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

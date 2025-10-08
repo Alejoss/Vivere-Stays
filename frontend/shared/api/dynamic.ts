@@ -1074,4 +1074,127 @@ export const dynamicPricingService = {
       data,
     });
   },
+
+  // Initialize property defaults (called during onboarding completion)
+  async initializePropertyDefaults(propertyId: string): Promise<{
+    message: string;
+    property_id: string;
+    summary: {
+      general_settings_created: boolean;
+      dynamic_increments_created: number;
+      dynamic_increments_skipped: number;
+      total_created: number;
+      total_skipped: number;
+    };
+    errors: string[] | null;
+  }> {
+    return apiRequest<{
+      message: string;
+      property_id: string;
+      summary: {
+        general_settings_created: boolean;
+        dynamic_increments_created: number;
+        dynamic_increments_skipped: number;
+        total_created: number;
+        total_skipped: number;
+      };
+      errors: string[] | null;
+    }>({
+      method: 'POST',
+      url: `/dynamic-pricing/properties/${propertyId}/initialize-defaults/`,
+    });
+  },
+
+  /**
+   * Check MSP status for a property and trigger notifications if MSP is missing
+   * This should be called when user visits Price Calendar or other pricing pages
+   */
+  async checkMSPStatus(propertyId: string): Promise<{
+    property_id: string;
+    property_name: string;
+    notifications_created: Array<{
+      type: 'msp_missing_today' | 'msp_missing_next_week';
+      notification_id: number;
+    }>;
+    coverage_stats: {
+      property_id: string;
+      property_name: string;
+      period_start: string;
+      period_end: string;
+      total_days: number;
+      covered_days: number;
+      missing_days: number;
+      coverage_percentage: number;
+      has_complete_coverage: boolean;
+      missing_dates: string[];
+    };
+  }> {
+    return apiRequest<{
+      property_id: string;
+      property_name: string;
+      notifications_created: Array<{
+        type: 'msp_missing_today' | 'msp_missing_next_week';
+        notification_id: number;
+      }>;
+      coverage_stats: {
+        property_id: string;
+        property_name: string;
+        period_start: string;
+        period_end: string;
+        total_days: number;
+        covered_days: number;
+        missing_days: number;
+        coverage_percentage: number;
+        has_complete_coverage: boolean;
+        missing_dates: string[];
+      };
+    }>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/check-msp/`,
+    });
+  },
+
+  /**
+   * Check MSP status for all user properties and trigger notifications if needed
+   */
+  async checkMSPStatusAllProperties(): Promise<{
+    message: string;
+    result: {
+      user_id: number;
+      username: string;
+      properties_checked: number;
+      total_notifications_created: number;
+      details: Array<{
+        property_id: string;
+        property_name: string;
+        notifications_created: Array<{
+          type: string;
+          notification_id: number;
+        }>;
+        count: number;
+      }>;
+    };
+  }> {
+    return apiRequest<{
+      message: string;
+      result: {
+        user_id: number;
+        username: string;
+        properties_checked: number;
+        total_notifications_created: number;
+        details: Array<{
+          property_id: string;
+          property_name: string;
+          notifications_created: Array<{
+            type: string;
+            notification_id: number;
+          }>;
+          count: number;
+        }>;
+      };
+    }>({
+      method: 'GET',
+      url: '/dynamic-pricing/check-msp/',
+    });
+  },
 };

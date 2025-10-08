@@ -43,6 +43,8 @@ from .views import (
     LosSetupDeleteView,
     PropertyAvailableRatesView,
     PropertyAvailableRatesUpdateView,
+    InitializePropertyDefaultsView,
+    CheckMSPStatusView,
 )
 
 app_name = 'dynamic_pricing'
@@ -121,4 +123,11 @@ urlpatterns = [
     # Available Rates (Unified Rooms and Rates) endpoints
     path('properties/<str:property_id>/available-rates/', PropertyAvailableRatesView.as_view(), name='available-rates'),
     path('properties/<str:property_id>/available-rates/update/', PropertyAvailableRatesUpdateView.as_view(), name='available-rates-update'),
+    
+    # Initialize property defaults (called during onboarding completion)
+    path('properties/<str:property_id>/initialize-defaults/', InitializePropertyDefaultsView.as_view(), name='initialize-defaults'),
+    
+    # MSP Status Check (triggers notifications if MSP is missing)
+    path('properties/<str:property_id>/check-msp/', CheckMSPStatusView.as_view(), name='check-msp-status'),
+    path('check-msp/', CheckMSPStatusView.as_view(), name='check-msp-status-all'),
 ] 

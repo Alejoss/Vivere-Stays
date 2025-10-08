@@ -5,7 +5,8 @@ from .views import (
     RefreshTokenView, GoogleLoginView, PMSIntegrationRequirementView,
     SendVerificationEmailView, VerifyEmailCodeView,
     OnboardingProgressView, TestEmailView, ChangePasswordView, stripe_webhook, CreateCheckoutSession,
-    SupportTicketView, OnboardingPMSSupportView, OnboardingEmailVerificationSupportView, OnboardingContactSalesView
+    SupportTicketView, OnboardingPMSSupportView, OnboardingEmailVerificationSupportView, OnboardingContactSalesView,
+    NotificationListView, NotificationDetailView, NotificationMarkAllReadView, NotificationUnreadCountView
 )
 
 urlpatterns = [
@@ -42,4 +43,10 @@ urlpatterns = [
 
     path("create-checkout-session/",CreateCheckoutSession.as_view(), name="create-checkout-session"),
     path('webhook/', stripe_webhook, name='stripe_webhook'),
+    
+    # Notification endpoints
+    path('notifications/', NotificationListView.as_view(), name='notifications-list'),
+    path('notifications/<int:notification_id>/', NotificationDetailView.as_view(), name='notification-detail'),
+    path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notifications-mark-all-read'),
+    path('notifications/unread-count/', NotificationUnreadCountView.as_view(), name='notifications-unread-count'),
 ]

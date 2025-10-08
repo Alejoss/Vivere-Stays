@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
+import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { getLocalStorageItem } from "../../../shared/localStorage";
 
 export default function WelcomeComplete() {
   const navigate = useNavigate();
   const [progress, setProgress] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     // Simulate scanning progress
@@ -27,9 +31,51 @@ export default function WelcomeComplete() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleGoToDashboard = () => {
-    // Navigate to dashboard
-    navigate("/dashboard");
+  const handleGoToDashboard = async () => {
+    setError("");
+    setIsInitializing(true);
+    
+    try {
+      // Get property ID from localStorage
+      const selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
+      
+      if (!selectedPropertyId) {
+        console.error('[WelcomeComplete] No property ID found in localStorage');
+        setError("Property information not found. Please contact support.");
+        setIsInitializing(false);
+        return;
+      }
+      
+      console.log('[WelcomeComplete] Initializing defaults for property:', selectedPropertyId);
+      
+      // Initialize property defaults (DpGeneralSettings and DpDynamicIncrementsV2)
+      const result = await dynamicPricingService.initializePropertyDefaults(selectedPropertyId);
+      
+      console.log('[WelcomeComplete] Defaults initialized successfully:', result);
+      
+      // Navigate to dashboard after successful initialization
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error('[WelcomeComplete] Error initializing property defaults:', err);
+      
+      // Extract error message
+      let errorMessage = "Failed to initialize property settings. Please try again.";
+      if (err && typeof err === 'object') {
+        if ('error' in err) {
+          errorMessage = err.error;
+        } else if ('detail' in err) {
+          errorMessage = err.detail;
+        } else if ('message' in err) {
+          errorMessage = err.message;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsInitializing(false);
+    }
   };
 
   return (
@@ -199,28 +245,55 @@ export default function WelcomeComplete() {
         </div>
 
         {/* Go Dashboard Button */}
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-4">
           <button
             onClick={handleGoToDashboard}
-            className="flex items-center gap-2 px-[77px] py-[18px] bg-[#294758] text-white rounded-[10px] text-[16px] font-bold hover:bg-[#234149] transition-colors"
+            disabled={isInitializing}
+            className={`flex items-center gap-2 px-[77px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors ${
+              isInitializing 
+                ? "bg-gray-400 cursor-not-allowed text-white" 
+                : "bg-[#294758] text-white hover:bg-[#234149]"
+            }`}
           >
-            <span>Go Dashboard</span>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 21 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M4.66669 10H16.3334M16.3334 10L11.3334 15M16.3334 10L11.3334 5"
-                stroke="white"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            {isInitializing ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Setting up your property...</span>
+              </>
+            ) : (
+              <>
+                <span>Go Dashboard</span>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 21 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M4.66669 10H16.3334M16.3334 10L11.3334 15M16.3334 10L11.3334 5"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </>
+            )}
           </button>
+          
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-[10px] p-4 max-w-md">
+              <div className="flex items-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" stroke="#EF4444" strokeWidth="1.5"/>
+                  <path d="M10 6.66667V10M10 13.3333H10.0083" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="text-[14px] text-[#EF4444] font-medium">{error}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

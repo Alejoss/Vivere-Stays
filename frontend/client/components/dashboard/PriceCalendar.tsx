@@ -207,6 +207,39 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     }
   }, [propertyId, selectedPropertyId]);
 
+  // Check MSP status when component loads or property changes
+  useEffect(() => {
+    async function checkMSP() {
+      if (!selectedPropertyId) return;
+      
+      try {
+        const result = await dynamicPricingService.checkMSPStatus(selectedPropertyId);
+        
+        // Log notifications created (if any)
+        if (result.notifications_created.length > 0) {
+          console.log(`MSP Check: ${result.notifications_created.length} notification(s) created for ${result.property_name}`);
+          
+          // Optional: Show a toast notification to user
+          // You can integrate with your toast system here if you have one
+        }
+        
+        // Log coverage stats for debugging
+        if (result.coverage_stats.coverage_percentage < 100) {
+          console.warn(
+            `MSP Coverage: ${result.coverage_stats.coverage_percentage}% ` +
+            `(${result.coverage_stats.covered_days}/${result.coverage_stats.total_days} days covered)`
+          );
+        }
+      } catch (error) {
+        // Silently fail - this is a background check
+        // Don't disrupt user experience if MSP check fails
+        console.error('MSP check failed:', error);
+      }
+    }
+    
+    checkMSP();
+  }, [selectedPropertyId]); // Run when property changes
+
   const calendarData = generateCalendarData(
     currentYear, 
     currentMonth, 

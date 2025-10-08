@@ -1,10 +1,4 @@
 import { useState, useEffect, useContext } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { PropertyContext } from "../../../shared/PropertyContext";
@@ -22,7 +16,6 @@ interface MSPPeriod {
 export default function MSPManagement() {
   const { property } = useContext(PropertyContext) ?? {};
   const [periods, setPeriods] = useState<MSPPeriod[]>([]);
-  const [openCalendar, setOpenCalendar] = useState<{ [key: string]: boolean }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -238,29 +231,44 @@ export default function MSPManagement() {
     );
   };
 
-  const formatDateForDisplay = (dateStr: string) => {
+  // Convert dd/MM/yyyy to yyyy-MM-dd for native date input
+  const formatDateForInput = (dateStr: string): string => {
     if (!dateStr) return "";
-    // If already in dd/mm/yyyy format, return as is
-    if (dateStr.includes("/")) return dateStr;
-    // If it's a Date object string, format it
     try {
+      // If already in yyyy-MM-dd format, return as is
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+      
+      // Handle dd/MM/yyyy format
+      if (dateStr.includes("/")) {
+        const [day, month, year] = dateStr.split("/");
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+      
+      // Handle ISO date strings
       const date = new Date(dateStr);
-      return format(date, "dd/MM/yyyy");
+      return format(date, "yyyy-MM-dd");
     } catch {
-      return dateStr;
+      return "";
     }
   };
 
-  const handleDateSelect = (
-    date: Date | undefined,
-    periodId: string,
-    field: "fromDate" | "toDate",
-  ) => {
-    if (date) {
-      const formattedDate = format(date, "dd/MM/yyyy");
-      updatePeriod(periodId, field, formattedDate);
+  // Convert yyyy-MM-dd to dd/MM/yyyy for storage
+  const formatDateForStorage = (dateStr: string): string => {
+    if (!dateStr) return "";
+    try {
+      // If already in dd/MM/yyyy format, return as is
+      if (dateStr.includes("/")) return dateStr;
+      
+      // Handle yyyy-MM-dd format from native input
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = dateStr.split("-");
+        return `${day}/${month}/${year}`;
+      }
+      
+      return dateStr;
+    } catch {
+      return dateStr;
     }
-    setOpenCalendar((prev) => ({ ...prev, [`${periodId}-${field}`]: false }));
   };
 
   const parseDate = (dateStr: string): Date | undefined => {
@@ -392,60 +400,28 @@ export default function MSPManagement() {
                   {/* FROM Column */}
                   <div className="w-[448px]">
                     <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
-                      <div
-                        className={`w-full input-height-lg input-padding-base border-none rounded-lg text-left text-responsive-base ${
-                          period.fromDate
-                            ? "text-[#1E1E1E]"
-                            : "text-[#9CAABD]"
-                        }`}
-                      >
-                        {period.fromDate
-                          ? formatDateForDisplay(period.fromDate)
-                          : "Select date"}
-                      </div>
+                      <input
+                        type="text"
+                        value={period.fromDate}
+                        readOnly
+                        className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base bg-gray-50 text-[#1E1E1E] cursor-not-allowed"
+                        placeholder="Select date"
+                      />
                     </div>
                   </div>
 
                   {/* TO Column */}
                   <div className="w-[448px]">
                     <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
-                      <Popover
-                        open={openCalendar[`${period.id}-to`]}
-                        onOpenChange={(open) =>
-                          setOpenCalendar({
-                            ...openCalendar,
-                            [`${period.id}-to`]: open,
-                          })
-                        }
-                      >
-                        <PopoverTrigger asChild>
-                          <button
-                            className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base focus:outline-none ${
-                              period.toDate
-                                ? "text-[#1E1E1E]"
-                                : "text-[#9CAABD]"
-                            }`}
-                          >
-                            {period.toDate
-                              ? formatDateForDisplay(period.toDate)
-                              : "Select date"}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={parseDate(period.toDate)}
-                            onSelect={(date) =>
-                              handleDateSelect(date, period.id, "toDate")
-                            }
-                            disabled={(date) =>
-                              date < new Date("1900-01-01") ||
-                              date > new Date("2100-12-31")
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <input
+                        type="date"
+                        value={formatDateForInput(period.toDate)}
+                        onChange={(e) => {
+                          const formattedDate = formatDateForStorage(e.target.value);
+                          updatePeriod(period.id, "toDate", formattedDate);
+                        }}
+                        className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
+                      />
                     </div>
                   </div>
 
@@ -536,17 +512,13 @@ export default function MSPManagement() {
                         From Date
                       </label>
                       <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
-                        <div
-                          className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base ${
-                            period.fromDate
-                              ? "text-[#1E1E1E]"
-                              : "text-[#9CAABD]"
-                          }`}
-                        >
-                          {period.fromDate
-                            ? formatDateForDisplay(period.fromDate)
-                            : "Select date"}
-                        </div>
+                        <input
+                          type="text"
+                          value={period.fromDate}
+                          readOnly
+                          className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base bg-gray-50 text-[#1E1E1E] cursor-not-allowed"
+                          placeholder="Select date"
+                        />
                       </div>
                     </div>
                     <div>
@@ -554,43 +526,15 @@ export default function MSPManagement() {
                         To Date
                       </label>
                       <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
-                        <Popover
-                          open={openCalendar[`${period.id}-to`]}
-                          onOpenChange={(open) =>
-                            setOpenCalendar({
-                              ...openCalendar,
-                              [`${period.id}-to`]: open,
-                            })
-                          }
-                        >
-                          <PopoverTrigger asChild>
-                            <button
-                              className={`w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base focus:outline-none ${
-                                period.toDate
-                                  ? "text-[#1E1E1E]"
-                                  : "text-[#9CAABD]"
-                              }`}
-                            >
-                              {period.toDate
-                                ? formatDateForDisplay(period.toDate)
-                                : "Select date"}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={parseDate(period.toDate)}
-                              onSelect={(date) =>
-                                handleDateSelect(date, period.id, "toDate")
-                              }
-                              disabled={(date) =>
-                                date < new Date("1900-01-01") ||
-                                date > new Date("2100-12-31")
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <input
+                          type="date"
+                          value={formatDateForInput(period.toDate)}
+                          onChange={(e) => {
+                            const formattedDate = formatDateForStorage(e.target.value);
+                            updatePeriod(period.id, "toDate", formattedDate);
+                          }}
+                          className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
+                        />
                       </div>
                     </div>
                   </div>
