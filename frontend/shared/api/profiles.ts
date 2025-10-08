@@ -433,4 +433,99 @@ export const profilesService = {
       data,
     });
   },
+
+  // Notification endpoints
+  async getNotifications(filters?: {
+    filter?: 'all' | 'unread' | 'read' | 'new';
+    category?: string;
+    priority?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    notifications: Array<{
+      id: number;
+      user: number;
+      type: 'success' | 'warning' | 'info' | 'error';
+      type_display: string;
+      category: string;
+      category_display: string;
+      priority: string;
+      priority_display: string;
+      title: string;
+      description: string;
+      is_read: boolean;
+      is_new: boolean;
+      action_url?: string;
+      metadata?: Record<string, any>;
+      created_at: string;
+      updated_at: string;
+      read_at?: string;
+      expires_at?: string;
+      timestamp: string;
+      is_expired: boolean;
+    }>;
+    total_count: number;
+    unread_count: number;
+    new_count: number;
+    limit: number;
+    offset: number;
+  }> {
+    const params = new URLSearchParams();
+    if (filters?.filter) params.append('filter', filters.filter);
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.priority) params.append('priority', filters.priority);
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+    
+    const queryString = params.toString();
+    const url = `/profiles/notifications/${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest({
+      method: 'GET',
+      url,
+    });
+  },
+
+  async markNotificationAsRead(notificationId: number): Promise<{
+    message: string;
+    notification: any;
+  }> {
+    return apiRequest({
+      method: 'PATCH',
+      url: `/profiles/notifications/${notificationId}/`,
+      data: {
+        is_read: true,
+        is_new: false,
+      },
+    });
+  },
+
+  async deleteNotification(notificationId: number): Promise<{
+    message: string;
+  }> {
+    return apiRequest({
+      method: 'DELETE',
+      url: `/profiles/notifications/${notificationId}/`,
+    });
+  },
+
+  async markAllNotificationsAsRead(): Promise<{
+    message: string;
+    updated_count: number;
+  }> {
+    return apiRequest({
+      method: 'POST',
+      url: '/profiles/notifications/mark-all-read/',
+    });
+  },
+
+  async getNotificationUnreadCount(): Promise<{
+    unread_count: number;
+    new_count: number;
+  }> {
+    return apiRequest({
+      method: 'GET',
+      url: '/profiles/notifications/unread-count/',
+    });
+  },
 }; 

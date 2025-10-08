@@ -1,12 +1,6 @@
 import { useState, useEffect } from "react";
 import { Clock, Check, X } from "lucide-react";
-import { 
-  getNotifications, 
-  markNotificationAsRead, 
-  deleteNotification, 
-  markAllNotificationsAsRead,
-  type Notification as APINotification 
-} from "../../../shared/api/notifications";
+import { profilesService } from "../../../shared/api/profiles";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 
 interface Notification {
@@ -43,13 +37,13 @@ export default function Notifications() {
         }
         
         // Then fetch all notifications
-        const response = await getNotifications({ 
+        const response = await profilesService.getNotifications({ 
           filter: currentFilter === 'unread' ? 'unread' : 'all',
           limit: 100 
         });
         
         // Map API notifications to local format
-        const mappedNotifications: Notification[] = response.notifications.map((n: APINotification) => ({
+        const mappedNotifications: Notification[] = response.notifications.map((n) => ({
           id: n.id,
           type: n.type,
           title: n.title,
@@ -82,7 +76,7 @@ export default function Notifications() {
 
   const markAsRead = async (id: number) => {
     try {
-      await markNotificationAsRead(id);
+      await profilesService.markNotificationAsRead(id);
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true, isNew: false } : n)),
       );
@@ -93,7 +87,7 @@ export default function Notifications() {
 
   const dismissNotification = async (id: number) => {
     try {
-      await deleteNotification(id);
+      await profilesService.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (error) {
       console.error('Failed to delete notification:', error);
@@ -102,7 +96,7 @@ export default function Notifications() {
 
   const markAllAsRead = async () => {
     try {
-      await markAllNotificationsAsRead();
+      await profilesService.markAllNotificationsAsRead();
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, isRead: true, isNew: false })),
       );
