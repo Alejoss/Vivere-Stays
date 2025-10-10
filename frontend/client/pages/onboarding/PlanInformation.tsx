@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export default function PlanInformation() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const FEATURES: Array<{ name: string; start: boolean; scale: boolean; pro: boolean; description: string }>= [
     {
       name: "Dynamic Pricing tool",
@@ -117,9 +119,9 @@ export default function PlanInformation() {
       <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] w-full max-w-[960px] px-[28px] sm:px-[40px] py-[30px]">
         {/* Title and Description */}
         <div className="text-center mb-6">
-          <h1 className="text-[28px] sm:text-[34px] font-bold text-[#1E1E1E] mb-2">Plan information</h1>
+          <h1 className="text-[28px] sm:text-[34px] font-bold text-[#1E1E1E] mb-2">{t('onboarding:planInformation.title')}</h1>
           <p className="text-[16px] sm:text-[18px] text-[#485567]">
-            Learn more about our plans and what is included in each.
+            {t('onboarding:planInformation.subtitle')}
           </p>
         </div>
 
@@ -130,17 +132,17 @@ export default function PlanInformation() {
             <div className="grid grid-cols-4 items-end">
               <div></div>
               <div className="text-center py-3">
-                <div className="text-[16px] font-semibold text-[#1E1E1E]">Start</div>
+                <div className="text-[16px] font-semibold text-[#1E1E1E]">{t('onboarding:planInformation.startPlan')}</div>
                 <div className="mt-1 inline-block text-[11px] bg-[#CEF4FC] text-[#294758] px-2 py-1 rounded-full">
-                  recommended for first time users
+                  {t('onboarding:planInformation.recommendedBadge')}
                 </div>
               </div>
               <div className="text-center py-3">
-                <div className="text-[16px] font-semibold text-[#1E1E1E]">Scale</div>
+                <div className="text-[16px] font-semibold text-[#1E1E1E]">{t('onboarding:planInformation.scalePlan')}</div>
               </div>
               <div className="text-center py-3">
-                <div className="text-[16px] font-semibold text-[#1E1E1E]">Pro</div>
-                <div className="mt-1 text-[12px] text-[#64748B]">% on revenue</div>
+                <div className="text-[16px] font-semibold text-[#1E1E1E]">{t('onboarding:planInformation.proPlan')}</div>
+                <div className="mt-1 text-[12px] text-[#64748B]">{t('onboarding:planInformation.percentOnRevenue')}</div>
               </div>
             </div>
 
@@ -205,7 +207,7 @@ export default function PlanInformation() {
             onClick={() => navigate("/select-plan")}
             className="flex items-center gap-2 px-[36px] py-[12px] rounded-[10px] text-[14px] font-medium text-[#64748B] border border-[#E2E8F0] bg-white hover:bg-gray-50 transition-colors"
           >
-            Back to plans
+            {t('onboarding:planInformation.backButton')}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../shared/api/client";
 import { useCurrentUser } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
@@ -10,6 +11,7 @@ import "../../styles/responsive-utilities.css";
 
 // Success Overlay Component
 const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
+  const { t } = useTranslation(['auth', 'common']);
   return (
     <div className="absolute inset-0 bg-[#F6F9FD] flex items-center justify-center z-50">
       {/* Logo */}
@@ -43,10 +45,10 @@ const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
 
         {/* Success Text */}
         <h1 className="text-responsive-2xl font-bold text-black mb-4">
-          Email Verified Successfully!
+          {t('auth:verification.successTitle')}
         </h1>
         <p className="text-responsive-lg text-[#16B257] mb-6">
-          Your email has been verified. You can now proceed to set up your hotel details.
+          {t('auth:verification.successMessage')}
         </p>
         
         {/* Manual Continue Button */}
@@ -54,7 +56,7 @@ const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
           onClick={onComplete}
           className="btn-padding-sm bg-[#16B257] text-white font-medium rounded-[10px] hover:bg-[#14A04A] transition-colors"
         >
-          Continue
+          {t('common:buttons.continue')}
         </button>
       </div>
     </div>
@@ -64,6 +66,7 @@ const SuccessOverlay = ({ onComplete }: { onComplete: () => void }) => {
 export default function VerifyEmail() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation(['auth', 'errors', 'common']);
   const { user } = useCurrentUser();
   const [verificationCode, setVerificationCode] = useState("");
   const [resendTimer, setResendTimer] = useState(60);
@@ -141,10 +144,17 @@ export default function VerifyEmail() {
         // Success - reset timer
         setResendTimer(60);
         setCanResend(false);
-        alert("Verification code resent!");
+        toast({
+          title: t('common:messages.success'),
+          description: t('onboarding:verifyEmail.codeResent', { defaultValue: 'Verification code resent!' }),
+        });
       } catch (error) {
         console.error('Resend error:', error);
-        alert("Failed to resend verification code. Please try again.");
+        toast({
+          title: t('common:messages.error'),
+          description: t('onboarding:verifyEmail.resendFailed', { defaultValue: 'Failed to resend verification code. Please try again.' }),
+          variant: "destructive",
+        });
       }
     }
   };
@@ -156,14 +166,14 @@ export default function VerifyEmail() {
       });
       
       toast({
-        title: "Success",
-        description: "Support request sent successfully! Our team will contact you soon.",
+        title: t('common:messages.success'),
+        description: t('common:messages.supportRequestSent'),
       });
     } catch (error: any) {
       console.error("Error sending support request:", error);
       toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to send support request. Please try again.",
+        title: t('common:messages.error'),
+        description: error.response?.data?.error || t('common:messages.supportRequestFailed'),
         variant: "destructive",
       });
       throw error; // Re-throw to let the modal handle the error state
@@ -218,11 +228,10 @@ export default function VerifyEmail() {
           {/* Header */}
           <div className="text-center mt-16 container-margin-sm">
             <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
-              Verify Your Email
+              {t('auth:verification.title')}
             </h1>
             <p className="text-responsive-lg text-[#485567] leading-normal max-w-md mx-auto">
-              We've sent a 5-digit verification code to your email address.
-              Please enter it below to continue.
+              {t('auth:verification.subtitle')}
             </p>
           </div>
 
@@ -230,14 +239,14 @@ export default function VerifyEmail() {
             {/* Verification Code Input */}
             <div className="space-y-[14px]">
               <label className="form-label">
-                Verification Code
+                {t('auth:verification.codeLabel')}
               </label>
               <div className="relative">
                 <input
                   type="text"
                   value={verificationCode}
                   onChange={handleCodeChange}
-                  placeholder="Enter 5-digit code"
+                  placeholder={t('auth:verification.codePlaceholder')}
                   className={`w-full h-[73px] px-8 py-5 border rounded-[8px] bg-[#F8FAFC] text-responsive-2xl text-center placeholder:text-[#9BA9BC] focus:outline-none transition-colors font-mono tracking-widest ${
                     verificationCode.length === 5
                       ? "border-[#485567] text-[#1E1E1E]"
@@ -289,11 +298,11 @@ export default function VerifyEmail() {
                       fill="white"
                     />
                   </svg>
-                  Verified!
+                  {t('auth:verification.verified')}
                 </>
               ) : (
                 <>
-                  Verify Email
+                  {t('auth:verification.verifyButton')}
                   <svg
                     width="21"
                     height="20"
@@ -316,7 +325,7 @@ export default function VerifyEmail() {
             {/* Didn't receive code section */}
             <div className="text-center space-y-5">
               <p className="text-responsive-base text-[#294859]">
-                Didn't receive the code?
+                {t('auth:verification.didntReceive')}
               </p>
 
               {/* Resend Button */}
@@ -357,7 +366,7 @@ export default function VerifyEmail() {
                     fill="#9CAABD"
                   />
                 </svg>
-                {canResend ? "Resend Code" : `Resend in ${resendTimer}s`}
+                {canResend ? t('auth:verification.resendCode') : `${t('auth:verification.resendIn')} ${resendTimer}s`}
               </button>
             </div>
 
@@ -368,7 +377,7 @@ export default function VerifyEmail() {
                 onClick={() => setIsSupportModalOpen(true)}
                 className="w-full text-responsive-base text-[#294859] hover:underline transition-colors"
               >
-                Need help? Contact Support
+                {t('auth:verification.contactSupport')}
               </button>
             </div>
           </div>

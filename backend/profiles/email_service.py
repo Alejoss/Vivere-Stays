@@ -49,6 +49,44 @@ class PostmarkEmailService:
             "company_website": settings.COMPANY_WEBSITE,
             "unsubscribe_url": settings.COMPANY_UNSUBSCRIBE_URL
         }
+    
+    def get_email_subject(self, template_key: str, language: str = 'en') -> str:
+        """
+        Get localized email subject based on template and language.
+        
+        Args:
+            template_key: Template identifier (e.g., 'verification', 'welcome', 'support')
+            language: Language code ('en', 'es', 'de')
+        
+        Returns:
+            str: Localized email subject
+        """
+        subjects = {
+            'verification': {
+                'en': 'Verify Your Email - Vivere Stays',
+                'es': 'Verifica tu Correo Electrónico - Vivere Stays',
+                'de': 'Verifizieren Sie Ihre E-Mail - Vivere Stays',
+            },
+            'welcome': {
+                'en': 'Welcome to Vivere Stays!',
+                'es': '¡Bienvenido a Vivere Stays!',
+                'de': 'Willkommen bei Vivere Stays!',
+            },
+            'support_confirmation': {
+                'en': 'Support Request Received - Vivere Stays',
+                'es': 'Solicitud de Soporte Recibida - Vivere Stays',
+                'de': 'Support-Anfrage Erhalten - Vivere Stays',
+            },
+            'contact_sales': {
+                'en': 'Sales Request Received - Vivere Stays',
+                'es': 'Solicitud de Ventas Recibida - Vivere Stays',
+                'de': 'Vertriebsanfrage Erhalten - Vivere Stays',
+            },
+        }
+        
+        # Get subject for template and language, fallback to English
+        template_subjects = subjects.get(template_key, subjects['verification'])
+        return template_subjects.get(language, template_subjects['en'])
         
     def generate_verification_code(self) -> str:
         """
@@ -171,19 +209,20 @@ class PostmarkEmailService:
         except EmailVerificationCode.DoesNotExist:
             pass
     
-    def send_verification_email(self, email: str, user_name: str, user: User = None) -> Tuple[bool, str, str]:
+    def send_verification_email(self, email: str, user_name: str, user: User = None, language: str = 'en') -> Tuple[bool, str, str]:
         """
-        Send email verification email using Postmark template.
+        Send email verification email using language-specific Django template.
         
         Args:
             email: Recipient email address
             user_name: User's first name
             user: Optional User object (for registered users)
+            language: Language code ('en', 'es', 'de')
             
         Returns:
             Tuple[bool, str, str]: (success, message_id_or_error, verification_code)
         """
-        logger.info(f"Starting send_verification_email for {email}")
+        logger.info(f"Starting send_verification_email for {email} in language: {language}")
         
         try:
             # Generate and store verification code
@@ -260,19 +299,20 @@ class PostmarkEmailService:
             logger.error(f"Error during code verification for {email}: {str(e)}")
             return False, "An error occurred during verification. Please try again."
     
-    def send_welcome_email(self, email: str, user_name: str, next_step_url: str) -> Tuple[bool, str]:
+    def send_welcome_email(self, email: str, user_name: str, next_step_url: str, language: str = 'en') -> Tuple[bool, str]:
         """
-        Send welcome email after successful verification using Postmark template.
+        Send welcome email after successful verification using language-specific Django template.
         
         Args:
             email: Recipient email address
             user_name: User's first name
             next_step_url: URL for next onboarding step
+            language: Language code ('en', 'es', 'de')
             
         Returns:
             Tuple[bool, str]: (success, message_id_or_error)
         """
-        logger.info(f"Starting send_welcome_email for {email}")
+        logger.info(f"Starting send_welcome_email for {email} in language: {language}")
         
         try:
             template_data = {
@@ -312,9 +352,10 @@ class PostmarkEmailService:
         description_excerpt: str,
         support_email: str,
         portal_url: str,
+        language: str = 'en',
     ) -> Tuple[bool, str]:
         """
-        Send support confirmation email to the user using Postmark template.
+        Send support confirmation email to the user using language-specific Django template.
         
         Args:
             to_email: Recipient email address
@@ -324,11 +365,12 @@ class PostmarkEmailService:
             description_excerpt: Brief description of the issue
             support_email: Support team email address
             portal_url: URL to the support portal
+            language: Language code ('en', 'es', 'de')
             
         Returns:
             Tuple[bool, str]: (success, message_id_or_error)
         """
-        logger.info(f"Starting send_support_confirmation_email to {to_email}")
+        logger.info(f"Starting send_support_confirmation_email to {to_email} in language: {language}")
         
         try:
             template_data = {
@@ -370,10 +412,14 @@ class PostmarkEmailService:
         property_id: str | None,
         message: str | None,
         to_email: str = "analytics@viverestays.com",
+        language: str = 'en',
     ) -> Tuple[bool, str]:
         """
-        Send onboarding PMS support email to analytics using Postmark template.
-        Uses the existing 'support-confirmation' template alias.
+        Send onboarding PMS support email to analytics using language-specific Django template.
+        Uses the existing 'support-confirmation' template.
+        
+        Args:
+            language: Language code ('en', 'es', 'de') - defaults to 'en'
         """
         try:
             # Build description excerpt for the template (summary without message)
@@ -425,10 +471,14 @@ class PostmarkEmailService:
         user_id: int,
         message: str | None,
         to_email: str = "analytics@viverestays.com",
+        language: str = 'en',
     ) -> Tuple[bool, str]:
         """
-        Send onboarding email verification support email to analytics using Postmark template.
-        Uses the existing 'support-confirmation' template alias.
+        Send onboarding email verification support email to analytics using language-specific Django template.
+        Uses the existing 'support-confirmation' template.
+        
+        Args:
+            language: Language code ('en', 'es', 'de') - defaults to 'en'
         """
         try:
             # Build description excerpt for the template (summary without message)
@@ -478,10 +528,14 @@ class PostmarkEmailService:
         message: str | None,
         property_id: str | None = None,
         to_email: str = "sales@viverestays.com",
+        language: str = 'en',
     ) -> Tuple[bool, str]:
         """
-        Send onboarding contact sales email to sales team using dedicated contact sales template.
-        Uses the 'contact-sales' template alias.
+        Send onboarding contact sales email to sales team using language-specific Django template.
+        Uses the 'contact-sales' template.
+        
+        Args:
+            language: Language code ('en', 'es', 'de') - defaults to 'en'
         """
         try:
             template_data = {

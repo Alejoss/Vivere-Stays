@@ -38,6 +38,7 @@ interface ProfileCompletionData {
 
 export default function ProfileCompletion() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const queryClient = useQueryClient();
   
   // Load saved form data from localStorage on component mount
@@ -122,9 +123,9 @@ export default function ProfileCompletion() {
   const validateField = (field: string, value: string) => {
     switch (field) {
       case "firstName":
-        return value.trim() === "" ? "First name is required" : "";
+        return value.trim() === "" ? t('errors:FIRST_NAME_REQUIRED') : "";
       case "lastName":
-        return value.trim() === "" ? "Last name is required" : "";
+        return value.trim() === "" ? t('errors:LAST_NAME_REQUIRED') : "";
       case "dni":
         return ""; // DNI is optional
       case "phoneNumber":
@@ -196,7 +197,7 @@ export default function ProfileCompletion() {
         await updateOnboardingMutation.mutateAsync('hotel_information');
       } catch (error: any) {
         console.error("Profile completion error:", error);
-        setFormError("An error occurred while completing your profile. Please try again.");
+        setFormError(t('errors:SERVER_ERROR'));
       }
     }
   };
@@ -226,10 +227,10 @@ export default function ProfileCompletion() {
           {/* Progress Header */}
           <div className="flex justify-between items-center mb-10">
             <span className="text-[16px] text-black font-normal">
-              Complete Your Profile
+              {t('onboarding:profileCompletion.title')}
             </span>
             <span className="text-[16px] text-black font-normal">
-              Almost there!
+              {t('onboarding:profileCompletion.almostThere')}
             </span>
           </div>
 
@@ -266,10 +267,10 @@ export default function ProfileCompletion() {
             {/* Header */}
             <div className="text-center mt-16 mb-12">
               <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
-                Complete Your Profile
+                {t('onboarding:profileCompletion.title')}
               </h1>
               <p className="text-[18px] text-[#485567]">
-                Please provide your additional information to continue
+                {t('onboarding:profileCompletion.subtitle')}
               </p>
             </div>
 
@@ -289,7 +290,7 @@ export default function ProfileCompletion() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-[14px]">
                   <label className="text-[16px] text-[#485567] font-medium">
-                    First Name*
+                    {t('auth:register.firstNameLabel')}
                   </label>
                   <div>
                     <input
@@ -297,7 +298,7 @@ export default function ProfileCompletion() {
                       value={formData.firstName}
                       onChange={handleInputChange("firstName")}
                       onBlur={handleBlur("firstName")}
-                      placeholder="John"
+                      placeholder={t('auth:register.firstNamePlaceholder')}
                       className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.firstName && touched.firstName
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -313,7 +314,7 @@ export default function ProfileCompletion() {
                 </div>
                 <div className="space-y-[14px]">
                   <label className="text-[16px] text-[#485567] font-medium">
-                    Last Name*
+                    {t('auth:register.lastNameLabel')}
                   </label>
                   <div>
                     <input
@@ -321,7 +322,7 @@ export default function ProfileCompletion() {
                       value={formData.lastName}
                       onChange={handleInputChange("lastName")}
                       onBlur={handleBlur("lastName")}
-                      placeholder="Doe"
+                      placeholder={t('auth:register.lastNamePlaceholder')}
                       className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.lastName && touched.lastName
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -357,7 +358,7 @@ export default function ProfileCompletion() {
                     />
                   </svg>
                   <span className="text-[16px] text-[#485567] font-medium">
-                    Email Address
+                    {t('auth:register.emailLabel')}
                   </span>
                 </div>
                 <div>
@@ -368,7 +369,7 @@ export default function ProfileCompletion() {
                     className="w-full h-[60px] px-4 py-[17px] border border-[#D7DFE8] rounded-[10px] text-[16px] text-[#9CAABD] bg-gray-50 cursor-not-allowed"
                   />
                   <div className="mt-1 text-[12px] text-[#9CAABD]">
-                    Email address from your Google account (cannot be changed)
+                    {t('onboarding:profileCompletion.emailReadonly')}
                   </div>
                 </div>
               </div>
@@ -377,14 +378,14 @@ export default function ProfileCompletion() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-[14px]">
                   <label className="text-[16px] text-[#485567] font-medium">
-                    DNI
+                    {t('auth:register.dniLabel')}
                   </label>
                   <input
                     type="text"
                     value={formData.dni}
                     onChange={handleInputChange("dni")}
                     onBlur={handleBlur("dni")}
-                    placeholder="12345678Z"
+                    placeholder={t('auth:register.dniPlaceholder')}
                     className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       errors.dni && touched.dni
                         ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -397,14 +398,14 @@ export default function ProfileCompletion() {
                 </div>
                 <div className="space-y-[14px]">
                   <label className="text-[16px] text-[#485567] font-medium">
-                    Phone Number
+                    {t('auth:register.phoneLabel')}
                   </label>
                   <input
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={handleInputChange("phoneNumber")}
                     onBlur={handleBlur("phoneNumber")}
-                    placeholder="+34 712 52 86 49"
+                    placeholder={t('auth:register.phonePlaceholder')}
                     className={`w-full h-[60px] px-4 py-[17px] border rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       errors.phoneNumber && touched.phoneNumber
                         ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -428,10 +429,10 @@ export default function ProfileCompletion() {
                 {updateProfileMutation.isPending || updateOnboardingMutation.isPending ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Saving...
+                    {t('common:messages.saving')}
                   </>
                 ) : (
-                  <>Continue</>
+                  <>{t('common:buttons.continue')}</>
                 )}
               </button>
             </form>

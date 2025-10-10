@@ -667,10 +667,13 @@ class RegisterView(APIView):
                 # Send verification email immediately after registration
                 try:
                     from .email_service import email_service
+                    # Get language from request header for email localization
+                    language = request.META.get('HTTP_X_LANGUAGE', 'en')
                     success, message_id, verification_code = email_service.send_verification_email(
                         email=user.email,
                         user_name=user.first_name,
-                        user=user  # Pass the newly created user
+                        user=user,  # Pass the newly created user
+                        language=language
                     )
                     
                     if success:
@@ -1131,13 +1134,17 @@ class SendVerificationEmailView(APIView):
             # Import email service
             from .email_service import email_service
             
+            # Get language from request header for email localization
+            language = request.META.get('HTTP_X_LANGUAGE', 'en')
+            
             # Send verification email
             # Pass user object if authenticated, None otherwise
             user_obj = request.user if request.user.is_authenticated else None
             success, message_id_or_error, verification_code = email_service.send_verification_email(
                 email=email,
                 user_name=first_name,
-                user=user_obj
+                user=user_obj,
+                language=language
             )
             
             if success:
@@ -1333,10 +1340,14 @@ class TestEmailView(APIView):
             # Import email service
             from .email_service import email_service
             
+            # Get language from request header for email localization
+            language = request.META.get('HTTP_X_LANGUAGE', 'en')
+            
             # Send verification email
             success, message_id_or_error, verification_code = email_service.send_verification_email(
                 email=email,
-                user_name=first_name
+                user_name=first_name,
+                language=language
             )
             
             if success:
@@ -1462,6 +1473,8 @@ class SupportTicketView(APIView):
                 # Send notification email to analytics mailbox using template (non-blocking)
                 try:
                     from .email_service import email_service
+                    # Get language from request header for email localization
+                    language = request.META.get('HTTP_X_LANGUAGE', 'en')
                     issue_type_display = support_ticket.get_issue_type_display() if hasattr(support_ticket, 'get_issue_type_display') else data.get('issue_type')
                     
                     # Build description excerpt for the template
@@ -1487,6 +1500,7 @@ class SupportTicketView(APIView):
                         description_excerpt=description_excerpt,
                         support_email="analytics@viverestays.com",
                         portal_url=getattr(settings, 'FRONTEND_URL', '').rstrip('/') + '/support',
+                        language=language
                     )
                     
                     if success:
@@ -1499,6 +1513,8 @@ class SupportTicketView(APIView):
                 # Send confirmation email to the user (non-blocking)
                 try:
                     from .email_service import email_service
+                    # Get language from request header for email localization
+                    language = request.META.get('HTTP_X_LANGUAGE', 'en')
                     user_email = request.user.email
                     user_name = request.user.first_name or request.user.username
                     issue_type_display = support_ticket.get_issue_type_display() if hasattr(support_ticket, 'get_issue_type_display') else data.get('issue_type')
@@ -1514,6 +1530,7 @@ class SupportTicketView(APIView):
                         description_excerpt=description_excerpt,
                         support_email=getattr(settings, 'SUPPORT_EMAIL', 'support@viverestays.com'),
                         portal_url=getattr(settings, 'FRONTEND_URL', '').rstrip('/') + '/support',
+                        language=language
                     )
                 except Exception as user_email_exc:
                     logger.error(f"Failed to send support confirmation email for ticket {support_ticket.id}: {user_email_exc}", exc_info=True)
@@ -1594,6 +1611,8 @@ class OnboardingPMSSupportView(APIView):
             # Send email to analytics team
             try:
                 from .email_service import email_service
+                # Get language from request header for email localization
+                language = request.META.get('HTTP_X_LANGUAGE', 'en')
                 
                 # Use template-based email to ensure Postmark template renders
                 success, message_id_or_error = email_service.send_onboarding_pms_support_email(
@@ -1603,6 +1622,7 @@ class OnboardingPMSSupportView(APIView):
                     property_id=property_id,
                     message=message,
                     to_email="analytics@viverestays.com",
+                    language=language
                 )
                 if success:
                     logger.info(f"PMS support request email sent for user {user.username}")
@@ -1644,6 +1664,8 @@ class OnboardingEmailVerificationSupportView(APIView):
             # Send email to analytics team
             try:
                 from .email_service import email_service
+                # Get language from request header for email localization
+                language = request.META.get('HTTP_X_LANGUAGE', 'en')
                 
                 # Use template-based email to ensure Postmark template renders
                 success, message_id_or_error = email_service.send_onboarding_email_verification_support_email(
@@ -1652,6 +1674,7 @@ class OnboardingEmailVerificationSupportView(APIView):
                     user_id=user.id,
                     message=message,
                     to_email="analytics@viverestays.com",
+                    language=language
                 )
                 if success:
                     logger.info(f"Email verification support request email sent for user {user.username}")
@@ -1694,6 +1717,8 @@ class OnboardingContactSalesView(APIView):
             # Send email to sales team
             try:
                 from .email_service import email_service
+                # Get language from request header for email localization
+                language = request.META.get('HTTP_X_LANGUAGE', 'en')
                 
                 # Use template-based email to ensure Postmark template renders
                 success, message_id_or_error = email_service.send_onboarding_contact_sales_email(
@@ -1703,6 +1728,7 @@ class OnboardingContactSalesView(APIView):
                     message=message,
                     property_id=property_id,
                     to_email="sales@viverestays.com",
+                    language=language
                 )
                 if success:
                     logger.info(f"Contact sales request email sent for user {user.username}")

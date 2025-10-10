@@ -10,7 +10,4 @@ export { profilesService } from './profiles';
 export { analyticsService } from './analytics';
 
 // Export React Query hooks
-export * from './hooks';
-
-// Export the old api.ts for backward compatibility
-export { apiService, tokenManager } from '../api'; 
+export * from './hooks'; 

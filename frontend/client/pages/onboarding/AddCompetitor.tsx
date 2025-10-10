@@ -14,6 +14,7 @@ interface CompetitorHotel {
 
 export default function AddCompetitor() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   const [competitorHotels, setCompetitorHotels] = useState<CompetitorHotel[]>([
     { id: "1", name: "" },
@@ -351,10 +352,10 @@ export default function AddCompetitor() {
         {/* Title and Description */}
         <div className="text-center container-margin-lg">
           <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
-            Add Competitor Hotels
+            {t('onboarding:addCompetitor.title')}
           </h1>
           <p className="text-responsive-lg text-[#485567]">
-            Add names of competitor hotels you want to monitor and compare.
+            {t('onboarding:addCompetitor.subtitle')}
           </p>
         </div>
 
@@ -378,13 +379,11 @@ export default function AddCompetitor() {
                 />
               </svg>
               <span className="text-responsive-lg font-semibold text-[#1E1E1E]">
-                AI-Powered Recommendations
+                {t('onboarding:addCompetitor.aiRecommendationsTitle')}
               </span>
             </div>
             <p className="text-responsive-sm text-[#1E1E1E] leading-normal">
-              We recommend competitors using AI based on your property location and characteristics. 
-              However, feel free to add and remove competitors so that this list matches your actual competition. 
-              You will be able to perfect it later.
+              {t('onboarding:addCompetitor.aiRecommendationsText')}
             </p>
           </div>
 
@@ -392,12 +391,12 @@ export default function AddCompetitor() {
           <div className="space-y-[14px]">
             <div className="flex items-center gap-2">
               <span className="text-responsive-base font-bold text-[#485567]">
-                Competitor Hotel Names
+                {t('onboarding:addCompetitor.competitorNamesLabel')}
               </span>
               {isLoadingNearbyHotels && (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#294758]"></div>
-                  <span className="text-responsive-xs text-[#485567]">Finding nearby hotels...</span>
+                  <span className="text-responsive-xs text-[#485567]">{t('onboarding:addCompetitor.findingNearby')}</span>
                 </div>
               )}
             </div>
@@ -426,7 +425,7 @@ export default function AddCompetitor() {
                         onChange={(e) =>
                           updateCompetitorHotel(hotel.id, e.target.value)
                         }
-                        placeholder="Hotel Name (e.g., Hotel Barcelona)"
+                        placeholder={t('onboarding:addCompetitor.namePlaceholder')}
                         className={`w-full input-height-lg input-padding-base border-none rounded-lg text-responsive-base focus:outline-none ${
                           hotel.name
                             ? "text-[#1E1E1E]"
@@ -478,7 +477,7 @@ export default function AddCompetitor() {
                   strokeLinejoin="round"
                 />
               </svg>
-              Add another competitor hotel
+              {t('onboarding:addCompetitor.addAnother')}
             </button>
           </div>
 
@@ -487,14 +486,14 @@ export default function AddCompetitor() {
             <div className="space-y-[10px]">
               <div className="flex items-center gap-[6px]">
                 <span className="text-responsive-lg text-[#64748B]">
-                  Tips for choosing competitors:
+                  {t('onboarding:addCompetitor.tipsTitle')}
                 </span>
               </div>
               <div className="text-responsive-sm text-[#64748B] leading-normal space-y-1">
-                <div>• Choose hotels in the same area</div>
-                <div>• Similar type and size of property</div>
-                <div>• Similar amenities and features</div>
-                <div>• Add 3–5 competitor hotels for best results</div>
+                <div>• {t('onboarding:addCompetitor.tip1')}</div>
+                <div>• {t('onboarding:addCompetitor.tip2')}</div>
+                <div>• {t('onboarding:addCompetitor.tip3')}</div>
+                <div>• {t('onboarding:addCompetitor.tip4')}</div>
               </div>
             </div>
           </div>
@@ -511,10 +510,10 @@ export default function AddCompetitor() {
               {isLoading || createCompetitorCandidates.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Saving...
+                  {t('common:messages.saving')}
                 </>
               ) : (
-                <>Continue</>
+                <>{t('common:buttons.continue')}</>
               )}
             </button>
           </div>

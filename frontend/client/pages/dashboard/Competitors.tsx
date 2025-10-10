@@ -14,12 +14,14 @@ import {
   X,
 } from "lucide-react";
 import { useState, useEffect, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService, CompetitorCandidate, PropertyCompetitor } from "../../../shared/api/dynamic";
 import { toast } from "../../hooks/use-toast";
 import "../../styles/responsive-utilities.css";
 
 export default function Competitors() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext)!;
   const [selectedAggregation, setSelectedAggregation] = useState("Minimum");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -129,7 +131,7 @@ export default function Competitors() {
     if (!property) {
       console.log('🔧 FRONTEND DEBUG: No property selected');
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: "No property selected. Please select a property first.",
         variant: "destructive",
       });
@@ -142,8 +144,8 @@ export default function Competitors() {
     if (!backendValue) {
       console.log('🔧 FRONTEND DEBUG: Invalid aggregation method');
       toast({
-        title: "Error",
-        description: "Invalid aggregation method selected.",
+        title: t('common:messages.error'),
+        description: t('dashboard:competitors.invalidAggregation', { defaultValue: 'Invalid aggregation method selected' }),
         variant: "destructive",
       });
       return;
@@ -165,7 +167,7 @@ export default function Competitors() {
       setCurrentCalculation(backendValue);
       
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: `Competitor price aggregation updated to ${newAggregation}`,
       });
     } catch (error: any) {
@@ -178,7 +180,7 @@ export default function Competitors() {
         method: error?.config?.method
       });
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: error?.response?.data?.message || "Failed to update competitor price aggregation",
         variant: "destructive",
       });
@@ -200,7 +202,7 @@ export default function Competitors() {
     } catch (error: any) {
       console.error("Error fetching competitor candidates:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to fetch competitor candidates";
-      toast({ title: "Error", description: backendMsg, variant: "destructive" });
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: "destructive" });
     } finally {
       setIsLoadingCandidates(false);
     }
@@ -218,7 +220,7 @@ export default function Competitors() {
     } catch (error: any) {
       console.error("Error fetching processed competitors:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to fetch processed competitors";
-      toast({ title: "Error", description: backendMsg, variant: "destructive" });
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: "destructive" });
     } finally {
       setIsLoadingProcessed(false);
     }
@@ -228,7 +230,7 @@ export default function Competitors() {
   const handleAISuggestions = async () => {
     if (!property) {
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: "No property selected. Please select a property first.",
         variant: "destructive",
       });
@@ -249,8 +251,8 @@ export default function Competitors() {
       // Check if we have required location data
       if (!locationData.address || !locationData.city) {
         toast({
-          title: "Error",
-          description: "Property address and city are required for AI suggestions. Please update your property information.",
+          title: t('common:messages.error'),
+          description: t('dashboard:competitors.addressRequired', { defaultValue: 'Property address and city are required for AI suggestions. Please update your property information.' }),
           variant: "destructive",
         });
         return;
@@ -305,7 +307,7 @@ export default function Competitors() {
           
           if (totalCreated > 0 && totalErrors === 0) {
             toast({
-              title: "Success",
+              title: t('common:messages.success'),
               description: `AI suggested ${totalCreated} new competitor(s) based on your property location`,
             });
           } else if (totalCreated > 0 && totalErrors > 0) {
@@ -320,7 +322,7 @@ export default function Competitors() {
             });
           } else {
             toast({
-              title: "Success",
+              title: t('common:messages.success'),
               description: `AI suggested ${cleanedHotels.length} competitor(s) based on your property location`,
             });
           }
@@ -341,7 +343,7 @@ export default function Competitors() {
     } catch (error: any) {
       console.error("❌ Error getting AI suggestions:", error);
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: error?.response?.data?.error || "Failed to get AI suggestions",
         variant: "destructive",
       });
@@ -429,13 +431,13 @@ export default function Competitors() {
       );
       
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: `Competitor ${newValue ? 'set to' : 'removed from'} follow-only mode`,
       });
     } catch (error: any) {
       console.error("Error updating only_follow:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to update competitor follow status";
-      toast({ title: "Error", description: backendMsg, variant: "destructive" });
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: "destructive" });
     }
   };
 
@@ -452,13 +454,13 @@ export default function Competitors() {
       );
       
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: `Competitor candidate "${competitorName}" deleted successfully`,
       });
     } catch (error: any) {
       console.error("Error deleting competitor candidate:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to delete competitor candidate";
-      toast({ title: "Error", description: backendMsg, variant: "destructive" });
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: "destructive" });
     }
   };
 
@@ -475,13 +477,13 @@ export default function Competitors() {
       );
       
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: `Competitor "${competitorName}" deleted successfully`,
       });
     } catch (error: any) {
       console.error("Error deleting competitor:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to delete competitor";
-      toast({ title: "Error", description: backendMsg, variant: "destructive" });
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: "destructive" });
     }
   };
 
@@ -492,8 +494,8 @@ export default function Competitors() {
     // Validate input
     if (!newCompetitorName.trim()) {
       toast({
-        title: "Error",
-        description: "Competitor name is required",
+        title: t('common:messages.error'),
+        description: t('dashboard:competitors.nameRequired', { defaultValue: 'Competitor name is required' }),
         variant: "destructive",
       });
       return;
@@ -533,13 +535,13 @@ export default function Competitors() {
       await fetchProcessedCompetitors();
 
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: `Competitor "${newCompetitorName.trim()}" added successfully`,
       });
     } catch (error: any) {
       console.error("Error adding competitor:", error);
       const backendMsg = error?.response?.data?.message || error?.message || "Failed to add competitor";
-      toast({ title: "Error", description: backendMsg, variant: "destructive" });
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: "destructive" });
     } finally {
       setIsCreatingCompetitor(false);
     }
@@ -585,7 +587,7 @@ export default function Competitors() {
         );
 
         toast({
-          title: "Success",
+          title: t('common:messages.success'),
           description: "Competitor candidate updated successfully",
         });
       } else {
@@ -609,14 +611,14 @@ export default function Competitors() {
         );
 
         toast({
-          title: "Success",
+          title: t('common:messages.success'),
           description: "Competitor updated successfully",
         });
       }
     } catch (error: any) {
       console.error("Error updating competitor:", error);
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: error?.response?.data?.message || "Failed to update competitor",
         variant: "destructive",
       });
@@ -726,7 +728,7 @@ export default function Competitors() {
           });
 
           toast({
-            title: "Success",
+            title: t('common:messages.success'),
             description: "Competitor candidate updated successfully",
           });
         } else {
@@ -766,7 +768,7 @@ export default function Competitors() {
           });
 
           toast({
-            title: "Success",
+            title: t('common:messages.success'),
             description: "Competitor updated successfully",
           });
         }
@@ -788,7 +790,7 @@ export default function Competitors() {
         });
         
         toast({
-          title: "Error",
+          title: t('common:messages.error'),
           description: error?.response?.data?.message || "Failed to update competitor",
           variant: "destructive",
         });
@@ -809,7 +811,7 @@ export default function Competitors() {
             {/* Name Field */}
             <div className="form-field">
               <label className="form-label">
-                Competitor Name
+                {t('dashboard:competitors.competitorName')}
               </label>
               <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                 <input
@@ -835,7 +837,7 @@ export default function Competitors() {
                   }}
                   onBlur={() => handleFieldBlur('name', currentName || '')}
                   className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                  placeholder="Enter competitor name"
+                  placeholder={t('dashboard:competitors.competitorNamePlaceholder', { defaultValue: 'Enter competitor name' })}
                 />
               </div>
             </div>
@@ -843,7 +845,7 @@ export default function Competitors() {
             {/* URL Field */}
             <div className="form-field">
               <label className="form-label">
-                Link (URL)
+                {t('dashboard:competitors.competitorUrl')}
               </label>
               <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                 <input
@@ -869,7 +871,7 @@ export default function Competitors() {
                   }}
                   onBlur={() => handleFieldBlur('url', currentUrl || '')}
                   className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                  placeholder="Enter booking URL"
+                  placeholder={t('dashboard:competitors.competitorUrlPlaceholder', { defaultValue: 'Enter booking URL' })}
                 />
               </div>
             </div>
@@ -886,11 +888,11 @@ export default function Competitors() {
                 />
                 <div className="text-center">
                   <span className="text-[#8D9094] font-bold text-responsive-sm">
-                    Only
+                    {t('dashboard:competitors.only', { defaultValue: 'Only' })}
                   </span>
                   <br />
                   <span className="text-[#8D9094] font-bold text-responsive-sm">
-                    Follow
+                    {t('dashboard:competitors.follow', { defaultValue: 'Follow' })}
                   </span>
                 </div>
               </div>
@@ -940,7 +942,7 @@ export default function Competitors() {
           <div className="container-margin-sm pt-4 border-t border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 form-gap-base text-responsive-sm">
               <div>
-                <span className="font-semibold text-gray-600">Status: </span>
+                <span className="font-semibold text-gray-600">{t('dashboard:competitors.status', { defaultValue: 'Status' })}: </span>
                 <span className={`capitalize ${
                   candidate.status === 'finished' ? 'text-green-600' :
                   candidate.status === 'error' ? 'text-red-600' :
@@ -951,16 +953,16 @@ export default function Competitors() {
               </div>
               {candidate.similarity_score && (
                 <div>
-                  <span className="font-semibold text-gray-600">Similarity: </span>
+                  <span className="font-semibold text-gray-600">{t('dashboard:competitors.similarity', { defaultValue: 'Similarity' })}: </span>
                   <span className="text-gray-800">{(candidate.similarity_score * 100).toFixed(1)}%</span>
                 </div>
               )}
               <div>
-                <span className="font-semibold text-gray-600">Suggested by: </span>
+                <span className="font-semibold text-gray-600">{t('dashboard:competitors.suggestedBy', { defaultValue: 'Suggested by' })}: </span>
                 <span className={`font-semibold ${
                   candidate.suggested_by_user ? 'text-blue-600' : 'text-purple-600'
                 }`}>
-                  {candidate.suggested_by_user ? 'User' : 'AI'}
+                  {candidate.suggested_by_user ? t('dashboard:competitors.user', { defaultValue: 'User' }) : t('dashboard:competitors.ai', { defaultValue: 'AI' })}
                 </span>
               </div>
             </div>
@@ -1003,10 +1005,10 @@ export default function Competitors() {
               </svg>
               <div>
                 <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                  Competitors
+                  {t('dashboard:competitors.title')}
                 </h2>
                 <p className="text-[#8A8E94] font-bold text-responsive-lg">
-                  Manage your competitor tracking
+                  {t('dashboard:competitors.subtitle')}
                 </p>
               </div>
             </div>
@@ -1026,14 +1028,14 @@ export default function Competitors() {
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#422C61]"></div>
                     <span className="text-[#422C61] font-bold text-responsive-base">
-                      Finding...
+                      {t('dashboard:competitors.findingNearby')}
                     </span>
                   </>
                 ) : (
                   <>
                     <Bot size={20} className="text-[#422C61]" />
                     <span className="text-[#422C61] font-bold text-responsive-base">
-                      Use AI to suggest competitors
+                      {t('dashboard:competitors.aiSuggestions')}
                     </span>
                   </>
                 )}
@@ -1045,7 +1047,7 @@ export default function Competitors() {
           <div className="bg-white rounded-lg border border-black/10 container-padding-base container-margin-sm">
             <div className="max-w-lg">
               <label className="form-label">
-                Competitor Price Aggregation
+                {t('dashboard:competitors.aggregation')}
               </label>
               <div className="relative">
                 <button
@@ -1101,12 +1103,11 @@ export default function Competitors() {
                 )}
               </div>
               <p className="text-[#9CAABD] text-responsive-xs">
-                Defines how to reference your prices compared to competitors
-                (Maximum, Average, Median, Minimum). Default: Minimum
+                {t('dashboard:competitors.aggregationDescription', { defaultValue: 'Defines how to reference your prices compared to competitors (Maximum, Average, Median, Minimum). Default: Minimum' })}
               </p>
               {!property && (
                 <p className="error-message">
-                  Please select a property to configure competitor price aggregation.
+                  {t('dashboard:competitors.selectPropertyMessage', { defaultValue: 'Please select a property to configure competitor price aggregation.' })}
                 </p>
               )}
             </div>
@@ -1119,7 +1120,7 @@ export default function Competitors() {
             {(isLoadingProcessed || isLoadingCandidates) && (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#287CAC] mx-auto mb-4"></div>
-                <p className="text-gray-600 text-responsive-base">Loading competitors...</p>
+                <p className="text-gray-600 text-responsive-base">{t('dashboard:competitors.loadingCompetitors')}</p>
               </div>
             )}
 
@@ -1149,8 +1150,8 @@ export default function Competitors() {
             {/* No competitors message */}
             {!isLoadingProcessed && !isLoadingCandidates && processedCompetitors.length === 0 && competitorCandidates.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500 text-responsive-base">No competitors found for this property.</p>
-                <p className="text-gray-400 text-responsive-sm container-margin-sm">Use the AI suggestion button above to find competitors.</p>
+                <p className="text-gray-500 text-responsive-base">{t('dashboard:competitors.noCompetitors')}</p>
+                <p className="text-gray-400 text-responsive-sm container-margin-sm">{t('dashboard:competitors.aiSuggestionsDesc')}</p>
               </div>
             )}
           </div>
@@ -1159,7 +1160,7 @@ export default function Competitors() {
           {showAddForm && (
             <div className="bg-white rounded-lg border border-black/10 container-padding-base container-margin-sm">
               <div className="flex items-center justify-between container-margin-sm">
-                <h3 className="text-responsive-xl font-semibold text-gray-800">Add New Competitor</h3>
+                <h3 className="text-responsive-xl font-semibold text-gray-800">{t('dashboard:competitors.addCompetitor')}</h3>
                 <button
                   onClick={handleCancelAddCompetitor}
                   className="text-gray-500 hover:text-gray-700"
@@ -1172,7 +1173,7 @@ export default function Competitors() {
                 {/* Competitor Name Field */}
                 <div className="form-field">
                   <label className="form-label">
-                    Competitor Name *
+                    {t('dashboard:competitors.competitorName')} *
                   </label>
                   <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                     <input
@@ -1180,7 +1181,7 @@ export default function Competitors() {
                       value={newCompetitorName}
                       onChange={(e) => setNewCompetitorName(e.target.value)}
                       className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                      placeholder="Enter competitor name"
+                      placeholder={t('dashboard:competitors.competitorNamePlaceholder', { defaultValue: 'Enter competitor name' })}
                       disabled={isCreatingCompetitor}
                     />
                   </div>
@@ -1189,7 +1190,7 @@ export default function Competitors() {
                 {/* URL Field */}
                 <div className="form-field">
                   <label className="form-label">
-                    Link (URL)
+                    {t('dashboard:competitors.competitorUrl')}
                   </label>
                   <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
                     <input
@@ -1197,7 +1198,7 @@ export default function Competitors() {
                       value={newCompetitorUrl}
                       onChange={(e) => setNewCompetitorUrl(e.target.value)}
                       className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                      placeholder="Enter booking URL (optional)"
+                      placeholder={t('dashboard:competitors.competitorUrlPlaceholder', { defaultValue: 'Enter booking URL' })}
                       disabled={isCreatingCompetitor}
                     />
                   </div>
@@ -1211,7 +1212,7 @@ export default function Competitors() {
                   disabled={isCreatingCompetitor}
                   className="btn-padding-base text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-responsive-base"
                 >
-                  Cancel
+                  {t('common:buttons.cancel')}
                 </button>
                 <button
                   onClick={handleAddCompetitor}
@@ -1225,12 +1226,12 @@ export default function Competitors() {
                   {isCreatingCompetitor ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Adding...
+                      {t('common:messages.saving')}
                     </>
                   ) : (
                     <>
                       <Plus size={16} />
-                      Add Competitor
+                      {t('dashboard:competitors.addCompetitor')}
                     </>
                   )}
                 </button>
@@ -1250,7 +1251,7 @@ export default function Competitors() {
               }`}
             >
               <Plus size={24} />
-              Add Competitor
+              {t('dashboard:competitors.addCompetitor')}
             </button>
           </div>
 
@@ -1259,21 +1260,20 @@ export default function Competitors() {
             <div className="flex items-center gap-3 container-margin-sm">
               <Info size={25} className="text-[#294758] hidden lg:inline" />
               <h3 className="text-responsive-lg font-bold text-[#294758]">
-                Tips for Choosing Competitors
+                {t('dashboard:competitors.tipsTitle', { defaultValue: 'Tips for Choosing Competitors' })}
               </h3>
             </div>
             <div className="text-black/60 leading-relaxed text-responsive-base">
               <p>
-                • Choose properties in the same geographical area as your hotel
+                • {t('dashboard:competitors.tip1', { defaultValue: 'Choose properties in the same geographical area as your hotel' })}
               </p>
-              <p>• Select hotels with similar size, type, and amenities</p>
-              <p>• Include 3-5 competitors for optimal price analysis</p>
+              <p>• {t('dashboard:competitors.tip2', { defaultValue: 'Select hotels with similar size, type, and amenities' })}</p>
+              <p>• {t('dashboard:competitors.tip3', { defaultValue: 'Include 3-5 competitors for optimal price analysis' })}</p>
               <p>
-                • Ensure competitor URLs are from Booking.com for best results
+                • {t('dashboard:competitors.tip4', { defaultValue: 'Ensure competitor URLs are from Booking.com for best results' })}
               </p>
               <p>
-                • Use "Only Follow" for competitors you want to monitor but not
-                include in pricing calculations
+                • {t('dashboard:competitors.tip5', { defaultValue: 'Use "Only Follow" for competitors you want to monitor but not include in pricing calculations' })}
               </p>
             </div>
           </div>

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Competitor
 from dynamic_pricing.models import Property
+from vivere_stays.error_codes import ErrorCode
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,9 +27,15 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
             
         for name in value:
             if not name or not name.strip():
-                raise serializers.ValidationError("All competitor names must be provided.")
+                raise serializers.ValidationError(
+                    "All competitor names must be provided.",
+                    code=ErrorCode.COMPETITOR_NAME_REQUIRED
+                )
             if len(name.strip()) < 2:
-                raise serializers.ValidationError("All competitor names must be at least 2 characters long.")
+                raise serializers.ValidationError(
+                    "All competitor names must be at least 2 characters long.",
+                    code=ErrorCode.COMPETITOR_NAME_TOO_SHORT
+                )
         
         return value
 
@@ -43,7 +50,10 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
             # Get the current user's last created property for consistency
             request = self.context.get('request')
             if not request or not request.user.is_authenticated:
-                raise serializers.ValidationError("User must be authenticated.")
+                raise serializers.ValidationError(
+                    "User must be authenticated.",
+                    code=ErrorCode.UNAUTHORIZED
+                )
             
             try:
                 property_instance = Property.objects.filter(
@@ -51,10 +61,16 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
                 ).order_by('-created_at').first()
                 
                 if not property_instance:
-                    raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                    raise serializers.ValidationError(
+                        "No property found for this user. Please complete the hotel setup first.",
+                        code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+                    )
                     
             except Property.DoesNotExist:
-                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                raise serializers.ValidationError(
+                    "No property found for this user. Please complete the hotel setup first.",
+                    code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+                )
             
             return {
                 'created_competitors': [],
@@ -68,7 +84,10 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
         # Get the current user's last created property
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
-            raise serializers.ValidationError("User must be authenticated.")
+            raise serializers.ValidationError(
+                "User must be authenticated.",
+                code=ErrorCode.UNAUTHORIZED
+            )
         
         # Get the user's last created property
         try:
@@ -77,10 +96,16 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
             ).order_by('-created_at').first()
             
             if not property_instance:
-                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                raise serializers.ValidationError(
+                    "No property found for this user. Please complete the hotel setup first.",
+                    code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+                )
                 
         except Property.DoesNotExist:
-            raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+            raise serializers.ValidationError(
+                "No property found for this user. Please complete the hotel setup first.",
+                code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+            )
         
         for competitor_name in competitor_names:
             try:
@@ -157,12 +182,18 @@ class CompetitorCreateSerializer(serializers.ModelSerializer):
         Validate that the booking link is a valid Booking.com URL
         """
         if not value.startswith('https://www.booking.com/'):
-            raise serializers.ValidationError("Please provide a valid Booking.com URL.")
+            raise serializers.ValidationError(
+                "Please provide a valid Booking.com URL.",
+                code=ErrorCode.COMPETITOR_URL_INVALID
+            )
         
         # Check if it's a hotel URL (either direct or with query parameters)
         clean_url = value.split('?')[0]
         if '/hotel/' not in clean_url:
-            raise serializers.ValidationError("Please provide a valid Booking.com hotel URL.")
+            raise serializers.ValidationError(
+                "Please provide a valid Booking.com hotel URL.",
+                code=ErrorCode.COMPETITOR_URL_NOT_HOTEL
+            )
         
         return value
 
@@ -173,7 +204,10 @@ class CompetitorCreateSerializer(serializers.ModelSerializer):
         try:
             Property.objects.get(id=value)
         except Property.DoesNotExist:
-            raise serializers.ValidationError("Property with this ID does not exist.")
+            raise serializers.ValidationError(
+                "Property with this ID does not exist.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
         return value
 
     def create(self, validated_data):

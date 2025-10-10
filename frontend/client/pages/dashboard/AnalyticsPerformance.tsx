@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 import { DateRangePicker } from "@/components/analytics/DateRangePicker";
 import { OccupancyCard, type OccupancyGauge } from "@/components/analytics/OccupancyCard";
@@ -14,6 +15,7 @@ type ChartsState = {
 };
 
 export default function AnalyticsPerformance() {
+  const { t } = useTranslation(['dashboard', 'common']);
   const [range, setRange] = React.useState<DateRange | undefined>(() => {
     const today = new Date();
     const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);

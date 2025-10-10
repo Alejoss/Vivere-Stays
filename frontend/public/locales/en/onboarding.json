@@ -1,0 +1,159 @@
+{
+  "_comment": "Onboarding flow translations",
+  "welcome": {
+    "title": "Welcome to Vivere Stays",
+    "subtitle": "Let's get started with setting up your property"
+  },
+  "profileCompletion": {
+    "title": "Complete Your Profile",
+    "subtitle": "Please provide your additional information to continue",
+    "almostThere": "Almost there!",
+    "emailReadonly": "Email address from your Google account (cannot be changed)"
+  },
+  "verifyEmail": {
+    "codeResent": "Verification code resent!",
+    "resendFailed": "Failed to resend verification code. Please try again."
+  },
+  "hotelInformation": {
+    "title": "Hotel Information",
+    "subtitle": "Tell us about your property to customize your experience",
+    "hotelNameLabel": "Hotel Name*",
+    "hotelNamePlaceholder": "Casa Batllo Hotel",
+    "bookingUrlLabel": "Booking.com URL of your property",
+    "bookingUrlPlaceholder": "https://www.booking.com/hotel/es/...",
+    "bookingUrlRequired": "Booking.com URL is required",
+    "bookingUrlInvalid": "URL must be from booking.com",
+    "bookingUrlHelp": "Using your Booking URL, we'll automatically find your competitors.",
+    "streetAddressLabel": "Street Address*",
+    "streetAddressPlaceholder": "Passeig de Gracia,43",
+    "cityLabel": "City*",
+    "cityPlaceholder": "Barcelona",
+    "countryLabel": "Country*",
+    "selectCountry": "Select Country",
+    "postalCodeLabel": "Postal Code*",
+    "postalCodePlaceholder": "08007",
+    "phoneNumberLabel": "Phone Number*",
+    "phoneNumberPlaceholder": "+34 93 216 0306",
+    "websiteLabel": "Website (Optional)",
+    "websitePlaceholder": "www.yourhotel.com",
+    "cifLabel": "CIF (Optional)",
+    "cifPlaceholder": "B12345678",
+    "numberOfRoomsLabel": "Number of Rooms*",
+    "numberOfRoomsPlaceholder": "2",
+    "propertyTypeLabel": "Property Type*",
+    "selectPropertyType": "Select Property Type",
+    "propertyTypes": {
+      "hotel": "Hotel",
+      "apartment": "Apartment",
+      "villa": "Villa",
+      "hostel": "Hostel",
+      "guesthouse": "Guest House"
+    },
+    "continueButton": "Continue to PMS Integration"
+  },
+  "pmsIntegration": {
+    "title": "Integration with Your PMS",
+    "subtitle": "Connect your Property Management System to automate price management.",
+    "selectLabel": "Select your PMS",
+    "otherOption": "Other (specify)",
+    "noneOption": "I don't have PMS",
+    "customPMSLabel": "Name of your PMS",
+    "customPMSPlaceholder": "e.g., Little Hotelier",
+    "recommendationTitle": "PMS Recommendation",
+    "recommendationText": "To get the most out of Vivere Stays, we recommend using a PMS. Our support team will contact you to help you choose a compatible one.",
+    "creating": "Creating Property & PMS Integration...",
+    "continueButton": "Continue to Plans",
+    "loadError": "Failed to load PMS options. Please try again."
+  },
+  "pmsInformation": {
+    "title": "Important: PMS Integration",
+    "messageWithCustom": "For an optimal experience, Vivere Stays integrates with your Property Management System (PMS). We will assist you in integrating {{pmsName}} with our services. Our support team will contact you after payment to help you set up the integration.",
+    "messageGeneral": "For an optimal experience, Vivere Stays integrates with your Property Management System (PMS). If you haven't set up your PMS yet, our support team will contact you to assist you after payment.",
+    "acceptButton": "Accept"
+  },
+  "payment": {
+    "title": "Payment with Stripe",
+    "subtitle": "Please wait while we process your payment with Stripe."
+  },
+  "welcomeComplete": {
+    "title": "Welcome to Vivere Stays!",
+    "subtitle": "Your payment has been processed successfully. Let's set up your property monitoring.",
+    "aiRobotTitle": "AI Robot Working",
+    "scanningMessage": "Our robot is now scanning your competitors automatically...",
+    "scanningProgress": "Scanning Progress",
+    "analyzing": "Analyzing competitor data...",
+    "completed": "Scanning completed! Ready to analyze.",
+    "settingUp": "Setting up your property...",
+    "goToDashboard": "Go Dashboard"
+  },
+  "contactSales": {
+    "title": "Contact Sales",
+    "subtitle": "Let's discuss your specific needs and find the perfect solution for your property",
+    "note": "Note:",
+    "emailNotFound": "Email not found. Please ensure you're logged in.",
+    "teamNotifiedTitle": "Sales Team Notified",
+    "messageWithCustom": "Our sales team has been automatically notified about your onboarding progress. We'll help you set up the perfect integration for your {{pmsName}} property management system. Our sales team will get in touch with you within 24 hours to discuss your specific needs and ensure a smooth onboarding experience.",
+    "messageGeneral": "Our sales team has been automatically notified about your onboarding progress. We'll help you set up the perfect integration for your property management system. Our sales team will get in touch with you within 24 hours to discuss your specific needs and ensure a smooth onboarding experience.",
+    "notifying": "Notifying our sales team...",
+    "continueButton": "Competitor Configuration"
+  },
+  "planInformation": {
+    "title": "Plan information",
+    "subtitle": "Learn more about our plans and what is included in each.",
+    "startPlan": "Start",
+    "scalePlan": "Scale",
+    "proPlan": "Pro",
+    "recommendedBadge": "recommended for first time users",
+    "percentOnRevenue": "% on revenue",
+    "backButton": "Back to plans"
+  },
+  "selectPlan": {
+    "title": "Plans",
+    "subtitle": "Choose your plan and complete your registration",
+    "moreInfo": "More information",
+    "pricingFor": "Pricing calculated for {{count}} {{room}}",
+    "room": "room",
+    "rooms": "rooms",
+    "pmsWarning": "Our sales team will help you integrate Vivere Stays based on your specific PMS integration needs.",
+    "contactSales": "Contact Sales",
+    "selectButton": "Select",
+    "continueToPayment": "Continue to Payment",
+    "skipPayment": "Skip Payment (Temporary)",
+    "updateRoomTitle": "Update Room Count",
+    "updateRoomQuestion": "How many rooms does your property have?",
+    "roomPlaceholder": "Enter number of rooms"
+  },
+  "addCompetitor": {
+    "title": "Add Competitor Hotels",
+    "subtitle": "Add names of competitor hotels you want to monitor and compare.",
+    "aiRecommendationsTitle": "AI-Powered Recommendations",
+    "aiRecommendationsText": "We recommend competitors using AI based on your property location and characteristics. However, feel free to add and remove competitors so that this list matches your actual competition. You will be able to perfect it later.",
+    "competitorNamesLabel": "Competitor Hotel Names",
+    "findingNearby": "Finding nearby hotels...",
+    "namePlaceholder": "Hotel Name (e.g., Hotel Barcelona)",
+    "addAnother": "Add another competitor hotel",
+    "tipsTitle": "Tips for choosing competitors:",
+    "tip1": "Choose hotels in the same area",
+    "tip2": "Similar type and size of property",
+    "tip3": "Similar amenities and features",
+    "tip4": "Add 3–5 competitor hotels for best results"
+  },
+  "msp": {
+    "title": "Setting Minimum Prices",
+    "subtitle": "Defines minimum prices (MSP) by date period",
+    "configTitle": "MSP Configuration",
+    "loadingPeriods": "Loading existing MSP periods...",
+    "noPropertyMessage": "No properties were found for your account. Please complete the hotel setup first.",
+    "goToHotelSetup": "Go to Hotel Setup",
+    "fromLabel": "From",
+    "toLabel": "To",
+    "priceLabel": "Price",
+    "selectDate": "Select date",
+    "pricePlaceholder": "Enter price",
+    "periodNameLabel": "Period Name (Optional)",
+    "periodNamePlaceholder": "e.g., Summer Season, High Season",
+    "addPeriodButton": "Add period",
+    "tip": "💡 The price is automatically recommended when selecting the final date",
+    "validationError": "Please add at least one valid period with dates and price."
+  }
+}

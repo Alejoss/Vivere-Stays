@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useRegister } from "../../../shared/api/hooks";
 import { getLocalStorageItem } from "../../../shared/localStorage";
 
 export default function Terms() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['auth', 'common']);
   const [agreeToTerms, setAgreeToTerms] = useState(true);
   const [receiveUpdates, setReceiveUpdates] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +59,7 @@ export default function Terms() {
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Registration failed. Please try again.");
+        setError(t('errors:SERVER_ERROR'));
       }
     } finally {
       setIsLoading(false);
@@ -84,10 +86,10 @@ export default function Terms() {
           {/* Progress Header */}
           <div className="flex justify-between items-center mb-10">
             <span className="text-[16px] text-black font-normal">
-              Step 2 of 2
+              {t('auth:terms.stepIndicator')}
             </span>
             <span className="text-[16px] text-black font-normal">
-              100% Complete
+              {t('auth:terms.completeIndicator')}
             </span>
           </div>
 
@@ -124,10 +126,10 @@ export default function Terms() {
             {/* Header */}
             <div className="text-center mt-16 mb-12">
               <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
-                Terms & Preferences
+                {t('auth:terms.title')}
               </h1>
               <p className="text-[18px] text-[#485567]">
-                Review and accept our terms
+                {t('auth:terms.subtitle')}
               </p>
             </div>
 
@@ -147,9 +149,7 @@ export default function Terms() {
                   htmlFor="agreeToTerms"
                   className="text-[16px] text-[#485567] cursor-pointer"
                 >
-                  I agree to the{" "}
-                  <span className="font-bold">Terms of Service</span> and{" "}
-                  <span className="font-bold">Privacy Policy</span>
+                  {t('auth:register.termsAgreement')}
                 </label>
               </div>
 
@@ -168,8 +168,7 @@ export default function Terms() {
                   htmlFor="receiveUpdates"
                   className="text-[13px] text-[#485567] cursor-pointer"
                 >
-                  I'd like to receive product updates, industry insights, and
-                  special offers via email
+                  {t('auth:register.receiveUpdates')}
                 </label>
               </div>
 
@@ -192,13 +191,11 @@ export default function Terms() {
                     />
                   </svg>
                   <h3 className="text-[18px] font-bold text-[#1E1E1E]">
-                    Your Data is Protected
+                    {t('auth:terms.dataProtectionTitle')}
                   </h3>
                 </div>
                 <p className="text-[16px] text-[#1E1E1E] leading-normal">
-                  We use enterprise-grade encryption to protect your
-                  information. Your data will never be shared with third parties
-                  without your explicit consent.
+                  {t('auth:terms.dataProtectionText')}
                 </p>
               </div>
 
@@ -223,7 +220,7 @@ export default function Terms() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  Back
+                  {t('common:buttons.back')}
                 </button>
                 <button
                   onClick={handleCreateAccount}
@@ -239,10 +236,10 @@ export default function Terms() {
                   {isLoading ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Continuing...
+                      {t('common:messages.loading')}
                     </>
                   ) : (
-                    <>Create Account</>
+                    <>{t('auth:register.registerButton')}</>
                   )}
                   <svg
                     width="21"

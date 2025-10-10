@@ -1,0 +1,73 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "submit": "Submit",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "edit": "Edit",
+    "close": "Close",
+    "add": "Add",
+    "remove": "Remove",
+    "update": "Update",
+    "create": "Create",
+    "upload": "Upload",
+    "download": "Download",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "apply": "Apply",
+    "retry": "Retry"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "updating": "Updating...",
+    "success": "Success!",
+    "saveSuccess": "Saved successfully",
+    "updateSuccess": "Updated successfully",
+    "deleteSuccess": "Deleted successfully",
+    "createSuccess": "Created successfully",
+    "error": "An error occurred",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "noData": "No data available",
+    "tryAgain": "Please try again",
+    "noPropertySelected": "No property selected",
+    "supportRequestSent": "Support request sent successfully! Our team will contact you soon.",
+    "supportRequestFailed": "Failed to send support request. Please try again."
+  },
+  "common": {
+    "or": "or",
+    "of": "of",
+    "to": "to",
+    "from": "from",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "required": "Required",
+    "zero": "0",
+    "example": "Example"
+  },
+  "days": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "support": "Support",
+    "logout": "Logout",
+    "back": "Back",
+    "next": "Next"
+  }
+}

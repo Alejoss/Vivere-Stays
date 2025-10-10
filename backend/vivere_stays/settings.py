@@ -74,7 +74,9 @@ ROOT_URLCONF = 'vivere_stays.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'email_templates', 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -161,6 +163,8 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    # Custom exception handler for structured error responses with i18n support
+    'EXCEPTION_HANDLER': 'vivere_stays.error_handler.custom_exception_handler',
 }
 
 # API Documentation settings
@@ -191,6 +195,8 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'x-language',
+    'accept-language',
 ]
 CORS_EXPOSE_HEADERS = [
     'content-type',

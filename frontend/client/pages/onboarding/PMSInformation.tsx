@@ -1,8 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 
 export default function PMSInformation() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const location = useLocation();
   const pmsInfo = location.state?.pmsInfo;
 
@@ -38,7 +40,7 @@ export default function PMSInformation() {
 
         {/* Title */}
         <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-4">
-          Important: PMS Integration
+          {t('onboarding:pmsInformation.title')}
         </h1>
 
         {/* Warning Message */}
@@ -46,14 +48,11 @@ export default function PMSInformation() {
           <p className="text-[18px] text-[#C2410C] leading-normal">
             {pmsInfo?.customPMSName ? (
               <>
-                For an optimal experience, Vivere Stays integrates with your Property Management System (PMS). 
-                We will assist you in integrating <strong>{pmsInfo.customPMSName}</strong> with our services. 
-                Our support team will contact you after payment to help you set up the integration.
+                {t('onboarding:pmsInformation.messageWithCustom', { pmsName: pmsInfo.customPMSName })}
               </>
             ) : (
               <>
-                For an optimal experience, Vivere Stays integrates with your Property Management System (PMS). 
-                If you haven't set up your PMS yet, our support team will contact you to assist you after payment.
+                {t('onboarding:pmsInformation.messageGeneral')}
               </>
             )}
           </p>
@@ -65,13 +64,13 @@ export default function PMSInformation() {
             onClick={handleBack}
             className="px-8 py-3 border border-[#D9D9D9] bg-white rounded-[10px] text-[16px] font-bold text-[#294758] hover:bg-gray-50 transition-colors"
           >
-            Back
+            {t('common:buttons.back')}
           </button>
           <button
             onClick={handleAccept}
             className="px-8 py-3 bg-[#294758] text-white rounded-[10px] text-[16px] font-bold hover:bg-[#234149] transition-colors"
           >
-            Accept
+            {t('onboarding:pmsInformation.acceptButton')}
           </button>
         </div>
       </div>

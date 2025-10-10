@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { analyticsService } from "../../../shared/api/analytics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +11,7 @@ type Days = "3" | "7" | "15";
 type Metric = "bookings" | "room_nights";
 
 export default function AnalyticsPickup() {
+  const { t } = useTranslation(['dashboard', 'common']);
   const [days, setDays] = React.useState<Days>("7");
   const [metric, setMetric] = React.useState<Metric>("room_nights");
   const [series, setSeries] = React.useState<Array<{ name: string; value: number; stly: number }>>([]);
@@ -45,7 +47,7 @@ export default function AnalyticsPickup() {
         }
       } catch (e: any) {
         console.error("Failed to load pickup", e);
-        if (!cancelled) setError("Failed to load pickup data");
+        if (!cancelled) setError(t('dashboard:analytics.pickup.loadError', { defaultValue: 'Failed to load pickup data' }));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -60,12 +62,12 @@ export default function AnalyticsPickup() {
         <Card className="bg-white rounded-2xl border-0 w-full mt-0 shadow-[0_10px_30px_rgba(2,8,23,0.08),0_2px_8px_rgba(2,8,23,0.06)]">
           <CardContent className="p-5 space-y-4">
             {/* Header */}
-            <div className="text-xl font-semibold text-gray-700">Pickup</div>
+            <div className="text-xl font-semibold text-gray-700">{t('dashboard:analytics.pickup.title', { defaultValue: 'Pickup' })}</div>
             <div className="h-[1px] bg-gray-300" />
 
             {/* Sub header */}
             <div className="text-[#5E8DA0] text-sm">
-              Pickup last {days} days {metric === 'bookings' ? '(Bookings)' : '(Room nights)'}
+              {t('dashboard:analytics.pickup.subtitle', { days, metric: metric === 'bookings' ? `(${t('dashboard:analytics.pickup.bookings')})` : `(${t('dashboard:analytics.pickup.roomNights')})`, defaultValue: `Pickup last ${days} days ${metric === 'bookings' ? '(Bookings)' : '(Room nights)'}` })}
             </div>
 
             {/* Controls */}
@@ -75,8 +77,8 @@ export default function AnalyticsPickup() {
                   <SelectValue placeholder="Metric" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bookings">Bookings</SelectItem>
-                  <SelectItem value="room_nights">Room nights</SelectItem>
+                  <SelectItem value="bookings">{t('dashboard:analytics.pickup.bookings', { defaultValue: 'Bookings' })}</SelectItem>
+                  <SelectItem value="room_nights">{t('dashboard:analytics.pickup.roomNights', { defaultValue: 'Room nights' })}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={days} onValueChange={(v) => setDays(v as typeof days)}>
@@ -84,9 +86,9 @@ export default function AnalyticsPickup() {
                   <SelectValue placeholder="7 days" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="3">3 days</SelectItem>
-                  <SelectItem value="7">7 days</SelectItem>
-                  <SelectItem value="15">15 days</SelectItem>
+                  <SelectItem value="3">{t('dashboard:analytics.pickup.threeDays', { defaultValue: '3 days' })}</SelectItem>
+                  <SelectItem value="7">{t('dashboard:analytics.pickup.sevenDays', { defaultValue: '7 days' })}</SelectItem>
+                  <SelectItem value="15">{t('dashboard:analytics.pickup.fifteenDays', { defaultValue: '15 days' })}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

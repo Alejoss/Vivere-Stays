@@ -1,11 +1,13 @@
 import { useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PriceCalendar from "../../components/dashboard/PriceCalendar";
 import RightSidebar from "../../components/dashboard/RightSidebar";
 import DateDetailsModal from "../../components/dashboard/DateDetailsModal";
 import { PropertyContext } from "../../../shared/PropertyContext";
 
 export default function PropertyDashboard() {
+  const { t } = useTranslation(['dashboard', 'common']);
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<{

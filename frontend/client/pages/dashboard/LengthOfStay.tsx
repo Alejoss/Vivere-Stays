@@ -1,4 +1,5 @@
 import { useState, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import LosGeneralSettings from "./LosGeneralSettings";
 import LosSetupRules from "./LosSetupRules";
@@ -7,6 +8,7 @@ import "../../styles/responsive-utilities.css";
 
 export default function LengthOfStay() {
   const { property } = useContext(PropertyContext) ?? {};
+  const { t } = useTranslation(['dashboard', 'common']);
   const [activeTab, setActiveTab] = useState<'general' | 'setup' | 'reduction'>('general');
 
   // Show loading state if no property is available
@@ -14,8 +16,8 @@ export default function LengthOfStay() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
-          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS settings</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">{t('dashboard:lengthOfStay.noPropertySelected')}</div>
+          <div className="text-responsive-sm text-gray-500">{t('dashboard:lengthOfStay.selectPropertyMessage')}</div>
         </div>
       </div>
     );
@@ -36,7 +38,7 @@ export default function LengthOfStay() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                General Settings
+                {t('dashboard:lengthOfStay.generalSettings')}
               </button>
               <button
                 onClick={() => setActiveTab('setup')}
@@ -46,7 +48,7 @@ export default function LengthOfStay() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Setup Rules
+                {t('dashboard:lengthOfStay.setupRules')}
               </button>
               <button
                 onClick={() => setActiveTab('reduction')}
@@ -56,7 +58,7 @@ export default function LengthOfStay() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Reduction Rules
+                {t('dashboard:lengthOfStay.reductionRules')}
               </button>
             </nav>
           </div>

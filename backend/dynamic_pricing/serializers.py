@@ -16,6 +16,7 @@ from .models import (
     UnifiedRoomsAndRates
 )
 from booking.models import Competitor
+from vivere_stays.error_codes import ErrorCode
 
 
 class PropertyManagementSystemSerializer(serializers.ModelSerializer):
@@ -59,7 +60,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that hotel name is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("Hotel name is required.")
+            raise serializers.ValidationError(
+                "Hotel name is required.",
+                code=ErrorCode.PROPERTY_NAME_REQUIRED
+            )
         return value.strip()
 
     def validate_city(self, value):
@@ -67,7 +71,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that city is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("City is required.")
+            raise serializers.ValidationError(
+                "City is required.",
+                code=ErrorCode.PROPERTY_CITY_REQUIRED
+            )
         return value.strip()
 
     def validate_country(self, value):
@@ -75,7 +82,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that country is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("Country is required.")
+            raise serializers.ValidationError(
+                "Country is required.",
+                code=ErrorCode.PROPERTY_COUNTRY_REQUIRED
+            )
         return value.strip()
 
     def validate_street_address(self, value):
@@ -83,7 +93,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that street address is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("Street address is required.")
+            raise serializers.ValidationError(
+                "Street address is required.",
+                code=ErrorCode.PROPERTY_ADDRESS_REQUIRED
+            )
         return value.strip()
 
     def validate_postal_code(self, value):
@@ -91,7 +104,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that postal code is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("Postal code is required.")
+            raise serializers.ValidationError(
+                "Postal code is required.",
+                code=ErrorCode.PROPERTY_POSTAL_CODE_REQUIRED
+            )
         return value.strip()
 
     def validate_phone_number(self, value):
@@ -99,7 +115,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that phone number is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("Phone number is required.")
+            raise serializers.ValidationError(
+                "Phone number is required.",
+                code=ErrorCode.PROPERTY_PHONE_REQUIRED
+            )
         return value.strip()
 
     def validate_property_type(self, value):
@@ -107,7 +126,10 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that property type is provided
         """
         if not value or not value.strip():
-            raise serializers.ValidationError("Property type is required.")
+            raise serializers.ValidationError(
+                "Property type is required.",
+                code=ErrorCode.PROPERTY_TYPE_REQUIRED
+            )
         return value.strip()
 
     def validate_number_of_rooms(self, value):
@@ -115,9 +137,15 @@ class PropertyCreateSerializer(serializers.ModelSerializer):
         Validate that number of rooms is provided and is a positive integer
         """
         if value is None:
-            raise serializers.ValidationError("Number of rooms is required.")
+            raise serializers.ValidationError(
+                "Number of rooms is required.",
+                code=ErrorCode.PROPERTY_ROOMS_REQUIRED
+            )
         if value <= 0:
-            raise serializers.ValidationError("Number of rooms must be a positive number.")
+            raise serializers.ValidationError(
+                "Number of rooms must be a positive number.",
+                code=ErrorCode.PROPERTY_ROOMS_INVALID
+            )
         return value
 
 
@@ -176,13 +204,15 @@ class MinimumSellingPriceSerializer(serializers.ModelSerializer):
         # Validate date range
         if valid_from and valid_until and valid_from >= valid_until:
             raise serializers.ValidationError(
-                "valid_until must be after valid_from"
+                "valid_until must be after valid_from",
+                code=ErrorCode.DATE_RANGE_INVALID
             )
 
         # Validate MSP value
         if msp is not None and msp < 0:
             raise serializers.ValidationError(
-                "MSP value cannot be negative"
+                "MSP value cannot be negative",
+                code=ErrorCode.MSP_VALUE_NEGATIVE
             )
 
         return data
@@ -320,9 +350,15 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
             
         for name in value:
             if not name or not name.strip():
-                raise serializers.ValidationError("All competitor names must be provided.")
+                raise serializers.ValidationError(
+                    "All competitor names must be provided.",
+                    code=ErrorCode.COMPETITOR_NAME_REQUIRED
+                )
             if len(name.strip()) < 2:
-                raise serializers.ValidationError("All competitor names must be at least 2 characters long.")
+                raise serializers.ValidationError(
+                    "All competitor names must be at least 2 characters long.",
+                    code=ErrorCode.COMPETITOR_NAME_TOO_SHORT
+                )
         
         print(f"🔍 BulkCompetitorCandidateSerializer: validate_competitor_names passed validation")
         return value
@@ -371,7 +407,10 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
                         print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} exists but not associated with user")
                     except Property.DoesNotExist:
                         print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} does not exist at all")
-                    raise serializers.ValidationError("Property not found or you don't have access to it.")
+                    raise serializers.ValidationError(
+                        "Property not found or you don't have access to it.",
+                        code=ErrorCode.PROPERTY_NOT_FOUND
+                    )
             else:
                 # Fallback to user's last created property (backward compatibility)
                 try:
@@ -409,7 +448,10 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
                     profiles__user=request.user
                 )
             except Property.DoesNotExist:
-                raise serializers.ValidationError("Property not found or you don't have access to it.")
+                raise serializers.ValidationError(
+                    "Property not found or you don't have access to it.",
+                    code=ErrorCode.PROPERTY_NOT_FOUND
+                )
         else:
             # Fallback to user's last created property (backward compatibility)
             try:
@@ -493,7 +535,8 @@ class DpGeneralSettingsSerializer(serializers.ModelSerializer):
         allowed_values = ['min', 'max', 'avg', 'median']
         if value not in allowed_values:
             raise serializers.ValidationError(
-                f"comp_price_calculation must be one of: {', '.join(allowed_values)}"
+                f"comp_price_calculation must be one of: {', '.join(allowed_values)}",
+                code=ErrorCode.SETTINGS_COMP_PRICE_CALCULATION_INVALID
             )
         return value
 
@@ -504,7 +547,8 @@ class DpGeneralSettingsSerializer(serializers.ModelSerializer):
         allowed_values = ['min', 'max']
         if value not in allowed_values:
             raise serializers.ValidationError(
-                f"los_aggregation must be one of: {', '.join(allowed_values)}"
+                f"los_aggregation must be one of: {', '.join(allowed_values)}",
+                code=ErrorCode.SETTINGS_LOS_AGGREGATION_INVALID
             )
         return value 
 
@@ -555,7 +599,8 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
         # Validate date range
         if valid_from and valid_until and valid_from >= valid_until:
             raise serializers.ValidationError(
-                "valid_until must be after valid_from"
+                "valid_until must be after valid_from",
+                code=ErrorCode.DATE_RANGE_INVALID
             )
 
         # Note: Removed applied days range validation to allow more flexible configurations
@@ -563,7 +608,8 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
         # Validate increment value
         if increment_value is not None and increment_value < 0:
             raise serializers.ValidationError(
-                "increment_value cannot be negative"
+                "increment_value cannot be negative",
+                code=ErrorCode.OFFER_INCREMENT_VALUE_NEGATIVE
             )
 
         # Validate increment type
@@ -571,7 +617,8 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
         increment_type = data.get('increment_type')
         if increment_type and increment_type not in allowed_types:
             raise serializers.ValidationError(
-                f"increment_type must be one of: {', '.join(allowed_types)}"
+                f"increment_type must be one of: {', '.join(allowed_types)}",
+                code=ErrorCode.OFFER_INCREMENT_TYPE_INVALID
             )
 
         return data
@@ -621,19 +668,31 @@ class BulkOfferIncrementsSerializer(serializers.Serializer):
             required_fields = ['offer_name', 'valid_from', 'valid_until', 'increment_type', 'increment_value']
             for field in required_fields:
                 if field not in offer or offer[field] is None or offer[field] == '':
-                    raise serializers.ValidationError(f"Offer {i+1}: {field} is required.")
+                    raise serializers.ValidationError(
+                        f"Offer {i+1}: {field} is required.",
+                        code=ErrorCode.FIELD_REQUIRED
+                    )
             
             # Validate increment type
             if offer['increment_type'] not in ['Percentage', 'Additional']:
-                raise serializers.ValidationError(f"Offer {i+1}: increment_type must be 'Percentage' or 'Additional'.")
+                raise serializers.ValidationError(
+                    f"Offer {i+1}: increment_type must be 'Percentage' or 'Additional'.",
+                    code=ErrorCode.OFFER_INCREMENT_TYPE_INVALID
+                )
             
             # Validate increment value
             try:
                 increment_value = int(offer['increment_value'])
                 if increment_value < 0:
-                    raise serializers.ValidationError(f"Offer {i+1}: increment_value cannot be negative.")
+                    raise serializers.ValidationError(
+                        f"Offer {i+1}: increment_value cannot be negative.",
+                        code=ErrorCode.OFFER_INCREMENT_VALUE_NEGATIVE
+                    )
             except (ValueError, TypeError):
-                raise serializers.ValidationError(f"Offer {i+1}: increment_value must be a valid number.")
+                raise serializers.ValidationError(
+                    f"Offer {i+1}: increment_value must be a valid number.",
+                    code=ErrorCode.FIELD_INVALID
+                )
         
         return value
 
@@ -714,20 +773,23 @@ class DynamicIncrementsV2Serializer(serializers.ModelSerializer):
         valid_occupancy_categories = [choice[0] for choice in DpDynamicIncrementsV2.OCCUPANCY_CATEGORIES]
         if occupancy_category and occupancy_category not in valid_occupancy_categories:
             raise serializers.ValidationError(
-                f"occupancy_category must be one of: {', '.join(valid_occupancy_categories)}"
+                f"occupancy_category must be one of: {', '.join(valid_occupancy_categories)}",
+                code=ErrorCode.DYNAMIC_OCCUPANCY_CATEGORY_INVALID
             )
 
         # Validate lead time category
         valid_lead_time_categories = [choice[0] for choice in DpDynamicIncrementsV2.LEAD_TIME_CATEGORIES]
         if lead_time_category and lead_time_category not in valid_lead_time_categories:
             raise serializers.ValidationError(
-                f"lead_time_category must be one of: {', '.join(valid_lead_time_categories)}"
+                f"lead_time_category must be one of: {', '.join(valid_lead_time_categories)}",
+                code=ErrorCode.DYNAMIC_LEAD_TIME_CATEGORY_INVALID
             )
 
         # Validate increment value
         if increment_value is not None and increment_value < 0:
             raise serializers.ValidationError(
-                "increment_value cannot be negative"
+                "increment_value cannot be negative",
+                code=ErrorCode.DYNAMIC_INCREMENT_VALUE_NEGATIVE
             )
 
         # Validate increment type
@@ -735,7 +797,8 @@ class DynamicIncrementsV2Serializer(serializers.ModelSerializer):
         increment_type = data.get('increment_type')
         if increment_type and increment_type not in allowed_types:
             raise serializers.ValidationError(
-                f"increment_type must be one of: {', '.join(allowed_types)}"
+                f"increment_type must be one of: {', '.join(allowed_types)}",
+                code=ErrorCode.DYNAMIC_INCREMENT_TYPE_INVALID
             )
 
         return data
@@ -785,29 +848,47 @@ class BulkDynamicIncrementsV2Serializer(serializers.Serializer):
             required_fields = ['occupancy_category', 'lead_time_category', 'increment_type', 'increment_value']
             for field in required_fields:
                 if field not in rule or rule[field] is None or rule[field] == '':
-                    raise serializers.ValidationError(f"Rule {i+1}: {field} is required.")
+                    raise serializers.ValidationError(
+                        f"Rule {i+1}: {field} is required.",
+                        code=ErrorCode.FIELD_REQUIRED
+                    )
             
             # Validate occupancy category
             valid_occupancy_categories = [choice[0] for choice in DpDynamicIncrementsV2.OCCUPANCY_CATEGORIES]
             if rule['occupancy_category'] not in valid_occupancy_categories:
-                raise serializers.ValidationError(f"Rule {i+1}: occupancy_category must be one of: {', '.join(valid_occupancy_categories)}.")
+                raise serializers.ValidationError(
+                    f"Rule {i+1}: occupancy_category must be one of: {', '.join(valid_occupancy_categories)}.",
+                    code=ErrorCode.DYNAMIC_OCCUPANCY_CATEGORY_INVALID
+                )
             
             # Validate lead time category
             valid_lead_time_categories = [choice[0] for choice in DpDynamicIncrementsV2.LEAD_TIME_CATEGORIES]
             if rule['lead_time_category'] not in valid_lead_time_categories:
-                raise serializers.ValidationError(f"Rule {i+1}: lead_time_category must be one of: {', '.join(valid_lead_time_categories)}.")
+                raise serializers.ValidationError(
+                    f"Rule {i+1}: lead_time_category must be one of: {', '.join(valid_lead_time_categories)}.",
+                    code=ErrorCode.DYNAMIC_LEAD_TIME_CATEGORY_INVALID
+                )
             
             # Validate increment type
             if rule['increment_type'] not in ['Percentage', 'Additional']:
-                raise serializers.ValidationError(f"Rule {i+1}: increment_type must be 'Percentage' or 'Additional'.")
+                raise serializers.ValidationError(
+                    f"Rule {i+1}: increment_type must be 'Percentage' or 'Additional'.",
+                    code=ErrorCode.DYNAMIC_INCREMENT_TYPE_INVALID
+                )
             
             # Validate increment value
             try:
                 increment_value = float(rule['increment_value'])
                 if increment_value < 0:
-                    raise serializers.ValidationError(f"Rule {i+1}: increment_value cannot be negative.")
+                    raise serializers.ValidationError(
+                        f"Rule {i+1}: increment_value cannot be negative.",
+                        code=ErrorCode.DYNAMIC_INCREMENT_VALUE_NEGATIVE
+                    )
             except (ValueError, TypeError):
-                raise serializers.ValidationError(f"Rule {i+1}: increment_value must be a valid number.")
+                raise serializers.ValidationError(
+                    f"Rule {i+1}: increment_value must be a valid number.",
+                    code=ErrorCode.FIELD_INVALID
+                )
         
         return value
 
@@ -882,7 +963,10 @@ class DpLosSetupSerializer(serializers.ModelSerializer):
         Validate that valid_from is before valid_until
         """
         if data['valid_from'] >= data['valid_until']:
-            raise serializers.ValidationError("valid_from must be before valid_until")
+            raise serializers.ValidationError(
+                "valid_from must be before valid_until",
+                code=ErrorCode.DATE_RANGE_INVALID
+            )
         return data
 
     def create(self, validated_data):
@@ -894,9 +978,15 @@ class DpLosSetupSerializer(serializers.ModelSerializer):
         property_instance = self.context.get('property')
 
         if not property_instance:
-            raise serializers.ValidationError("Property context is required to create LOS setup")
+            raise serializers.ValidationError(
+                "Property context is required to create LOS setup",
+                code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+            )
         if not user:
-            raise serializers.ValidationError("User must be authenticated.")
+            raise serializers.ValidationError(
+                "User must be authenticated.",
+                code=ErrorCode.UNAUTHORIZED
+            )
 
         validated_data['property_id'] = property_instance
         validated_data['user'] = user
@@ -920,7 +1010,10 @@ class DpLosReductionSerializer(serializers.ModelSerializer):
         Validate that los_value is positive
         """
         if value <= 0:
-            raise serializers.ValidationError("LOS value must be greater than 0")
+            raise serializers.ValidationError(
+                "LOS value must be greater than 0",
+                code=ErrorCode.LOS_VALUE_INVALID
+            )
         return value
 
     def create(self, validated_data):
@@ -932,9 +1025,15 @@ class DpLosReductionSerializer(serializers.ModelSerializer):
         property_instance = self.context.get('property')
 
         if not property_instance:
-            raise serializers.ValidationError("Property context is required to create LOS reduction")
+            raise serializers.ValidationError(
+                "Property context is required to create LOS reduction",
+                code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+            )
         if not user:
-            raise serializers.ValidationError("User must be authenticated.")
+            raise serializers.ValidationError(
+                "User must be authenticated.",
+                code=ErrorCode.UNAUTHORIZED
+            )
 
         validated_data['property_id'] = property_instance
         validated_data['user'] = user
@@ -959,7 +1058,10 @@ class BulkDpLosSetupSerializer(serializers.Serializer):
                 user = request.user
         
         if not user:
-            raise serializers.ValidationError("User must be authenticated.")
+            raise serializers.ValidationError(
+                "User must be authenticated.",
+                code=ErrorCode.UNAUTHORIZED
+            )
         
         created_setups = []
         errors = []
@@ -1014,7 +1116,10 @@ class BulkDpLosReductionSerializer(serializers.Serializer):
                 user = request.user
         
         if not user:
-            raise serializers.ValidationError("User must be authenticated.")
+            raise serializers.ValidationError(
+                "User must be authenticated.",
+                code=ErrorCode.UNAUTHORIZED
+            )
         
         created_reductions = []
         errors = []
@@ -1131,7 +1236,10 @@ class AvailableRatesUpdateSerializer(serializers.Serializer):
         Validate increment value based on increment type
         """
         if value < 0:
-            raise serializers.ValidationError("Increment value cannot be negative")
+            raise serializers.ValidationError(
+                "Increment value cannot be negative",
+                code=ErrorCode.RATE_INCREMENT_VALUE_NEGATIVE
+            )
         return value
 
 
@@ -1147,5 +1255,8 @@ class BulkAvailableRatesUpdateSerializer(serializers.Serializer):
         """
         base_rates = [rate for rate in value if rate.get('is_base_rate', False)]
         if len(base_rates) > 1:
-            raise serializers.ValidationError("Only one rate can be marked as base rate")
+            raise serializers.ValidationError(
+                "Only one rate can be marked as base rate",
+                code=ErrorCode.RATE_MULTIPLE_BASE_RATES
+            )
         return value 

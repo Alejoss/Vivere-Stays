@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { usePriceHistory, useUserProperties } from "../../../shared/api/hooks";
 import { getLocalStorageItem, setLocalStorageItem, getVivereConnection } from "../../../shared/localStorage";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
@@ -11,21 +12,7 @@ type CalendarCell = {
   overwrite: boolean;
 } | null;
 
-const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
+// Month names now come from translations
 // Function to get the first day of the month (0 = Sunday, 1 = Monday, etc.)
 const getFirstDayOfMonth = (year: number, month: number) => {
   return new Date(year, month, 1).getDay();
@@ -83,14 +70,8 @@ const generateCalendarData = (
   return weeks;
 };
 
-const dayHeaders = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-const priceOptions = [
-  "Average Daily Rate",
-  "PMS Price",
-  "Competitor Average",
-  "MSP",
-];
+// Day headers now come from translations
+// Price options now come from translations
 
 const getOccupancyColor = (occupancy: string) => {
   switch (occupancy) {
@@ -151,13 +132,50 @@ interface PriceCalendarProps {
 }
 
 export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onPriceOptionChange }: PriceCalendarProps) {
+  const { t } = useTranslation(['dashboard', 'common']);
+  
+  // Month names array from translations
+  const monthNames = [
+    t('dashboard:calendar.months.january'),
+    t('dashboard:calendar.months.february'),
+    t('dashboard:calendar.months.march'),
+    t('dashboard:calendar.months.april'),
+    t('dashboard:calendar.months.may'),
+    t('dashboard:calendar.months.june'),
+    t('dashboard:calendar.months.july'),
+    t('dashboard:calendar.months.august'),
+    t('dashboard:calendar.months.september'),
+    t('dashboard:calendar.months.october'),
+    t('dashboard:calendar.months.november'),
+    t('dashboard:calendar.months.december'),
+  ];
+
+  // Day headers from translations
+  const dayHeaders = [
+    t('dashboard:calendar.days.sun'),
+    t('dashboard:calendar.days.mon'),
+    t('dashboard:calendar.days.tue'),
+    t('dashboard:calendar.days.wed'),
+    t('dashboard:calendar.days.thu'),
+    t('dashboard:calendar.days.fri'),
+    t('dashboard:calendar.days.sat'),
+  ];
+
+  // Price options from translations
+  const priceOptions = [
+    t('dashboard:calendar.priceTypes.averageDailyRate'),
+    t('dashboard:calendar.priceTypes.pmsPrice'),
+    t('dashboard:calendar.priceTypes.competitorAverage'),
+    t('dashboard:calendar.priceTypes.msp'),
+  ];
+  
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(propertyId || null);
   const [propertyData, setPropertyData] = useState<any>(null);
-  const [selectedPrice, setSelectedPrice] = useState("Average Daily Rate");
+  const [selectedPrice, setSelectedPrice] = useState(t('dashboard:calendar.priceTypes.averageDailyRate'));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Get user properties (only if no propertyId is provided)
@@ -306,7 +324,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#294758] mx-auto mb-4"></div>
-            <p className="text-[16px] text-[#485567]">Loading properties...</p>
+            <p className="text-[16px] text-[#485567]">{t('dashboard:calendar.loadingProperties')}</p>
           </div>
         </div>
       </div>
@@ -319,7 +337,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       <div className="w-full max-w-none bg-white border border-hotel-border-light rounded-[9px] p-4 lg:p-[26px]">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-[16px] text-[#485567]">No properties found. Please add a property first.</p>
+            <p className="text-[16px] text-[#485567]">{t('dashboard:calendar.noPropertiesFound')}</p>
           </div>
         </div>
       </div>
@@ -335,7 +353,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-[57px]">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <h2 className="text-[20px] sm:text-[24px] font-bold text-gray-700">Price Calendar</h2>
+          <h2 className="text-[20px] sm:text-[24px] font-bold text-gray-700">{t('dashboard:calendar.title')}</h2>
           
           {/* Price Type Dropdown */}
           <div className="relative">
@@ -456,7 +474,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
                       onClick={() => setShowMonthPicker(false)}
                       className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
                     >
-                      Close
+                      {t('common:buttons.close')}
                     </button>
                   </div>
                 </div>
@@ -475,7 +493,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       {/* Dynamic PMS warning */}
       {!isConnected && !hasPMS && (
         <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
-          If the PMS is not connected (live mode), changes will not be reflected in the PMS.
+          {t('dashboard:calendar.pmsWarning')}
         </div>
       )}
 
@@ -526,19 +544,19 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
           <div className="flex items-center gap-2">
             <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-low" />
             <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
-              0-35% (Low)
+              {t('dashboard:calendar.occupancyLevels.low')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-medium" />
             <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
-              36-69% (Medium)
+              {t('dashboard:calendar.occupancyLevels.medium')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-high" />
             <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
-              70%+ (High)
+              {t('dashboard:calendar.occupancyLevels.high')}
             </span>
           </div>
         </div>

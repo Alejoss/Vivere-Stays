@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiError, ErrorType } from './types';
+import i18n from '../../client/i18n';
 
 // API Configuration
 if (!import.meta.env.VITE_API_BASE_URL) {
@@ -24,13 +25,21 @@ const createAxiosInstance = (): AxiosInstance => {
     },
   });
 
-  // Request interceptor to add auth token
+  // Request interceptor to add auth token and language headers
   instance.interceptors.request.use(
     (config) => {
+      // Add authentication token
       const token = localStorage.getItem('access_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      // Add language headers for i18n support
+      // Backend uses these headers for email language selection
+      const language = i18n.language || 'en';
+      config.headers['X-Language'] = language;
+      config.headers['Accept-Language'] = language;
+      
       return config;
     },
     (error) => {

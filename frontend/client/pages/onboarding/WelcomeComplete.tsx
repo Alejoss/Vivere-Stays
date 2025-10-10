@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { getLocalStorageItem } from "../../../shared/localStorage";
 
 export default function WelcomeComplete() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const [progress, setProgress] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -116,13 +118,12 @@ export default function WelcomeComplete() {
 
         {/* Title */}
         <h1 className="text-[34px] font-bold text-[#1E1E1E] text-center mb-4">
-          Welcome to Vivere Stays!
+          {t('onboarding:welcomeComplete.title')}
         </h1>
 
         {/* Subtitle */}
         <p className="text-[18px] text-[#485567] text-center mb-8 max-w-[563px] mx-auto">
-          Your payment has been processed successfully. Let's set up your
-          property monitoring.
+          {t('onboarding:welcomeComplete.subtitle')}
         </p>
 
         {/* AI Robot Working Section */}
@@ -173,17 +174,17 @@ export default function WelcomeComplete() {
           <div className="ml-[100px] mr-[100px]">
             <div className="mb-[10px]">
               <h3 className="text-[18px] font-bold text-[#1E1E1E] mb-2">
-                AI Robot Working
+                {t('onboarding:welcomeComplete.aiRobotTitle')}
               </h3>
               <p className="text-[14px] text-[#1E1E1E]">
-                Our robot is now scanning your competitors automatically...
+                {t('onboarding:welcomeComplete.scanningMessage')}
               </p>
             </div>
 
             {/* Scanning Progress */}
             <div className="mb-4">
               <p className="text-[14px] text-[#1E1E1E] mb-3">
-                Scanning Progress
+                {t('onboarding:welcomeComplete.scanningProgress')}
               </p>
               <div className="w-full h-[10px] bg-[#E2E8F0] rounded-[6px] relative overflow-hidden">
                 <div
@@ -214,7 +215,7 @@ export default function WelcomeComplete() {
                     />
                   </svg>
                   <span className="text-[18px] text-[#294859]">
-                    Analyzing competitor data...
+                    {t('onboarding:welcomeComplete.analyzing')}
                   </span>
                 </>
               ) : (
@@ -236,7 +237,7 @@ export default function WelcomeComplete() {
                     />
                   </svg>
                   <span className="text-[18px] text-[#16B257] font-medium">
-                    Scanning completed! Ready to analyze.
+                    {t('onboarding:welcomeComplete.completed')}
                   </span>
                 </>
               )}
@@ -258,11 +259,11 @@ export default function WelcomeComplete() {
             {isInitializing ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                <span>Setting up your property...</span>
+                <span>{t('onboarding:welcomeComplete.settingUp')}</span>
               </>
             ) : (
               <>
-                <span>Go Dashboard</span>
+                <span>{t('onboarding:welcomeComplete.goToDashboard')}</span>
                 <svg
                   width="20"
                   height="20"

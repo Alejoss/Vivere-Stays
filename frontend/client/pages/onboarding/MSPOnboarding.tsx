@@ -24,6 +24,7 @@ interface MSPPeriod {
 
 export default function MSP() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const [property, setProperty] = useState<any>(null);
   const [isLoadingProperty, setIsLoadingProperty] = useState(true);
   
@@ -126,7 +127,7 @@ export default function MSP() {
         (p) => !p.fromDate.trim() || !p.toDate.trim() || !p.price.trim() || isNaN(Number(p.price))
       )
     ) {
-      setError("Please add at least one valid period with dates and price.");
+      setError(t('onboarding:msp.validationError'));
       return;
     }
     
@@ -331,7 +332,7 @@ export default function MSP() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
           <p className="text-responsive-base text-[#485567]">
-            {isLoadingProperty ? 'Loading property information...' : 'Loading existing MSP periods...'}
+            {isLoadingProperty ? t('common:messages.loading') : t('onboarding:msp.loadingPeriods')}
           </p>
         </div>
       </div>
@@ -349,16 +350,16 @@ export default function MSP() {
                 <path d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 10C18.3333 5.39763 14.6024 1.66667 10 1.66667C5.39763 1.66667 1.66667 5.39763 1.66667 10C1.66667 14.6024 5.39763 18.3333 10 18.3333Z" stroke="#EF4444" strokeWidth="1.5"/>
                 <path d="M10 6.66667V10M10 13.3333H10.0083" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className="text-responsive-base text-[#EF4444] font-medium">No Property Found</span>
+              <span className="text-responsive-base text-[#EF4444] font-medium">{t('errors:PROPERTY_NOT_FOUND')}</span>
             </div>
             <p className="text-responsive-sm text-[#6B7280] mb-4">
-              No properties were found for your account. Please complete the hotel setup first.
+              {t('onboarding:msp.noPropertyMessage')}
             </p>
             <button
               onClick={() => navigate('/hotel-information')}
               className="btn-padding-sm bg-[#294758] text-white rounded-md text-responsive-sm font-medium hover:bg-[#234149] transition-colors"
             >
-              Go to Hotel Setup
+              {t('onboarding:msp.goToHotelSetup')}
             </button>
           </div>
         </div>
@@ -468,10 +469,10 @@ export default function MSP() {
       {/* Title and Description */}
       <div className="text-center container-margin-base">
         <h1 className="text-responsive-3xl font-bold text-black mb-4">
-          Setting Minimum Prices
+          {t('onboarding:msp.title')}
         </h1>
         <p className="text-responsive-base text-black">
-          Defines minimum prices (MSP) by date period
+          {t('onboarding:msp.subtitle')}
         </p>
       </div>
 
@@ -480,7 +481,7 @@ export default function MSP() {
         {/* Header */}
         <div className="container-margin-sm">
           <h2 className="text-responsive-lg font-bold text-black mb-6">
-            MSP Configuration
+            {t('onboarding:msp.configTitle')}
           </h2>
         </div>
 
@@ -492,7 +493,7 @@ export default function MSP() {
               <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
                   <span className="form-label">
-                    From
+                    {t('onboarding:msp.fromLabel')}
                   </span>
                 </div>
                 <div className="border border-[#D7DFE8] bg-gray-50 rounded-[10px] p-[3px]">
@@ -505,7 +506,7 @@ export default function MSP() {
                   >
                     {period.fromDate
                       ? formatDateForDisplay(period.fromDate)
-                      : "Select date"}
+                      : t('onboarding:msp.selectDate')}
                   </div>
                 </div>
               </div>
@@ -514,7 +515,7 @@ export default function MSP() {
               <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
                   <span className="form-label">
-                    To
+                    {t('onboarding:msp.toLabel')}
                   </span>
                 </div>
                 <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
@@ -537,7 +538,7 @@ export default function MSP() {
                       >
                         {period.toDate
                           ? formatDateForDisplay(period.toDate)
-                          : "Select date"}
+                          : t('onboarding:msp.selectDate')}
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -562,7 +563,7 @@ export default function MSP() {
               <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
                   <span className="form-label">
-                    Price
+                    {t('onboarding:msp.priceLabel')}
                   </span>
                 </div>
                 <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
@@ -572,7 +573,7 @@ export default function MSP() {
                     onChange={(e) =>
                       updatePeriod(period.id, "price", e.target.value)
                     }
-                    placeholder="Enter price"
+                    placeholder={t('onboarding:msp.pricePlaceholder')}
                     className="w-full input-height-base input-padding-base border-none rounded-lg text-responsive-base focus:outline-none text-[#1E1E1E]"
                   />
                 </div>
@@ -582,7 +583,7 @@ export default function MSP() {
               <div className="flex flex-col gap-3 w-full lg:w-[448px]">
                 <div className="flex items-center gap-[6px]">
                   <span className="form-label">
-                    Period Name (Optional)
+                    {t('onboarding:msp.periodNameLabel')}
                   </span>
                 </div>
                 <div className="border border-[#D7DFE8] bg-white rounded-[10px] p-[3px]">
@@ -592,7 +593,7 @@ export default function MSP() {
                     onChange={(e) =>
                       updatePeriod(period.id, "periodTitle", e.target.value)
                     }
-                    placeholder="e.g., Summer Season, High Season"
+                    placeholder={t('onboarding:msp.periodNamePlaceholder')}
                     className="w-full input-height-base input-padding-base border-none rounded-lg text-responsive-base focus:outline-none text-[#1E1E1E]"
                   />
                 </div>
@@ -643,7 +644,7 @@ export default function MSP() {
                 strokeLinejoin="round"
               />
             </svg>
-            Add period
+            {t('onboarding:msp.addPeriodButton')}
           </button>
         </div>
 
@@ -651,8 +652,7 @@ export default function MSP() {
         <div className="flex flex-col items-center gap-3 container-margin-sm">
           <div className="w-full h-[1px] bg-[#D7E4EB]"></div>
           <p className="text-responsive-xs text-[#757575] text-center">
-            💡 The price is automatically recommended when selecting the final
-            date
+            {t('onboarding:msp.tip')}
           </p>
         </div>
 
@@ -677,7 +677,7 @@ export default function MSP() {
                 strokeLinejoin="round"
               />
             </svg>
-            Back
+            {t('common:buttons.back')}
           </button>
           
           <button
@@ -690,10 +690,10 @@ export default function MSP() {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Saving...
+                {t('common:messages.saving')}
               </>
             ) : (
-              <>Finish</>
+              <>{t('common:buttons.finish')}</>
             )}
           </button>
         </div>

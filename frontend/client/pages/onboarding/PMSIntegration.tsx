@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useCreatePMSIntegration, useCreateHotel, usePMSList } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import ContactSupportModal from "../../components/onboarding/ContactSupportModal";
@@ -11,6 +12,7 @@ type PMSOption = "mews" | "cloudbeds" | "opera" | "other" | "none" | null;
 
 export default function PMSIntegration() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const [selectedPMS, setSelectedPMS] = useState<PMSOption>(null);
   const [customPMSName, setCustomPMSName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -78,14 +80,14 @@ export default function PMSIntegration() {
       });
       
       toast({
-        title: "Success",
-        description: "Support request sent successfully! Our team will contact you soon.",
+        title: t('common:messages.success'),
+        description: t('common:messages.supportRequestSent'),
       });
     } catch (error: any) {
       console.error("Error sending support request:", error);
       toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to send support request. Please try again.",
+        title: t('common:messages.error'),
+        description: error.response?.data?.error || t('common:messages.supportRequestFailed'),
         variant: "destructive",
       });
       throw error; // Re-throw to let the modal handle the error state
@@ -188,7 +190,7 @@ export default function PMSIntegration() {
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Failed to save property and PMS integration. Please try again.");
+        setError(t('errors:SERVER_ERROR'));
       }
     } finally {
       setIsLoading(false);
@@ -204,8 +206,8 @@ export default function PMSIntegration() {
       type: 'pms' as const
     })) || []),
     // Add static options
-    { id: "other", label: "Other (specify)", type: 'other' as const },
-    { id: "none", label: "I don't have PMS", type: 'none' as const },
+    { id: "other", label: t('onboarding:pmsIntegration.otherOption'), type: 'other' as const },
+    { id: "none", label: t('onboarding:pmsIntegration.noneOption'), type: 'none' as const },
   ];
 
   // Show loading state while fetching PMS list
@@ -214,7 +216,7 @@ export default function PMSIntegration() {
       <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center justify-center px-4 py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-          <p className="text-[16px] text-[#485567]">Loading PMS options...</p>
+          <p className="text-[16px] text-[#485567]">{t('common:messages.loading')}</p>
         </div>
       </div>
     );
@@ -225,12 +227,12 @@ export default function PMSIntegration() {
     return (
       <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center justify-center px-4 py-8">
         <div className="text-center">
-          <p className="text-[16px] text-[#FF0404] mb-4">Failed to load PMS options. Please try again.</p>
+          <p className="text-[16px] text-[#FF0404] mb-4">{t('onboarding:pmsIntegration.loadError')}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-2 bg-[#294758] text-white rounded-lg hover:bg-[#1e3340]"
           >
-            Retry
+            {t('common:buttons.retry')}
           </button>
         </div>
       </div>
@@ -361,11 +363,10 @@ export default function PMSIntegration() {
         {/* Header */}
         <div className="text-center mt-16 mb-8">
           <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
-            Integration with Your PMS
+            {t('onboarding:pmsIntegration.title')}
           </h1>
           <p className="text-[18px] text-[#485567] text-center max-w-md mx-auto">
-            Connect your Property Management System to automate price
-            management.
+            {t('onboarding:pmsIntegration.subtitle')}
           </p>
         </div>
 
@@ -373,7 +374,7 @@ export default function PMSIntegration() {
           {/* PMS Selection */}
           <div className="space-y-[14px]">
             <label className="text-[16px] text-[#485567] font-medium">
-              Select your PMS
+              {t('onboarding:pmsIntegration.selectLabel')}
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-[21px]">
               {pmsOptions.map((option) => (
@@ -396,13 +397,13 @@ export default function PMSIntegration() {
           {selectedPMS === "other" && (
             <div className="space-y-[14px]">
               <label className="text-[16px] text-[#485567] font-medium">
-                Name of your PMS
+                {t('onboarding:pmsIntegration.customPMSLabel')}
               </label>
               <input
                 type="text"
                 value={customPMSName}
                 onChange={(e) => setCustomPMSName(e.target.value)}
-                placeholder="e.g., Little Hotelier"
+                placeholder={t('onboarding:pmsIntegration.customPMSPlaceholder')}
                 className="w-full h-[60px] px-4 py-[17px] border border-[#D7DFE8] rounded-[8px] bg-white text-[16px] placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors"
               />
             </div>
@@ -428,13 +429,11 @@ export default function PMSIntegration() {
                   />
                 </svg>
                 <h3 className="text-[18px] font-bold text-[#485567]">
-                  PMS Recommendation
+                  {t('onboarding:pmsIntegration.recommendationTitle')}
                 </h3>
               </div>
               <p className="text-[14px] text-[#485567]">
-                To get the most out of Vivere Stays, we recommend using a PMS.
-                Our support team will contact you to help you choose a
-                compatible one.
+                {t('onboarding:pmsIntegration.recommendationText')}
               </p>
             </div>
           )}
@@ -473,7 +472,7 @@ export default function PMSIntegration() {
                   strokeLinejoin="round"
                 />
               </svg>
-              Back
+              {t('common:buttons.back')}
             </button>
             <button
               onClick={handleContinue}
@@ -487,11 +486,11 @@ export default function PMSIntegration() {
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Creating Property & PMS Integration...
+                  {t('onboarding:pmsIntegration.creating')}
                 </>
               ) : (
                 <>
-                  Continue to Plans
+                  {t('onboarding:pmsIntegration.continueButton')}
                   <svg
                     width="20"
                     height="20"
@@ -519,7 +518,7 @@ export default function PMSIntegration() {
           className="flex items-center gap-[7px] mt-8 justify-center mx-auto hover:opacity-75 transition-opacity"
         >
           <span className="text-[14px] text-[#485567] opacity-55">
-            Contact Support
+            {t('common:navigation.support')}
           </span>
           <svg
             width="20"

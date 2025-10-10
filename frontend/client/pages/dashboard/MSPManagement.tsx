@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { toast } from "../../hooks/use-toast";
@@ -14,6 +15,7 @@ interface MSPPeriod {
 }
 
 export default function MSPManagement() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   const [periods, setPeriods] = useState<MSPPeriod[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,8 +58,8 @@ export default function MSPManagement() {
     } catch (err: any) {
       console.error("Error loading MSP entries:", err);
       toast({
-        title: "Error",
-        description: err.message || 'Failed to load MSP entries',
+        title: t('common:messages.error'),
+        description: err.message || t('dashboard:msp.loadError', { defaultValue: 'Failed to load MSP entries' }),
         variant: "destructive",
       });
     } finally {
@@ -76,8 +78,8 @@ export default function MSPManagement() {
       )
     ) {
       toast({
-        title: "Validation Error",
-        description: "Please add at least one valid period with dates and price.",
+        title: t('common:messages.error'),
+        description: t('dashboard:mspManagement.validationError', { defaultValue: 'Please add at least one valid period with dates and price.' }),
         variant: "destructive",
       });
       return;
@@ -98,8 +100,8 @@ export default function MSPManagement() {
     if (invalidPeriods.length > 0) {
       const invalidPeriod = invalidPeriods[0]; // Show first invalid period
       toast({
-        title: "Validation Error",
-        description: `Invalid date range: The end date (${invalidPeriod.toDate}) must be after the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`,
+        title: t('common:messages.error'),
+        description: t('dashboard:mspManagement.invalidDateRange', { toDate: invalidPeriod.toDate, fromDate: invalidPeriod.fromDate, defaultValue: `Invalid date range: The end date (${invalidPeriod.toDate}) must be after the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.` }),
         variant: "destructive",
       });
       return;
@@ -112,7 +114,7 @@ export default function MSPManagement() {
       
       if (result.errors && result.errors.length > 0) {
         toast({
-          title: "Partial Success",
+          title: t('common:messages.success'),
           description: `Some periods could not be saved: ${result.errors.join(', ')}`,
           variant: "destructive",
         });
@@ -123,7 +125,7 @@ export default function MSPManagement() {
       console.log(`Created: ${result.created_entries?.length || 0} entries`);
       
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: "MSP periods saved successfully",
       });
       loadMSPEntries(); // Reload to get updated data
@@ -173,7 +175,7 @@ export default function MSPManagement() {
       }
       
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -347,10 +349,10 @@ export default function MSPManagement() {
               </svg>
               <div>
                 <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                  MSP Management
+                  {t('dashboard:msp.title')}
                 </h2>
                 <p className="text-[#8A8E94] font-bold text-responsive-lg">
-                  Manage minimum selling prices for {property.name}
+                  {t('dashboard:msp.subtitle')}
                 </p>
               </div>
             </div>
@@ -360,7 +362,7 @@ export default function MSPManagement() {
           {/* Header */}
           <div className="container-margin-sm">
             <h3 className="text-responsive-lg font-bold text-black container-margin-sm">
-              MSP Configuration
+              {t('dashboard:msp.configuration', { defaultValue: 'MSP Configuration' })}
             </h3>
           </div>
 
@@ -368,22 +370,22 @@ export default function MSPManagement() {
           <div className="hidden lg:flex items-center gap-[10px] container-margin-sm">
             <div className="w-[448px]">
               <span className="form-label">
-                From
+                {t('dashboard:mspManagement.from')}
               </span>
             </div>
             <div className="w-[448px]">
               <span className="form-label">
-                To
+                {t('dashboard:mspManagement.to')}
               </span>
             </div>
             <div className="w-[448px]">
               <span className="form-label">
-                Price
+                {t('dashboard:mspManagement.price')}
               </span>
             </div>
             <div className="w-[448px]">
               <span className="form-label">
-                Period Name (Optional)
+                {t('dashboard:mspManagement.periodName')} ({t('common:common.optional')})
               </span>
             </div>
             <div className="w-[60px]">
@@ -405,7 +407,7 @@ export default function MSPManagement() {
                         value={period.fromDate}
                         readOnly
                         className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base bg-gray-50 text-[#1E1E1E] cursor-not-allowed"
-                        placeholder="Select date"
+                        placeholder={t('dashboard:mspManagement.selectDate', { defaultValue: 'Select date' })}
                       />
                     </div>
                   </div>
@@ -434,7 +436,7 @@ export default function MSPManagement() {
                         onChange={(e) =>
                           updatePeriod(period.id, "price", e.target.value)
                         }
-                        placeholder="Enter price"
+                        placeholder={t('dashboard:mspManagement.enterPrice', { defaultValue: 'Enter price' })}
                         className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
                       />
                     </div>
@@ -449,7 +451,7 @@ export default function MSPManagement() {
                         onChange={(e) =>
                           updatePeriod(period.id, "periodTitle", e.target.value)
                         }
-                        placeholder="e.g., Summer Season, High Season"
+                        placeholder={t('dashboard:mspManagement.periodNamePlaceholder', { defaultValue: 'e.g., Summer Season, High Season' })}
                         className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
                       />
                     </div>
@@ -482,7 +484,7 @@ export default function MSPManagement() {
                   {/* Header with remove button */}
                   <div className="flex items-center justify-between">
                     <h4 className="text-lg font-semibold text-[#485567]">
-                      Period {index + 1}
+                      {t('dashboard:mspManagement.periodNumber', { number: index + 1 })}
                     </h4>
                     {periods.length > 1 && (
                       <button
@@ -517,7 +519,7 @@ export default function MSPManagement() {
                           value={period.fromDate}
                           readOnly
                           className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-left text-base bg-gray-50 text-[#1E1E1E] cursor-not-allowed"
-                          placeholder="Select date"
+                          placeholder={t('dashboard:mspManagement.selectDate', { defaultValue: 'Select date' })}
                         />
                       </div>
                     </div>
@@ -552,7 +554,7 @@ export default function MSPManagement() {
                           onChange={(e) =>
                             updatePeriod(period.id, "price", e.target.value)
                           }
-                          placeholder="Enter price"
+                          placeholder={t('dashboard:mspManagement.enterPrice', { defaultValue: 'Enter price' })}
                           className="w-full h-[54px] px-4 py-[17px] border-none rounded-lg text-base focus:outline-none text-[#1E1E1E]"
                         />
                       </div>
@@ -600,7 +602,7 @@ export default function MSPManagement() {
                   strokeLinejoin="round"
                 />
               </svg>
-              Add period
+              {t('dashboard:mspManagement.addPeriod', { defaultValue: 'Add period' })}
             </button>
           </div>
 
@@ -608,8 +610,7 @@ export default function MSPManagement() {
           <div className="flex flex-col items-center gap-3 mb-8">
             <div className="w-full h-[1px] bg-[#D7E4EB]"></div>
             <p className="text-[10px] text-[#757575] text-center">
-              💡 The price is automatically recommended when selecting the final
-              date
+              💡 {t('dashboard:mspManagement.priceTip', { defaultValue: 'The price is automatically recommended when selecting the final date' })}
             </p>
           </div>
 
@@ -625,10 +626,10 @@ export default function MSPManagement() {
               {isSaving ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Saving...
+                  {t('common:messages.saving')}
                 </>
               ) : (
-                <>Save MSP</>
+                <>{t('dashboard:mspManagement.saveButton', { defaultValue: 'Save MSP' })}</>
               )}
             </button>
           </div>

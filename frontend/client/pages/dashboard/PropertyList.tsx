@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useUserProperties } from "../../../shared/api/hooks";
 import { Building2, MapPin, Calendar, ArrowRight } from "lucide-react";
 
 export default function PropertyList() {
+  const { t } = useTranslation(['dashboard', 'common']);
   const navigate = useNavigate();
   const { data: userPropertiesData, isLoading: propertiesLoading } = useUserProperties();
 
@@ -19,7 +21,7 @@ export default function PropertyList() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
-              <p className="text-base text-[#485567]">Loading your properties...</p>
+              <p className="text-base text-[#485567]">{t('dashboard:propertyList.loadingProperties', { defaultValue: 'Loading your properties...' })}</p>
             </div>
           </div>
         </div>
@@ -35,15 +37,15 @@ export default function PropertyList() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center max-w-md">
               <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Properties Found</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('dashboard:propertyList.noProperties', { defaultValue: 'No Properties Found' })}</h3>
               <p className="text-gray-600 mb-6">
-                You haven't added any properties yet. Please complete the onboarding process to add your first property.
+                {t('dashboard:propertyList.noPropertiesDesc', { defaultValue: "You haven't added any properties yet. Please complete the onboarding process to add your first property." })}
               </p>
               <button
                 onClick={() => navigate("/hotel-information")}
                 className="px-6 py-3 bg-[#294758] text-white rounded-lg hover:bg-[#234149] transition-colors"
               >
-                Add Your First Property
+                {t('dashboard:propertyList.addFirstProperty', { defaultValue: 'Add Your First Property' })}
               </button>
             </div>
           </div>

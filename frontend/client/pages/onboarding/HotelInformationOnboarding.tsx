@@ -1,6 +1,7 @@
 ﻿
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelInformationData, setHotelInformationData, HotelInformationData } from '../../../shared/localStorage';
 import "../../styles/responsive-utilities.css";
@@ -210,6 +211,7 @@ const getCountryName = (countryCode: string): string => {
 
 export default function HotelInformationOnboarding() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common', 'errors']);
   
   // Add authentication check on component mount
   useEffect(() => {
@@ -280,42 +282,42 @@ export default function HotelInformationOnboarding() {
     const newErrors: FormErrors = {};
 
     if (!formData.hotelName.trim()) {
-      newErrors.hotelName = "Hotel name is required";
+      newErrors.hotelName = t('errors:PROPERTY_NAME_REQUIRED');
     }
 
     // Validate booking URL if provided
     if (formData.bookingUrl.trim() && !formData.bookingUrl.toLowerCase().includes("booking.com")) {
-      newErrors.bookingUrl = "URL must be from booking.com";
+      newErrors.bookingUrl = t('onboarding:hotelInformation.bookingUrlInvalid');
     }
 
     if (!formData.streetAddress.trim()) {
-      newErrors.streetAddress = "Address is required";
+      newErrors.streetAddress = t('errors:PROPERTY_ADDRESS_REQUIRED');
     }
 
     if (!formData.city.trim()) {
-      newErrors.city = "City is required";
+      newErrors.city = t('errors:PROPERTY_CITY_REQUIRED');
     }
 
     if (!formData.country.trim()) {
-      newErrors.country = "Country is required";
+      newErrors.country = t('errors:PROPERTY_COUNTRY_REQUIRED');
     }
 
     if (!formData.postalCode.trim()) {
-      newErrors.postalCode = "Postal code is required";
+      newErrors.postalCode = t('errors:PROPERTY_POSTAL_CODE_REQUIRED');
     }
 
     if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required";
+      newErrors.phoneNumber = t('errors:PROPERTY_PHONE_REQUIRED');
     }
 
     if (!formData.propertyType.trim()) {
-      newErrors.propertyType = "Property type is required";
+      newErrors.propertyType = t('errors:PROPERTY_TYPE_REQUIRED');
     }
 
     if (!formData.numberOfRooms.trim()) {
-      newErrors.numberOfRooms = "Number of rooms is required";
+      newErrors.numberOfRooms = t('errors:PROPERTY_ROOMS_REQUIRED');
     } else if (isNaN(Number(formData.numberOfRooms)) || Number(formData.numberOfRooms) <= 0) {
-      newErrors.numberOfRooms = "Number of rooms must be a positive number";
+      newErrors.numberOfRooms = t('errors:PROPERTY_ROOMS_INVALID');
     }
 
     setErrors(newErrors);
@@ -480,10 +482,10 @@ export default function HotelInformationOnboarding() {
           {/* Header */}
           <div className="text-center mt-16 container-margin-sm">
             <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
-              Hotel Information
+              {t('onboarding:hotelInformation.title')}
             </h1>
             <p className="text-responsive-lg text-[#485567]">
-              Tell us about your property to customize your experience
+              {t('onboarding:hotelInformation.subtitle')}
             </p>
           </div>
 
@@ -491,14 +493,14 @@ export default function HotelInformationOnboarding() {
             {/* Hotel Name */}
             <div className="form-field">
               <label className="form-label">
-                Hotel Name*
+                {t('onboarding:hotelInformation.hotelNameLabel')}
               </label>
               <div className="space-y-1">
                 <input
                   type="text"
                   value={formData.hotelName}
                   onChange={(e) => handleInputChange("hotelName", e.target.value)}
-                  placeholder="Casa Batllo Hotel"
+                  placeholder={t('onboarding:hotelInformation.hotelNamePlaceholder')}
                   className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("hotelName")} ${getFieldTextColor("hotelName")}`}
                 />
                 {hasSubmitted && errors.hotelName && (
@@ -580,14 +582,14 @@ export default function HotelInformationOnboarding() {
           <div className="flex flex-col lg:flex-row items-start form-gap-base">
             <div className="flex-1 space-y-2">
               <label className="form-label">
-                City*
+                {t('onboarding:hotelInformation.cityLabel')}
               </label>
               <div className="space-y-1">
                 <input
                   type="text"
                   value={formData.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
-                  placeholder="Barcelona"
+                  placeholder={t('onboarding:hotelInformation.cityPlaceholder')}
                   className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("city")} ${getFieldTextColor("city")}`}
                 />
                 {hasSubmitted && errors.city && (
@@ -599,7 +601,7 @@ export default function HotelInformationOnboarding() {
             </div>
             <div className="flex-1 space-y-2">
               <label className="form-label">
-                Country*
+                {t('onboarding:hotelInformation.countryLabel')}
               </label>
               <div className="space-y-1">
                 <select
@@ -611,7 +613,7 @@ export default function HotelInformationOnboarding() {
                       : "border-[#D7DFE8] text-[#1E1E1E]"
                   }`}
                 >
-                  <option value="">Select Country</option>
+                  <option value="">{t('onboarding:hotelInformation.selectCountry')}</option>
                   {COUNTRIES.map((country) => (
                     <option key={country.code} value={country.code}>
                       {country.name}
@@ -627,7 +629,7 @@ export default function HotelInformationOnboarding() {
             </div>
             <div className="flex-1 space-y-2">
               <label className="form-label">
-                Postal Code*
+                {t('onboarding:hotelInformation.postalCodeLabel')}
               </label>
               <div className="space-y-1">
                 <input
@@ -636,7 +638,7 @@ export default function HotelInformationOnboarding() {
                   onChange={(e) =>
                     handleInputChange("postalCode", e.target.value)
                   }
-                  placeholder="08007"
+                  placeholder={t('onboarding:hotelInformation.postalCodePlaceholder')}
                   className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("postalCode")} ${getFieldTextColor("postalCode")}`}
                 />
                 {hasSubmitted && errors.postalCode && (
@@ -652,7 +654,7 @@ export default function HotelInformationOnboarding() {
           <div className="flex flex-col lg:flex-row items-start form-gap-base">
             <div className="w-full lg:w-[190px] space-y-2">
               <label className="form-label">
-                Phone Number*
+                {t('onboarding:hotelInformation.phoneNumberLabel')}
               </label>
               <div className="space-y-1">
                 <input
@@ -661,7 +663,7 @@ export default function HotelInformationOnboarding() {
                   onChange={(e) =>
                     handleInputChange("phoneNumber", e.target.value)
                   }
-                  placeholder="+34 93 216 0306"
+                  placeholder={t('onboarding:hotelInformation.phoneNumberPlaceholder')}
                   className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("phoneNumber")} ${getFieldTextColor("phoneNumber")}`}
                 />
                 {hasSubmitted && errors.phoneNumber && (
@@ -673,13 +675,13 @@ export default function HotelInformationOnboarding() {
             </div>
             <div className="flex-1 space-y-2">
               <label className="form-label">
-                Website (Optional)
+                {t('onboarding:hotelInformation.websiteLabel')}
               </label>
               <input
                 type="text"
                 value={formData.website}
                 onChange={(e) => handleInputChange("website", e.target.value)}
-                placeholder="www.yourhotel.com"
+                placeholder={t('onboarding:hotelInformation.websitePlaceholder')}
                 className="w-full input-height-lg input-padding-base border border-[#D7DFE8] rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors"
               />
             </div>
@@ -689,19 +691,19 @@ export default function HotelInformationOnboarding() {
           <div className="flex flex-col lg:flex-row items-start form-gap-base">
             <div className="w-full lg:w-[265px] space-y-2">
               <label className="form-label">
-                CIF (Optional)
+                {t('onboarding:hotelInformation.cifLabel')}
               </label>
               <input
                 type="text"
                 value={formData.cif}
                 onChange={(e) => handleInputChange("cif", e.target.value)}
-                placeholder="B12345678"
+                placeholder={t('onboarding:hotelInformation.cifPlaceholder')}
                 className="w-full input-height-lg input-padding-base border border-[#D7DFE8] rounded-[10px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors"
               />
             </div>
             <div className="w-full lg:w-[265px] space-y-2">
               <label className="form-label">
-                Number of Rooms*
+                {t('onboarding:hotelInformation.numberOfRoomsLabel')}
               </label>
               <div className="space-y-1">
                 <input
@@ -710,7 +712,7 @@ export default function HotelInformationOnboarding() {
                   onChange={(e) =>
                     handleInputChange("numberOfRooms", e.target.value)
                   }
-                  placeholder="2"
+                  placeholder={t('onboarding:hotelInformation.numberOfRoomsPlaceholder')}
                   className={`w-full input-height-lg input-padding-base border rounded-[10px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                     formData.numberOfRooms
                       ? `${getFieldBorderColor("numberOfRooms")} text-[#1E1E1E]`
@@ -729,7 +731,7 @@ export default function HotelInformationOnboarding() {
           {/* Property Type */}
           <div className="form-field">
             <label className="form-label">
-              Property Type*
+              {t('onboarding:hotelInformation.propertyTypeLabel')}
             </label>
             <div className="space-y-1">
               <select
@@ -743,12 +745,12 @@ export default function HotelInformationOnboarding() {
                     : "border-[#D7DFE8] text-[#1E1E1E]"
                 }`}
               >
-                <option value="">Select Property Type</option>
-                <option value="hotel">Hotel</option>
-                <option value="apartment">Apartment</option>
-                <option value="villa">Villa</option>
-                <option value="hostel">Hostel</option>
-                <option value="guesthouse">Guest House</option>
+                <option value="">{t('onboarding:hotelInformation.selectPropertyType')}</option>
+                <option value="hotel">{t('onboarding:hotelInformation.propertyTypes.hotel')}</option>
+                <option value="apartment">{t('onboarding:hotelInformation.propertyTypes.apartment')}</option>
+                <option value="villa">{t('onboarding:hotelInformation.propertyTypes.villa')}</option>
+                <option value="hostel">{t('onboarding:hotelInformation.propertyTypes.hostel')}</option>
+                <option value="guesthouse">{t('onboarding:hotelInformation.propertyTypes.guesthouse')}</option>
               </select>
               {hasSubmitted && errors.propertyType && (
                 <span className="error-message">
@@ -795,7 +797,7 @@ export default function HotelInformationOnboarding() {
                 </defs>
               </svg>
               <label className="form-label">
-                Booking.com URL of your property
+                {t('onboarding:hotelInformation.bookingUrlLabel')}
               </label>
             </div>
             <div className="space-y-1">
@@ -803,7 +805,7 @@ export default function HotelInformationOnboarding() {
                 type="text"
                 value={formData.bookingUrl}
                 onChange={(e) => handleInputChange("bookingUrl", e.target.value)}
-                placeholder="https://www.booking.com/hotel/es/..."
+                placeholder={t('onboarding:hotelInformation.bookingUrlPlaceholder')}
                 className={`w-full input-height-lg input-padding-base border rounded-[8px] bg-white text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${getFieldBorderColor("bookingUrl")} ${getFieldTextColor("bookingUrl")}`}
               />
               {hasSubmitted && errors.bookingUrl && (
@@ -828,7 +830,7 @@ export default function HotelInformationOnboarding() {
             </div>
             {formData.bookingUrl.trim() && !errors.bookingUrl ? (
               <p className="text-responsive-sm text-[#16B257]">
-                Using your Booking URL, we'll automatically find your competitors.
+                {t('onboarding:hotelInformation.bookingUrlHelp')}
               </p>
             ) : null}
           </div>
@@ -840,7 +842,7 @@ export default function HotelInformationOnboarding() {
               onClick={handleContinue}
               className="w-full btn-height-lg btn-padding-base rounded-[10px] text-responsive-base font-bold bg-[#294758] text-white hover:bg-[#1e3340] transition-colors flex items-center justify-center gap-2"
             >
-              Continue to PMS Integration
+              {t('onboarding:hotelInformation.continueButton')}
             </button>
           </div>
         </div>

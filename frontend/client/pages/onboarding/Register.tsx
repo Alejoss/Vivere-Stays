@@ -1,38 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
+import { useTranslation } from "react-i18next";
 import { useCheckUserExists } from "../../../shared/api/hooks";
 import { useRegister, useGoogleLogin } from "../../../shared/api/hooks";
 import { RegisterRequest } from "../../../shared/api/types";
 import { profilesService } from "../../../shared/api/profiles";
 import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
+import { FormFieldError } from "../../components/ErrorMessage";
 import "../../styles/responsive-utilities.css";
-
-// Error Message Component
-const ErrorMessage = ({ message }: { message: string }) => {
-  if (!message) return null;
-
-  return (
-    <div className="flex items-end gap-[5px] mt-1">
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z"
-          fill="#FF0404"
-        />
-      </svg>
-      <span className="error-message">{message}</span>
-    </div>
-  );
-};
 
 // Password Strength Indicator Component
 const PasswordStrengthIndicator = ({ password }: { password: string }) => {
+  const { t } = useTranslation('auth');
   const strength = {
     hasMinLength: password.length >= 8,
     hasUpperLower: /[a-z]/.test(password) && /[A-Z]/.test(password),
@@ -69,18 +49,19 @@ const PasswordStrengthIndicator = ({ password }: { password: string }) => {
 
   return (
     <div className="mt-3 space-y-[10px]">
-      <StrengthItem label="8+ characters" isValid={strength.hasMinLength} />
+      <StrengthItem label={t('register.password8Chars')} isValid={strength.hasMinLength} />
       <StrengthItem
-        label="Upper & lowercase"
+        label={t('register.passwordUpperLower')}
         isValid={strength.hasUpperLower}
       />
-      <StrengthItem label="At least 1 number" isValid={strength.hasNumber} />
+      <StrengthItem label={t('register.passwordNumber')} isValid={strength.hasNumber} />
     </div>
   );
 };
 
 export default function Register() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['auth', 'errors', 'common']);
   const checkUserExists = useCheckUserExists();
   
   // Load saved form data from localStorage on component mount
@@ -146,27 +127,27 @@ export default function Register() {
   const validateField = (field: string, value: string) => {
     switch (field) {
       case "firstName":
-        return value.trim() === "" ? "First name is required" : "";
+        return value.trim() === "" ? t('errors:FIRST_NAME_REQUIRED') : "";
       case "lastName":
-        return value.trim() === "" ? "Last name is required" : "";
+        return value.trim() === "" ? t('errors:LAST_NAME_REQUIRED') : "";
       case "email":
-        if (value.trim() === "") return "Email is required";
-        if (!/\S+@\S+\.\S+/.test(value)) return "Email is invalid";
+        if (value.trim() === "") return t('errors:EMAIL_REQUIRED');
+        if (!/\S+@\S+\.\S+/.test(value)) return t('errors:EMAIL_INVALID');
         return "";
       case "password":
-        if (value.trim() === "") return "Password is required";
+        if (value.trim() === "") return t('errors:PASSWORD_REQUIRED');
         const strength = getPasswordStrength(value);
         if (
           !strength.hasMinLength ||
           !strength.hasUpperLower ||
           !strength.hasNumber
         ) {
-          return "Password must meet all requirements";
+          return t('errors:PASSWORD_TOO_WEAK');
         }
         return "";
       case "confirmPassword":
-        if (value.trim() === "") return "Confirm password is required";
-        if (value !== formData.password) return "Passwords do not match";
+        if (value.trim() === "") return t('errors:PASSWORD_REQUIRED');
+        if (value !== formData.password) return t('errors:PASSWORD_MISMATCH');
         return "";
       default:
         return "";
@@ -433,10 +414,10 @@ export default function Register() {
             {/* Header */}
             <div className="text-center mt-16 container-margin-base">
               <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
-                Create Your Account
+                {t('auth:register.title')}
               </h1>
               <p className="text-responsive-lg text-[#485567]">
-                Enter your personal details to get started
+                {t('auth:register.subtitle')}
               </p>
             </div>
 
@@ -457,7 +438,7 @@ export default function Register() {
               <div className="grid grid-cols-1 md:grid-cols-2 grid-gap-base">
                 <div className="form-field">
                   <label className="form-label">
-                    First Name*
+                    {t('auth:register.firstNameLabel')}
                   </label>
                   <div>
                     <input
@@ -465,7 +446,7 @@ export default function Register() {
                       value={formData.firstName}
                       onChange={handleInputChange("firstName")}
                       onBlur={handleBlur("firstName")}
-                      placeholder="John"
+                      placeholder={t('auth:register.firstNamePlaceholder')}
                       className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.firstName && touched.firstName
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -474,14 +455,12 @@ export default function Register() {
                             : "border-[#D7DFE8] focus:border-[#294859] text-[#1E1E1E]"
                       }`}
                     />
-                    <ErrorMessage
-                      message={touched.firstName ? errors.firstName : ""}
-                    />
+                    <FormFieldError error={touched.firstName ? errors.firstName : ""} />
                   </div>
                 </div>
                 <div className="form-field">
                   <label className="form-label">
-                    Last Name*
+                    {t('auth:register.lastNameLabel')}
                   </label>
                   <div>
                     <input
@@ -489,7 +468,7 @@ export default function Register() {
                       value={formData.lastName}
                       onChange={handleInputChange("lastName")}
                       onBlur={handleBlur("lastName")}
-                      placeholder="Doe"
+                      placeholder={t('auth:register.lastNamePlaceholder')}
                       className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.lastName && touched.lastName
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -498,9 +477,7 @@ export default function Register() {
                             : "border-[#D7DFE8] focus:border-[#294859] text-[#1E1E1E]"
                       }`}
                     />
-                    <ErrorMessage
-                      message={touched.lastName ? errors.lastName : ""}
-                    />
+                    <FormFieldError error={touched.lastName ? errors.lastName : ""} />
                   </div>
                 </div>
               </div>
@@ -509,14 +486,14 @@ export default function Register() {
               <div className="grid grid-cols-1 md:grid-cols-2 grid-gap-base">
                 <div className="form-field">
                   <label className="form-label">
-                    DNI
+                    {t('auth:register.dniLabel')}
                   </label>
                   <input
                     type="text"
                     value={formData.dni}
                     onChange={handleInputChange("dni")}
                     onBlur={handleBlur("dni")}
-                    placeholder="12345678Z"
+                    placeholder={t('auth:register.dniPlaceholder')}
                     className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       isFieldValid("dni")
                         ? "border-[#16B257] focus:border-[#16B257] text-[#1E1E1E]"
@@ -526,14 +503,14 @@ export default function Register() {
                 </div>
                 <div className="form-field">
                   <label className="form-label">
-                    Phone Number
+                    {t('auth:register.phoneLabel')}
                   </label>
                   <input
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={handleInputChange("phoneNumber")}
                     onBlur={handleBlur("phoneNumber")}
-                    placeholder="+34 712 52 86 49"
+                    placeholder={t('auth:register.phonePlaceholder')}
                     className={`w-full input-height-lg input-padding-base border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       isFieldValid("phoneNumber")
                         ? "border-[#16B257] focus:border-[#16B257] text-[#1E1E1E]"
@@ -563,7 +540,7 @@ export default function Register() {
                     />
                   </svg>
                   <span className="form-label">
-                    Email Address*
+                    {t('auth:register.emailLabel')}
                   </span>
                 </div>
                 <div>
@@ -573,7 +550,7 @@ export default function Register() {
                       value={formData.email}
                       onChange={handleInputChange("email")}
                       onBlur={handleBlur("email")}
-                      placeholder="john@company.com"
+                      placeholder={t('auth:register.emailPlaceholder')}
                       className={`w-full input-height-lg input-padding-base pr-12 border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.email && touched.email
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -603,7 +580,7 @@ export default function Register() {
                       </div>
                     )}
                   </div>
-                  <ErrorMessage message={touched.email ? errors.email : ""} />
+                  <FormFieldError error={touched.email ? errors.email : ""} />
                 </div>
               </div>
 
@@ -644,7 +621,7 @@ export default function Register() {
                     </defs>
                   </svg>
                   <span className="form-label">
-                    Password*
+                    {t('auth:register.passwordLabel')}
                   </span>
                 </div>
                 <div>
@@ -654,7 +631,7 @@ export default function Register() {
                       value={formData.password}
                       onChange={handleInputChange("password")}
                       onBlur={handleBlur("password")}
-                      placeholder="Create strong password"
+                      placeholder={t('auth:register.passwordPlaceholder')}
                       className={`w-full input-height-lg input-padding-base pr-12 border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                         errors.password && touched.password
                           ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -691,16 +668,14 @@ export default function Register() {
                     </button>
                   </div>
                   <PasswordStrengthIndicator password={formData.password} />
-                  <ErrorMessage
-                    message={touched.password ? errors.password : ""}
-                  />
+                  <FormFieldError error={touched.password ? errors.password : ""} />
                 </div>
               </div>
 
               {/* Confirm Password Field */}
               <div className="form-field">
                 <label className="form-label">
-                  Confirm password*
+                  {t('auth:register.confirmPasswordLabel')}
                 </label>
                 <div className="relative">
                   <input
@@ -708,7 +683,7 @@ export default function Register() {
                     value={formData.confirmPassword}
                     onChange={handleInputChange("confirmPassword")}
                     onBlur={handleBlur("confirmPassword")}
-                    placeholder="Confirm your password"
+                    placeholder={t('auth:register.confirmPasswordPlaceholder')}
                     className={`w-full input-height-lg input-padding-base pr-12 border rounded-[10px] text-responsive-base placeholder:text-[#9CAABD] focus:outline-none transition-colors ${
                       errors.confirmPassword && touched.confirmPassword
                         ? "border-[#FF0404] focus:border-[#FF0404] text-[#1E1E1E]"
@@ -744,10 +719,8 @@ export default function Register() {
                     </svg>
                   </button>
                 </div>
-                <ErrorMessage
-                  message={
-                    touched.confirmPassword ? errors.confirmPassword : ""
-                  }
+                <FormFieldError
+                  error={touched.confirmPassword ? errors.confirmPassword : ""}
                 />
               </div>
 
@@ -762,10 +735,10 @@ export default function Register() {
                 {isLoading || checkUserExists.isPending ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Checking...
+                    {t('common:messages.loading')}
                   </>
                 ) : (
-                  <>Continue</>
+                  <>{t('common:buttons.continue')}</>
                 )}
               </button>
             </form>
@@ -773,7 +746,7 @@ export default function Register() {
             {/* OR Divider */}
             <div className="flex items-center gap-[29px] my-5">
               <div className="flex-1 divider"></div>
-              <span className="text-responsive-base text-[#485567] font-medium">OR</span>
+              <span className="text-responsive-base text-[#485567] font-medium">{t('common:common.or').toUpperCase()}</span>
               <div className="flex-1 divider"></div>
             </div>
 
@@ -783,7 +756,7 @@ export default function Register() {
                 onSuccess={handleGoogleCredentialResponse}
                 onError={() => {
                   console.error('Google OAuth error occurred');
-                  setFormError('Failed to initialize Google login');
+                  setFormError(t('errors:SERVER_ERROR'));
                 }}
                 theme="filled_blue"
                 shape="rectangular"
@@ -797,13 +770,13 @@ export default function Register() {
               <div className="w-full divider"></div>
               <div className="text-center">
                 <span className="text-responsive-base text-[#294859]">
-                  Already have an account?{" "}
+                  {t('auth:register.alreadyHaveAccount')}{" "}
                 </span>
                 <Link
                   to="/"
                   className="text-responsive-base text-[#294859] font-bold hover:underline"
                 >
-                  Sign In
+                  {t('auth:login.title')}
                 </Link>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { Settings, Info } from "lucide-react";
@@ -6,6 +7,7 @@ import { toast } from "../../hooks/use-toast";
 import "../../styles/responsive-utilities.css";
 
 export default function LosGeneralSettings() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   
   // Loading and error states
@@ -35,8 +37,8 @@ export default function LosGeneralSettings() {
     } catch (error) {
       console.error("Error loading general settings:", error);
       toast({
-        title: "Error",
-        description: "Failed to load general settings",
+        title: t('common:messages.error'),
+        description: t('dashboard:losGeneral.loadError'),
         variant: "destructive",
       });
     } finally {
@@ -47,8 +49,8 @@ export default function LosGeneralSettings() {
   const handleSave = async () => {
     if (!property?.id) {
       toast({
-        title: "Error",
-        description: "No property selected",
+        title: t('common:messages.error'),
+        description: t('common:messages.noPropertySelected'),
         variant: "destructive",
       });
       return;
@@ -63,15 +65,15 @@ export default function LosGeneralSettings() {
       });
       
       toast({
-        title: "Success",
-        description: "General settings saved successfully!",
+        title: t('common:messages.success'),
+        description: t('dashboard:losGeneral.saveSuccess'),
       });
       
     } catch (error) {
       console.error("Error saving general settings:", error);
       toast({
-        title: "Error",
-        description: "Failed to save general settings. Please try again.",
+        title: t('common:messages.error'),
+        description: t('dashboard:losGeneral.saveError'),
         variant: "destructive",
       });
     } finally {
@@ -84,8 +86,8 @@ export default function LosGeneralSettings() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
-          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS general settings</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">{t('common:messages.noPropertySelected')}</div>
+          <div className="text-responsive-sm text-gray-500">{t('dashboard:lengthOfStay.selectPropertyMessage')}</div>
         </div>
       </div>
     );
@@ -100,10 +102,10 @@ export default function LosGeneralSettings() {
             <Settings size={34} className="text-[#287CAC]" />
             <div>
               <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                LOS General Settings
+                {t('dashboard:losGeneral.title')}
               </h2>
               <p className="text-[#8A8E94] font-bold text-responsive-lg">
-                Configure global settings for Length of Stay calculations.
+                {t('dashboard:losGeneral.subtitle')}
               </p>
             </div>
           </div>
@@ -113,7 +115,7 @@ export default function LosGeneralSettings() {
             <div className="container-margin-sm container-padding-base bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center form-gap-base">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-normal text-responsive-base">Loading general settings...</span>
+                <span className="text-blue-800 font-normal text-responsive-base">{t('common:messages.loading')}</span>
               </div>
             </div>
           )}
@@ -121,14 +123,14 @@ export default function LosGeneralSettings() {
 
           {/* Info Section */}
           <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
-            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">General Settings Overview</h3>
+            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">{t('dashboard:losGeneralSettings.overviewTitle', { defaultValue: 'General Settings Overview' })}</h3>
             <div className="text-black/60 text-responsive-base leading-relaxed">
               <p className="container-margin-sm">
-                These settings control how the LOS algorithm analyzes competitors and calculates requirements:
+                {t('dashboard:losGeneralSettings.overviewDescription', { defaultValue: 'These settings control how the LOS algorithm analyzes competitors and calculates requirements:' })}
               </p>
               <ul className="form-gap-base text-responsive-sm">
-                <li>• <strong>Number of Competitors:</strong> Minimum competitors required to apply competitor-based LOS</li>
-                <li>• <strong>LOS Aggregation Method:</strong> How to combine competitor LOS values (minimum or maximum)</li>
+                <li>• <strong>{t('dashboard:losGeneralSettings.numberOfCompetitors', { defaultValue: 'Number of Competitors' })}:</strong> {t('dashboard:losGeneralSettings.competitorsDescription', { defaultValue: 'Minimum competitors required to apply competitor-based LOS' })}</li>
+                <li>• <strong>{t('dashboard:losGeneralSettings.losAggregationMethod', { defaultValue: 'LOS Aggregation Method' })}:</strong> {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })} ({t('dashboard:losGeneralSettings.minimum', { defaultValue: 'minimum' })} {t('common:common.or', { defaultValue: 'or' })} {t('dashboard:losGeneralSettings.maximum', { defaultValue: 'maximum' })})</li>
               </ul>
             </div>
           </div>
@@ -139,7 +141,7 @@ export default function LosGeneralSettings() {
               {/* Number of Competitors */}
               <div>
                 <label className="form-label">
-                  Number of Competitors
+                  {t('dashboard:losGeneralSettings.numberOfCompetitors', { defaultValue: 'Number of Competitors' })}
                 </label>
                 <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
                   <input
@@ -152,7 +154,7 @@ export default function LosGeneralSettings() {
                   />
                   <Info size={20} className="text-gray-500 hidden lg:inline" />
                   <span className="text-responsive-sm text-gray-600">
-                    Minimum competitors required to apply competitor-based LOS
+                    {t('dashboard:losGeneralSettings.competitorsDescription', { defaultValue: 'Minimum competitors required to apply competitor-based LOS' })}
                   </span>
                 </div>
               </div>
@@ -160,7 +162,7 @@ export default function LosGeneralSettings() {
               {/* LOS Aggregation Method */}
               <div>
                 <label className="form-label">
-                  LOS Aggregation Method
+                  {t('dashboard:losGeneralSettings.losAggregationMethod', { defaultValue: 'LOS Aggregation Method' })}
                 </label>
                 <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
                   <select
@@ -169,12 +171,12 @@ export default function LosGeneralSettings() {
                     disabled={isLoading || isSaving}
                     className="w-48 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="min">Minimum</option>
-                    <option value="max">Maximum</option>
+                    <option value="min">{t('dashboard:losGeneralSettings.minimum', { defaultValue: 'Minimum' })}</option>
+                    <option value="max">{t('dashboard:losGeneralSettings.maximum', { defaultValue: 'Maximum' })}</option>
                   </select>
                   <Info size={20} className="text-gray-500 hidden lg:inline" />
                   <span className="text-responsive-sm text-gray-600">
-                    How to combine competitor LOS values
+                    {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })}
                   </span>
                 </div>
               </div>
@@ -190,12 +192,12 @@ export default function LosGeneralSettings() {
                 {isSaving ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Saving...
+                    {t('common:messages.saving')}
                   </>
                 ) : (
                   <>
                     <Settings size={20} />
-                    Save General Settings
+                    {t('dashboard:losGeneralSettings.saveButton', { defaultValue: 'Save General Settings' })}
                   </>
                 )}
               </button>

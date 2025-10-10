@@ -26,6 +26,7 @@ interface Plan {
 
 export default function SelectPlan() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const queryClient = useQueryClient();
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("scale");
   const [numberOfRooms, setNumberOfRooms] = useState<number>(1);
@@ -485,28 +486,28 @@ export default function SelectPlan() {
 
         {/* Title and Description */}
         <div className="text-center container-margin-sm">
-          <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-2">Plans</h1>
+          <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-2">{t('onboarding:selectPlan.title')}</h1>
           <div className="flex flex-col items-center gap-2 mb-4">
             <p className="text-responsive-lg text-[#485567]">
-              Choose your plan and complete your registration
+              {t('onboarding:selectPlan.subtitle')}
             </p>
             <button
               onClick={() => navigate('/plan-information')}
               className="text-responsive-sm text-[#294758] underline hover:text-[#1e3340]"
             >
-              More information
+              {t('onboarding:selectPlan.moreInfo')}
             </button>
           </div>
           <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4">
             <div className="flex items-center justify-between">
               <p className="text-responsive-sm text-[#64748B]">
-                Pricing calculated for {numberOfRooms} {numberOfRooms === 1 ? 'room' : 'rooms'}
+                {t('onboarding:selectPlan.pricingFor', { count: numberOfRooms, room: numberOfRooms === 1 ? t('onboarding:selectPlan.room') : t('onboarding:selectPlan.rooms') })}
               </p>
               <button
                 onClick={handleOpenRoomModal}
                 className="text-responsive-sm text-[#294758] font-medium hover:text-[#1e3340] underline"
               >
-                Change
+                {t('common:buttons.edit')}
               </button>
             </div>
           </div>
@@ -531,7 +532,7 @@ export default function SelectPlan() {
                 />
               </svg>
               <p className="text-responsive-sm text-[#C2410C] font-medium">
-                Our sales team will help you integrate Vivere Stays based on your specific PMS integration needs.
+                {t('onboarding:selectPlan.pmsWarning')}
               </p>
             </div>
           </div>
@@ -563,7 +564,7 @@ export default function SelectPlan() {
               {/* Only show selection buttons for standard PMS users */}
               {pmsSelectionType !== "custom_or_none" && (
                 <button className="bg-[#2C4E60] text-white btn-padding-sm rounded-[9px] text-responsive-sm font-normal hover:bg-[#234149] transition-colors">
-                  {plan.id === "pro" ? "Contact Sales" : "Select"}
+                  {plan.id === "pro" ? t('onboarding:selectPlan.contactSales') : t('onboarding:selectPlan.selectButton')}
                 </button>
               )}
             </div>
@@ -592,7 +593,7 @@ export default function SelectPlan() {
                   strokeLinejoin="round"
                 />
               </svg>
-              Back
+              {t('common:buttons.back')}
             </button>
             <button
               onClick={handleContinue}
@@ -606,11 +607,11 @@ export default function SelectPlan() {
               {isLoading || updateProfileMutation.isPending || updateOnboardingMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Saving...
+                  {t('common:messages.saving')}
                 </>
               ) : (
                 <>
-                  {pmsSelectionType === "custom_or_none" ? "Contact Sales" : "Continue to Payment"}
+                  {pmsSelectionType === "custom_or_none" ? t('onboarding:selectPlan.contactSales') : t('onboarding:selectPlan.continueToPayment')}
                   <svg
                     width="21"
                     height="20"
@@ -636,7 +637,7 @@ export default function SelectPlan() {
             onClick={() => navigate("/add-competitor")}
             className="flex items-center gap-2 btn-padding-sm rounded-[10px] text-responsive-sm font-medium text-[#64748B] border border-[#E2E8F0] bg-white hover:bg-gray-50 transition-colors"
           >
-            Skip Payment (Temporary)
+            {t('onboarding:selectPlan.skipPayment')}
           </button>
         </div>
       </div>
@@ -647,16 +648,16 @@ export default function SelectPlan() {
           <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-md mx-4">
             <div className="text-center container-margin-sm">
               <h2 className="text-responsive-2xl font-bold text-[#1E1E1E] mb-2">
-                Update Room Count
+                {t('onboarding:selectPlan.updateRoomTitle')}
               </h2>
               <p className="text-responsive-base text-[#485567]">
-                How many rooms does your property have?
+                {t('onboarding:selectPlan.updateRoomQuestion')}
               </p>
             </div>
 
             <div className="mb-6">
               <label className="block form-label mb-2">
-                Number of Rooms
+                {t('onboarding:hotelInformation.numberOfRoomsLabel')}
               </label>
               <input
                 type="number"
@@ -665,7 +666,7 @@ export default function SelectPlan() {
                 value={tempRoomCount}
                 onChange={(e) => setTempRoomCount(parseInt(e.target.value) || 1)}
                 className="w-full input-height-base input-padding-base border border-[#D7DFE8] rounded-[8px] bg-white text-responsive-base focus:outline-none focus:border-[#294859] transition-colors"
-                placeholder="Enter number of rooms"
+                placeholder={t('onboarding:selectPlan.roomPlaceholder')}
               />
             </div>
 
@@ -674,7 +675,7 @@ export default function SelectPlan() {
                 onClick={handleCloseRoomModal}
                 className="flex-1 input-height-base bg-white border border-[#D9D9D9] text-[#294758] text-responsive-base font-bold rounded-[10px] hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('common:buttons.cancel')}
               </button>
               <button
                 onClick={handleSaveRoomCount}
@@ -685,7 +686,7 @@ export default function SelectPlan() {
                     : "bg-[#294758] text-white hover:bg-[#234149]"
                 }`}
               >
-                {updatePropertyMutation.isPending ? "Saving..." : "Save Changes"}
+                {updatePropertyMutation.isPending ? t('common:messages.saving') : t('common:buttons.save')}
               </button>
             </div>
           </div>

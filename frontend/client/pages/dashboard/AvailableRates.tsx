@@ -1,10 +1,12 @@
 import { useState, useEffect, useContext } from "react";
 import { Save, ChevronDown, Percent } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { dynamicPricingService, UnifiedRoomRate } from "../../../shared/api/dynamic";
 import { toast } from "../../hooks/use-toast";
 import { PropertyContext } from "../../../shared/PropertyContext";
 
 export default function AvailableRates() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const [rates, setRates] = useState<UnifiedRoomRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,8 +46,8 @@ export default function AvailableRates() {
         setEditableRates(sortedRates);
       } catch (err: any) {
         console.error('Error fetching available rates:', err);
-        const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load available rates';
-        toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
+        const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:availableRates.loadError');
+        toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
       } finally {
         setLoading(false);
       }
@@ -57,8 +59,8 @@ export default function AvailableRates() {
   const handleSave = async () => {
     if (!property?.id) {
       toast({
-        title: "Error",
-        description: "No property selected",
+        title: t('common:messages.error'),
+        description: t('common:messages.noPropertySelected'),
         variant: "destructive",
       });
       return;
@@ -80,8 +82,8 @@ export default function AvailableRates() {
       });
 
       toast({
-        title: "Success",
-        description: `Successfully updated ${response.updated_count} rates and created ${response.created_count} new configurations`,
+        title: t('common:messages.success'),
+        description: t('dashboard:availableRates.saveSuccess', { updated: response.updated_count, created: response.created_count }),
       });
       
       // Refresh the data to show updated values
@@ -93,8 +95,8 @@ export default function AvailableRates() {
       
     } catch (err: any) {
       console.error('Error saving available rates:', err);
-      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to save available rates. Please try again.';
-      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
+      const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:availableRates.saveError');
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -172,8 +174,8 @@ export default function AvailableRates() {
         onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
         className="w-full input-padding-sm pr-8 text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE] appearance-none cursor-pointer"
       >
-        <option value="Percentage">Percentage</option>
-        <option value="Additional">Additional</option>
+        <option value="Percentage">{t('dashboard:availableRates.percentage', { defaultValue: 'Percentage' })}</option>
+        <option value="Additional">{t('dashboard:availableRates.additional', { defaultValue: 'Additional' })}</option>
       </select>
       <ChevronDown size={16} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" />
     </div>
@@ -222,10 +224,10 @@ export default function AvailableRates() {
             </svg>
             <div>
               <h2 className="text-3xl font-bold text-[#287CAC]">
-                Available Rates
+                {t('dashboard:availableRates.title')}
               </h2>
               <p className="text-[#8A8E94] font-bold text-lg">
-                Price variations depending on room type. {!loading && `(${editableRates.length} rates)`}
+                {t('dashboard:availableRates.subtitle')} {!loading && `(${editableRates.length} ${t('dashboard:availableRates.rates')})`}
               </p>
             </div>
           </div>
@@ -234,14 +236,14 @@ export default function AvailableRates() {
           <div className="mb-8">
             {/* Desktop Table Headers */}
             <div className="hidden lg:grid grid-cols-8 gap-4 mb-4 text-[#375A7D] font-bold text-base">
-              <div>Room ID</div>
-              <div>Room Name</div>
-              <div>Rate ID</div>
-              <div>Rate Name</div>
-              <div>Rate Category</div>
-              <div>Increment Type</div>
-              <div>Increment Value</div>
-              <div>Select as Base</div>
+              <div>{t('dashboard:availableRates.roomId')}</div>
+              <div>{t('dashboard:availableRates.roomName')}</div>
+              <div>{t('dashboard:availableRates.rateId')}</div>
+              <div>{t('dashboard:availableRates.rateName')}</div>
+              <div>{t('dashboard:availableRates.rateCategory')}</div>
+              <div>{t('dashboard:availableRates.incrementType')}</div>
+              <div>{t('dashboard:availableRates.incrementValue')}</div>
+              <div>{t('dashboard:availableRates.selectAsBase')}</div>
             </div>
 
             {/* Divider Line */}
@@ -251,11 +253,11 @@ export default function AvailableRates() {
             <div className="space-y-3">
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="text-gray-500">Loading available rates...</div>
+                  <div className="text-gray-500">{t('dashboard:availableRates.loadingRates')}</div>
                 </div>
               ) : editableRates.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-gray-500">No available rates found</div>
+                  <div className="text-gray-500">{t('dashboard:availableRates.noRatesFound')}</div>
                 </div>
               ) : (
                 editableRates.map((rate) => (
@@ -299,7 +301,7 @@ export default function AvailableRates() {
                       {/* Rate Category */}
                       <div>
                         <CategorySelector
-                          category={rate.rate_category || 'Not specified'}
+                          category={rate.rate_category || t('dashboard:availableRates.notSpecified', { defaultValue: 'Not specified' })}
                           hasDropdown={true}
                         />
                       </div>
@@ -339,7 +341,7 @@ export default function AvailableRates() {
                           {rate.room_name}
                         </h4>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">Base Rate</span>
+                          <span className="text-sm text-gray-600">{t('dashboard:availableRates.baseRate', { defaultValue: 'Base Rate' })}</span>
                           <ToggleSwitch enabled={rate.is_base_rate} onChange={() => toggleBaseRate(rate.rate_id)} />
                         </div>
                       </div>
@@ -348,7 +350,7 @@ export default function AvailableRates() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Room ID
+                            {t('dashboard:availableRates.roomId')}
                           </label>
                           <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600">
                             {rate.room_id}
@@ -356,7 +358,7 @@ export default function AvailableRates() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Rate ID
+                            {t('dashboard:availableRates.rateId', { defaultValue: 'Rate ID' })}
                           </label>
                           <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600">
                             {rate.rate_id}
@@ -368,7 +370,7 @@ export default function AvailableRates() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Rate Name
+                            {t('dashboard:availableRates.rateName', { defaultValue: 'Rate Name' })}
                           </label>
                           <div className="px-3 py-2 text-sm font-normal border border-gray-200 rounded bg-gray-50 text-gray-600">
                             {rate.rate_name}
@@ -376,10 +378,10 @@ export default function AvailableRates() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Rate Category
+                            {t('dashboard:availableRates.rateCategory', { defaultValue: 'Rate Category' })}
                           </label>
                           <CategorySelector
-                            category={rate.rate_category || 'Not specified'}
+                            category={rate.rate_category || t('dashboard:availableRates.notSpecified', { defaultValue: 'Not specified' })}
                             hasDropdown={true}
                           />
                         </div>
@@ -389,7 +391,7 @@ export default function AvailableRates() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Increment Type
+                            {t('dashboard:availableRates.incrementType')}
                           </label>
                           <IncrementTypeSelector 
                             type={rate.increment_type} 
@@ -398,7 +400,7 @@ export default function AvailableRates() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Increment Value
+                            {t('dashboard:availableRates.incrementValue')}
                           </label>
                           <input
                             type="number"
@@ -428,7 +430,7 @@ export default function AvailableRates() {
               }`}
             >
               <Save size={24} />
-              {saving ? "Saving..." : "Save"}
+              {saving ? t('common:messages.saving') : t('common:buttons.save')}
             </button>
           </div>
         </div>
@@ -436,40 +438,33 @@ export default function AvailableRates() {
         {/* Algorithm Info Section */}
         <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg p-6 mt-8">
           <h3 className="text-lg font-bold text-[#294758] mb-3">
-            Algorithm checks for changes on this tab: Daily at 9am
+            {t('dashboard:availableRates.algorithmSchedule', { defaultValue: 'Algorithm checks for changes on this tab: Daily at 9am' })}
           </h3>
           <div className="text-black/60 text-base leading-relaxed">
             <p className="mb-4">
-              The Available Rates worksheet defines how different room rates are
-              calculated and displayed.
+              {t('dashboard:availableRates.algorithmDescription', { defaultValue: 'The Available Rates worksheet defines how different room rates are calculated and displayed.' })}
             </p>
             <p className="mb-2">
-              <strong>How It Works Together:</strong>
+              <strong>{t('dashboard:availableRates.howItWorks', { defaultValue: 'How It Works Together:' })}</strong>
             </p>
             <ul className="space-y-1 text-sm">
               <li>
-                • Room Setup → Each room is linked to a base rate ID and a rate
-                name for identification.
+                • {t('dashboard:availableRates.algorithmStep1', { defaultValue: 'Room Setup → Each room is linked to a base rate ID and a rate name for identification.' })}
               </li>
               <li>
-                • Rate Categories → Rates are classified (e.g., Flexible,
-                Non-refundable, Advance Purchase).
+                • {t('dashboard:availableRates.algorithmStep2', { defaultValue: 'Rate Categories → Rates are classified (e.g., Flexible, Non-refundable, Advance Purchase).' })}
               </li>
               <li>
-                • Calculation Type → Define if the adjustment is a fixed amount
-                or a percentage.
+                • {t('dashboard:availableRates.algorithmStep3', { defaultValue: 'Calculation Type → Define if the adjustment is a fixed amount or a percentage.' })}
               </li>
               <li>
-                • Calculation Value → Numeric adjustment applied to the base
-                rate.
+                • {t('dashboard:availableRates.algorithmStep4', { defaultValue: 'Calculation Value → Numeric adjustment applied to the base rate.' })}
               </li>
               <li>
-                • Activation → Switch controls which rates are active and
-                visible.
+                • {t('dashboard:availableRates.algorithmStep5', { defaultValue: 'Activation → Switch controls which rates are active and visible.' })}
               </li>
               <li>
-                • Final Available Rates → Produces the list of active rates that
-                will be shown to users.
+                • {t('dashboard:availableRates.algorithmStep6', { defaultValue: 'Final Available Rates → Produces the list of active rates that will be shown to users.' })}
               </li>
             </ul>
           </div>

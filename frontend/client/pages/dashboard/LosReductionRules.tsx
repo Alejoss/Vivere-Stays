@@ -1,5 +1,6 @@
 import { Plus, Save, Trash2, Calendar, Info } from "lucide-react";
 import { useState, useEffect, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { toast } from "../../hooks/use-toast";
@@ -11,6 +12,7 @@ import type {
 import "../../styles/responsive-utilities.css";
 
 export default function LosReductionRules() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   
   // Loading and error states
@@ -60,8 +62,8 @@ export default function LosReductionRules() {
     } catch (error) {
       console.error("Error loading LOS reduction data:", error);
       toast({
-        title: "Error",
-        description: "Failed to load existing LOS reduction configuration",
+        title: t('common:messages.error'),
+        description: t('dashboard:losReduction.loadError'),
         variant: "destructive",
       });
     } finally {
@@ -147,7 +149,7 @@ export default function LosReductionRules() {
       }
       
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -193,7 +195,7 @@ export default function LosReductionRules() {
       console.error("Error saving rule:", error);
       
       // Extract detailed error message from backend response
-      let errorMessage = "Failed to save rule. Please try again.";
+      let errorMessage = t('dashboard:losReduction.saveError', { defaultValue: 'Failed to save rule. Please try again.' });
       
       // Try to parse the detail field first
       if (error?.detail) {
@@ -243,7 +245,7 @@ export default function LosReductionRules() {
       }
       
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -253,8 +255,8 @@ export default function LosReductionRules() {
   const handleSaveAll = async () => {
     if (!property?.id) {
       toast({
-        title: "Error",
-        description: "No property selected",
+        title: t('common:messages.error'),
+        description: t('common:messages.noPropertySelected'),
         variant: "destructive",
       });
       return;
@@ -268,15 +270,15 @@ export default function LosReductionRules() {
       await Promise.all(savePromises);
       
       toast({
-        title: "Success",
-        description: "All LOS reduction rules saved successfully!",
+        title: t('common:messages.success'),
+        description: t('dashboard:losReduction.saveSuccess'),
       });
       
     } catch (error: any) {
       console.error("Error saving LOS reduction rules:", error);
       
       // Extract detailed error message from backend response
-      let errorMessage = "Failed to save LOS reduction rules. Please try again.";
+      let errorMessage = t('dashboard:losReduction.saveError');
       
       // Try to parse the detail field first
       if (error?.detail) {
@@ -326,7 +328,7 @@ export default function LosReductionRules() {
       }
       
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -340,8 +342,8 @@ export default function LosReductionRules() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
-          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS reduction rules</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">{t('common:messages.noPropertySelected')}</div>
+          <div className="text-responsive-sm text-gray-500">{t('dashboard:losReduction.selectPropertyMessage', { defaultValue: 'Please select a property to configure LOS reduction rules' })}</div>
         </div>
       </div>
     );
@@ -356,10 +358,10 @@ export default function LosReductionRules() {
             <Calendar size={34} className="text-[#287CAC]" />
             <div>
               <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                LOS Reduction Rules
+                {t('dashboard:losReduction.title')}
               </h2>
               <p className="text-[#8A8E94] font-bold text-responsive-lg">
-                Configure conditions to reduce length of stay requirements.
+                {t('dashboard:losReduction.subtitle')}
               </p>
             </div>
           </div>
@@ -369,7 +371,7 @@ export default function LosReductionRules() {
             <div className="container-margin-sm container-padding-base bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center form-gap-base">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-normal text-responsive-base">Loading LOS reduction rules...</span>
+                <span className="text-blue-800 font-normal text-responsive-base">{t('common:messages.loading')}</span>
               </div>
             </div>
           )}
@@ -377,18 +379,18 @@ export default function LosReductionRules() {
 
           {/* Info Section */}
           <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
-            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">How Reduction Rules Work</h3>
+            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">{t('dashboard:losReduction.howItWorksTitle', { defaultValue: 'How Reduction Rules Work' })}</h3>
             <div className="text-black/60 text-responsive-base leading-relaxed">
               <p className="container-margin-sm">
-                Reduction rules automatically reduce the LOS requirement when specific conditions are met:
+                {t('dashboard:losReduction.howItWorksDesc', { defaultValue: 'Reduction rules automatically reduce the LOS requirement when specific conditions are met:' })}
               </p>
               <ul className="form-gap-base text-responsive-sm">
-                <li>• <strong>Lead Time:</strong> Days between booking and check-in</li>
-                <li>• <strong>Occupancy Level:</strong> Current occupancy percentage</li>
-                <li>• <strong>LOS Value:</strong> How much to reduce the LOS by</li>
+                <li>• <strong>{t('dashboard:losReduction.leadTimeLabel', { defaultValue: 'Lead Time' })}:</strong> {t('dashboard:losReduction.leadTimeDesc', { defaultValue: 'Days between booking and check-in' })}</li>
+                <li>• <strong>{t('dashboard:losReduction.occupancyLabel', { defaultValue: 'Occupancy Level' })}:</strong> {t('dashboard:losReduction.occupancyDesc', { defaultValue: 'Current occupancy percentage' })}</li>
+                <li>• <strong>{t('dashboard:losReduction.losValueLabel', { defaultValue: 'LOS Value' })}:</strong> {t('dashboard:losReduction.losValueDesc', { defaultValue: 'How much to reduce the LOS by' })}</li>
               </ul>
               <p className="container-margin-sm text-responsive-sm">
-                <strong>Example:</strong> If lead time ≤ 7 days and occupancy ≤ 50% → reduce LOS by 1 night.
+                <strong>{t('common:common.example', { defaultValue: 'Example' })}:</strong> {t('dashboard:losReduction.exampleText', { defaultValue: 'If lead time ≤ 7 days and occupancy ≤ 50% → reduce LOS by 1 night.' })}
               </p>
             </div>
           </div>
@@ -396,10 +398,10 @@ export default function LosReductionRules() {
           {/* Reduction Rules Table */}
           <div className="container-margin-sm">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
-              <h3 className="text-responsive-lg font-bold text-black">Reduction Rules</h3>
+              <h3 className="text-responsive-lg font-bold text-black">{t('dashboard:losReduction.reductionRules', { defaultValue: 'Reduction Rules' })}</h3>
               {reductionRules.length > 0 && (
                 <span className="text-responsive-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                  {reductionRules.length} rule{reductionRules.length !== 1 ? 's' : ''}
+                  {reductionRules.length} {t('dashboard:losReduction.ruleCount', { count: reductionRules.length, defaultValue: reductionRules.length !== 1 ? 'rules' : 'rule' })}
                 </span>
               )}
             </div>
@@ -409,15 +411,15 @@ export default function LosReductionRules() {
               {/* Table Headers */}
               <div className="grid grid-cols-4 gap-0">
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
-                  <span className="text-responsive-base font-semibold">Lead Time Category</span>
+                  <span className="text-responsive-base font-semibold">{t('dashboard:losReduction.leadTimeCategory', { defaultValue: 'Lead Time Category' })}</span>
                   <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
-                  <span className="text-responsive-base font-semibold">Occupancy Category</span>
+                  <span className="text-responsive-base font-semibold">{t('dashboard:losReduction.occupancyCategory', { defaultValue: 'Occupancy Category' })}</span>
                   <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
-                  <span className="text-responsive-base font-semibold">LOS Reduction</span>
+                  <span className="text-responsive-base font-semibold">{t('dashboard:losReduction.losReduction', { defaultValue: 'LOS Reduction' })}</span>
                   <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base">
@@ -500,9 +502,9 @@ export default function LosReductionRules() {
                   <div className="grid grid-cols-1 form-gap-base">
                     <div>
                       <label className="form-label">
-                        Lead Time Category
-                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
-                      </label>
+                      {t('dashboard:losReduction.leadTimeCategory', { defaultValue: 'Lead Time Category' })}
+                      <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
+                    </label>
                       <select
                         value={rule.lead_time_category}
                         onChange={(e) => updateReductionRule(rule.id, 'lead_time_category', e.target.value)}
@@ -518,9 +520,9 @@ export default function LosReductionRules() {
                     </div>
                     <div>
                       <label className="form-label">
-                        Occupancy Category
-                        <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
-                      </label>
+                      {t('dashboard:losReduction.occupancyCategory', { defaultValue: 'Occupancy Category' })}
+                      <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
+                    </label>
                       <select
                         value={rule.occupancy_category}
                         onChange={(e) => updateReductionRule(rule.id, 'occupancy_category', e.target.value)}
@@ -539,7 +541,7 @@ export default function LosReductionRules() {
                   {/* LOS Reduction */}
                   <div>
                     <label className="form-label">
-                      LOS Reduction
+                      {t('dashboard:losReduction.losReduction', { defaultValue: 'LOS Reduction' })}
                       <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                     </label>
                     <input
@@ -563,7 +565,7 @@ export default function LosReductionRules() {
                 className="flex items-center gap-3 btn-padding-base bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
               >
                 <Plus size={20} />
-                Add Reduction Rule
+                {t('dashboard:losReduction.addRule')}
               </button>
               
               <button 
@@ -574,12 +576,12 @@ export default function LosReductionRules() {
                 {isSaving ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Saving...
+                    {t('common:messages.saving')}
                   </>
                 ) : (
                   <>
                     <Save size={20} />
-                    Save
+                    {t('common:buttons.save')}
                   </>
                 )}
               </button>

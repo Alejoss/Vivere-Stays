@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { User, Mail, Calendar, Lock, Eye, EyeOff, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { profilesService, ProfileData, PasswordChangeRequest } from "../../../shared/api/profiles";
 import { useToast } from "../../../client/hooks/use-toast";
 
 export default function MyAccount() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [passwordLoading, setPasswordLoading] = useState(false);

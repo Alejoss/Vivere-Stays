@@ -1,6 +1,7 @@
 import { Plus, Save, Trash2, Calendar, Info } from "lucide-react";
 import { useState, useEffect, useContext } from "react";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PropertyContext } from "../../../shared/PropertyContext";
@@ -14,6 +15,7 @@ import type {
 import "../../styles/responsive-utilities.css";
 
 export default function LosSetupRules() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   
   // Loading and error states
@@ -107,8 +109,8 @@ export default function LosSetupRules() {
     } catch (error) {
       console.error("Error loading LOS setup data:", error);
       toast({
-        title: "Error",
-        description: "Failed to load existing LOS setup configuration",
+        title: t('common:messages.error'),
+        description: t('dashboard:losSetup.loadError'),
         variant: "destructive",
       });
     } finally {
@@ -142,7 +144,7 @@ export default function LosSetupRules() {
       console.error("Error deleting setup rule:", error);
       
       // Extract detailed error message from backend response
-      let errorMessage = "Failed to delete setup rule. Please try again.";
+      let errorMessage = t('dashboard:losSetup.deleteError');
       
       // Try to parse the detail field first
       if (error?.detail) {
@@ -195,7 +197,7 @@ export default function LosSetupRules() {
       }
       
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -243,7 +245,7 @@ export default function LosSetupRules() {
     } catch (error: any) {
       console.error("Error saving rule:", error);
       // Extract detailed error message from backend response
-      let errorMessage = "Failed to save rule. Please try again.";
+      let errorMessage = t('dashboard:losSetup.saveError');
       
       // Try to parse the detail field first
       if (error?.detail) {
@@ -302,8 +304,8 @@ export default function LosSetupRules() {
   const onSubmit = async (values: FormValues) => {
     if (!property?.id) {
       toast({
-        title: "Error",
-        description: "No property selected",
+        title: t('common:messages.error'),
+        description: t('common:messages.noPropertySelected'),
         variant: "destructive",
       });
       return;
@@ -319,10 +321,10 @@ export default function LosSetupRules() {
       if (rejected.length > 0) {
         const messages = Array.from(new Set(rejected.map(r => {
           const reason: any = r.reason;
-          return typeof reason === 'string' ? reason : reason?.message || 'Failed to save one or more LOS setup rules. Please fix errors and try again.';
+          return typeof reason === 'string' ? reason : reason?.message || t('dashboard:losSetup.saveError');
         })));
         toast({
-          title: "Error",
+          title: t('common:messages.error'),
           description: messages.join('; '),
           variant: "destructive",
         });
@@ -330,15 +332,15 @@ export default function LosSetupRules() {
       }
 
       toast({
-        title: "Success",
-        description: "All LOS setup rules saved successfully!",
+        title: t('common:messages.success'),
+        description: t('dashboard:losSetup.saveSuccess'),
       });
       
     } catch (error: any) {
       console.error("Error saving LOS setup rules:", error);
       
       // Extract detailed error message from backend response
-      let errorMessage = "Failed to save LOS setup rules. Please try again.";
+      let errorMessage = t('dashboard:losSetup.saveError');
       
       // Try to parse the detail field first
       if (error?.detail) {
@@ -390,7 +392,7 @@ export default function LosSetupRules() {
       }
       
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -404,8 +406,8 @@ export default function LosSetupRules() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="text-responsive-lg text-gray-600 container-margin-sm">No property selected</div>
-          <div className="text-responsive-sm text-gray-500">Please select a property to configure LOS setup rules</div>
+          <div className="text-responsive-lg text-gray-600 container-margin-sm">{t('common:messages.noPropertySelected')}</div>
+          <div className="text-responsive-sm text-gray-500">{t('dashboard:losSetup.selectPropertyMessage', { defaultValue: 'Please select a property to configure LOS setup rules' })}</div>
         </div>
       </div>
     );
@@ -421,10 +423,10 @@ export default function LosSetupRules() {
             <Calendar size={34} className="text-[#287CAC]" />
             <div>
               <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                LOS Setup Rules
+                {t('dashboard:losSetup.title')}
               </h2>
               <p className="text-[#8A8E94] font-bold text-responsive-lg">
-                Configure length of stay requirements by weekday.
+                {t('dashboard:losSetup.subtitle')}
               </p>
             </div>
           </div>
@@ -434,7 +436,7 @@ export default function LosSetupRules() {
             <div className="container-margin-sm container-padding-base bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center form-gap-base">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span className="text-blue-800 font-normal text-responsive-base">Loading LOS setup rules...</span>
+                <span className="text-blue-800 font-normal text-responsive-base">{t('common:messages.loading')}</span>
               </div>
             </div>
           )}
@@ -444,10 +446,10 @@ export default function LosSetupRules() {
           {/* Setup Rules Table */}
           <div className="container-margin-sm">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
-              <h3 className="text-responsive-lg font-bold text-black">Setup Rules</h3>
+              <h3 className="text-responsive-lg font-bold text-black">{t('dashboard:losSetup.setupRules', { defaultValue: 'Setup Rules' })}</h3>
               {fields.length > 0 && (
                 <span className="text-responsive-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                  {fields.length} rule{fields.length !== 1 ? 's' : ''}
+                  {fields.length} {t('dashboard:losSetup.ruleCount', { count: fields.length, defaultValue: fields.length !== 1 ? 'rules' : 'rule' })}
                 </span>
               )}
             </div>
@@ -457,19 +459,19 @@ export default function LosSetupRules() {
               {/* Table Headers */}
               <div className="grid grid-cols-5 gap-0">
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
-                  <span className="text-responsive-base font-semibold">From</span>
+                  <span className="text-responsive-base font-semibold">{t('dashboard:losSetup.from', { defaultValue: 'From' })}</span>
                   <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
-                  <span className="text-responsive-base font-semibold">To</span>
+                  <span className="text-responsive-base font-semibold">{t('dashboard:losSetup.to', { defaultValue: 'To' })}</span>
                   <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
-                  <span className="text-responsive-base font-semibold text-center">Day</span>
+                  <span className="text-responsive-base font-semibold text-center">{t('dashboard:losSetup.day', { defaultValue: 'Day' })}</span>
                   <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base flex items-center form-gap-base">
-                  <span className="text-responsive-base font-semibold text-center">LOS Value</span>
+                  <span className="text-responsive-base font-semibold text-center">{t('dashboard:losSetup.losValue', { defaultValue: 'LOS Value' })}</span>
                   <Info size={20} className="text-white hidden lg:inline" />
                 </div>
                 <div className="bg-hotel-brand-dark text-white container-padding-base">
@@ -598,7 +600,7 @@ export default function LosSetupRules() {
                   <div className="grid grid-cols-2 form-gap-base">
                     <div>
                       <label className="form-label">
-                        Day
+                        {t('dashboard:losSetup.day', { defaultValue: 'Day' })}
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <select
@@ -606,13 +608,13 @@ export default function LosSetupRules() {
                         disabled={isLoading || isSaving}
                         className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <option value="Monday">Monday</option>
-                        <option value="Tuesday">Tuesday</option>
-                        <option value="Wednesday">Wednesday</option>
-                        <option value="Thursday">Thursday</option>
-                        <option value="Friday">Friday</option>
-                        <option value="Saturday">Saturday</option>
-                        <option value="Sunday">Sunday</option>
+                        <option value="Monday">{t('common:days.monday', { defaultValue: 'Monday' })}</option>
+                        <option value="Tuesday">{t('common:days.tuesday', { defaultValue: 'Tuesday' })}</option>
+                        <option value="Wednesday">{t('common:days.wednesday', { defaultValue: 'Wednesday' })}</option>
+                        <option value="Thursday">{t('common:days.thursday', { defaultValue: 'Thursday' })}</option>
+                        <option value="Friday">{t('common:days.friday', { defaultValue: 'Friday' })}</option>
+                        <option value="Saturday">{t('common:days.saturday', { defaultValue: 'Saturday' })}</option>
+                        <option value="Sunday">{t('common:days.sunday', { defaultValue: 'Sunday' })}</option>
                       </select>
                       {formState.errors?.rules?.[index]?.day_of_week?.message && (
                         <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
@@ -620,7 +622,7 @@ export default function LosSetupRules() {
                     </div>
                     <div>
                       <label className="form-label">
-                        LOS Value
+                        {t('dashboard:losSetup.losValue', { defaultValue: 'LOS Value' })}
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <input
@@ -646,7 +648,7 @@ export default function LosSetupRules() {
                 className="flex items-center gap-3 btn-padding-base bg-[#F0F0F0] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
               >
                 <Plus size={20} />
-                Add Setup Rule
+                {t('dashboard:losSetup.addRule')}
               </button>
               
               <button 
@@ -657,12 +659,12 @@ export default function LosSetupRules() {
                 {isSaving ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Saving...
+                    {t('common:messages.saving')}
                   </>
                 ) : (
                   <>
                     <Save size={20} />
-                    Save
+                    {t('common:buttons.save')}
                   </>
                 )}
               </button>

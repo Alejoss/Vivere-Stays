@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useUserProperties, usePriceHistory } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { CompetitorWeeklyPricesResponse } from '../../../shared/api/dynamic';
@@ -94,6 +95,7 @@ function WeeklyPriceOverview({
   refreshKey?: number;
   onPriceChange?: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const [competitorData, setCompetitorData] = useState<CompetitorWeeklyPricesResponse | null>(null);
   const [competitorLoading, setCompetitorLoading] = useState(false);
   const [competitorError, setCompetitorError] = useState<string | null>(null);
@@ -161,7 +163,7 @@ function WeeklyPriceOverview({
         setCompetitorData(data);
       })
       .catch((err) => {
-        setCompetitorError('Failed to load competitor data');
+        setCompetitorError(t('dashboard:changePrices.loadError', { defaultValue: 'Failed to load competitor data' }));
       })
       .finally(() => setCompetitorLoading(false));
   }, [propertyId, weekStartDateStr, refreshKey]);
@@ -253,7 +255,7 @@ function WeeklyPriceOverview({
       }
     } catch (e) {
       console.error("Failed to change price for", dateStr, ":", e);
-      alert("Failed to change price");
+      alert(t('dashboard:changePrices.updateError', { defaultValue: 'Failed to change price' }));
       // Revert the local state to the original value
       setLocalPrices(prev => ({
         ...prev,
@@ -263,10 +265,10 @@ function WeeklyPriceOverview({
   };
 
   if (!propertyId) {
-    return <div className="p-8 text-center text-red-600">No property selected.</div>;
+    return <div className="p-8 text-center text-red-600">{t('common:messages.noPropertySelected')}</div>;
   }
   if (competitorLoading || priceHistoryLoading) {
-    return <div className="p-8 text-center">Loading data...</div>;
+    return <div className="p-8 text-center">{t('dashboard:changePrices.loadingCompetitors')}</div>;
   }
   if (competitorError) {
     return <div className="p-8 text-center text-red-600">{competitorError}</div>;
@@ -274,7 +276,7 @@ function WeeklyPriceOverview({
 
   // If no competitor data or empty
   if (!competitorData || !competitorData.competitors || competitorData.competitors.length === 0) {
-    return <div className="p-8 text-center text-gray-500">No competitor data</div>;
+    return <div className="p-8 text-center text-gray-500">{t('dashboard:changePrices.noCompetitorData')}</div>;
   }
 
   const goToPreviousWeek = () => {
@@ -424,7 +426,7 @@ function WeeklyPriceOverview({
         <div className="flex items-center gap-2">
           <Calendar className="hidden lg:block text-white" size={20} />
           <span className="hidden lg:block text-white text-xl font-bold">
-            Weekly Price Overview
+            {t('dashboard:changePrices.weeklyOverview', { defaultValue: 'Weekly Price Overview' })}
           </span>
         </div>
         <div className="flex items-center justify-center lg:justify-end gap-6">
@@ -437,7 +439,7 @@ function WeeklyPriceOverview({
           </button>
           <div className="px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm">
             <span className="text-hotel-brand text-base font-bold">
-              Week {currentWeek}
+              {t('dashboard:changePrices.week', { defaultValue: 'Week' })} {currentWeek}
             </span>
           </div>
           <button
@@ -490,7 +492,7 @@ function WeeklyPriceOverview({
       <div className="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-4">
         <div className="w-[140px] flex items-center">
           <span className="text-hotel-brand font-semibold text-base hidden lg:block">
-            Hotel
+            {t('dashboard:changePrices.hotel', { defaultValue: 'Hotel' })}
           </span>
         </div>
         <div 
@@ -640,7 +642,7 @@ function WeeklyPriceOverview({
         style={{ touchAction: 'pan-y' }}
       >
         <div className="w-[140px]">
-          <span className="text-black text-sm font-bold">Your Price</span>
+          <span className="text-black text-sm font-bold">{t('dashboard:changePrices.yourPrice')}</span>
         </div>
         <div className="flex-1 flex items-center justify-center px-4">
           {visibleDays.map(({ date, index }) => {
@@ -670,7 +672,7 @@ function WeeklyPriceOverview({
                     style={{ minWidth: 60, maxWidth: 80 }}
                     maxLength={5}
                     disabled={isPast}
-                    title={isPast ? 'Cannot edit past prices' : ''}
+                    title={isPast ? t('dashboard:changePrices.cannotEditPast', { defaultValue: 'Cannot edit past prices' }) : ''}
                   />
                 </div>
               </div>
@@ -682,7 +684,7 @@ function WeeklyPriceOverview({
       {/* Your Price Row (dynamic) - Desktop */}
       <div className="hidden lg:flex items-center bg-gray-50 border-b-2 border-hotel-brand px-4 py-5 rounded-b-lg">
         <div className="w-[140px]">
-          <span className="text-black text-xl font-bold">Your Price</span>
+          <span className="text-black text-xl font-bold">{t('dashboard:changePrices.yourPrice')}</span>
         </div>
         <div className="flex-1 flex items-center justify-center px-4">
           {competitorData?.dates.map((date, index) => {
@@ -712,7 +714,7 @@ function WeeklyPriceOverview({
                     style={{ minWidth: 70, maxWidth: 110 }}
                     maxLength={5}
                     disabled={isPast}
-                    title={isPast ? 'Cannot edit past prices' : ''}
+                    title={isPast ? t('dashboard:changePrices.cannotEditPast', { defaultValue: 'Cannot edit past prices' }) : ''}
                   />
                 </div>
               </div>
@@ -765,6 +767,7 @@ function StayPeriodSelector({
   onSuccess?: () => void;
   setSuccessMsg: (msg: string | null) => void;
 }) {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const todayStr = getTodayDateString();
   const [checkIn, setCheckIn] = useState(todayStr);
   const [checkOut, setCheckOut] = useState(() => {
@@ -853,7 +856,7 @@ function StayPeriodSelector({
       if (onSuccess) onSuccess();
     } catch (err: any) {
       setSuccessMsg(null);
-      alert(err?.message || 'Failed to update prices');
+      alert(err?.message || t('dashboard:changePrices.updateError', { defaultValue: 'Failed to update prices' }));
     } finally {
       setLoading(false);
     }
@@ -885,7 +888,7 @@ function StayPeriodSelector({
             />
           </svg>
           <span className="text-white text-lg font-semibold">
-            Select Date Range
+            {t('dashboard:changePrices.selectDateRange', { defaultValue: 'Select Date Range' })}
           </span>
         </div>
       </div>
@@ -894,7 +897,7 @@ function StayPeriodSelector({
         {/* Check-in Date */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-black mb-3">
-            Start Date
+            {t('dashboard:changePrices.startDate', { defaultValue: 'Start Date' })}
           </label>
           <div className="relative">
             <input
@@ -935,7 +938,7 @@ function StayPeriodSelector({
         {/* Check-out Date */}
         <div className="mb-6">
           <label className="block text-sm font-semibold text-black mb-3">
-            End Date
+            {t('dashboard:changePrices.endDate', { defaultValue: 'End Date' })}
           </label>
           <div className="relative">
             <input
@@ -988,10 +991,10 @@ function StayPeriodSelector({
         {/* Nightly Rate Display */}
         {nightlyRate !== "N/A" && (
           <div className="flex justify-between items-center mb-6">
-            <span className="text-[12px] text-[#294859]">Nightly rate:</span>
+            <span className="text-[12px] text-[#294859]">{t('dashboard:changePrices.nightlyRate', { defaultValue: 'Nightly rate' })}:</span>
             <span className="text-[12px] text-[#294859]">
               {nightlyRateLoading ? (
-                <span className="text-gray-400">Loading...</span>
+                <span className="text-gray-400">{t('common:messages.loading')}</span>
               ) : (
                 `$${nightlyRate}`
               )}
@@ -1004,7 +1007,7 @@ function StayPeriodSelector({
           className="w-full h-[37px] bg-[#294758] text-white text-sm font-semibold rounded-lg hover:bg-[#234149] transition-colors flex items-center justify-center disabled:opacity-50"
           disabled={loading || !propertyId || !checkIn || !checkOut || !totalPrice}
         >
-          {loading ? 'Updating...' : 'Submit'}
+          {loading ? t('common:messages.updating', { defaultValue: 'Updating...' }) : t('common:buttons.submit')}
         </button>
       </form>
     </div>
@@ -1012,6 +1015,7 @@ function StayPeriodSelector({
 }
 
 export default function ChangePrices() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { propertyId } = useParams();
   // Set default week to current week (today)
   const today = new Date();
@@ -1052,10 +1056,10 @@ export default function ChangePrices() {
       <div className="px-6 py-6 border-b border-gray-200">
         <div className="mb-4">
           <h1 className="text-3xl font-bold text-hotel-brand mb-2">
-            Change Prices
+            {t('dashboard:changePrices.title')}
           </h1>
           <p className="text-base text-gray-600">
-            Adjust your pricing strategy based on competitor analysis
+            {t('dashboard:changePrices.subtitle')}
           </p>
         </div>
       </div>

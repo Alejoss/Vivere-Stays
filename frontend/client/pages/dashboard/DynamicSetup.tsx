@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Save,
@@ -47,6 +48,7 @@ interface DynamicRule {
 }
 
 export default function DynamicSetup() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   const [rules, setRules] = useState<DynamicRule[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,8 +69,8 @@ export default function DynamicSetup() {
       const response = await dynamicPricingService.getDynamicRules(property.id);
       setRules(response.rules.map(rule => ({ ...rule, isNew: false })));
     } catch (err: any) {
-      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load dynamic rules';
-      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
+      const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:dynamicSetup.loadError');
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -102,13 +104,13 @@ export default function DynamicSetup() {
       try {
         await dynamicPricingService.deleteDynamicRule(property.id, rule.id);
         toast({
-          title: "Success",
-          description: "Rule deleted successfully",
+          title: t('common:messages.success'),
+          description: t('common:messages.deleteSuccess'),
         });
       } catch (err: any) {
         toast({
-          title: "Error",
-          description: err.message || 'Failed to delete rule',
+          title: t('common:messages.error'),
+          description: err.message || t('dashboard:dynamicSetup.deleteError'),
           variant: "destructive",
         });
         return;
@@ -160,13 +162,13 @@ export default function DynamicSetup() {
       }
       
       toast({
-        title: "Success",
-        description: "Dynamic rules saved successfully",
+        title: t('common:messages.success'),
+        description: t('dashboard:dynamicSetup.saveSuccess'),
       });
       loadRules(); // Reload to get updated data
     } catch (err: any) {
-      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to save dynamic rules';
-      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
+      const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:dynamicSetup.saveError');
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -184,8 +186,8 @@ export default function DynamicSetup() {
       onChange={(e) => onChange(e.target.value as 'Percentage' | 'Additional')}
       className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px] sm:min-w-[140px]"
     >
-      <option value="Percentage">Percentage</option>
-      <option value="Additional">Additional</option>
+      <option value="Percentage">{t('dashboard:availableRates.percentage')}</option>
+      <option value="Additional">{t('dashboard:availableRates.additional')}</option>
     </select>
   );
 
@@ -201,7 +203,7 @@ export default function DynamicSetup() {
       onChange={(e) => onChange(e.target.value)}
       className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[100px] sm:min-w-[177px]"
     >
-      <option value="">Select occupancy</option>
+      <option value="">{t('dashboard:dynamicSetup.selectOccupancy', { defaultValue: 'Select occupancy' })}</option>
       {OCCUPANCY_CATEGORIES.map(category => (
         <option key={category.value} value={category.value}>
           {category.label}
@@ -222,7 +224,7 @@ export default function DynamicSetup() {
       onChange={(e) => onChange(e.target.value)}
       className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[120px] sm:min-w-[217px]"
     >
-      <option value="">Select lead time</option>
+      <option value="">{t('dashboard:dynamicSetup.selectLeadTime', { defaultValue: 'Select lead time' })}</option>
       {LEAD_TIME_CATEGORIES.map(category => (
         <option key={category.value} value={category.value}>
           {category.label}
@@ -241,10 +243,10 @@ export default function DynamicSetup() {
             <TrendingUp size={34} className="text-[#287CAC]" />
             <div>
               <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                Dynamic Set Up
+                {t('dashboard:dynamicSetup.title')}
               </h2>
               <p className="text-[#8A8E94] font-bold text-responsive-lg">
-                Configure dynamic pricing rules based on occupancy and lead time
+                {t('dashboard:dynamicSetup.subtitle')}
               </p>
             </div>
           </div>
@@ -254,10 +256,10 @@ export default function DynamicSetup() {
           <div className="container-margin-sm">
             {/* Desktop Table Headers */}
             <div className="hidden lg:grid grid-cols-5 form-gap-base container-margin-sm text-[#494951] font-semibold text-responsive-base">
-              <div>Occupancy</div>
-              <div>Lead Time</div>
-              <div>Increment Type</div>
-              <div>Increment Value</div>
+              <div>{t('dashboard:dynamicSetup.occupancy')}</div>
+              <div>{t('dashboard:dynamicSetup.leadTime')}</div>
+              <div>{t('dashboard:availableRates.incrementType')}</div>
+              <div>{t('dashboard:availableRates.incrementValue')}</div>
               <div></div>
             </div>
 
@@ -268,11 +270,11 @@ export default function DynamicSetup() {
             <div className="form-gap-base">
               {loading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 text-responsive-base">Loading dynamic rules...</p>
+                  <p className="text-gray-500 text-responsive-base">{t('dashboard:dynamicSetup.loadingRules')}</p>
                 </div>
               ) : rules.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 text-responsive-base">No dynamic rules found. Click "Add Rule" to create your first dynamic pricing rule.</p>
+                  <p className="text-gray-500 text-responsive-base">{t('dashboard:dynamicSetup.noRulesFound')}</p>
                 </div>
               ) : (
                 rules.map((rule, index) => (
@@ -313,7 +315,7 @@ export default function DynamicSetup() {
                           type="number"
                           value={rule.increment_value}
                           onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
-                          placeholder="0"
+                          placeholder={t('common:common.zero', { defaultValue: '0' })}
                           min="0"
                           className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
                         />
@@ -338,7 +340,7 @@ export default function DynamicSetup() {
                       {/* Header with delete button */}
                       <div className="flex items-center justify-between">
                         <h4 className="text-responsive-lg font-semibold text-gray-700">
-                          Rule {index + 1}
+                          {t('dashboard:dynamicSetup.rule')} {index + 1}
                         </h4>
                         <button 
                           onClick={() => removeRule(index)}
@@ -353,7 +355,7 @@ export default function DynamicSetup() {
                       <div className="grid grid-cols-2 form-gap-base">
                         <div>
                           <label className="form-label">
-                            Occupancy
+                            {t('dashboard:dynamicSetup.occupancy')}
                           </label>
                           <OccupancySelector
                             value={rule.occupancy_category}
@@ -362,7 +364,7 @@ export default function DynamicSetup() {
                         </div>
                         <div>
                           <label className="form-label">
-                            Lead Time
+                            {t('dashboard:dynamicSetup.leadTime')}
                           </label>
                           <LeadTimeSelector
                             value={rule.lead_time_category}
@@ -375,7 +377,7 @@ export default function DynamicSetup() {
                       <div className="grid grid-cols-2 form-gap-base">
                         <div>
                           <label className="form-label">
-                            Increment Type
+                            {t('dashboard:availableRates.incrementType')}
                           </label>
                           <IncrementTypeSelector
                             value={rule.increment_type}
@@ -384,13 +386,13 @@ export default function DynamicSetup() {
                         </div>
                         <div>
                           <label className="form-label">
-                            Increment Value
+                            {t('dashboard:availableRates.incrementValue')}
                           </label>
                           <input
                             type="number"
                             value={rule.increment_value}
                             onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
+                            placeholder={t('common:common.zero', { defaultValue: '0' })}
                             min="0"
                             className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
@@ -410,7 +412,7 @@ export default function DynamicSetup() {
               className="flex items-center gap-3 btn-padding-base bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors text-responsive-base"
             >
               <Plus size={24} />
-              Add Rule
+              {t('dashboard:dynamicSetup.addRule')}
             </button>
             <button 
               onClick={saveRules}
@@ -418,7 +420,7 @@ export default function DynamicSetup() {
               className="flex items-center gap-5 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
             >
               <Save size={24} />
-              {saving ? 'Saving...' : 'Save Rules'}
+              {saving ? t('common:messages.saving') : t('common:buttons.save')}
             </button>
           </div>
         </div>
@@ -426,17 +428,14 @@ export default function DynamicSetup() {
         {/* How It Works Section */}
         <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
           <div className="container-margin-sm">
-            <h3 className="text-responsive-lg font-bold text-[#294758]">How It Works</h3>
+            <h3 className="text-responsive-lg font-bold text-[#294758]">{t('dashboard:dynamicSetup.howItWorks', { defaultValue: 'How It Works' })}</h3>
           </div>
           <div className="text-black/60 leading-relaxed form-gap-base text-responsive-base">
             <p>
-              The system automatically creates occupancy and lead time ranges
-              from your threshold values and applies increments based on current
-              conditions.
+              {t('dashboard:dynamicSetup.howItWorksDesc', { defaultValue: 'The system automatically creates occupancy and lead time ranges from your threshold values and applies increments based on current conditions.' })}
             </p>
             <p className="text-responsive-xs">
-              Example: At 50% occupancy (30-50% range) with 7 days lead time
-              (3-7 days range): $20 additional charge
+              {t('dashboard:dynamicSetup.howItWorksExample', { defaultValue: 'Example: At 50% occupancy (30-50% range) with 7 days lead time (3-7 days range): $20 additional charge' })}
             </p>
           </div>
         </div>

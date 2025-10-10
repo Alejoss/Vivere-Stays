@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Clock, Check, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { profilesService } from "../../../shared/api/profiles";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 
@@ -14,6 +15,7 @@ interface Notification {
 }
 
 export default function Notifications() {
+  const { t } = useTranslation(['dashboard', 'common']);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentFilter, setCurrentFilter] = useState<"all" | "unread">("unread");
   const [isLoading, setIsLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function Notifications() {
         setIsLoading(false);
       } catch (err) {
         console.error('Failed to load notifications:', err);
-        setError('Failed to load notifications. Please try again.');
+        setError(t('dashboard:notifications.loadError'));
         setIsLoading(false);
       }
     }
@@ -199,11 +201,11 @@ export default function Notifications() {
         {/* Title and Badge */}
         <div className="flex items-center gap-4 mb-8">
           <h1 className="text-3xl font-bold text-[#294758]">
-            Notifications
+            {t('dashboard:notifications.title')}
           </h1>
           {newCount > 0 && (
             <div className="bg-[#EF4444] text-white px-3 py-1 rounded-xl text-[12px]">
-              {newCount} new
+              {newCount} {t('common:messages.new', { defaultValue: 'new' })}
             </div>
           )}
         </div>
@@ -220,7 +222,7 @@ export default function Notifications() {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#294758] mx-auto mb-4"></div>
-              <p className="text-[#6B7280] text-base">Loading notifications...</p>
+              <p className="text-[#6B7280] text-base">{t('common:messages.loading')}</p>
             </div>
           </div>
         ) : (
@@ -236,7 +238,7 @@ export default function Notifications() {
                       : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
                   }`}
                 >
-                  All ({totalCount})
+                  {t('common:common.all')} ({totalCount})
                 </button>
                 <button
                   onClick={() => setCurrentFilter("unread")}
@@ -246,7 +248,7 @@ export default function Notifications() {
                       : "bg-white border border-[#E4E4E4] text-[#294859] hover:bg-gray-50"
                   }`}
                 >
-                  Unread ({unreadCount})
+                  {t('common:messages.unread', { defaultValue: 'Unread' })} ({unreadCount})
                 </button>
               </div>
 
@@ -256,7 +258,7 @@ export default function Notifications() {
                   className="flex items-center gap-2 px-4 py-3 border border-[#DCE0E4] rounded-lg bg-white text-[#294859] text-sm font-semibold hover:bg-gray-50 transition-colors"
                 >
                   <Check size={20} />
-                  Mark all as read
+                  {t('dashboard:notifications.markAllRead')}
                 </button>
               )}
             </div>
@@ -265,9 +267,7 @@ export default function Notifications() {
             {filteredNotifications.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-[#6B7280] text-base">
-                  {currentFilter === "unread"
-                    ? "No unread notifications"
-                    : "No notifications"}
+                  {t('dashboard:notifications.noNotifications')}
                 </p>
               </div>
             ) : (

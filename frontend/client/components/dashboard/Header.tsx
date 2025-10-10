@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { PropertyContext, PropertyContextType } from "../../../shared/PropertyContext";
 import { ConnectionContext } from '../../../shared/ConnectionContext';
+import LanguageSwitcher from "../LanguageSwitcher";
 
 export default function Header() {
   const context = useContext(PropertyContext) as PropertyContextType | undefined;
@@ -51,15 +52,21 @@ export default function Header() {
         </button>
       </div>
 
-      {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-2 px-3 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-        title="Logout"
-      >
-        <LogOut size={20} />
-        <span className="text-sm font-medium hidden sm:block">Logout</span>
-      </button>
+      {/* Right Section - Language Switcher and Logout */}
+      <div className="flex items-center gap-2">
+        {/* Language Switcher */}
+        <LanguageSwitcher variant="header" />
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-3 py-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+          title="Logout"
+        >
+          <LogOut size={20} />
+          <span className="text-sm font-medium hidden sm:block">Logout</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { useProfile } from "../../../shared/api/hooks";
 import { getLocalStorageItem } from "../../../shared/localStorage";
@@ -8,6 +9,7 @@ import { toast } from "../../hooks/use-toast";
 
 export default function ContactSalesOnboarding() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['onboarding', 'common']);
   const [userEmail, setUserEmail] = useState<string>("");
   const [pmsSelectionType, setPmsSelectionType] = useState<string | null>(null);
   const [customPmsName, setCustomPmsName] = useState<string | null>(null);
@@ -93,7 +95,7 @@ export default function ContactSalesOnboarding() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
           <p className="text-[16px] text-[#485567]">
-            {profileLoading ? "Loading your information..." : "Notifying our sales team..."}
+            {profileLoading ? t('common:messages.loading') : t('onboarding:contactSales.notifying')}
           </p>
         </div>
       </div>
@@ -139,22 +141,22 @@ export default function ContactSalesOnboarding() {
 
         {/* Title and Description */}
         <div className="text-center mb-8">
-          <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-2">Contact Sales</h1>
+          <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-2">{t('onboarding:contactSales.title')}</h1>
           <p className="text-[18px] text-[#485567] mb-4">
-            Let's discuss your specific needs and find the perfect solution for your property
+            {t('onboarding:contactSales.subtitle')}
           </p>
           
           {/* User Email Display */}
           {userEmail ? (
             <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4 mb-4">
               <p className="text-[14px] text-[#64748B]">
-                <span className="font-medium">Email:</span> {userEmail}
+                <span className="font-medium">{t('auth:register.emailLabel')}</span> {userEmail}
               </p>
             </div>
           ) : (
             <div className="bg-[#FFF9F1] border border-[#C2410C] rounded-lg p-4 mb-4">
               <p className="text-[14px] text-[#C2410C]">
-                <span className="font-medium">Note:</span> Email not found. Please ensure you're logged in.
+                <span className="font-medium">{t('onboarding:contactSales.note')}</span> {t('onboarding:contactSales.emailNotFound')}
               </p>
             </div>
           )}
@@ -179,14 +181,13 @@ export default function ContactSalesOnboarding() {
             </div>
             <div>
               <h3 className="text-[16px] font-semibold text-[#0C4A6E] mb-2">
-                Sales Team Notified
+                {t('onboarding:contactSales.teamNotifiedTitle')}
               </h3>
               <p className="text-[14px] text-[#0C4A6E] leading-relaxed">
-                Our sales team has been automatically notified about your onboarding progress. 
                 {customPmsName 
-                  ? ` We'll help you set up the perfect integration for your ${customPmsName} property management system.`
-                  : " We'll help you set up the perfect integration for your property management system."
-                } <strong>Our sales team will get in touch with you within 24 hours</strong> to discuss your specific needs and ensure a smooth onboarding experience.
+                  ? t('onboarding:contactSales.messageWithCustom', { pmsName: customPmsName })
+                  : t('onboarding:contactSales.messageGeneral')
+                }
               </p>
             </div>
           </div>
@@ -214,13 +215,13 @@ export default function ContactSalesOnboarding() {
                   strokeLinejoin="round"
                 />
               </svg>
-              Back
+              {t('common:buttons.back')}
             </button>
             <button
               onClick={handleContactSales}
               className="flex items-center gap-2 px-[36px] py-[18px] rounded-[10px] text-[16px] font-bold transition-colors bg-[#294758] text-white hover:bg-[#234149]"
             >
-              Competitor Configuration
+              {t('onboarding:contactSales.continueButton')}
               <svg
                 width="21"
                 height="20"

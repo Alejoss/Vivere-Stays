@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Save,
@@ -73,6 +74,7 @@ const OffersSchema = z.object({ offers: z.array(OfferSchema) });
 type OffersForm = z.infer<typeof OffersSchema>;
 
 export default function SpecialOffers() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,8 +115,8 @@ export default function SpecialOffers() {
         })),
       });
     } catch (err: any) {
-      const backendMsg = err?.response?.data?.message || err?.message || 'Failed to load offers';
-      toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
+      const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:specialOffers.loadError');
+      toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -148,7 +150,7 @@ export default function SpecialOffers() {
       try {
         await dynamicPricingService.deleteSpecialOffer(property.id, offer.id);
         toast({
-          title: "Success",
+          title: t('common:messages.success'),
           description: "Offer deleted successfully",
         });
       } catch (err: any) {
@@ -224,7 +226,7 @@ export default function SpecialOffers() {
       }
       
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: "Offers saved successfully",
       });
       loadOffers(); // Reload to get updated data
@@ -341,7 +343,7 @@ export default function SpecialOffers() {
               </svg>
               <div>
                 <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                  Special Offers
+                  {t('dashboard:specialOffers.title')}
                 </h2>
                 <p className="text-[#8A8E94] font-bold text-responsive-lg">
                   Manage your special offers and discounts
@@ -355,23 +357,23 @@ export default function SpecialOffers() {
           <div className="container-margin-sm">
             {/* Desktop Table Headers */}
             <div className="hidden lg:grid grid-cols-8 form-gap-base container-margin-sm text-black/70 font-bold text-responsive-base">
-              <div>Offer Name*</div>
-              <div>Valid From*</div>
-              <div>Valid Until*</div>
+              <div>{t('dashboard:specialOffers.offerName', { defaultValue: 'Offer Name' })}*</div>
+              <div>{t('dashboard:specialOffers.validFrom', { defaultValue: 'Valid From' })}*</div>
+              <div>{t('dashboard:specialOffers.validUntil', { defaultValue: 'Valid Until' })}*</div>
               <div className="text-center">
                 <div className="flex items-center gap-1">
-                  <span>Available From Days</span>
+                  <span>{t('dashboard:specialOffers.availableFromDays', { defaultValue: 'Available From Days' })}</span>
                   <Info size={17} className="text-gray-600 hidden lg:inline" />
                 </div>
               </div>
               <div className="text-center">
                 <div className="flex items-center gap-1">
-                  <span>Available Until Days</span>
+                  <span>{t('dashboard:specialOffers.availableUntilDays', { defaultValue: 'Available Until Days' })}</span>
                   <Info size={17} className="text-gray-600 hidden lg:inline" />
                 </div>
               </div>
-              <div>Type</div>
-              <div>Value*</div>
+              <div>{t('dashboard:specialOffers.type', { defaultValue: 'Type' })}</div>
+              <div>{t('dashboard:specialOffers.value', { defaultValue: 'Value' })}*</div>
               <div></div>
             </div>
 
@@ -379,11 +381,11 @@ export default function SpecialOffers() {
             <div className="form-gap-base">
               {loading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 text-responsive-base">Loading offers...</p>
+                  <p className="text-gray-500 text-responsive-base">{t('dashboard:specialOffers.loadingOffers', { defaultValue: 'Loading offers...' })}</p>
                 </div>
               ) : fields.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 text-responsive-base">No offers found. Click "Add Offer" to create your first special offer.</p>
+                  <p className="text-gray-500 text-responsive-base">{t('dashboard:specialOffers.noOffers')}</p>
                 </div>
               ) : (
                 fields.map((offer, index) => (
@@ -399,7 +401,7 @@ export default function SpecialOffers() {
                         <input
                           type="text"
                           {...register(`offers.${index}.offer_name` as const)}
-                          placeholder="Discount Name"
+                          placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
                           className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formState.errors?.offers?.[index]?.offer_name?.message ? (
@@ -519,12 +521,12 @@ export default function SpecialOffers() {
                       {/* Offer Name */}
                       <div>
                         <label className="form-label">
-                          Offer Name*
+                          {t('dashboard:specialOffers.offerName', { defaultValue: 'Offer Name' })}*
                         </label>
                         <input
                           type="text"
                           {...register(`offers.${index}.offer_name` as const)}
-                          placeholder="Discount Name"
+                          placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
                           className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formState.errors?.offers?.[index]?.offer_name?.message ? (
@@ -536,13 +538,13 @@ export default function SpecialOffers() {
                       <div className="grid grid-cols-2 form-gap-base">
                         <div>
                           <label className="form-label">
-                            Valid From*
+                            {t('dashboard:specialOffers.validFrom', { defaultValue: 'Valid From' })}*
                           </label>
                           <input
                             type="date"
                             {...register(`offers.${index}.valid_from` as const)}
                             className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
-                            placeholder="Select start date"
+                            placeholder={t('dashboard:specialOffers.selectStartDate', { defaultValue: 'Select start date' })}
                           />
                           {formState.errors?.offers?.[index]?.valid_from?.message ? (
                             <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
@@ -550,13 +552,13 @@ export default function SpecialOffers() {
                         </div>
                         <div>
                           <label className="form-label">
-                            Valid Until*
+                            {t('dashboard:specialOffers.validUntil', { defaultValue: 'Valid Until' })}*
                           </label>
                           <input
                             type="date"
                             {...register(`offers.${index}.valid_until` as const)}
                             className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
-                            placeholder="Select end date"
+                            placeholder={t('dashboard:specialOffers.selectEndDate', { defaultValue: 'Select end date' })}
                           />
                           {formState.errors?.offers?.[index]?.valid_until?.message ? (
                             <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
@@ -568,7 +570,7 @@ export default function SpecialOffers() {
                       <div className="grid grid-cols-2 form-gap-base">
                         <div>
                           <label className="form-label">
-                            Available From Days
+                            {t('dashboard:specialOffers.availableFromDays', { defaultValue: 'Available From Days' })}
                             <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
                           <input
@@ -584,7 +586,7 @@ export default function SpecialOffers() {
                         </div>
                         <div>
                           <label className="form-label">
-                            Available Until Days
+                            {t('dashboard:specialOffers.availableUntilDays', { defaultValue: 'Available Until Days' })}
                             <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
                           <input
@@ -604,19 +606,19 @@ export default function SpecialOffers() {
                       <div className="grid grid-cols-2 form-gap-base">
                         <div>
                           <label className="form-label">
-                            Type
+                            {t('dashboard:specialOffers.type', { defaultValue: 'Type' })}
                           </label>
                           <select
                             {...register(`offers.${index}.increment_type` as const)}
                             className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black appearance-none"
                           >
-                            <option value="Percentage">Percentage</option>
-                            <option value="Additional">Additional</option>
+                            <option value="Percentage">{t('dashboard:availableRates.percentage')}</option>
+                            <option value="Additional">{t('dashboard:availableRates.additional')}</option>
                           </select>
                         </div>
                         <div>
                           <label className="form-label">
-                            Value*
+                            {t('dashboard:specialOffers.value', { defaultValue: 'Value' })}*
                           </label>
                           <input
                             type="number"
@@ -644,14 +646,14 @@ export default function SpecialOffers() {
               className="flex items-center gap-3 btn-padding-base bg-[#C4D4F5] border border-[#294758] text-[#294758] rounded-lg font-semibold hover:bg-blue-100 transition-colors text-responsive-base"
             >
               <Plus size={24} />
-              Add Offer
+              {t('dashboard:specialOffers.addOffer')}
             </button>
             <button 
               onClick={handleSubmit(onSubmit, () => {
                 // Show a concise banner and focus first error
                 toast({
-                  title: 'Validation Error',
-                  description: 'Please fix the highlighted errors and try again.',
+                  title: t('common:messages.validationError', { defaultValue: 'Validation Error' }),
+                  description: t('common:messages.fixErrors', { defaultValue: 'Please fix the highlighted errors and try again.' }),
                   variant: 'destructive',
                 });
                 // Try to focus the first invalid field
@@ -669,7 +671,7 @@ export default function SpecialOffers() {
               className="flex items-center gap-4 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
             >
               <Save size={24} />
-              {saving ? 'Saving...' : 'Save Special Offers'}
+              {saving ? t('common:messages.saving') : t('common:buttons.save')}
             </button>
           </div>
 
@@ -677,22 +679,21 @@ export default function SpecialOffers() {
           {fields.length > 0 && (
             <div className="bg-[#F9FAFB] border border-[#EBEDF0] rounded-lg container-padding-base container-margin-sm">
               <h3 className="text-responsive-base font-bold text-gray-900 container-margin-sm">
-                Created Offers Summary
+                {t('dashboard:specialOffers.createdOffersSummary', { defaultValue: 'Created Offers Summary' })}
               </h3>
               <div className="form-gap-base text-responsive-sm">
                 {fields.filter((offer: any) => offer.id).map((offer: any, index) => (
                   <p key={offer.id || index}>
-                    <span className="text-gray-900 font-semibold">{offer.offer_name || 'Unnamed Offer'}</span>
-                    <span className="text-gray-500"> — valid from</span>
-                    <span className="text-gray-900"> {offer.valid_from} to {offer.valid_until}</span>
+                    <span className="text-gray-900 font-semibold">{offer.offer_name || t('dashboard:specialOffers.unnamedOffer', { defaultValue: 'Unnamed Offer' })}</span>
+                    <span className="text-gray-500"> — {t('dashboard:specialOffers.validFromTo', { from: offer.valid_from, to: offer.valid_until, defaultValue: `valid from ${offer.valid_from} to ${offer.valid_until}` })}</span>
                     {offer.applied_from_days !== null && offer.applied_until_days !== null && (
-                      <span className="text-gray-500"> (applied {offer.applied_from_days}-{offer.applied_until_days} days before)</span>
+                      <span className="text-gray-500"> ({t('dashboard:specialOffers.appliedDaysBefore', { from: offer.applied_from_days, to: offer.applied_until_days, defaultValue: `applied ${offer.applied_from_days}-${offer.applied_until_days} days before` })})</span>
                     )}
                   </p>
                 ))}
                 {fields.filter((offer: any) => !offer.id).length > 0 && (
                   <p className="text-blue-600 font-semibold">
-                    {fields.filter((offer: any) => !offer.id).length} new offer(s) pending save
+                    {t('dashboard:specialOffers.newOffersPending', { count: fields.filter((offer: any) => !offer.id).length, defaultValue: `${fields.filter((offer: any) => !offer.id).length} new offer(s) pending save` })}
                   </p>
                 )}
               </div>
@@ -705,28 +706,24 @@ export default function SpecialOffers() {
           <div className="flex items-center gap-3 container-margin-sm">
             <Info size={25} className="text-[#294758] hidden lg:inline" />
             <h3 className="text-responsive-lg font-bold text-[#294758]">
-              Tips for Creating Special Offers
+              {t('dashboard:specialOffers.tipsTitle', { defaultValue: 'Tips for Creating Special Offers' })}
             </h3>
           </div>
           <div className="text-black/60 leading-relaxed form-gap-base text-responsive-base">
             <p>
-              • Define clear start and end dates to avoid overlapping promotions
+              • {t('dashboard:specialOffers.tip1', { defaultValue: 'Define clear start and end dates to avoid overlapping promotions' })}
             </p>
             <p>
-              • Use descriptive names (e.g., Summer Discount, Weekend Deal) for
-              easy identification
+              • {t('dashboard:specialOffers.tip2', { defaultValue: 'Use descriptive names (e.g., Summer Discount, Weekend Deal) for easy identification' })}
             </p>
             <p>
-              • Combine fixed and percentage discounts strategically to attract
-              different guests
+              • {t('dashboard:specialOffers.tip3', { defaultValue: 'Combine fixed and percentage discounts strategically to attract different guests' })}
             </p>
             <p>
-              • Schedule offers in advance to align with holidays or local
-              events
+              • {t('dashboard:specialOffers.tip4', { defaultValue: 'Schedule offers in advance to align with holidays or local events' })}
             </p>
             <p>
-              • Keep discounts visible close to check-in dates to increase
-              last-minute bookings
+              • {t('dashboard:specialOffers.tip5', { defaultValue: 'Keep discounts visible close to check-in dates to increase last-minute bookings' })}
             </p>
           </div>
         </div>

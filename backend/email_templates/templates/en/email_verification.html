@@ -1,0 +1,83 @@
+<!-- Email Verification (content-only, used with Vivere Stays layout) -->
+<!-- Variables:
+     - user_name
+     - verification_code
+     - expiry_time
+-->
+
+<!-- Optional Title -->
+<h1 style="font-size: 24px; font-weight: 700; color: #1E1E1E; margin: 0 0 8px 0; text-align: center;">
+  Verify Your Email Address
+</h1>
+<p style="font-size: 16px; color: #485567; text-align: center; margin: 0 0 24px 0;">
+  Please use the verification code below to confirm your email address and complete your account setup.
+</p>
+
+<div class="content-section" style="margin: 24px 0;">
+  <p style="font-size: 16px; color: #485567; line-height: 1.6; margin: 0 0 24px 0;">
+    Hi {{user_name}},
+  </p>
+  
+  <p style="font-size: 16px; color: #485567; line-height: 1.6; margin: 0 0 24px 0;">
+    Welcome to Vivere Stays! To complete your account setup and access your hotel management dashboard, please verify your email address using the verification code below.
+  </p>
+  
+  <!-- Verification Code Box -->
+  <div style="background-color: #F8FAFC; border: 2px solid #294758; border-radius: 8px; padding: 24px; margin: 32px 0; text-align: center;">
+    <p style="font-size: 14px; color: #485567; margin: 0 0 12px 0; font-weight: 500;">
+      Your Verification Code
+    </p>
+    <div style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: bold; color: #1E1E1E; letter-spacing: 8px; margin: 8px 0;">
+      {{verification_code}}
+    </div>
+    <p style="font-size: 12px; color: #9CAABD; margin: 12px 0 0 0;">
+      This code expires in {{expiry_time}}
+    </p>
+  </div>
+  
+  <!-- Instructions -->
+  <div style="background-color: #EEF9FF; border: 1px solid #D8E9FE; border-radius: 8px; padding: 20px; margin: 24px 0;">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <!-- Info Icon -->
+      <div style="margin-top: 2px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="10" cy="10" r="9" stroke="#294758" stroke-width="1.5"/>
+          <path d="M10 14V10M10 6H10.01" stroke="#294758" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 8px 0;">
+          How to verify your email:
+        </p>
+        <ol style="font-size: 14px; color: #485567; line-height: 1.5; margin: 0; padding-left: 16px;">
+          <li>Return to the Vivere Stays verification page</li>
+          <li>Enter the 5-digit code shown above</li>
+          <li>Click "Verify Email" to continue</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Security Notice -->
+  <div style="background-color: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 16px; margin: 24px 0;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <!-- Warning Icon -->
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 10.9747C8.11644 10.9747 8.214 10.9353 8.29267 10.8567C8.37089 10.778 8.41 10.6804 8.41 10.564C8.41 10.448 8.37067 10.3507 8.292 10.272C8.21333 10.1933 8.116 10.1538 8 10.1533C7.884 10.1529 7.78667 10.1922 7.708 10.2713C7.62933 10.3504 7.59 10.4478 7.59 10.5633C7.59 10.6789 7.62933 10.7764 7.708 10.856C7.78667 10.9356 7.884 10.9756 8 10.9747ZM7.66667 8.76867H8.33333V4.76867H7.66667V8.76867ZM8.002 14C7.17267 14 6.39267 13.8427 5.662 13.528C4.93178 13.2129 4.29644 12.7853 3.756 12.2453C3.21556 11.7053 2.78778 11.0707 2.47267 10.3413C2.15756 9.612 2 8.83222 2 8.002C2 7.17178 2.15756 6.39178 2.47267 5.662C2.78733 4.93178 3.21422 4.29644 3.75333 3.756C4.29244 3.21556 4.92733 2.78778 5.658 2.47267C6.38867 2.15756 7.16867 2 7.998 2C8.82733 2 9.60733 2.15756 10.338 2.47267C11.0682 2.78733 11.7036 3.21444 12.244 3.754C12.7844 4.29356 13.2122 4.92844 13.5273 5.65867C13.8424 6.38889 14 7.16867 14 7.998C14 8.82733 13.8427 9.60733 13.528 10.338C13.2133 11.0687 12.7858 11.704 12.2453 12.244C11.7049 12.784 11.0702 13.2118 10.3413 13.5273C9.61244 13.8429 8.83267 14.0004 8.002 14ZM8 13.3333C9.48889 13.3333 10.75 12.8167 11.7833 11.7833C12.8167 10.75 13.3333 9.48889 13.3333 8C13.3333 6.51111 12.8167 5.25 11.7833 4.21667C10.75 3.18333 9.48889 2.66667 8 2.66667C6.51111 2.66667 5.25 3.18333 4.21667 4.21667C3.18333 5.25 2.66667 6.51111 2.66667 8C2.66667 9.48889 3.18333 10.75 4.21667 11.7833C5.25 12.8167 6.51111 13.3333 8 13.3333Z" fill="#DC2626"/>
+      </svg>
+      <p style="font-size: 14px; color: #DC2626; font-weight: 500; margin: 0;">
+        Security Notice
+      </p>
+    </div>
+    <p style="font-size: 13px; color: #7F1D1D; line-height: 1.4; margin: 8px 0 0 0;">
+      If you didn't create a Vivere Stays account, please ignore this email. Never share your verification code with anyone.
+    </p>
+  </div>
+
+  <!-- Footer Message (template-specific) -->
+  <p style="font-size: 14px; color: #9CAABD; line-height: 1.5; margin: 32px 0 0 0; text-align: center;">
+    Need help? Contact our support team at
+    <a href="mailto:support@viverestays.com" style="color: #294758; text-decoration: none;">support@viverestays.com</a>
+  </p>
+</div>
+

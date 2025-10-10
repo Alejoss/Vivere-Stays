@@ -16,10 +16,12 @@ import {
   LogOut,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import * as React from "react";
 import { useContext } from "react";
 import { PropertyContext, PropertyContextType } from "../../../shared/PropertyContext";
 import { ConnectionContext } from '../../../shared/ConnectionContext';
+import LanguageSwitcher from "../LanguageSwitcher";
 
 const navigationItems = [
   { id: "daily-prices", label: "Daily Prices", icon: Calendar, path: "/dashboard/property" },
@@ -45,6 +47,7 @@ const accountItems = [
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation(['dashboard', 'common']);
   const [analyticsOpen, setAnalyticsOpen] = React.useState(() => location.pathname.startsWith("/dashboard/analytics"));
   const [hotelManagementOpen, setHotelManagementOpen] = React.useState(() => location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management"));
   const [isMinimized, setIsMinimized] = React.useState(true);
@@ -123,7 +126,7 @@ export default function Sidebar() {
             <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               {/* Mobile Menu Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('dashboard:navigation.menu')}</h2>
                 <button
                   onClick={closeMobileMenu}
                   className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -148,7 +151,7 @@ export default function Sidebar() {
                     }`}
                   />
                   <span className="font-medium">
-                    {isConnected ? "Connected" : "Disconnected"}
+                    {isConnected ? t('dashboard:navigation.connected') : t('dashboard:navigation.disconnected')}
                   </span>
                 </button>
               </div>
@@ -167,7 +170,7 @@ export default function Sidebar() {
                       }`}
                     >
                       <item.icon size={20} />
-                      <span className="font-medium">{item.label}</span>
+                      <span className="font-medium">{t('dashboard:navigation.dailyPrices')}</span>
                     </button>
                   );
                 })}
@@ -188,7 +191,7 @@ export default function Sidebar() {
                   }`}
                 >
                   <Edit3 size={20} />
-                  <span className="font-medium">Change Prices</span>
+                  <span className="font-medium">{t('dashboard:navigation.changePrices')}</span>
                 </button>
 
                 {/* Analytics */}
@@ -203,7 +206,7 @@ export default function Sidebar() {
                   >
                     <div className="flex items-center gap-3">
                       <BarChart3 size={20} />
-                      <span className="font-medium">Analytics</span>
+                      <span className="font-medium">{t('dashboard:navigation.analytics')}</span>
                     </div>
                     <ChevronDown
                       size={20}
@@ -221,7 +224,7 @@ export default function Sidebar() {
                         }`}
                       >
                         <BarChart3 size={16} />
-                        <span>Performance</span>
+                        <span>{t('dashboard:navigation.performance')}</span>
                       </button>
                       <button
                         onClick={() => handleMobileNavigation("/dashboard/analytics/pickup")}
@@ -232,7 +235,7 @@ export default function Sidebar() {
                         }`}
                       >
                         <TrendingUp size={16} />
-                        <span>Pickup</span>
+                        <span>{t('dashboard:navigation.pickup')}</span>
                       </button>
                     </div>
                   )}
@@ -256,7 +259,7 @@ export default function Sidebar() {
                   >
                     <div className="flex items-center gap-3">
                       <Settings size={20} />
-                      <span className="font-medium">Hotel Management</span>
+                      <span className="font-medium">{t('dashboard:navigation.hotelManagement')}</span>
                     </div>
                     <ChevronDown
                       size={20}
@@ -277,7 +280,7 @@ export default function Sidebar() {
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                           >
-                            <span>{item.label}</span>
+                            <span>{t(`dashboard:navigation.${item.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '')}`)}</span>
                           </button>
                         );
                       })}
@@ -298,10 +301,15 @@ export default function Sidebar() {
                         }`}
                       >
                         <item.icon size={20} />
-                        <span className="font-medium">{item.label}</span>
+                        <span className="font-medium">{t(`dashboard:navigation.${item.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '')}`)}</span>
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Language Switcher */}
+                <div className="pt-4 border-t border-gray-200">
+                  <LanguageSwitcher variant="mobile" />
                 </div>
 
                 {/* Logout */}
@@ -314,7 +322,7 @@ export default function Sidebar() {
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                   >
                     <LogOut size={20} />
-                    <span className="font-medium">Logout</span>
+                    <span className="font-medium">{t('dashboard:navigation.logout')}</span>
                   </button>
                 </div>
               </div>
@@ -374,7 +382,7 @@ export default function Sidebar() {
             >
               <item.icon size={18} color={isActive ? "white" : "black"} />
               {!isMinimized && (
-                <span className="text-[15px] font-semibold leading-none">{item.label}</span>
+                <span className="text-[15px] font-semibold leading-none">{t('dashboard:navigation.dailyPrices')}</span>
               )}
             </button>
           );
@@ -394,11 +402,11 @@ export default function Sidebar() {
               ? "bg-hotel-brand-dark text-white" 
               : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
           }`}
-          title={isMinimized ? "Change Prices" : undefined}
+          title={isMinimized ? t('dashboard:navigation.changePrices') : undefined}
         >
           <Edit3 size={18} color={location.pathname.startsWith("/dashboard/change-prices") ? "white" : "black"} />
           {!isMinimized && (
-            <span className="text-[15px] font-semibold leading-none">Change Prices</span>
+            <span className="text-[15px] font-semibold leading-none">{t('dashboard:navigation.changePrices')}</span>
           )}
         </button>
 
@@ -411,12 +419,12 @@ export default function Sidebar() {
             className={`w-full flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'justify-between px-[11px]'} py-[10px] rounded border-0 transition-colors ${
               location.pathname.startsWith("/dashboard/analytics") ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
             }`}
-            title={isMinimized ? "Analytics" : undefined}
+            title={isMinimized ? t('dashboard:navigation.analytics') : undefined}
           >
             <span className={`flex items-center ${isMinimized ? 'justify-center' : 'gap-3'}`}>
               <BarChart3 size={18} color={location.pathname.startsWith("/dashboard/analytics") ? "white" : "black"} />
               {!isMinimized && (
-                <span className="text-[15px] font-semibold leading-none">Analytics</span>
+                <span className="text-[15px] font-semibold leading-none">{t('dashboard:navigation.analytics')}</span>
               )}
             </span>
             {!isMinimized && (
@@ -437,7 +445,7 @@ export default function Sidebar() {
                 }`}
               >
                 <BarChart3 size={16} color={location.pathname === "/dashboard/analytics/performance" ? "white" : "black"} />
-                <span>Performance</span>
+                <span>{t('dashboard:navigation.performance')}</span>
               </button>
               {/* Pickup */}
               <button
@@ -447,7 +455,7 @@ export default function Sidebar() {
                 }`}
               >
                 <TrendingUp size={16} color={location.pathname === "/dashboard/analytics/pickup" ? "white" : "black"} />
-                <span>Pickup</span>
+                <span>{t('dashboard:navigation.pickup')}</span>
               </button>
             </div>
           )}
@@ -476,7 +484,7 @@ export default function Sidebar() {
               <Settings size={18} color={location.pathname.startsWith("/dashboard/hotel-information") || location.pathname.startsWith("/dashboard/competitors") || location.pathname.startsWith("/dashboard/special-offers") || location.pathname.startsWith("/dashboard/dynamic-setup") || location.pathname.startsWith("/dashboard/length-of-stay") || location.pathname.startsWith("/dashboard/available-rates") || location.pathname.startsWith("/dashboard/msp-management") ? "white" : "black"} />
               {!isMinimized && (
                 <span className="text-[15px] font-semibold leading-none">
-                  Hotel Management
+                  {t('dashboard:navigation.hotelManagement')}
                 </span>
               )}
             </span>
@@ -504,7 +512,7 @@ export default function Sidebar() {
                         : "hover:bg-gray-100 text-black"
                     }`}
                   >
-                    <span>{item.label}</span>
+                    <span>{t(`dashboard:navigation.${item.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '')}`)}</span>
                   </button>
                 );
               })}
@@ -527,12 +535,12 @@ export default function Sidebar() {
               className={`flex items-center ${isMinimized ? 'justify-center px-[11px]' : 'gap-3 px-[11px]'} py-[10px] rounded border-0 transition-colors ${
                 isActive ? "bg-hotel-brand-dark text-white" : "bg-hotel-sidebar-bg text-black hover:bg-gray-100"
               }`}
-              title={isMinimized ? item.label : undefined}
+              title={isMinimized ? t(`dashboard:navigation.${item.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '')}`) : undefined}
             >
               <item.icon size={18} color={isActive ? "white" : "black"} />
               {!isMinimized && (
                 <span className="text-[15px] font-normal leading-none">
-                  {item.label}
+                  {t(`dashboard:navigation.${item.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase()).replace(/-/g, '')}`)}
                 </span>
               )}
             </button>

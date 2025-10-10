@@ -4,6 +4,7 @@ import logging
 from django.contrib.auth.models import User
 
 from profiles.models import Profile, PMSIntegrationRequirement, SupportTicket, Notification
+from vivere_stays.error_codes import ErrorCode
 
 # Get logger for profiles serializers
 logger = logging.getLogger('academia_blockchain.profiles.serializers')
@@ -23,12 +24,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with that email already exists.")
+            raise serializers.ValidationError(
+                "A user with that email already exists.",
+                code=ErrorCode.EMAIL_ALREADY_EXISTS
+            )
         return value
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("A user with that username already exists.")
+            raise serializers.ValidationError(
+                "A user with that username already exists.",
+                code=ErrorCode.USERNAME_ALREADY_EXISTS
+            )
         return value
 
     def create(self, validated_data):
@@ -118,7 +125,10 @@ class PropertyAssociationSerializer(serializers.Serializer):
             Property.objects.get(id=value)
             return value
         except Property.DoesNotExist:
-            raise serializers.ValidationError("Property does not exist.")
+            raise serializers.ValidationError(
+                "Property does not exist.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
 
 
 class PMSIntegrationRequirementSerializer(serializers.ModelSerializer):
@@ -197,7 +207,10 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         Validate title length
         """
         if len(value.strip()) < 5:
-            raise serializers.ValidationError("Title must be at least 5 characters long.")
+            raise serializers.ValidationError(
+                "Title must be at least 5 characters long.",
+                code=ErrorCode.SUPPORT_TITLE_TOO_SHORT
+            )
         return value.strip()
     
     def validate_description(self, value):
@@ -205,7 +218,10 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         Validate description length
         """
         if len(value.strip()) < 10:
-            raise serializers.ValidationError("Description must be at least 10 characters long.")
+            raise serializers.ValidationError(
+                "Description must be at least 10 characters long.",
+                code=ErrorCode.SUPPORT_DESCRIPTION_TOO_SHORT
+            )
         return value.strip()
 
 
@@ -241,7 +257,10 @@ class NotificationSerializer(serializers.ModelSerializer):
         """
         valid_types = [choice[0] for choice in Notification.NOTIFICATION_TYPES]
         if value not in valid_types:
-            raise serializers.ValidationError(f"Invalid type. Must be one of: {valid_types}")
+            raise serializers.ValidationError(
+                f"Invalid type. Must be one of: {valid_types}",
+                code=ErrorCode.NOTIFICATION_TYPE_INVALID
+            )
         return value
     
     def validate_category(self, value):
@@ -250,7 +269,10 @@ class NotificationSerializer(serializers.ModelSerializer):
         """
         valid_categories = [choice[0] for choice in Notification.CATEGORY_CHOICES]
         if value not in valid_categories:
-            raise serializers.ValidationError(f"Invalid category. Must be one of: {valid_categories}")
+            raise serializers.ValidationError(
+                f"Invalid category. Must be one of: {valid_categories}",
+                code=ErrorCode.NOTIFICATION_CATEGORY_INVALID
+            )
         return value
     
     def validate_priority(self, value):
@@ -259,7 +281,10 @@ class NotificationSerializer(serializers.ModelSerializer):
         """
         valid_priorities = [choice[0] for choice in Notification.PRIORITY_LEVELS]
         if value not in valid_priorities:
-            raise serializers.ValidationError(f"Invalid priority. Must be one of: {valid_priorities}")
+            raise serializers.ValidationError(
+                f"Invalid priority. Must be one of: {valid_priorities}",
+                code=ErrorCode.NOTIFICATION_PRIORITY_INVALID
+            )
         return value
 
 
@@ -280,7 +305,10 @@ class NotificationCreateSerializer(serializers.ModelSerializer):
         """
         valid_types = [choice[0] for choice in Notification.NOTIFICATION_TYPES]
         if value not in valid_types:
-            raise serializers.ValidationError(f"Invalid type. Must be one of: {valid_types}")
+            raise serializers.ValidationError(
+                f"Invalid type. Must be one of: {valid_types}",
+                code=ErrorCode.NOTIFICATION_TYPE_INVALID
+            )
         return value
     
     def validate_category(self, value):
@@ -289,7 +317,10 @@ class NotificationCreateSerializer(serializers.ModelSerializer):
         """
         valid_categories = [choice[0] for choice in Notification.CATEGORY_CHOICES]
         if value not in valid_categories:
-            raise serializers.ValidationError(f"Invalid category. Must be one of: {valid_categories}")
+            raise serializers.ValidationError(
+                f"Invalid category. Must be one of: {valid_categories}",
+                code=ErrorCode.NOTIFICATION_CATEGORY_INVALID
+            )
         return value
     
     def validate_priority(self, value):
@@ -298,7 +329,10 @@ class NotificationCreateSerializer(serializers.ModelSerializer):
         """
         valid_priorities = [choice[0] for choice in Notification.PRIORITY_LEVELS]
         if value not in valid_priorities:
-            raise serializers.ValidationError(f"Invalid priority. Must be one of: {valid_priorities}")
+            raise serializers.ValidationError(
+                f"Invalid priority. Must be one of: {valid_priorities}",
+                code=ErrorCode.NOTIFICATION_PRIORITY_INVALID
+            )
         return value
 
 

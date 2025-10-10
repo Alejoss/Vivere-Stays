@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { Building2, Plus, Save, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { toast } from "../../hooks/use-toast";
@@ -209,6 +210,7 @@ const getCountryName = (countryCode: string): string => {
 };
 
 export default function HotelInformation() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property, setProperty } = useContext(PropertyContext) ?? {};
   const [formData, setFormData] = useState<FormData>({
     hotelName: "",
@@ -320,7 +322,7 @@ export default function HotelInformation() {
   const handleSave = async () => {
     if (!property?.id) {
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: "No property selected",
         variant: "destructive",
       });
@@ -362,14 +364,14 @@ export default function HotelInformation() {
       }
       
       toast({
-        title: "Success",
+        title: t('common:messages.success'),
         description: "Hotel information saved successfully!",
       });
       
     } catch (error) {
       console.error("Error saving hotel information:", error);
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: "Failed to save hotel information. Please try again.",
         variant: "destructive",
       });
@@ -424,14 +426,14 @@ export default function HotelInformation() {
               {/* Hotel Name */}
               <div className="form-field">
                 <label className="form-label">
-                  Hotel Name*
+                  {t('dashboard:hotelInfo.hotelName')}*
                 </label>
                 <div className="form-field">
                   <input
                     type="text"
                     value={formData.hotelName}
                     onChange={(e) => handleInputChange("hotelName", e.target.value)}
-                    placeholder="Enter hotel name"
+                    placeholder={t('dashboard:hotelInfo.hotelNamePlaceholder', { defaultValue: 'Enter hotel name' })}
                     className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("hotelName")}`}
                   />
                   {errors.hotelName && (
@@ -445,14 +447,14 @@ export default function HotelInformation() {
               {/* Address */}
               <div className="form-field">
                 <label className="form-label">
-                  Address*
+                  {t('dashboard:hotelInfo.address')}*
                 </label>
                 <div className="form-field">
                   <input
                     type="text"
                     value={formData.streetAddress}
                     onChange={(e) => handleInputChange("streetAddress", e.target.value)}
-                    placeholder="Enter street address"
+                    placeholder={t('dashboard:hotelInfo.addressPlaceholder', { defaultValue: 'Enter street address' })}
                     className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("streetAddress")}`}
                   />
                   {errors.streetAddress && (
@@ -467,14 +469,14 @@ export default function HotelInformation() {
               <div className="grid grid-cols-1 lg:grid-cols-2 form-gap-base">
                 <div className="form-field">
                   <label className="form-label">
-                    City*
+                    {t('dashboard:hotelInfo.city')}*
                   </label>
                   <div className="form-field">
                     <input
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleInputChange("city", e.target.value)}
-                      placeholder="Enter city"
+                      placeholder={t('dashboard:hotelInfo.cityPlaceholder', { defaultValue: 'Enter city' })}
                       className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("city")}`}
                     />
                     {errors.city && (
@@ -486,7 +488,7 @@ export default function HotelInformation() {
                 </div>
                 <div className="form-field">
                   <label className="form-label">
-                    Country*
+                    {t('dashboard:hotelInfo.country')}*
                   </label>
                   <div className="form-field">
                     <select
@@ -494,7 +496,7 @@ export default function HotelInformation() {
                       onChange={(e) => handleInputChange("country", e.target.value)}
                       className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("country")}`}
                     >
-                      <option value="">Select Country</option>
+                      <option value="">{t('dashboard:hotelInfo.selectCountry', { defaultValue: 'Select Country' })}</option>
                       {COUNTRIES.map((country) => (
                         <option key={country.code} value={country.code}>
                           {country.name}
@@ -513,14 +515,14 @@ export default function HotelInformation() {
               {/* Postal Code */}
               <div className="form-field">
                 <label className="form-label">
-                  Postal Code*
+                  {t('dashboard:hotelInfo.postalCode')}*
                 </label>
                 <div className="form-field">
                   <input
                     type="text"
                     value={formData.postalCode}
                     onChange={(e) => handleInputChange("postalCode", e.target.value)}
-                    placeholder="Enter postal code"
+                    placeholder={t('dashboard:hotelInfo.postalCodePlaceholder', { defaultValue: 'Enter postal code' })}
                     className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("postalCode")}`}
                   />
                   {errors.postalCode && (
@@ -535,26 +537,26 @@ export default function HotelInformation() {
               <div className="grid grid-cols-1 lg:grid-cols-2 form-gap-base">
                 <div className="form-field">
                   <label className="form-label">
-                    CIF (Optional)
+                    {t('dashboard:hotelInfo.cif')} ({t('common:common.optional')})
                   </label>
                   <input
                     type="text"
                     value={formData.cif}
                     onChange={(e) => handleInputChange("cif", e.target.value)}
-                    placeholder="Enter CIF"
+                    placeholder={t('dashboard:hotelInfo.cifPlaceholder', { defaultValue: 'Enter CIF' })}
                     className="w-full input-padding-base input-height-base bg-white border border-[#D7DAE0] rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors"
                   />
                 </div>
                 <div className="form-field">
                   <label className="form-label">
-                    Number of Rooms*
+                    {t('dashboard:hotelInfo.numberOfRooms')}*
                   </label>
                   <div className="form-field">
                     <input
                       type="number"
                       value={formData.numberOfRooms}
                       readOnly
-                      placeholder="Enter number of rooms"
+                      placeholder={t('dashboard:hotelInfo.numberOfRoomsPlaceholder', { defaultValue: 'Enter number of rooms' })}
                       min="1"
                       className="w-full input-padding-base input-height-base bg-gray-100 border border-[#D7DAE0] rounded-md text-responsive-base cursor-not-allowed"
                     />
@@ -573,14 +575,14 @@ export default function HotelInformation() {
               {/* Phone */}
               <div className="form-field">
                 <label className="form-label">
-                  Phone*
+                  {t('dashboard:hotelInfo.phone')}*
                 </label>
                 <div className="form-field">
                   <input
                     type="text"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                    placeholder="Enter phone number"
+                    placeholder={t('dashboard:hotelInfo.phonePlaceholder', { defaultValue: 'Enter phone number' })}
                     className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("phoneNumber")}`}
                   />
                   {errors.phoneNumber && (
@@ -594,13 +596,13 @@ export default function HotelInformation() {
               {/* Website */}
               <div className="form-field">
                 <label className="form-label">
-                  Website (Optional)
+                  {t('dashboard:hotelInfo.website')} ({t('common:common.optional')})
                 </label>
                 <input
                   type="text"
                   value={formData.website}
                   onChange={(e) => handleInputChange("website", e.target.value)}
-                  placeholder="Enter website URL"
+                  placeholder={t('dashboard:hotelInfo.websitePlaceholder', { defaultValue: 'Enter website URL' })}
                   className="w-full input-padding-base input-height-base bg-white border border-[#D7DAE0] rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors"
                 />
               </div>
@@ -608,14 +610,14 @@ export default function HotelInformation() {
               {/* Booking URL */}
               <div className="form-field">
                 <label className="form-label">
-                  Booking.com URL (Optional)
+                  {t('dashboard:hotelInfo.bookingUrl')} ({t('common:common.optional')})
                 </label>
                 <div className="form-field">
                   <input
                     type="text"
                     value={formData.bookingUrl}
                     onChange={(e) => handleInputChange("bookingUrl", e.target.value)}
-                    placeholder="https://www.booking.com/hotel/..."
+                    placeholder={t('dashboard:hotelInfo.bookingUrlPlaceholder', { defaultValue: 'https://www.booking.com/hotel/...' })}
                     className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("bookingUrl")}`}
                   />
                   {errors.bookingUrl && (
@@ -629,7 +631,7 @@ export default function HotelInformation() {
               {/* Property Type */}
               <div className="form-field">
                 <label className="form-label">
-                  Property Type*
+                  {t('dashboard:hotelInfo.propertyType')}*
                 </label>
                 <div className="form-field">
                   <select
@@ -637,12 +639,12 @@ export default function HotelInformation() {
                     onChange={(e) => handleInputChange("propertyType", e.target.value)}
                     className={`w-full input-padding-base input-height-base bg-white border rounded-md text-responsive-base focus:outline-none focus:ring-2 focus:ring-[#294859] focus:border-transparent transition-colors ${getFieldBorderColor("propertyType")}`}
                   >
-                    <option value="">Select Property Type</option>
-                    <option value="hotel">Hotel</option>
-                    <option value="apartment">Apartment</option>
-                    <option value="villa">Villa</option>
-                    <option value="hostel">Hostel</option>
-                    <option value="guesthouse">Guest House</option>
+                    <option value="">{t('dashboard:hotelInfo.selectPropertyType', { defaultValue: 'Select Property Type' })}</option>
+                    <option value="hotel">{t('dashboard:hotelInfo.propertyTypeHotel', { defaultValue: 'Hotel' })}</option>
+                    <option value="apartment">{t('dashboard:hotelInfo.propertyTypeApartment', { defaultValue: 'Apartment' })}</option>
+                    <option value="villa">{t('dashboard:hotelInfo.propertyTypeVilla', { defaultValue: 'Villa' })}</option>
+                    <option value="hostel">{t('dashboard:hotelInfo.propertyTypeHostel', { defaultValue: 'Hostel' })}</option>
+                    <option value="guesthouse">{t('dashboard:hotelInfo.propertyTypeGuesthouse', { defaultValue: 'Guest House' })}</option>
                   </select>
                   {errors.propertyType && (
                     <span className="error-message">
@@ -666,7 +668,7 @@ export default function HotelInformation() {
               }`}
             >
               <Save size={24} />
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? t('common:messages.saving') : t('common:buttons.save')}
             </button>
           </div>
         </div>
@@ -695,14 +697,14 @@ export default function HotelInformation() {
                       setIsUpdatingOtas(true);
                       await dynamicPricingService.updateGeneralSettings(property.id, { otas_price_diff: parsed });
                       toast({
-                        title: "Success",
+                        title: t('common:messages.success'),
                         description: "OTA price difference updated",
                       });
                     } catch (e) {
                       const err: any = e;
                       const backendMsg = err?.response?.data?.message || err?.message || 'Failed to update OTA price difference';
                       toast({
-                        title: "Error",
+                        title: t('common:messages.error'),
                         description: backendMsg,
                         variant: "destructive",
                       });

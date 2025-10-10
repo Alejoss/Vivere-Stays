@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { FileText, ChevronDown, Lightbulb, Check, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "../../hooks/use-toast";
 import { profilesService, SupportTicketCreateRequest } from "../../../shared/api/profiles";
 
 export default function Support() {
+  const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const [selectedIssue, setSelectedIssue] = useState("General Question");
   const [description, setDescription] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -11,11 +13,11 @@ export default function Support() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const issueTypes = [
-    "General Question",
-    "Technical Issue",
-    "Billing Question",
-    "Feature Request",
-    "Bug Report",
+    t('dashboard:support.issueTypeGeneral', { defaultValue: 'General Question' }),
+    t('dashboard:support.issueTypeTechnical', { defaultValue: 'Technical Issue' }),
+    t('dashboard:support.issueTypeBilling', { defaultValue: 'Billing Question' }),
+    t('dashboard:support.issueTypeFeature', { defaultValue: 'Feature Request' }),
+    t('dashboard:support.issueTypeBug', { defaultValue: 'Bug Report' }),
   ];
 
   const issueTypeMapping: { [key: string]: string } = {
@@ -27,9 +29,9 @@ export default function Support() {
   };
 
   const tips = [
-    "Be specific about the issue you're experiencing",
-    "Include error messages or screenshots if possible",
-    "Mention steps you've already tried",
+    t('dashboard:support.tip1', { defaultValue: "Be specific about the issue you're experiencing" }),
+    t('dashboard:support.tip2', { defaultValue: 'Include error messages or screenshots if possible' }),
+    t('dashboard:support.tip3', { defaultValue: "Mention steps you've already tried" }),
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,8 +39,8 @@ export default function Support() {
     
     if (!description.trim()) {
       toast({
-        title: "Error",
-        description: "Please provide a description of your issue.",
+        title: t('common:messages.error'),
+        description: t('dashboard:support.descriptionRequired', { defaultValue: 'Please provide a description of your issue.' }),
         variant: "destructive",
       });
       return;
@@ -46,8 +48,8 @@ export default function Support() {
 
     if (description.trim().length < 10) {
       toast({
-        title: "Error",
-        description: "Description must be at least 10 characters long.",
+        title: t('common:messages.error'),
+        description: t('dashboard:support.descriptionTooShort', { defaultValue: 'Description must be at least 10 characters long.' }),
         variant: "destructive",
       });
       return;
@@ -65,8 +67,8 @@ export default function Support() {
       const response = await profilesService.createSupportTicket(supportData);
       
       toast({
-        title: "Success",
-        description: "Support ticket submitted successfully! Our team will get back to you soon.",
+        title: t('common:messages.success'),
+        description: t('dashboard:support.successMessage'),
       });
       
       // Reset form
@@ -78,7 +80,7 @@ export default function Support() {
       console.error("Error submitting support ticket:", error);
       
       // Extract error message from response
-      let errorMessage = "Failed to submit support ticket. Please try again.";
+      let errorMessage = t('dashboard:support.errorMessage');
       
       if (error.response?.data) {
         const responseData = error.response.data;
@@ -106,7 +108,7 @@ export default function Support() {
       }
       
       toast({
-        title: "Error",
+        title: t('common:messages.error'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -121,8 +123,8 @@ export default function Support() {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
-          title: "Invalid File",
-          description: "Please select an image file for the screenshot.",
+          title: t('common:messages.error'),
+          description: t('dashboard:support.selectImageFile', { defaultValue: 'Please select an image file for the screenshot.' }),
           variant: "destructive",
         });
         return;
@@ -131,8 +133,8 @@ export default function Support() {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "File Too Large",
-          description: "Screenshot must be smaller than 5MB.",
+          title: t('common:messages.error'),
+          description: t('dashboard:support.fileTooLarge', { defaultValue: 'Screenshot must be smaller than 5MB.' }),
           variant: "destructive",
         });
         return;
@@ -150,11 +152,10 @@ export default function Support() {
       {/* Header */}
       <div className="px-6 mb-8">
         <h1 className="text-3xl font-bold text-[#294758] mb-2">
-          Support Center
+          {t('dashboard:support.supportCenter', { defaultValue: 'Support Center' })}
         </h1>
         <p className="text-base text-[#4B5563]">
-          Need help? Create a support ticket and our team will get back to you
-          as soon as possible.
+          {t('dashboard:support.needHelp', { defaultValue: 'Need help? Create a support ticket and our team will get back to you as soon as possible.' })}
         </p>
       </div>
 
@@ -166,7 +167,7 @@ export default function Support() {
           <div className="bg-[#294859] text-white px-8 py-4 rounded-t-md mb-6">
             <div className="flex items-center gap-2">
               <FileText size={20} />
-              <h2 className="text-xl font-bold">Create Support Ticket</h2>
+              <h2 className="text-xl font-bold">{t('dashboard:support.createTicket', { defaultValue: 'Create Support Ticket' })}</h2>
             </div>
           </div>
 
@@ -174,7 +175,7 @@ export default function Support() {
             {/* Issue Type Dropdown */}
             <div>
               <label className="block text-sm font-normal text-black mb-4">
-                What can we help you with?
+                {t('dashboard:support.whatCanWeHelp', { defaultValue: 'What can we help you with?' })}
               </label>
               <div className="relative">
                 <button
@@ -302,7 +303,7 @@ export default function Support() {
               <div className="flex items-center gap-2 text-white">
                 <Lightbulb size={20} fill="white" />
                 <h3 className="text-base font-bold">
-                  Tips for Better Support
+                  {t('dashboard:support.tipsTitle', { defaultValue: 'Tips for Better Support' })}
                 </h3>
               </div>
             </div>

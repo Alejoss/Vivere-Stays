@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
+import { useTranslation } from "react-i18next";
 import { useLogin, useGoogleLogin } from "../../shared/api/hooks";
 import { OnboardingStep } from "../../shared/api/onboarding";
 import { profilesService } from "../../shared/api/profiles";
@@ -8,6 +9,7 @@ import { LoginRequest } from "../../shared/api/types";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { t } = useTranslation(['auth', 'errors', 'common']);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,12 +24,12 @@ export default function Login() {
     
     // Basic validation
     if (!email.trim()) {
-      setError("Email is required");
+      setError(t('errors:EMAIL_REQUIRED'));
       return;
     }
     
     if (!password.trim()) {
-      setError("Password is required");
+      setError(t('errors:PASSWORD_REQUIRED'));
       return;
     }
 
@@ -115,7 +117,7 @@ export default function Login() {
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError("Login failed. Please try again.");
+        setError(t('errors:INVALID_CREDENTIALS'));
       }
     }
   };
@@ -200,7 +202,7 @@ export default function Login() {
       } else if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError("Google login failed. Please try again.");
+        setError(t('errors:SERVER_ERROR'));
       }
     }
   }, [googleLoginMutation, navigate]);
@@ -225,10 +227,10 @@ export default function Login() {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
-              Log In
+              {t('auth:login.title')}
             </h1>
             <p className="text-[18px] text-[#485567] leading-normal">
-              Enter your credentials to access the intelligence dashboard
+              {t('auth:login.subtitle')}
             </p>
           </div>
 
@@ -273,7 +275,7 @@ export default function Login() {
                   />
                 </svg>
                 <span className="text-[16px] text-[#485567] font-medium">
-                  Email Address
+                  {t('auth:login.emailLabel')}
                 </span>
               </div>
               <div className="relative">
@@ -281,7 +283,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="john@company.com"
+                  placeholder={t('auth:login.emailPlaceholder')}
                   disabled={loginMutation.isPending}
                   className="w-full h-[60px] px-4 py-[17px] border border-[#D7DFE8] rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
@@ -325,7 +327,7 @@ export default function Login() {
                   </defs>
                 </svg>
                 <span className="text-[16px] text-[#485567] font-medium">
-                  Password
+                  {t('auth:login.passwordLabel')}
                 </span>
               </div>
               <div className="relative">
@@ -333,7 +335,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Write your password"
+                  placeholder={t('auth:login.passwordPlaceholder')}
                   disabled={loginMutation.isPending}
                   className="w-full h-[60px] px-4 py-[17px] pr-12 border border-[#D7DFE8] rounded-[10px] text-[16px] placeholder:text-[#9CAABD] focus:outline-none focus:border-[#294859] transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
@@ -370,7 +372,7 @@ export default function Login() {
                   type="button"
                   className="text-[16px] font-bold text-[#294859] hover:underline"
                 >
-                  Forgot Password?
+                  {t('auth:login.forgotPassword')}
                 </button>
               </div>
             </div>
@@ -388,11 +390,11 @@ export default function Login() {
               {loginMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Logging in...
+                  {t('common:messages.loading')}
                 </>
               ) : (
                 <>
-                  Log in
+                  {t('auth:login.loginButton')}
                   <svg
                     width="21"
                     height="20"
@@ -416,7 +418,7 @@ export default function Login() {
           {/* OR Divider */}
           <div className="flex items-center gap-[29px] my-5">
             <div className="flex-1 h-[1.5px] bg-[#D7DFE8]"></div>
-            <span className="text-[16px] text-[#485567] font-medium">OR</span>
+            <span className="text-[16px] text-[#485567] font-medium">{t('common:common.or').toUpperCase()}</span>
             <div className="flex-1 h-[1.5px] bg-[#D7DFE8]"></div>
           </div>
 
@@ -426,7 +428,7 @@ export default function Login() {
               onSuccess={handleGoogleCredentialResponse}
               onError={() => {
                 console.error('Google OAuth error occurred');
-                setError('Failed to initialize Google login');
+                setError(t('errors:SERVER_ERROR'));
               }}
               theme="filled_blue"
               shape="rectangular"
@@ -438,11 +440,11 @@ export default function Login() {
           {/* Create Account Section */}
           <div className="mt-5 space-y-5 text-center">
             <p className="text-[16px] text-[#294859]">
-              Don't have an account yet?
+              {t('auth:login.noAccount')}
             </p>
             <Link to="/register">
               <button className="w-full h-[54px] border-[1.7px] border-[#D7DFE8] rounded-[10px] text-[16px] text-[#294859] font-medium hover:border-[#294859] transition-colors">
-                Create New Account
+                {t('auth:register.title')}
               </button>
             </Link>
           </div>
