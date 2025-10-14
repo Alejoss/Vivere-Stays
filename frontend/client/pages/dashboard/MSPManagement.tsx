@@ -219,8 +219,49 @@ export default function MSPManagement() {
     setPeriods([...periods, newPeriod]);
   };
 
-  const removePeriod = (id: string) => {
-    if (periods.length > 1) {
+  const removePeriod = async (id: string) => {
+    if (periods.length <= 1) {
+      return; // Don't allow removing the last period
+    }
+
+    const period = periods.find(p => p.id === id);
+    if (!period) {
+      return;
+    }
+
+    // Check if this is an existing period (has existing- prefix)
+    const isExistingPeriod = id.startsWith('existing-');
+    
+    if (isExistingPeriod) {
+      // Extract the actual database ID
+      const dbId = id.replace('existing-', '');
+      
+      try {
+        // Call the backend API to delete the MSP period
+        await dynamicPricingService.deleteMSPPeriod(property!.id, dbId);
+        
+        // Show success message
+        toast({
+          title: t('common:messages.success'),
+          description: t('dashboard:mspManagement.periodDeleted', { defaultValue: 'MSP period deleted successfully' }),
+        });
+        
+        // Remove from local state
+        setPeriods(periods.filter((period) => period.id !== id));
+        
+        // Reload MSP entries to get updated data from backend
+        loadMSPEntries();
+        
+      } catch (err: any) {
+        console.error("Error deleting MSP period:", err);
+        toast({
+          title: t('common:messages.error'),
+          description: err.message || t('dashboard:mspManagement.deleteError', { defaultValue: 'Failed to delete MSP period' }),
+          variant: "destructive",
+        });
+      }
+    } else {
+      // For new periods that haven't been saved yet, just remove from local state
       setPeriods(periods.filter((period) => period.id !== id));
     }
   };
@@ -482,10 +523,7 @@ export default function MSPManagement() {
                 {/* Mobile Layout */}
                 <div className="lg:hidden bg-white border border-[#D7DFE8] rounded-lg p-4 space-y-4">
                   {/* Header with remove button */}
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-[#485567]">
-                      {t('dashboard:mspManagement.periodNumber', { number: index + 1 })}
-                    </h4>
+                  <div className="flex items-center justify-end">
                     {periods.length > 1 && (
                       <button
                         onClick={() => removePeriod(period.id)}

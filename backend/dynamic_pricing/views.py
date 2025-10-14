@@ -28,6 +28,7 @@ from .serializers import (
     PropertyCompetitorSerializer,
     OfferIncrementsSerializer,
     BulkOfferIncrementsSerializer,
+    BulkUpdateDynamicIncrementsV2Serializer,
     DynamicIncrementsV2Serializer,
     BulkDynamicIncrementsV2Serializer,
     DpLosReductionSerializer,
@@ -273,8 +274,7 @@ class PropertyPMSUpdateView(APIView):
         try:
             from .models import DpGeneralSettings
             settings, created = DpGeneralSettings.objects.get_or_create(
-                property_id=property_instance,
-                user=request.user
+                property_id=property_instance
             )
             settings.is_base_in_pms = True  # Apaleo-specific setting
             settings.save()
@@ -706,6 +706,64 @@ class PropertyMSPView(APIView):
                 'error': 'Failed to create MSP entries'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    def delete(self, request, property_id, msp_id):
+        """
+        Delete a specific MSP entry for a property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get the MSP entry
+            msp_entry = get_object_or_404(
+                DpMinimumSellingPrice,
+                id=msp_id,
+                property_id=property_instance
+            )
+            
+            # Store data for response before deletion
+            deleted_data = {
+                'id': msp_entry.id,
+                'valid_from': msp_entry.valid_from,
+                'valid_until': msp_entry.valid_until,
+                'msp': msp_entry.msp,
+                'period_title': msp_entry.period_title
+            }
+            
+            # Delete the MSP entry
+            msp_entry.delete()
+            
+            logger.info(f"MSP entry {msp_id} deleted successfully for property {property_id}")
+            
+            return Response({
+                'message': 'MSP entry deleted successfully',
+                'deleted_entry': deleted_data
+            }, status=status.HTTP_200_OK)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpMinimumSellingPrice.DoesNotExist:
+            return Response({
+                'message': 'MSP entry not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error deleting MSP entry {msp_id} for property {property_id}: {str(e)}")
+            return Response({
+                'message': 'An error occurred while deleting the MSP entry',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def _parse_date(self, date_str):
         """
         Parse date from dd/mm/yyyy format to Date object
@@ -2827,6 +2885,68 @@ class DynamicIncrementsV2UpdateView(APIView):
             logger.error(f"Error updating dynamic increment: {str(e)}")
             return Response({
                 'message': 'An error occurred while updating the dynamic increment',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DynamicIncrementsV2BulkUpdateView(APIView):
+    """
+    API endpoint for bulk updating dynamic increments v2 (dynamic setup)
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request, property_id):
+        """
+        Bulk update multiple dynamic increments for a specific property
+        """
+        try:
+            # Get the property and ensure it exists
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Check if user has access to this property
+            user_profile = request.user.profile
+            user_properties = user_profile.get_properties()
+            
+            if not user_properties.filter(id=property_id).exists():
+                return Response({
+                    'message': 'You do not have access to this property'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Validate the request data
+            serializer = BulkUpdateDynamicIncrementsV2Serializer(
+                data=request.data, 
+                context={'request': request}
+            )
+            
+            if serializer.is_valid():
+                result = serializer.update(property_instance, serializer.validated_data)
+                
+                # Serialize the updated rules for response
+                updated_rules_data = DynamicIncrementsV2Serializer(
+                    result['updated_rules'], 
+                    many=True
+                ).data
+                
+                return Response({
+                    'message': f"Successfully updated {len(result['updated_rules'])} dynamic increments",
+                    'updated_rules': updated_rules_data,
+                    'errors': result.get('errors', []),
+                    'property_id': result['property_id']
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'message': 'Validation error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Property.DoesNotExist:
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error bulk updating dynamic increments: {str(e)}")
+            return Response({
+                'message': 'An error occurred while bulk updating the dynamic increments',
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

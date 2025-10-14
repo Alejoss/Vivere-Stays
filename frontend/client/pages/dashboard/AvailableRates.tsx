@@ -83,7 +83,7 @@ export default function AvailableRates() {
 
       toast({
         title: t('common:messages.success'),
-        description: t('dashboard:availableRates.saveSuccess', { updated: response.updated_count, created: response.created_count }),
+        description: t('dashboard:availableRates.saveSuccess', { updated: response.updated_count }),
       });
       
       // Refresh the data to show updated values

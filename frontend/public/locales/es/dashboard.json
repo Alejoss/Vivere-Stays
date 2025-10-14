@@ -210,7 +210,7 @@
     "loadingRates": "Cargando tarifas disponibles...",
     "noRatesFound": "No se encontraron tarifas disponibles",
     "loadError": "Error al cargar tarifas disponibles",
-    "saveSuccess": "Se actualizaron {{updated}} tarifas y se crearon {{created}} nuevas configuraciones exitosamente",
+    "saveSuccess": "Se actualizaron {{updated}} tarifas exitosamente",
     "saveError": "Error al guardar tarifas disponibles. Por favor intenta de nuevo.",
     "algorithmSchedule": "El algoritmo verifica cambios en esta pestaña: Diariamente a las 9am",
     "algorithmDescription": "La hoja de Tarifas Disponibles define cómo se calculan y muestran las diferentes tarifas de habitación.",

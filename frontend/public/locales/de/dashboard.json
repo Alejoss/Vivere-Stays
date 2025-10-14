@@ -210,7 +210,7 @@
     "loadingRates": "Verfügbare Tarife werden geladen...",
     "noRatesFound": "Keine verfügbaren Tarife gefunden",
     "loadError": "Fehler beim Laden der verfügbaren Tarife",
-    "saveSuccess": "{{updated}} Tarife erfolgreich aktualisiert und {{created}} neue Konfigurationen erstellt",
+    "saveSuccess": "{{updated}} Tarife erfolgreich aktualisiert",
     "saveError": "Fehler beim Speichern der verfügbaren Tarife. Bitte versuchen Sie es erneut.",
     "algorithmSchedule": "Algorithmus prüft Änderungen auf dieser Registerkarte: Täglich um 9 Uhr",
     "algorithmDescription": "Das Arbeitsblatt Verfügbare Tarife definiert, wie unterschiedliche Zimmertarife berechnet und angezeigt werden.",

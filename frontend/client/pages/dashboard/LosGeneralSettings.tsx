@@ -140,7 +140,7 @@ export default function LosGeneralSettings() {
                       min="1"
                     />
                     <Info size={20} className="text-gray-500 hidden lg:inline" />
-                    <span className="text-responsive-sm text-gray-600">
+                    <span className="text-[#9CAABD] text-responsive-xs">
                       {t('dashboard:losGeneralSettings.competitorsDescription', { defaultValue: 'Minimum competitors required to apply competitor-based LOS' })}
                     </span>
                   </div>
@@ -148,26 +148,24 @@ export default function LosGeneralSettings() {
               </div>
 
               {/* LOS Aggregation Method */}
-              <div className="form-field">
+              <div className="form-field mt-6">
                 <label className="form-label">
                   {t('dashboard:losGeneralSettings.losAggregationMethod', { defaultValue: 'LOS Aggregation Method' })}
                 </label>
-                <div className="form-field">
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
-                    <select
-                      value={aggregationMethod}
-                      onChange={(e) => setAggregationMethod(e.target.value)}
-                      disabled={isLoading || isSaving}
-                      className="w-48 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="min">{t('dashboard:losGeneralSettings.minimum', { defaultValue: 'Minimum' })}</option>
-                      <option value="max">{t('dashboard:losGeneralSettings.maximum', { defaultValue: 'Maximum' })}</option>
-                    </select>
-                    <Info size={20} className="text-gray-500 hidden lg:inline" />
-                    <span className="text-responsive-sm text-gray-600">
-                      {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })}
-                    </span>
-                  </div>
+                <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
+                  <select
+                    value={aggregationMethod}
+                    onChange={(e) => setAggregationMethod(e.target.value)}
+                    disabled={isLoading || isSaving}
+                    className="w-48 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="min">{t('dashboard:losGeneralSettings.minimum', { defaultValue: 'Minimum' })}</option>
+                    <option value="max">{t('dashboard:losGeneralSettings.maximum', { defaultValue: 'Maximum' })}</option>
+                  </select>
+                  <Info size={20} className="text-gray-500 hidden lg:inline" />
+                  <span className="text-[#9CAABD] text-responsive-xs">
+                    {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })}
+                  </span>
                 </div>
               </div>
             </div>

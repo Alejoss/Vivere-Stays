@@ -605,11 +605,11 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
 
         # Note: Removed applied days range validation to allow more flexible configurations
 
-        # Validate increment value
-        if increment_value is not None and increment_value < 0:
+        # Validate increment value (allow negative values for discounts)
+        if increment_value is not None and not isinstance(increment_value, (int, float)):
             raise serializers.ValidationError(
-                "increment_value cannot be negative",
-                code=ErrorCode.OFFER_INCREMENT_VALUE_NEGATIVE
+                "increment_value must be a valid number",
+                code=ErrorCode.FIELD_INVALID
             )
 
         # Validate increment type
@@ -680,14 +680,10 @@ class BulkOfferIncrementsSerializer(serializers.Serializer):
                     code=ErrorCode.OFFER_INCREMENT_TYPE_INVALID
                 )
             
-            # Validate increment value
+            # Validate increment value (allow negative values for discounts)
             try:
-                increment_value = int(offer['increment_value'])
-                if increment_value < 0:
-                    raise serializers.ValidationError(
-                        f"Offer {i+1}: increment_value cannot be negative.",
-                        code=ErrorCode.OFFER_INCREMENT_VALUE_NEGATIVE
-                    )
+                increment_value = float(offer['increment_value'])  # Allow decimals
+                # No longer checking for negative values - allow discounts
             except (ValueError, TypeError):
                 raise serializers.ValidationError(
                     f"Offer {i+1}: increment_value must be a valid number.",
@@ -785,11 +781,11 @@ class DynamicIncrementsV2Serializer(serializers.ModelSerializer):
                 code=ErrorCode.DYNAMIC_LEAD_TIME_CATEGORY_INVALID
             )
 
-        # Validate increment value
-        if increment_value is not None and increment_value < 0:
+        # Validate increment value (allow negative values for discounts)
+        if increment_value is not None and not isinstance(increment_value, (int, float)):
             raise serializers.ValidationError(
-                "increment_value cannot be negative",
-                code=ErrorCode.DYNAMIC_INCREMENT_VALUE_NEGATIVE
+                "increment_value must be a valid number",
+                code=ErrorCode.FIELD_INVALID
             )
 
         # Validate increment type
@@ -832,7 +828,7 @@ class BulkDynamicIncrementsV2Serializer(serializers.Serializer):
     """
     rules = serializers.ListField(
         child=serializers.DictField(),
-        max_length=20,  # Limit to 20 rules at once
+        max_length=100,  # Increased limit to 100 rules
         help_text='List of dynamic increment objects'
     )
     
@@ -876,14 +872,10 @@ class BulkDynamicIncrementsV2Serializer(serializers.Serializer):
                     code=ErrorCode.DYNAMIC_INCREMENT_TYPE_INVALID
                 )
             
-            # Validate increment value
+            # Validate increment value (allow negative values for discounts)
             try:
                 increment_value = float(rule['increment_value'])
-                if increment_value < 0:
-                    raise serializers.ValidationError(
-                        f"Rule {i+1}: increment_value cannot be negative.",
-                        code=ErrorCode.DYNAMIC_INCREMENT_VALUE_NEGATIVE
-                    )
+                # No longer checking for negative values - allow discounts
             except (ValueError, TypeError):
                 raise serializers.ValidationError(
                     f"Rule {i+1}: increment_value must be a valid number.",
@@ -941,6 +933,118 @@ class BulkDynamicIncrementsV2Serializer(serializers.Serializer):
         
         return {
             'created_rules': created_rules,
+            'errors': errors,
+            'property_id': property_instance.id
+        }
+
+
+class BulkUpdateDynamicIncrementsV2Serializer(serializers.Serializer):
+    """
+    Serializer for bulk updating multiple dynamic increments at once
+    """
+    rules = serializers.ListField(
+        child=serializers.DictField(),
+        max_length=100,  # Increased limit to 100 rules
+        help_text='List of dynamic increment objects with id for updates'
+    )
+    
+    def validate_rules(self, value):
+        """
+        Validate that all rules are valid and have required fields for updates
+        """
+        if not value:
+            return value
+            
+        for i, rule in enumerate(value):
+            # Validate that rule has an id for updates
+            if 'id' not in rule or not rule['id']:
+                raise serializers.ValidationError(
+                    f"Rule {i+1}: id is required for updates.",
+                    code=ErrorCode.FIELD_REQUIRED
+                )
+            
+            # Validate required fields (all optional for updates)
+            if 'occupancy_category' in rule and rule['occupancy_category']:
+                valid_occupancy_categories = [choice[0] for choice in DpDynamicIncrementsV2.OCCUPANCY_CATEGORIES]
+                if rule['occupancy_category'] not in valid_occupancy_categories:
+                    raise serializers.ValidationError(
+                        f"Rule {i+1}: occupancy_category must be one of: {', '.join(valid_occupancy_categories)}.",
+                        code=ErrorCode.DYNAMIC_OCCUPANCY_CATEGORY_INVALID
+                    )
+            
+            if 'lead_time_category' in rule and rule['lead_time_category']:
+                valid_lead_time_categories = [choice[0] for choice in DpDynamicIncrementsV2.LEAD_TIME_CATEGORIES]
+                if rule['lead_time_category'] not in valid_lead_time_categories:
+                    raise serializers.ValidationError(
+                        f"Rule {i+1}: lead_time_category must be one of: {', '.join(valid_lead_time_categories)}.",
+                        code=ErrorCode.DYNAMIC_LEAD_TIME_CATEGORY_INVALID
+                    )
+            
+            if 'increment_type' in rule and rule['increment_type']:
+                if rule['increment_type'] not in ['Percentage', 'Additional']:
+                    raise serializers.ValidationError(
+                        f"Rule {i+1}: increment_type must be 'Percentage' or 'Additional'.",
+                        code=ErrorCode.DYNAMIC_INCREMENT_TYPE_INVALID
+                    )
+            
+            if 'increment_value' in rule and rule['increment_value'] is not None:
+                try:
+                    increment_value = float(rule['increment_value'])
+                    # No longer checking for negative values - allow discounts
+                except (ValueError, TypeError):
+                    raise serializers.ValidationError(
+                        f"Rule {i+1}: increment_value must be a valid number.",
+                        code=ErrorCode.FIELD_INVALID
+                    )
+        
+        return value
+
+    def update(self, property_instance, validated_data):
+        """
+        Update multiple DynamicIncrementsV2 instances
+        """
+        rules = validated_data['rules']
+        updated_rules = []
+        errors = []
+        
+        for i, rule_data in enumerate(rules):
+            try:
+                rule_id = rule_data.pop('id')  # Remove id from update data
+                
+                # Get the existing rule
+                try:
+                    existing_rule = DpDynamicIncrementsV2.objects.get(
+                        id=rule_id, 
+                        property_id=property_instance
+                    )
+                except DpDynamicIncrementsV2.DoesNotExist:
+                    errors.append({
+                        'rule_index': i + 1,
+                        'rule_id': rule_id,
+                        'error': f'Rule with id {rule_id} not found for this property'
+                    })
+                    continue
+                
+                # Update only provided fields
+                for field, value in rule_data.items():
+                    if value is not None:
+                        setattr(existing_rule, field, value)
+                
+                existing_rule.save()
+                updated_rules.append(existing_rule)
+                
+            except Exception as e:
+                errors.append({
+                    'rule_index': i + 1,
+                    'rule_id': rule_data.get('id', 'Unknown'),
+                    'error': str(e)
+                })
+        
+        if errors and not updated_rules:
+            raise serializers.ValidationError(f"Failed to update any dynamic increments: {errors}")
+        
+        return {
+            'updated_rules': updated_rules,
             'errors': errors,
             'property_id': property_instance.id
         }

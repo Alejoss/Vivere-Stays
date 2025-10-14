@@ -700,6 +700,7 @@ export default function SpecialOffers() {
                     {offer.applied_from_days !== null && offer.applied_until_days !== null && (
                       <span className="text-gray-500"> ({t('dashboard:specialOffers.appliedDaysBefore', { from: offer.applied_from_days, to: offer.applied_until_days, defaultValue: `applied ${offer.applied_from_days}-${offer.applied_until_days} days before` })})</span>
                     )}
+                    <span className="text-gray-700"> — {offer.increment_type === 'Percentage' ? `${offer.increment_value}%` : `+${offer.increment_value}`}</span>
                   </p>
                 ))}
                 {fields.filter((offer: any) => !offer.id).length > 0 && (

@@ -45,6 +45,8 @@ interface DynamicRule {
   increment_type: 'Percentage' | 'Additional';
   increment_value: number;
   isNew?: boolean;
+  isDirty?: boolean; // Track if rule has been modified
+  originalData?: Partial<DynamicRule>; // Store original data for comparison
 }
 
 export default function DynamicSetup() {
@@ -67,10 +69,28 @@ export default function DynamicSetup() {
     setLoading(true);
     try {
       const response = await dynamicPricingService.getDynamicRules(property.id);
-      setRules(response.rules.map(rule => ({ ...rule, isNew: false })));
+      setRules(response.rules.map(rule => ({ 
+        ...rule, 
+        isNew: false,
+        isDirty: false,
+        originalData: { ...rule } // Store original data for comparison
+      })));
     } catch (err: any) {
-      const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:dynamicSetup.loadError');
-      toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
+      console.error('🔧 FRONTEND DEBUG: Error loading dynamic rules:', err);
+      
+      // Extract detailed error message from backend response
+      let errorMessage = err?.response?.data?.message || err?.message || t('dashboard:dynamicSetup.loadError');
+      
+      // Try to get error code and translate it
+      if (err?.response?.data?.error_code) {
+        const errorCode = err.response.data.error_code;
+        const translatedError = t(`errors:${errorCode}`, { defaultValue: null });
+        if (translatedError) {
+          errorMessage = translatedError;
+        }
+      }
+      
+      toast({ title: t('common:messages.error'), description: errorMessage, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -83,14 +103,29 @@ export default function DynamicSetup() {
       lead_time_category: '',
       increment_type: 'Percentage',
       increment_value: 0,
-      isNew: true
+      isNew: true,
+      isDirty: true, // New rules are always dirty
+      originalData: {} // No original data for new rules
     };
     setRules([...rules, newRule]);
   };
 
   const updateRule = (index: number, field: keyof DynamicRule, value: any) => {
     const updatedRules = [...rules];
-    updatedRules[index] = { ...updatedRules[index], [field]: value };
+    const rule = updatedRules[index];
+    
+    // Update the field
+    rule[field] = value;
+    
+    // Check if this rule is dirty by comparing with original data
+    if (!rule.isNew && rule.originalData) {
+      const originalValue = rule.originalData[field];
+      rule.isDirty = rule.occupancy_category !== rule.originalData.occupancy_category ||
+                     rule.lead_time_category !== rule.originalData.lead_time_category ||
+                     rule.increment_type !== rule.originalData.increment_type ||
+                     rule.increment_value !== rule.originalData.increment_value;
+    }
+    
     setRules(updatedRules);
   };
 
@@ -108,9 +143,23 @@ export default function DynamicSetup() {
           description: t('common:messages.deleteSuccess'),
         });
       } catch (err: any) {
+        console.error('🔧 FRONTEND DEBUG: Error deleting dynamic rule:', err);
+        
+        // Extract detailed error message from backend response
+        let errorMessage = err?.response?.data?.message || err?.message || t('dashboard:dynamicSetup.deleteError');
+        
+        // Try to get error code and translate it
+        if (err?.response?.data?.error_code) {
+          const errorCode = err.response.data.error_code;
+          const translatedError = t(`errors:${errorCode}`, { defaultValue: null });
+          if (translatedError) {
+            errorMessage = translatedError;
+          }
+        }
+        
         toast({
           title: t('common:messages.error'),
-          description: err.message || t('dashboard:dynamicSetup.deleteError'),
+          description: errorMessage,
           variant: "destructive",
         });
         return;
@@ -128,28 +177,39 @@ export default function DynamicSetup() {
     setSaving(true);
     
     try {
-      const newRules = rules.filter(rule => rule.isNew);
-      const existingRules = rules.filter(rule => !rule.isNew);
+      // Only process dirty rules (new or modified)
+      const dirtyRules = rules.filter(rule => rule.isDirty);
+      const newRules = dirtyRules.filter(rule => rule.isNew);
+      const modifiedExistingRules = dirtyRules.filter(rule => !rule.isNew);
       
-      // Update existing rules
-      for (const rule of existingRules) {
-        if (rule.id) {
-          await dynamicPricingService.updateDynamicRule(property.id, rule.id, {
-            occupancy_category: rule.occupancy_category,
-            lead_time_category: rule.lead_time_category,
-            increment_type: rule.increment_type,
-            increment_value: rule.increment_value
+      // Bulk update only modified existing rules
+      if (modifiedExistingRules.length > 0) {
+        const validModifiedRules = modifiedExistingRules.filter(rule => 
+          rule.id && rule.occupancy_category && rule.lead_time_category
+        );
+        
+        if (validModifiedRules.length > 0) {
+          console.log(`🔧 FRONTEND DEBUG: Updating ${validModifiedRules.length} modified rules`);
+          await dynamicPricingService.bulkUpdateDynamicRules(property.id, {
+            rules: validModifiedRules.map(rule => ({
+              id: rule.id!,
+              occupancy_category: rule.occupancy_category,
+              lead_time_category: rule.lead_time_category,
+              increment_type: rule.increment_type,
+              increment_value: rule.increment_value
+            }))
           });
         }
       }
       
-      // Create new rules
+      // Create only new rules
       if (newRules.length > 0) {
         const validNewRules = newRules.filter(rule => 
           rule.occupancy_category && rule.lead_time_category
         );
         
         if (validNewRules.length > 0) {
+          console.log(`🔧 FRONTEND DEBUG: Creating ${validNewRules.length} new rules`);
           await dynamicPricingService.bulkCreateDynamicRules(property.id, {
             rules: validNewRules.map(rule => ({
               occupancy_category: rule.occupancy_category,
@@ -161,14 +221,56 @@ export default function DynamicSetup() {
         }
       }
       
+      // Show success message with count of changes
+      const totalChanges = modifiedExistingRules.length + newRules.length;
       toast({
         title: t('common:messages.success'),
-        description: t('dashboard:dynamicSetup.saveSuccess'),
+        description: totalChanges > 0 
+          ? t('dashboard:dynamicSetup.saveSuccessWithCount', { 
+              count: totalChanges, 
+              defaultValue: `Successfully saved ${totalChanges} rule${totalChanges === 1 ? '' : 's'}` 
+            })
+          : t('dashboard:dynamicSetup.noChangesToSave', { defaultValue: 'No changes to save' }),
       });
+      
       loadRules(); // Reload to get updated data
     } catch (err: any) {
-      const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:dynamicSetup.saveError');
-      toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
+      console.error('🔧 FRONTEND DEBUG: Error saving dynamic rules:', err);
+      console.error('🔧 FRONTEND DEBUG: Error details:', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        url: err?.config?.url,
+        method: err?.config?.method
+      });
+      
+      // Extract detailed error message from backend response
+      let errorMessage = err?.response?.data?.message || 'Failed to save dynamic rules';
+      
+      // Try to get error code and translate it
+      if (err?.response?.data?.error_code) {
+        const errorCode = err.response.data.error_code;
+        const translatedError = t(`errors:${errorCode}`, { defaultValue: null });
+        if (translatedError) {
+          errorMessage = translatedError;
+        }
+      }
+      
+      // Handle validation errors
+      if (err?.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        if (errors.non_field_errors && errors.non_field_errors.length > 0) {
+          errorMessage = errors.non_field_errors[0];
+        } else {
+          // Handle field-specific errors
+          const fieldErrors = Object.entries(errors).map(([field, messages]) => 
+            `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`
+          ).join('; ');
+          errorMessage = fieldErrors;
+        }
+      }
+      
+      toast({ title: t('common:messages.error'), description: errorMessage, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -239,15 +341,17 @@ export default function DynamicSetup() {
       <div className="container-padding-base">
         <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
-            <TrendingUp size={34} className="text-[#287CAC]" />
-            <div>
-              <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
-                {t('dashboard:dynamicSetup.title')}
-              </h2>
-              <p className="text-[#8A8E94] font-bold text-responsive-lg">
-                {t('dashboard:dynamicSetup.subtitle')}
-              </p>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
+            <div className="flex items-center gap-3">
+              <TrendingUp size={30} className="text-[#287CAC]" />
+              <div>
+                <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
+                  {t('dashboard:dynamicSetup.title')}
+                </h2>
+                <p className="text-[#8A8E94] font-bold text-responsive-lg">
+                  {t('dashboard:dynamicSetup.subtitle')}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -282,7 +386,8 @@ export default function DynamicSetup() {
                     {/* Desktop Layout */}
                     <div
                       className={`hidden lg:grid grid-cols-5 form-gap-base items-center container-padding-sm rounded-lg ${
-                        rule.isNew ? 'bg-blue-50 border border-blue-200' : 'bg-white'
+                        rule.isNew ? 'bg-blue-50 border border-blue-200' : 
+                        rule.isDirty ? 'bg-yellow-50 border border-yellow-200' : 'bg-white'
                       }`}
                     >
                       {/* Occupancy */}
@@ -316,7 +421,6 @@ export default function DynamicSetup() {
                           value={rule.increment_value}
                           onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
                           placeholder={t('common:common.zero', { defaultValue: '0' })}
-                          min="0"
                           className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
                         />
                       </div>
@@ -334,8 +438,9 @@ export default function DynamicSetup() {
                     </div>
 
                     {/* Mobile Layout */}
-                    <div className={`lg:hidden bg-white border border-gray-200 rounded-lg container-padding-base form-gap-base ${
-                      rule.isNew ? 'bg-blue-50 border-blue-200' : ''
+                    <div className={`lg:hidden border border-gray-200 rounded-lg container-padding-base form-gap-base ${
+                      rule.isNew ? 'bg-blue-50 border-blue-200' : 
+                      rule.isDirty ? 'bg-yellow-50 border-yellow-200' : 'bg-white'
                     }`}>
                       {/* Header with delete button */}
                       <div className="flex items-center justify-end">
@@ -397,7 +502,6 @@ export default function DynamicSetup() {
                               value={rule.increment_value}
                               onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
                               placeholder={t('common:common.zero', { defaultValue: '0' })}
-                              min="0"
                               className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
@@ -421,29 +525,53 @@ export default function DynamicSetup() {
             </button>
             <button 
               onClick={saveRules}
-              disabled={saving || rules.length === 0}
+              disabled={saving || !rules.some(rule => rule.isDirty)}
               className="flex items-center gap-5 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
             >
               <Save size={24} />
               {saving ? t('common:messages.saving') : t('common:buttons.save')}
+              {rules.some(rule => rule.isDirty) && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  {rules.filter(rule => rule.isDirty).length}
+                </span>
+              )}
             </button>
           </div>
         </div>
 
-        {/* How It Works Section */}
-        <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
-          <div className="container-margin-sm">
-            <h3 className="text-responsive-lg font-bold text-[#294758]">{t('dashboard:dynamicSetup.howItWorks', { defaultValue: 'How It Works' })}</h3>
+          {/* How It Works Section */}
+          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
+            <div className="container-margin-sm">
+              <h3 className="text-responsive-lg font-bold text-[#294758]">{t('dashboard:dynamicSetup.howItWorks', { defaultValue: 'How It Works' })}</h3>
+            </div>
+            <div className="text-black/60 leading-relaxed form-gap-base text-responsive-base">
+              <p>
+                {t('dashboard:dynamicSetup.howItWorksDesc', { defaultValue: 'The system automatically creates occupancy and lead time ranges from your threshold values and applies increments based on current conditions.' })}
+              </p>
+              <p className="text-responsive-xs">
+                {t('dashboard:dynamicSetup.howItWorksExample', { defaultValue: 'Example: At 50% occupancy (30-50% range) with 7 days lead time (3-7 days range): $20 additional charge' })}
+              </p>
+              
+              {/* Legend for color coding */}
+              <div className="mt-4 p-3 bg-white/50 rounded-lg">
+                <h4 className="text-responsive-sm font-semibold text-[#294758] mb-2">Color Legend:</h4>
+                <div className="flex flex-wrap gap-4 text-responsive-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-white border border-gray-300 rounded"></div>
+                    <span>Unchanged</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-yellow-50 border border-yellow-200 rounded"></div>
+                    <span>Modified</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded"></div>
+                    <span>New Rule</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="text-black/60 leading-relaxed form-gap-base text-responsive-base">
-            <p>
-              {t('dashboard:dynamicSetup.howItWorksDesc', { defaultValue: 'The system automatically creates occupancy and lead time ranges from your threshold values and applies increments based on current conditions.' })}
-            </p>
-            <p className="text-responsive-xs">
-              {t('dashboard:dynamicSetup.howItWorksExample', { defaultValue: 'Example: At 50% occupancy (30-50% range) with 7 days lead time (3-7 days range): $20 additional charge' })}
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ from .views import (
     DynamicIncrementsV2ListView,
     DynamicIncrementsV2CreateView,
     DynamicIncrementsV2UpdateView,
+    DynamicIncrementsV2BulkUpdateView,
     DynamicIncrementsV2DeleteView,
     LosReductionListView,
     LosReductionCreateView,
@@ -81,6 +82,7 @@ urlpatterns = [
     # Minimum Selling Price endpoints
     path('msp/', MinimumSellingPriceView.as_view(), name='msp'),
     path('properties/<str:property_id>/msp/', PropertyMSPView.as_view(), name='property-msp'),
+    path('properties/<str:property_id>/msp/<str:msp_id>/', PropertyMSPView.as_view(), name='property-msp-delete'),
     
     # Price History endpoints
     path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),
@@ -105,6 +107,7 @@ urlpatterns = [
     # Dynamic Setup (Dynamic Increments V2) endpoints
     path('properties/<str:property_id>/dynamic-setup/', DynamicIncrementsV2ListView.as_view(), name='dynamic-setup-list'),
     path('properties/<str:property_id>/dynamic-setup/create/', DynamicIncrementsV2CreateView.as_view(), name='dynamic-setup-create'),
+    path('properties/<str:property_id>/dynamic-setup/bulk-update/', DynamicIncrementsV2BulkUpdateView.as_view(), name='dynamic-setup-bulk-update'),
     path('properties/<str:property_id>/dynamic-setup/<int:rule_id>/', DynamicIncrementsV2UpdateView.as_view(), name='dynamic-setup-update'),
     path('properties/<str:property_id>/dynamic-setup/<int:rule_id>/delete/', DynamicIncrementsV2DeleteView.as_view(), name='dynamic-setup-delete'),
     

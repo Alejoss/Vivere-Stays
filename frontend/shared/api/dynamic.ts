@@ -304,6 +304,27 @@ export interface UpdateDynamicRuleResponse {
   rule: DynamicRule;
 }
 
+export interface BulkUpdateDynamicRulesRequest {
+  rules: Array<{
+    id: number;
+    occupancy_category?: '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+';
+    lead_time_category?: '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+';
+    increment_type?: 'Percentage' | 'Additional';
+    increment_value?: number;
+  }>;
+}
+
+export interface BulkUpdateDynamicRulesResponse {
+  message: string;
+  updated_rules: DynamicRule[];
+  errors: Array<{
+    rule_index: number;
+    rule_id: number;
+    error: string;
+  }>;
+  property_id: string;
+}
+
 export interface DeleteDynamicRuleResponse {
   message: string;
   rule_id: number;
@@ -616,6 +637,19 @@ export const dynamicPricingService = {
     });
   },
 
+  async deleteMSPPeriod(propertyId: string, mspId: string): Promise<{
+    message: string;
+    deleted_entry: MSPEntry;
+  }> {
+    return apiRequest<{
+      message: string;
+      deleted_entry: MSPEntry;
+    }>({
+      method: 'DELETE',
+      url: `/dynamic-pricing/properties/${propertyId}/msp/${mspId}/`,
+    });
+  },
+
   /**
    * Get the Minimum Selling Price (MSP) for a property and a specific date.
    */
@@ -924,6 +958,17 @@ export const dynamicPricingService = {
     return apiRequest<UpdateDynamicRuleResponse>({
       method: 'PATCH',
       url: `/dynamic-pricing/properties/${propertyId}/dynamic-setup/${ruleId}/`,
+      data,
+    });
+  },
+
+  async bulkUpdateDynamicRules(
+    propertyId: string, 
+    data: BulkUpdateDynamicRulesRequest
+  ): Promise<BulkUpdateDynamicRulesResponse> {
+    return apiRequest<BulkUpdateDynamicRulesResponse>({
+      method: 'PATCH',
+      url: `/dynamic-pricing/properties/${propertyId}/dynamic-setup/bulk-update/`,
       data,
     });
   },

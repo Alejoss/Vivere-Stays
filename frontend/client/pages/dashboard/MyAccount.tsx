@@ -4,6 +4,54 @@ import { useTranslation } from "react-i18next";
 import { profilesService, ProfileData, PasswordChangeRequest } from "../../../shared/api/profiles";
 import { useToast } from "../../../client/hooks/use-toast";
 
+// Password Strength Indicator Component
+const PasswordStrengthIndicator = ({ password }: { password: string }) => {
+  const strength = {
+    hasMinLength: password.length >= 8,
+    hasUpperLower: /[a-z]/.test(password) && /[A-Z]/.test(password),
+    hasNumber: /\d/.test(password),
+  };
+
+  const StrengthItem = ({
+    label,
+    isValid,
+  }: {
+    label: string;
+    isValid: boolean;
+  }) => (
+    <div className="flex items-center gap-2">
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 10 11"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="5" cy="5.5" r="5" fill={isValid ? "#16B257" : "#D7DFE8"} />
+      </svg>
+      <span
+        className={`text-xs font-normal ${isValid ? "text-[#16B257]" : "text-[#9CAABD]"}`}
+      >
+        {label}
+      </span>
+    </div>
+  );
+
+  // Only show if user has started typing
+  if (!password) return null;
+
+  return (
+    <div className="mt-3 space-y-2">
+      <StrengthItem label="At least 8 characters" isValid={strength.hasMinLength} />
+      <StrengthItem
+        label="Mix of uppercase and lowercase letters"
+        isValid={strength.hasUpperLower}
+      />
+      <StrengthItem label="At least one number" isValid={strength.hasNumber} />
+    </div>
+  );
+};
+
 export default function MyAccount() {
   const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -67,8 +115,20 @@ export default function MyAccount() {
 
     if (!passwordForm.new_password) {
       errors.new_password = "New password is required";
-    } else if (passwordForm.new_password.length < 8) {
-      errors.new_password = "Password must be at least 8 characters long";
+    } else {
+      // Check password strength requirements (matching onboarding requirements)
+      const hasMinLength = passwordForm.new_password.length >= 8;
+      const hasUpperLower = /[a-z]/.test(passwordForm.new_password) && /[A-Z]/.test(passwordForm.new_password);
+      const hasNumber = /\d/.test(passwordForm.new_password);
+
+      if (!hasMinLength || !hasUpperLower || !hasNumber) {
+        const missingRequirements = [];
+        if (!hasMinLength) missingRequirements.push("at least 8 characters");
+        if (!hasUpperLower) missingRequirements.push("mix of uppercase and lowercase letters");
+        if (!hasNumber) missingRequirements.push("at least one number");
+        
+        errors.new_password = `Password must contain: ${missingRequirements.join(", ")}`;
+      }
     }
 
     if (!passwordForm.confirm_password) {
@@ -121,17 +181,51 @@ export default function MyAccount() {
     } catch (error: any) {
       console.error("Error changing password:", error);
       
-      if (error.response?.data?.error) {
-        if (error.response.data.details) {
+      // The API client interceptor transforms errors into ApiError format
+      // Check for both original axios error structure and transformed ApiError structure
+      let errorMessage = null;
+      let errorDetails = null;
+      
+      if (error.response?.data) {
+        // Original axios error structure
+        errorMessage = error.response.data.error;
+        errorDetails = error.response.data.details;
+      } else if (error.error) {
+        // Transformed ApiError structure from interceptor
+        errorMessage = error.error;
+        errorDetails = error.detail;
+      }
+      
+      console.error("Error message:", errorMessage);
+      console.error("Error details:", errorDetails);
+      
+      if (errorMessage) {
+        // Handle password validation errors with details
+        if (errorDetails && Array.isArray(errorDetails)) {
           setPasswordErrors({
-            new_password: error.response.data.details.join(", "),
+            new_password: errorDetails.join(", "),
           });
-        } else {
+        }
+        // Handle current password incorrect error
+        else if (errorMessage === 'Current password is incorrect') {
           setPasswordErrors({
-            general: error.response.data.error,
+            current_password: errorMessage,
+          });
+        }
+        // Handle new password requirements error
+        else if (errorMessage === 'New password does not meet requirements') {
+          setPasswordErrors({
+            new_password: errorMessage,
+          });
+        }
+        // Handle any other specific error message
+        else {
+          setPasswordErrors({
+            general: errorMessage,
           });
         }
       } else {
+        // Fallback for unknown error structure
         setPasswordErrors({
           general: "Failed to change password. Please try again.",
         });
@@ -310,6 +404,7 @@ export default function MyAccount() {
                     {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
+                <PasswordStrengthIndicator password={passwordForm.new_password} />
                 {passwordErrors.new_password && (
                   <p className="text-red-600 text-[12px] mt-1">{passwordErrors.new_password}</p>
                 )}
@@ -365,8 +460,9 @@ export default function MyAccount() {
               <h3 className="text-sm font-semibold text-[#374151] mb-2">Password Requirements:</h3>
               <ul className="text-[12px] text-[#6B7280] space-y-1">
                 <li>• At least 8 characters long</li>
+                <li>• Mix of uppercase and lowercase letters</li>
+                <li>• At least one number</li>
                 <li>• Cannot be the same as your current password</li>
-                <li>• Should contain a mix of letters, numbers, and symbols</li>
               </ul>
             </div>
           </div>

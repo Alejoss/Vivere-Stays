@@ -210,7 +210,7 @@
     "loadingRates": "Loading available rates...",
     "noRatesFound": "No available rates found",
     "loadError": "Failed to load available rates",
-    "saveSuccess": "Successfully updated {{updated}} rates and created {{created}} new configurations",
+    "saveSuccess": "Successfully updated {{updated}} rates",
     "saveError": "Failed to save available rates. Please try again.",
     "algorithmSchedule": "Algorithm checks for changes on this tab: Daily at 9am",
     "algorithmDescription": "The Available Rates worksheet defines how different room rates are calculated and displayed.",
