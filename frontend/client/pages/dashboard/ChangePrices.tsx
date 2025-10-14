@@ -289,11 +289,13 @@ function WeeklyPriceOverview({
 
   // Mobile navigation functions
   const goToPreviousDays = () => {
+    const maxIndex = window.innerWidth >= 768 ? 2 : 4; // Tablet: max index 2 (shows days 2,3,4,5,6), Mobile: max index 4 (shows days 4,5,6)
     setMobileDayIndex(Math.max(0, mobileDayIndex - 1));
   };
 
   const goToNextDays = () => {
-    setMobileDayIndex(Math.min(4, mobileDayIndex + 1)); // Max index is 4 (shows days 4,5,6)
+    const maxIndex = window.innerWidth >= 768 ? 2 : 4; // Tablet: max index 2 (shows days 2,3,4,5,6), Mobile: max index 4 (shows days 4,5,6)
+    setMobileDayIndex(Math.min(maxIndex, mobileDayIndex + 1));
   };
 
   // Get visible days based on screen size and mobile index
@@ -303,6 +305,16 @@ function WeeklyPriceOverview({
     // On desktop (lg+), show all 7 days
     if (window.innerWidth >= 1024) {
       return competitorData.dates.map((date, index) => ({ date, index }));
+    }
+    
+    // On tablet (md+), show 5 days starting from mobileDayIndex
+    if (window.innerWidth >= 768) {
+      return competitorData.dates
+        .slice(mobileDayIndex, mobileDayIndex + 5)
+        .map((date, originalIndex) => ({ 
+          date, 
+          index: mobileDayIndex + originalIndex 
+        }));
     }
     
     // On mobile, show 3 days starting from mobileDayIndex
@@ -337,9 +349,10 @@ function WeeklyPriceOverview({
     const isLeftSwipe = distance > 50; // Minimum swipe distance
     const isRightSwipe = distance < -50;
 
-    if (isLeftSwipe && mobileDayIndex < 4) {
+    const maxIndex = window.innerWidth >= 768 ? 2 : 4;
+    if (isLeftSwipe && mobileDayIndex < maxIndex) {
       // Swipe left - go to next days
-      setMobileDayIndex(prev => Math.min(4, prev + 1));
+      setMobileDayIndex(prev => Math.min(maxIndex, prev + 1));
     } else if (isRightSwipe && mobileDayIndex > 0) {
       // Swipe right - go to previous days
       setMobileDayIndex(prev => Math.max(0, prev - 1));
@@ -516,7 +529,7 @@ function WeeklyPriceOverview({
             </div>
             
             {/* Date headers */}
-            <div className="flex-1 flex items-center justify-center gap-4">
+            <div className="flex-1 flex items-center justify-center">
               {visibleDays.map(({ date, index }) => {
                 const d = new Date(date);
                 const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -536,7 +549,7 @@ function WeeklyPriceOverview({
             <div className="flex items-center gap-2">
               <button
                 onClick={goToNextDays}
-                disabled={mobileDayIndex >= 4}
+                disabled={mobileDayIndex >= (window.innerWidth >= 768 ? 2 : 4)}
                 className="w-8 h-8 rounded-full bg-hotel-brand/20 hover:bg-hotel-brand/30 text-hotel-brand transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight size={16} />
@@ -546,7 +559,7 @@ function WeeklyPriceOverview({
           
           {/* Swipe indicators */}
           <div className="flex items-center gap-1 mt-2">
-            {[0, 1, 2, 3, 4].map((indicator) => (
+            {(window.innerWidth >= 768 ? [0, 1, 2] : [0, 1, 2, 3, 4]).map((indicator) => (
               <div
                 key={indicator}
                 className={`w-2 h-2 rounded-full transition-colors ${
@@ -560,7 +573,7 @@ function WeeklyPriceOverview({
         </div>
         
         {/* Desktop date headers - no touch events */}
-        <div className="hidden lg:flex flex-1 items-center justify-between px-4">
+        <div className="hidden lg:flex flex-1 items-center justify-center px-4">
           {competitorData?.dates.map((date, index) => {
             const d = new Date(date);
             const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -660,7 +673,7 @@ function WeeklyPriceOverview({
             today.setHours(0, 0, 0, 0);
             const isPast = new Date(date) < today;
             return (
-              <div key={index} className="w-[80px] lg:w-[120px] xl:w-[140px] flex justify-center">
+              <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
                 <div className="relative flex items-center w-full">
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 text-sm lg:text-lg text-[#294859] font-bold z-10">$</span>
                   <input
@@ -702,7 +715,7 @@ function WeeklyPriceOverview({
             today.setHours(0, 0, 0, 0);
             const isPast = new Date(date) < today;
             return (
-              <div key={index} className="w-[100px] lg:w-[120px] xl:w-[140px] flex justify-center">
+              <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
                 <div className="relative flex items-center w-full">
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 text-base lg:text-lg text-[#294859] font-bold z-10">$</span>
                   <input
