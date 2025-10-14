@@ -505,10 +505,7 @@ export default function SpecialOffers() {
                       offer.id ? '' : 'bg-blue-50 border-blue-200'
                     }`}>
                       {/* Header with delete button */}
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-responsive-lg font-semibold text-gray-700">
-                          Offer {index + 1}
-                        </h4>
+                      <div className="flex items-center justify-end">
                         <button 
                           onClick={() => removeOffer(index)}
                           className="w-8 h-8 p-1 border border-red-300 bg-red-50 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors"
@@ -519,117 +516,131 @@ export default function SpecialOffers() {
                       </div>
 
                       {/* Offer Name */}
-                      <div>
+                      <div className="form-field">
                         <label className="form-label">
                           {t('dashboard:specialOffers.offerName', { defaultValue: 'Offer Name' })}*
                         </label>
-                        <input
-                          type="text"
-                          {...register(`offers.${index}.offer_name` as const)}
-                          placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
-                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        {formState.errors?.offers?.[index]?.offer_name?.message ? (
-                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
-                        ) : null}
+                        <div className="form-field">
+                          <input
+                            type="text"
+                            {...register(`offers.${index}.offer_name` as const)}
+                            placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
+                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          {formState.errors?.offers?.[index]?.offer_name?.message ? (
+                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
+                          ) : null}
+                        </div>
                       </div>
 
                       {/* Date Range */}
                       <div className="grid grid-cols-2 form-gap-base">
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.validFrom', { defaultValue: 'Valid From' })}*
                           </label>
-                          <input
-                            type="date"
-                            {...register(`offers.${index}.valid_from` as const)}
-                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
-                            placeholder={t('dashboard:specialOffers.selectStartDate', { defaultValue: 'Select start date' })}
-                          />
-                          {formState.errors?.offers?.[index]?.valid_from?.message ? (
-                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
-                          ) : null}
+                          <div className="form-field">
+                            <input
+                              type="date"
+                              {...register(`offers.${index}.valid_from` as const)}
+                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
+                              placeholder={t('dashboard:specialOffers.selectStartDate', { defaultValue: 'Select start date' })}
+                            />
+                            {formState.errors?.offers?.[index]?.valid_from?.message ? (
+                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
+                            ) : null}
+                          </div>
                         </div>
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.validUntil', { defaultValue: 'Valid Until' })}*
                           </label>
-                          <input
-                            type="date"
-                            {...register(`offers.${index}.valid_until` as const)}
-                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
-                            placeholder={t('dashboard:specialOffers.selectEndDate', { defaultValue: 'Select end date' })}
-                          />
-                          {formState.errors?.offers?.[index]?.valid_until?.message ? (
-                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
-                          ) : null}
+                          <div className="form-field">
+                            <input
+                              type="date"
+                              {...register(`offers.${index}.valid_until` as const)}
+                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
+                              placeholder={t('dashboard:specialOffers.selectEndDate', { defaultValue: 'Select end date' })}
+                            />
+                            {formState.errors?.offers?.[index]?.valid_until?.message ? (
+                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
 
                       {/* Availability Days */}
                       <div className="grid grid-cols-2 form-gap-base">
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.availableFromDays', { defaultValue: 'Available From Days' })}
                             <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
-                          <input
-                            type="number"
-                            {...register(`offers.${index}.applied_from_days` as const)}
-                            placeholder="0"
-                            min="0"
-                            className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
-                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
-                          ) : null}
+                          <div className="form-field">
+                            <input
+                              type="number"
+                              {...register(`offers.${index}.applied_from_days` as const)}
+                              placeholder="0"
+                              min="0"
+                              className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
+                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
+                            ) : null}
+                          </div>
                         </div>
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.availableUntilDays', { defaultValue: 'Available Until Days' })}
                             <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
-                          <input
-                            type="number"
-                            {...register(`offers.${index}.applied_until_days` as const)}
-                            placeholder="0"
-                            min="0"
-                            className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
-                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
-                          ) : null}
+                          <div className="form-field">
+                            <input
+                              type="number"
+                              {...register(`offers.${index}.applied_until_days` as const)}
+                              placeholder="0"
+                              min="0"
+                              className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
+                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
 
                       {/* Type and Value */}
                       <div className="grid grid-cols-2 form-gap-base">
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.type', { defaultValue: 'Type' })}
                           </label>
-                          <select
-                            {...register(`offers.${index}.increment_type` as const)}
-                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black appearance-none"
-                          >
-                            <option value="Percentage">{t('dashboard:availableRates.percentage')}</option>
-                            <option value="Additional">{t('dashboard:availableRates.additional')}</option>
-                          </select>
+                          <div className="form-field">
+                            <select
+                              {...register(`offers.${index}.increment_type` as const)}
+                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black appearance-none"
+                            >
+                              <option value="Percentage">{t('dashboard:availableRates.percentage')}</option>
+                              <option value="Additional">{t('dashboard:availableRates.additional')}</option>
+                            </select>
+                          </div>
                         </div>
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.value', { defaultValue: 'Value' })}*
                           </label>
-                          <input
-                            type="number"
-                            {...register(`offers.${index}.increment_value` as const)}
-                            placeholder="0"
-                            min="0"
-                            className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          {formState.errors?.offers?.[index]?.increment_value?.message ? (
-                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
-                          ) : null}
+                          <div className="form-field">
+                            <input
+                              type="number"
+                              {...register(`offers.${index}.increment_value` as const)}
+                              placeholder="0"
+                              min="0"
+                              className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            {formState.errors?.offers?.[index]?.increment_value?.message ? (
+                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>

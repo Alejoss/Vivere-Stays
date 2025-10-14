@@ -338,10 +338,7 @@ export default function DynamicSetup() {
                       rule.isNew ? 'bg-blue-50 border-blue-200' : ''
                     }`}>
                       {/* Header with delete button */}
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-responsive-lg font-semibold text-gray-700">
-                          {t('dashboard:dynamicSetup.rule')} {index + 1}
-                        </h4>
+                      <div className="flex items-center justify-end">
                         <button 
                           onClick={() => removeRule(index)}
                           className="w-8 h-8 p-1 border border-red-300 bg-red-50 rounded-md flex items-center justify-center hover:bg-red-100 transition-colors"
@@ -353,49 +350,57 @@ export default function DynamicSetup() {
 
                       {/* Occupancy and Lead Time */}
                       <div className="grid grid-cols-2 form-gap-base">
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:dynamicSetup.occupancy')}
                           </label>
-                          <OccupancySelector
-                            value={rule.occupancy_category}
-                            onChange={(value) => updateRule(index, 'occupancy_category', value)}
-                          />
+                          <div className="form-field">
+                            <OccupancySelector
+                              value={rule.occupancy_category}
+                              onChange={(value) => updateRule(index, 'occupancy_category', value)}
+                            />
+                          </div>
                         </div>
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:dynamicSetup.leadTime')}
                           </label>
-                          <LeadTimeSelector
-                            value={rule.lead_time_category}
-                            onChange={(value) => updateRule(index, 'lead_time_category', value)}
-                          />
+                          <div className="form-field">
+                            <LeadTimeSelector
+                              value={rule.lead_time_category}
+                              onChange={(value) => updateRule(index, 'lead_time_category', value)}
+                            />
+                          </div>
                         </div>
                       </div>
 
                       {/* Increment Type and Value */}
                       <div className="grid grid-cols-2 form-gap-base">
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:availableRates.incrementType')}
                           </label>
-                          <IncrementTypeSelector
-                            value={rule.increment_type}
-                            onChange={(value) => updateRule(index, 'increment_type', value)}
-                          />
+                          <div className="form-field">
+                            <IncrementTypeSelector
+                              value={rule.increment_type}
+                              onChange={(value) => updateRule(index, 'increment_type', value)}
+                            />
+                          </div>
                         </div>
-                        <div>
+                        <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:availableRates.incrementValue')}
                           </label>
-                          <input
-                            type="number"
-                            value={rule.increment_value}
-                            onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
-                            placeholder={t('common:common.zero', { defaultValue: '0' })}
-                            min="0"
-                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
+                          <div className="form-field">
+                            <input
+                              type="number"
+                              value={rule.increment_value}
+                              onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
+                              placeholder={t('common:common.zero', { defaultValue: '0' })}
+                              min="0"
+                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

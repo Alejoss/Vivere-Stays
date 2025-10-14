@@ -355,7 +355,7 @@ export default function LosReductionRules() {
         <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
-            <Calendar size={34} className="text-[#287CAC]" />
+            <Calendar size={34} className="text-[#287CAC] hidden lg:block" />
             <div>
               <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 {t('dashboard:losReduction.title')}
@@ -377,34 +377,15 @@ export default function LosReductionRules() {
           )}
 
 
-          {/* Info Section */}
-          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
-            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">{t('dashboard:losReduction.howItWorksTitle', { defaultValue: 'How Reduction Rules Work' })}</h3>
-            <div className="text-black/60 text-responsive-base leading-relaxed">
-              <p className="container-margin-sm">
-                {t('dashboard:losReduction.howItWorksDesc', { defaultValue: 'Reduction rules automatically reduce the LOS requirement when specific conditions are met:' })}
-              </p>
-              <ul className="form-gap-base text-responsive-sm">
-                <li>• <strong>{t('dashboard:losReduction.leadTimeLabel', { defaultValue: 'Lead Time' })}:</strong> {t('dashboard:losReduction.leadTimeDesc', { defaultValue: 'Days between booking and check-in' })}</li>
-                <li>• <strong>{t('dashboard:losReduction.occupancyLabel', { defaultValue: 'Occupancy Level' })}:</strong> {t('dashboard:losReduction.occupancyDesc', { defaultValue: 'Current occupancy percentage' })}</li>
-                <li>• <strong>{t('dashboard:losReduction.losValueLabel', { defaultValue: 'LOS Value' })}:</strong> {t('dashboard:losReduction.losValueDesc', { defaultValue: 'How much to reduce the LOS by' })}</li>
-              </ul>
-              <p className="container-margin-sm text-responsive-sm">
-                <strong>{t('common:common.example', { defaultValue: 'Example' })}:</strong> {t('dashboard:losReduction.exampleText', { defaultValue: 'If lead time ≤ 7 days and occupancy ≤ 50% → reduce LOS by 1 night.' })}
-              </p>
-            </div>
-          </div>
-
           {/* Reduction Rules Table */}
           <div className="container-margin-sm">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
-              <h3 className="text-responsive-lg font-bold text-black">{t('dashboard:losReduction.reductionRules', { defaultValue: 'Reduction Rules' })}</h3>
-              {reductionRules.length > 0 && (
+            {reductionRules.length > 0 && (
+              <div className="flex justify-end container-margin-sm">
                 <span className="text-responsive-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                   {reductionRules.length} {t('dashboard:losReduction.ruleCount', { count: reductionRules.length, defaultValue: reductionRules.length !== 1 ? 'rules' : 'rule' })}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] container-margin-sm">
@@ -485,10 +466,7 @@ export default function LosReductionRules() {
               {reductionRules.map((rule, index) => (
                 <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg container-padding-base form-gap-base">
                   {/* Header with delete button */}
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-responsive-lg font-semibold text-gray-700">
-                      Rule {index + 1}
-                    </h4>
+                  <div className="flex items-center justify-end">
                     <button
                       onClick={() => removeReductionRule(rule.id)}
                       disabled={isLoading || isSaving}
@@ -500,59 +478,65 @@ export default function LosReductionRules() {
 
                   {/* Lead Time and Occupancy Categories */}
                   <div className="grid grid-cols-1 form-gap-base">
-                    <div>
+                    <div className="form-field">
                       <label className="form-label">
                       {t('dashboard:losReduction.leadTimeCategory', { defaultValue: 'Lead Time Category' })}
                       <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                     </label>
-                      <select
-                        value={rule.lead_time_category}
-                        onChange={(e) => updateReductionRule(rule.id, 'lead_time_category', e.target.value)}
-                        disabled={isLoading || isSaving}
-                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {leadTimeCategories.map((category) => (
-                          <option key={category.value} value={category.value}>
-                            {category.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="form-field">
+                        <select
+                          value={rule.lead_time_category}
+                          onChange={(e) => updateReductionRule(rule.id, 'lead_time_category', e.target.value)}
+                          disabled={isLoading || isSaving}
+                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {leadTimeCategories.map((category) => (
+                            <option key={category.value} value={category.value}>
+                              {category.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                    <div>
+                    <div className="form-field">
                       <label className="form-label">
                       {t('dashboard:losReduction.occupancyCategory', { defaultValue: 'Occupancy Category' })}
                       <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                     </label>
-                      <select
-                        value={rule.occupancy_category}
-                        onChange={(e) => updateReductionRule(rule.id, 'occupancy_category', e.target.value)}
-                        disabled={isLoading || isSaving}
-                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {occupancyCategories.map((category) => (
-                          <option key={category.value} value={category.value}>
-                            {category.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="form-field">
+                        <select
+                          value={rule.occupancy_category}
+                          onChange={(e) => updateReductionRule(rule.id, 'occupancy_category', e.target.value)}
+                          disabled={isLoading || isSaving}
+                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {occupancyCategories.map((category) => (
+                            <option key={category.value} value={category.value}>
+                              {category.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
 
                   {/* LOS Reduction */}
-                  <div>
+                  <div className="form-field">
                     <label className="form-label">
                       {t('dashboard:losReduction.losReduction', { defaultValue: 'LOS Reduction' })}
                       <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                     </label>
-                    <input
-                      type="number"
-                      value={rule.los_value}
-                      onChange={(e) => updateReductionRule(rule.id, 'los_value', parseFloat(e.target.value) || 0)}
-                      disabled={isLoading || isSaving}
-                      className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      min="0"
-                      step="0.01"
-                    />
+                    <div className="form-field">
+                      <input
+                        type="number"
+                        value={rule.los_value}
+                        onChange={(e) => updateReductionRule(rule.id, 'los_value', parseFloat(e.target.value) || 0)}
+                        disabled={isLoading || isSaving}
+                        className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -585,6 +569,24 @@ export default function LosReductionRules() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+
+          {/* Info Section - moved to bottom */}
+          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
+            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">{t('dashboard:losReduction.howItWorksTitle', { defaultValue: 'How Reduction Rules Work' })}</h3>
+            <div className="text-black/60 text-responsive-base leading-relaxed">
+              <p className="container-margin-sm">
+                {t('dashboard:losReduction.howItWorksDesc', { defaultValue: 'Reduction rules automatically reduce the LOS requirement when specific conditions are met:' })}
+              </p>
+              <ul className="form-gap-base text-responsive-sm">
+                <li>• <strong>{t('dashboard:losReduction.leadTimeLabel', { defaultValue: 'Lead Time' })}:</strong> {t('dashboard:losReduction.leadTimeDesc', { defaultValue: 'Days between booking and check-in' })}</li>
+                <li>• <strong>{t('dashboard:losReduction.occupancyLabel', { defaultValue: 'Occupancy Level' })}:</strong> {t('dashboard:losReduction.occupancyDesc', { defaultValue: 'Current occupancy percentage' })}</li>
+                <li>• <strong>{t('dashboard:losReduction.losValueLabel', { defaultValue: 'LOS Value' })}:</strong> {t('dashboard:losReduction.losValueDesc', { defaultValue: 'How much to reduce the LOS by' })}</li>
+              </ul>
+              <p className="container-margin-sm text-responsive-sm">
+                <strong>{t('common:common.example', { defaultValue: 'Example' })}:</strong> {t('dashboard:losReduction.exampleText', { defaultValue: 'If lead time ≤ 7 days and occupancy ≤ 50% → reduce LOS by 1 night.' })}
+              </p>
             </div>
           </div>
         </div>

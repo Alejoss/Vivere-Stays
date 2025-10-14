@@ -420,7 +420,7 @@ export default function LosSetupRules() {
           <FormProvider {...form}>
           {/* Section Header */}
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
-            <Calendar size={34} className="text-[#287CAC]" />
+            <Calendar size={34} className="text-[#287CAC] hidden lg:block" />
             <div>
               <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 {t('dashboard:losSetup.title')}
@@ -445,14 +445,13 @@ export default function LosSetupRules() {
 
           {/* Setup Rules Table */}
           <div className="container-margin-sm">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between container-margin-sm">
-              <h3 className="text-responsive-lg font-bold text-black">{t('dashboard:losSetup.setupRules', { defaultValue: 'Setup Rules' })}</h3>
-              {fields.length > 0 && (
+            {fields.length > 0 && (
+              <div className="flex justify-end container-margin-sm">
                 <span className="text-responsive-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                   {fields.length} {t('dashboard:losSetup.ruleCount', { count: fields.length, defaultValue: fields.length !== 1 ? 'rules' : 'rule' })}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-hidden rounded-lg border border-[#D0DFE6] container-margin-sm">
@@ -549,10 +548,7 @@ export default function LosSetupRules() {
               {fields.map((rule, index) => (
                 <div key={rule.id || index} className="bg-white border border-[#D0DFE6] rounded-lg container-padding-base form-gap-base">
                   {/* Header with delete button */}
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-responsive-lg font-semibold text-gray-700">
-                      Rule {index + 1}
-                    </h4>
+                  <div className="flex items-center justify-end">
                     <button
                       onClick={() => removeSetupRule(index)}
                       disabled={isLoading || isSaving}
@@ -564,77 +560,85 @@ export default function LosSetupRules() {
 
                   {/* Date Range */}
                   <div className="grid grid-cols-2 form-gap-base">
-                    <div>
+                    <div className="form-field">
                       <label className="form-label">
                         From Date
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
-                      <input
-                        type="date"
-                        {...form.register(`rules.${index}.valid_from` as const)}
-                        disabled={isLoading || isSaving}
-                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      {formState.errors?.rules?.[index]?.valid_from?.message && (
-                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
-                      )}
+                      <div className="form-field">
+                        <input
+                          type="date"
+                          {...form.register(`rules.${index}.valid_from` as const)}
+                          disabled={isLoading || isSaving}
+                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        {formState.errors?.rules?.[index]?.valid_from?.message && (
+                          <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
+                        )}
+                      </div>
                     </div>
-                    <div>
+                    <div className="form-field">
                       <label className="form-label">
                         To Date
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
-                      <input
-                        type="date"
-                        {...form.register(`rules.${index}.valid_until` as const)}
-                        disabled={isLoading || isSaving}
-                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      {formState.errors?.rules?.[index]?.valid_until?.message && (
-                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
-                      )}
+                      <div className="form-field">
+                        <input
+                          type="date"
+                          {...form.register(`rules.${index}.valid_until` as const)}
+                          disabled={isLoading || isSaving}
+                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        {formState.errors?.rules?.[index]?.valid_until?.message && (
+                          <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Day and LOS Value */}
                   <div className="grid grid-cols-2 form-gap-base">
-                    <div>
+                    <div className="form-field">
                       <label className="form-label">
                         {t('dashboard:losSetup.day', { defaultValue: 'Day' })}
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
-                      <select
-                        {...form.register(`rules.${index}.day_of_week` as const)}
-                        disabled={isLoading || isSaving}
-                        className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="Monday">{t('common:days.monday', { defaultValue: 'Monday' })}</option>
-                        <option value="Tuesday">{t('common:days.tuesday', { defaultValue: 'Tuesday' })}</option>
-                        <option value="Wednesday">{t('common:days.wednesday', { defaultValue: 'Wednesday' })}</option>
-                        <option value="Thursday">{t('common:days.thursday', { defaultValue: 'Thursday' })}</option>
-                        <option value="Friday">{t('common:days.friday', { defaultValue: 'Friday' })}</option>
-                        <option value="Saturday">{t('common:days.saturday', { defaultValue: 'Saturday' })}</option>
-                        <option value="Sunday">{t('common:days.sunday', { defaultValue: 'Sunday' })}</option>
-                      </select>
-                      {formState.errors?.rules?.[index]?.day_of_week?.message && (
-                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
-                      )}
+                      <div className="form-field">
+                        <select
+                          {...form.register(`rules.${index}.day_of_week` as const)}
+                          disabled={isLoading || isSaving}
+                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="Monday">{t('common:days.monday', { defaultValue: 'Monday' })}</option>
+                          <option value="Tuesday">{t('common:days.tuesday', { defaultValue: 'Tuesday' })}</option>
+                          <option value="Wednesday">{t('common:days.wednesday', { defaultValue: 'Wednesday' })}</option>
+                          <option value="Thursday">{t('common:days.thursday', { defaultValue: 'Thursday' })}</option>
+                          <option value="Friday">{t('common:days.friday', { defaultValue: 'Friday' })}</option>
+                          <option value="Saturday">{t('common:days.saturday', { defaultValue: 'Saturday' })}</option>
+                          <option value="Sunday">{t('common:days.sunday', { defaultValue: 'Sunday' })}</option>
+                        </select>
+                        {formState.errors?.rules?.[index]?.day_of_week?.message && (
+                          <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
+                        )}
+                      </div>
                     </div>
-                    <div>
+                    <div className="form-field">
                       <label className="form-label">
                         {t('dashboard:losSetup.losValue', { defaultValue: 'LOS Value' })}
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
-                      <input
-                        type="number"
-                        {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
-                        disabled={isLoading || isSaving}
-                        className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        min="1"
-                      />
-                      {formState.errors?.rules?.[index]?.los_value?.message && (
-                        <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.los_value?.message)}</div>
-                      )}
+                      <div className="form-field">
+                        <input
+                          type="number"
+                          {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
+                          disabled={isLoading || isSaving}
+                          className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          min="1"
+                        />
+                        {formState.errors?.rules?.[index]?.los_value?.message && (
+                          <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.los_value?.message)}</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

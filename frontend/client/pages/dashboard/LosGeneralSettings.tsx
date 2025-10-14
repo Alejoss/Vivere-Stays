@@ -99,7 +99,7 @@ export default function LosGeneralSettings() {
         <div className="bg-white rounded-lg border border-black/10 shadow-lg container-padding-base">
           {/* Section Header */}
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 container-margin-sm">
-            <Settings size={34} className="text-[#287CAC]" />
+            <Settings size={34} className="text-[#287CAC] hidden lg:block" />
             <div>
               <h2 className="text-responsive-3xl font-bold text-[#287CAC]">
                 {t('dashboard:losGeneral.title')}
@@ -121,63 +121,53 @@ export default function LosGeneralSettings() {
           )}
 
 
-          {/* Info Section */}
-          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
-            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">{t('dashboard:losGeneralSettings.overviewTitle', { defaultValue: 'General Settings Overview' })}</h3>
-            <div className="text-black/60 text-responsive-base leading-relaxed">
-              <p className="container-margin-sm">
-                {t('dashboard:losGeneralSettings.overviewDescription', { defaultValue: 'These settings control how the LOS algorithm analyzes competitors and calculates requirements:' })}
-              </p>
-              <ul className="form-gap-base text-responsive-sm">
-                <li>• <strong>{t('dashboard:losGeneralSettings.numberOfCompetitors', { defaultValue: 'Number of Competitors' })}:</strong> {t('dashboard:losGeneralSettings.competitorsDescription', { defaultValue: 'Minimum competitors required to apply competitor-based LOS' })}</li>
-                <li>• <strong>{t('dashboard:losGeneralSettings.losAggregationMethod', { defaultValue: 'LOS Aggregation Method' })}:</strong> {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })} ({t('dashboard:losGeneralSettings.minimum', { defaultValue: 'minimum' })} {t('common:common.or', { defaultValue: 'or' })} {t('dashboard:losGeneralSettings.maximum', { defaultValue: 'maximum' })})</li>
-              </ul>
-            </div>
-          </div>
-
           {/* Settings Form */}
           <div className="max-w-2xl">
             <div className="form-gap-base">
               {/* Number of Competitors */}
-              <div>
+              <div className="form-field">
                 <label className="form-label">
                   {t('dashboard:losGeneralSettings.numberOfCompetitors', { defaultValue: 'Number of Competitors' })}
                 </label>
-                <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
-                  <input
-                    type="number"
-                    value={competitorCount}
-                    onChange={(e) => setCompetitorCount(e.target.value)}
-                    disabled={isLoading || isSaving}
-                    className="w-32 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    min="1"
-                  />
-                  <Info size={20} className="text-gray-500 hidden lg:inline" />
-                  <span className="text-responsive-sm text-gray-600">
-                    {t('dashboard:losGeneralSettings.competitorsDescription', { defaultValue: 'Minimum competitors required to apply competitor-based LOS' })}
-                  </span>
+                <div className="form-field">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
+                    <input
+                      type="number"
+                      value={competitorCount}
+                      onChange={(e) => setCompetitorCount(e.target.value)}
+                      disabled={isLoading || isSaving}
+                      className="w-32 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      min="1"
+                    />
+                    <Info size={20} className="text-gray-500 hidden lg:inline" />
+                    <span className="text-responsive-sm text-gray-600">
+                      {t('dashboard:losGeneralSettings.competitorsDescription', { defaultValue: 'Minimum competitors required to apply competitor-based LOS' })}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* LOS Aggregation Method */}
-              <div>
+              <div className="form-field">
                 <label className="form-label">
                   {t('dashboard:losGeneralSettings.losAggregationMethod', { defaultValue: 'LOS Aggregation Method' })}
                 </label>
-                <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
-                  <select
-                    value={aggregationMethod}
-                    onChange={(e) => setAggregationMethod(e.target.value)}
-                    disabled={isLoading || isSaving}
-                    className="w-48 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="min">{t('dashboard:losGeneralSettings.minimum', { defaultValue: 'Minimum' })}</option>
-                    <option value="max">{t('dashboard:losGeneralSettings.maximum', { defaultValue: 'Maximum' })}</option>
-                  </select>
-                  <Info size={20} className="text-gray-500 hidden lg:inline" />
-                  <span className="text-responsive-sm text-gray-600">
-                    {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })}
-                  </span>
+                <div className="form-field">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center form-gap-base">
+                    <select
+                      value={aggregationMethod}
+                      onChange={(e) => setAggregationMethod(e.target.value)}
+                      disabled={isLoading || isSaving}
+                      className="w-48 input-padding-base input-height-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="min">{t('dashboard:losGeneralSettings.minimum', { defaultValue: 'Minimum' })}</option>
+                      <option value="max">{t('dashboard:losGeneralSettings.maximum', { defaultValue: 'Maximum' })}</option>
+                    </select>
+                    <Info size={20} className="text-gray-500 hidden lg:inline" />
+                    <span className="text-responsive-sm text-gray-600">
+                      {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -201,6 +191,20 @@ export default function LosGeneralSettings() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+
+          {/* Info Section - moved to bottom */}
+          <div className="bg-[#D6E8F0] border border-[#294758]/70 rounded-lg container-padding-base container-margin-sm">
+            <h3 className="text-responsive-lg font-bold text-[#294758] container-margin-sm">{t('dashboard:losGeneralSettings.overviewTitle', { defaultValue: 'General Settings Overview' })}</h3>
+            <div className="text-black/60 text-responsive-base leading-relaxed">
+              <p className="container-margin-sm">
+                {t('dashboard:losGeneralSettings.overviewDescription', { defaultValue: 'These settings control how the LOS algorithm analyzes competitors and calculates requirements:' })}
+              </p>
+              <ul className="form-gap-base text-responsive-sm">
+                <li>• <strong>{t('dashboard:losGeneralSettings.numberOfCompetitors', { defaultValue: 'Number of Competitors' })}:</strong> {t('dashboard:losGeneralSettings.competitorsDescription', { defaultValue: 'Minimum competitors required to apply competitor-based LOS' })}</li>
+                <li>• <strong>{t('dashboard:losGeneralSettings.losAggregationMethod', { defaultValue: 'LOS Aggregation Method' })}:</strong> {t('dashboard:losGeneralSettings.aggregationDescription', { defaultValue: 'How to combine competitor LOS values' })} ({t('dashboard:losGeneralSettings.minimum', { defaultValue: 'minimum' })} {t('common:common.or', { defaultValue: 'or' })} {t('dashboard:losGeneralSettings.maximum', { defaultValue: 'maximum' })})</li>
+              </ul>
             </div>
           </div>
         </div>

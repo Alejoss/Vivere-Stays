@@ -813,32 +813,34 @@ export default function Competitors() {
               <label className="form-label">
                 {t('dashboard:competitors.competitorName')}
               </label>
-              <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
-                <input
-                  type="text"
-                  value={currentName || ''}
-                  onChange={(e) => {
-                    console.log('📝 Name field onChange:', {
-                      competitorId: competitor.id,
-                      isCandidate,
-                      newValue: e.target.value,
-                      oldValue: currentName
-                    });
-                    
-                    // Update local input values only
-                    setLocalInputValues(prev => ({
-                      ...prev,
-                      [competitor.id]: {
-                        ...prev[competitor.id],
-                        name: e.target.value,
-                        url: prev[competitor.id]?.url || ''
-                      }
-                    }));
-                  }}
-                  onBlur={() => handleFieldBlur('name', currentName || '')}
-                  className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                  placeholder={t('dashboard:competitors.competitorNamePlaceholder', { defaultValue: 'Enter competitor name' })}
-                />
+              <div className="form-field">
+                <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                  <input
+                    type="text"
+                    value={currentName || ''}
+                    onChange={(e) => {
+                      console.log('📝 Name field onChange:', {
+                        competitorId: competitor.id,
+                        isCandidate,
+                        newValue: e.target.value,
+                        oldValue: currentName
+                      });
+                      
+                      // Update local input values only
+                      setLocalInputValues(prev => ({
+                        ...prev,
+                        [competitor.id]: {
+                          ...prev[competitor.id],
+                          name: e.target.value,
+                          url: prev[competitor.id]?.url || ''
+                        }
+                      }));
+                    }}
+                    onBlur={() => handleFieldBlur('name', currentName || '')}
+                    className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
+                    placeholder={t('dashboard:competitors.competitorNamePlaceholder', { defaultValue: 'Enter competitor name' })}
+                  />
+                </div>
               </div>
             </div>
 
@@ -847,32 +849,34 @@ export default function Competitors() {
               <label className="form-label">
                 {t('dashboard:competitors.competitorUrl')}
               </label>
-              <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
-                <input
-                  type="url"
-                  value={currentUrl || ''}
-                  onChange={(e) => {
-                    console.log('📝 URL field onChange:', {
-                      competitorId: competitor.id,
-                      isCandidate,
-                      newValue: e.target.value,
-                      oldValue: currentUrl
-                    });
-                    
-                    // Update local input values only
-                    setLocalInputValues(prev => ({
-                      ...prev,
-                      [competitor.id]: {
-                        ...prev[competitor.id],
-                        name: prev[competitor.id]?.name || '',
-                        url: e.target.value
-                      }
-                    }));
-                  }}
-                  onBlur={() => handleFieldBlur('url', currentUrl || '')}
-                  className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                  placeholder={t('dashboard:competitors.competitorUrlPlaceholder', { defaultValue: 'Enter booking URL' })}
-                />
+              <div className="form-field">
+                <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                  <input
+                    type="url"
+                    value={currentUrl || ''}
+                    onChange={(e) => {
+                      console.log('📝 URL field onChange:', {
+                        competitorId: competitor.id,
+                        isCandidate,
+                        newValue: e.target.value,
+                        oldValue: currentUrl
+                      });
+                      
+                      // Update local input values only
+                      setLocalInputValues(prev => ({
+                        ...prev,
+                        [competitor.id]: {
+                          ...prev[competitor.id],
+                          name: prev[competitor.id]?.name || '',
+                          url: e.target.value
+                        }
+                      }));
+                    }}
+                    onBlur={() => handleFieldBlur('url', currentUrl || '')}
+                    className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
+                    placeholder={t('dashboard:competitors.competitorUrlPlaceholder', { defaultValue: 'Enter booking URL' })}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1046,10 +1050,12 @@ export default function Competitors() {
           {/* Competitor Price Aggregation */}
           <div className="bg-white rounded-lg border border-black/10 container-padding-base container-margin-sm">
             <div className="max-w-lg">
-              <label className="form-label">
-                {t('dashboard:competitors.aggregation')}
-              </label>
-              <div className="relative">
+              <div className="form-field">
+                <label className="form-label">
+                  {t('dashboard:competitors.aggregation')}
+                </label>
+                <div className="form-field">
+                  <div className="relative">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1101,6 +1107,8 @@ export default function Competitors() {
                     ))}
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
               <p className="text-[#9CAABD] text-responsive-xs">
                 {t('dashboard:competitors.aggregationDescription', { defaultValue: 'Defines how to reference your prices compared to competitors (Maximum, Average, Median, Minimum). Default: Minimum' })}
@@ -1175,15 +1183,17 @@ export default function Competitors() {
                   <label className="form-label">
                     {t('dashboard:competitors.competitorName')} *
                   </label>
-                  <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
-                    <input
-                      type="text"
-                      value={newCompetitorName}
-                      onChange={(e) => setNewCompetitorName(e.target.value)}
-                      className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                      placeholder={t('dashboard:competitors.competitorNamePlaceholder', { defaultValue: 'Enter competitor name' })}
-                      disabled={isCreatingCompetitor}
-                    />
+                  <div className="form-field">
+                    <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                      <input
+                        type="text"
+                        value={newCompetitorName}
+                        onChange={(e) => setNewCompetitorName(e.target.value)}
+                        className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
+                        placeholder={t('dashboard:competitors.competitorNamePlaceholder', { defaultValue: 'Enter competitor name' })}
+                        disabled={isCreatingCompetitor}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1192,15 +1202,17 @@ export default function Competitors() {
                   <label className="form-label">
                     {t('dashboard:competitors.competitorUrl')}
                   </label>
-                  <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
-                    <input
-                      type="url"
-                      value={newCompetitorUrl}
-                      onChange={(e) => setNewCompetitorUrl(e.target.value)}
-                      className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
-                      placeholder={t('dashboard:competitors.competitorUrlPlaceholder', { defaultValue: 'Enter booking URL' })}
-                      disabled={isCreatingCompetitor}
-                    />
+                  <div className="form-field">
+                    <div className="input-padding-base input-height-lg bg-[#EFF3FA] border border-[#C5C9D0] rounded-lg">
+                      <input
+                        type="url"
+                        value={newCompetitorUrl}
+                        onChange={(e) => setNewCompetitorUrl(e.target.value)}
+                        className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
+                        placeholder={t('dashboard:competitors.competitorUrlPlaceholder', { defaultValue: 'Enter booking URL' })}
+                        disabled={isCreatingCompetitor}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
