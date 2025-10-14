@@ -962,27 +962,38 @@ class DpLosSetupSerializer(serializers.ModelSerializer):
         """
         Validate that valid_from is before valid_until
         """
+        print(f"🔧 DEBUG: DpLosSetupSerializer.validate called with data: {data}")
+        
         if data['valid_from'] >= data['valid_until']:
+            print(f"🔧 DEBUG: Date validation failed: {data['valid_from']} >= {data['valid_until']}")
             raise serializers.ValidationError(
                 "valid_from must be before valid_until",
                 code=ErrorCode.DATE_RANGE_INVALID
             )
+        
+        print(f"🔧 DEBUG: Date validation passed")
         return data
 
     def create(self, validated_data):
         """
         Ensure property_id and user are set from context during creation.
         """
+        print(f"🔧 DEBUG: DpLosSetupSerializer.create called with validated_data: {validated_data}")
+        
         request = self.context.get('request')
         user = self.context.get('user') or (request.user if request and request.user.is_authenticated else None)
         property_instance = self.context.get('property')
 
+        print(f"🔧 DEBUG: Context - user: {user}, property_instance: {property_instance}")
+
         if not property_instance:
+            print("🔧 DEBUG: Property context is missing")
             raise serializers.ValidationError(
                 "Property context is required to create LOS setup",
                 code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
             )
         if not user:
+            print("🔧 DEBUG: User context is missing")
             raise serializers.ValidationError(
                 "User must be authenticated.",
                 code=ErrorCode.UNAUTHORIZED
@@ -990,7 +1001,12 @@ class DpLosSetupSerializer(serializers.ModelSerializer):
 
         validated_data['property_id'] = property_instance
         validated_data['user'] = user
-        return super().create(validated_data)
+        
+        print(f"🔧 DEBUG: Final validated_data before create: {validated_data}")
+        
+        result = super().create(validated_data)
+        print(f"🔧 DEBUG: Created DpLosSetup instance: {result.id}")
+        return result
 
 
 class DpLosReductionSerializer(serializers.ModelSerializer):

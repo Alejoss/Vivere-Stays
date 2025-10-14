@@ -3122,15 +3122,20 @@ class LosSetupListView(APIView):
         """
         Retrieve all LOS setup rules for a specific property
         """
+        print(f"🔧 DEBUG: LosSetupListView GET called for property_id: {property_id}")
+        print(f"🔧 DEBUG: User: {request.user.username}")
+        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
+            print(f"🔧 DEBUG: Property found: {property_instance.name}")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
             
             if not user_properties.filter(id=property_id).exists():
+                print(f"🔧 DEBUG: User {request.user.username} does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
@@ -3140,7 +3145,11 @@ class LosSetupListView(APIView):
                 property_id=property_instance
             ).order_by('-created_at')
             
+            print(f"🔧 DEBUG: Found {los_setups.count()} LOS setup rules")
+            
             serializer = DpLosSetupSerializer(los_setups, many=True)
+            
+            print(f"🔧 DEBUG: Serialized data: {serializer.data}")
             
             return Response({
                 'setups': serializer.data,
@@ -3169,15 +3178,21 @@ class LosSetupCreateView(APIView):
         """
         Create a new LOS setup rule for a specific property
         """
+        print(f"🔧 DEBUG: LosSetupCreateView POST called for property_id: {property_id}")
+        print(f"🔧 DEBUG: User: {request.user.username}")
+        print(f"🔧 DEBUG: Request data: {request.data}")
+        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
+            print(f"🔧 DEBUG: Property found: {property_instance.name}")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
             
             if not user_properties.filter(id=property_id).exists():
+                print(f"🔧 DEBUG: User {request.user.username} does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
@@ -3185,14 +3200,24 @@ class LosSetupCreateView(APIView):
             # Prepare serializer with context so it assigns property and user server-side
             serializer = DpLosSetupSerializer(data=request.data, context={'request': request, 'property': property_instance, 'user': request.user})
             
+            print(f"🔧 DEBUG: Serializer validation: {serializer.is_valid()}")
+            if not serializer.is_valid():
+                print(f"🔧 DEBUG: Serializer errors: {serializer.errors}")
+            
             if serializer.is_valid():
                 los_setup = serializer.save()
+                print(f"🔧 DEBUG: Created LOS setup rule: {los_setup.id}")
+                print(f"🔧 DEBUG: Created rule data: day_of_week={los_setup.day_of_week}, valid_from={los_setup.valid_from}, valid_until={los_setup.valid_until}, los_value={los_setup.los_value}")
                 
-                return Response({
+                response_data = {
                     'message': 'LOS setup rule created successfully',
                     'setup': DpLosSetupSerializer(los_setup).data
-                }, status=status.HTTP_201_CREATED)
+                }
+                print(f"🔧 DEBUG: Response data: {response_data}")
+                
+                return Response(response_data, status=status.HTTP_201_CREATED)
             else:
+                print(f"🔧 DEBUG: Validation failed with errors: {serializer.errors}")
                 return Response({
                     'message': 'Validation error',
                     'errors': serializer.errors
@@ -3220,15 +3245,21 @@ class LosSetupUpdateView(APIView):
         """
         Update an existing LOS setup rule
         """
+        print(f"🔧 DEBUG: LosSetupUpdateView PATCH called for property_id: {property_id}, setup_id: {setup_id}")
+        print(f"🔧 DEBUG: User: {request.user.username}")
+        print(f"🔧 DEBUG: Request data: {request.data}")
+        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
+            print(f"🔧 DEBUG: Property found: {property_instance.name}")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
             
             if not user_properties.filter(id=property_id).exists():
+                print(f"🔧 DEBUG: User {request.user.username} does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
@@ -3240,20 +3271,32 @@ class LosSetupUpdateView(APIView):
                 property_id=property_instance
             )
             
+            print(f"🔧 DEBUG: Found existing LOS setup rule: {los_setup.id}")
+            print(f"🔧 DEBUG: Current rule data: day_of_week={los_setup.day_of_week}, valid_from={los_setup.valid_from}, valid_until={los_setup.valid_until}, los_value={los_setup.los_value}")
+            
             serializer = DpLosSetupSerializer(
                 los_setup, 
                 data=request.data, 
                 partial=True
             )
             
+            print(f"🔧 DEBUG: Serializer validation: {serializer.is_valid()}")
+            if not serializer.is_valid():
+                print(f"🔧 DEBUG: Serializer errors: {serializer.errors}")
+            
             if serializer.is_valid():
                 updated_setup = serializer.save()
+                print(f"🔧 DEBUG: Updated rule data: day_of_week={updated_setup.day_of_week}, valid_from={updated_setup.valid_from}, valid_until={updated_setup.valid_until}, los_value={updated_setup.los_value}")
                 
-                return Response({
+                response_data = {
                     'message': 'LOS setup rule updated successfully',
                     'setup': DpLosSetupSerializer(updated_setup).data
-                }, status=status.HTTP_200_OK)
+                }
+                print(f"🔧 DEBUG: Response data: {response_data}")
+                
+                return Response(response_data, status=status.HTTP_200_OK)
             else:
+                print(f"🔧 DEBUG: Validation failed with errors: {serializer.errors}")
                 return Response({
                     'message': 'Validation error',
                     'errors': serializer.errors

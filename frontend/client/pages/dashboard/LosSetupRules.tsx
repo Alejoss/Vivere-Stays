@@ -1,6 +1,6 @@
 import { Plus, Save, Trash2, Calendar, Info } from "lucide-react";
 import { useState, useEffect, useContext } from "react";
-import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -78,7 +78,7 @@ export default function LosSetupRules() {
     reValidateMode: 'onChange',
   });
 
-  const { control, handleSubmit, reset, formState, getValues, setError: setFormError } = form;
+  const { control, handleSubmit, reset, formState, getValues, setError: setFormError, watch } = form;
   const { fields, append, remove, update } = useFieldArray({ control, name: 'rules' });
 
   // Load existing data on component mount
@@ -91,21 +91,31 @@ export default function LosSetupRules() {
   const loadExistingData = async () => {
     if (!property?.id) return;
     
+    console.log('🔧 DEBUG: loadExistingData called for property:', property.id);
     setIsLoading(true);
     
     try {
       const response = await dynamicPricingService.getLosSetupRules(property.id);
+      console.log('🔧 DEBUG: Load response:', JSON.stringify(response, null, 2));
+      
+      const mappedRules = (response.setups || []).map((r: LosSetupRule) => ({
+        ...r,
+        // ensure strings for date inputs
+        valid_from: String(r.valid_from),
+        valid_until: String(r.valid_until),
+        day_of_week: r.day_of_week as 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday',
+        num_competitors: r?.num_competitors ?? 2,
+        los_aggregation: r?.los_aggregation ?? 'min',
+      }));
+      
+      console.log('🔧 DEBUG: Mapped rules for form:', JSON.stringify(mappedRules, null, 2));
+      
       // Initialize form with backend data
       reset({
-        rules: (response.setups || []).map((r: LosSetupRule) => ({
-          ...r,
-          // ensure strings for date inputs
-          valid_from: String(r.valid_from),
-          valid_until: String(r.valid_until),
-          num_competitors: r?.num_competitors ?? 2,
-          los_aggregation: r?.los_aggregation ?? 'min',
-        })),
+        rules: mappedRules,
       });
+      
+      console.log('🔧 DEBUG: Form reset completed');
     } catch (error) {
       console.error("Error loading LOS setup data:", error);
       toast({
@@ -209,6 +219,9 @@ export default function LosSetupRules() {
   const saveRule = async (rule: LosSetupRule) => {
     if (!property?.id) return;
 
+    console.log('🔧 DEBUG: saveRule called with rule:', JSON.stringify(rule, null, 2));
+    console.log('🔧 DEBUG: property.id:', property.id);
+
     try {
       if (typeof rule.id === 'string') {
         // This is a new rule - create it
@@ -222,12 +235,18 @@ export default function LosSetupRules() {
           los_aggregation: "min", // Default value
         };
 
+        console.log('🔧 DEBUG: Creating new rule with data:', JSON.stringify(createData, null, 2));
         const response = await dynamicPricingService.createLosSetupRule(property.id, createData);
+        console.log('🔧 DEBUG: Create response:', JSON.stringify(response, null, 2));
+        
         // Update the form value with the new ID
         const currentValues = getValues().rules;
         const idx = currentValues.findIndex((r) => r.id === rule.id);
+        console.log('🔧 DEBUG: Finding rule index:', idx, 'for rule id:', rule.id);
         if (idx !== -1) {
-          update(idx, { ...response.setup } as any);
+          const updatedRule = { ...response.setup } as any;
+          console.log('🔧 DEBUG: Updating form field at index', idx, 'with:', JSON.stringify(updatedRule, null, 2));
+          update(idx, updatedRule);
         }
       } else {
         // This is an existing rule - update it
@@ -240,7 +259,9 @@ export default function LosSetupRules() {
           los_aggregation: "min", // Default value
         };
 
-        await dynamicPricingService.updateLosSetupRule(property.id, rule.id, updateData);
+        console.log('🔧 DEBUG: Updating existing rule with ID:', rule.id, 'data:', JSON.stringify(updateData, null, 2));
+        const response = await dynamicPricingService.updateLosSetupRule(property.id, rule.id, updateData);
+        console.log('🔧 DEBUG: Update response:', JSON.stringify(response, null, 2));
       }
     } catch (error: any) {
       console.error("Error saving rule:", error);
@@ -311,14 +332,30 @@ export default function LosSetupRules() {
       return;
     }
 
+    console.log('🔧 DEBUG: onSubmit called with values:', JSON.stringify(values, null, 2));
+    console.log('🔧 DEBUG: Form state before submit:', {
+      isValid: formState.isValid,
+      errors: formState.errors,
+      dirtyFields: formState.dirtyFields,
+      touchedFields: formState.touchedFields
+    });
+    console.log('🔧 DEBUG: Current form values at submit:', JSON.stringify(getValues(), null, 2));
+
     setIsSaving(true);
 
     try {
       // Save all rules and evaluate outcomes
-      const results = await Promise.allSettled(values.rules.map(rule => saveRule(rule as any)));
+      console.log('🔧 DEBUG: Starting to save', values.rules.length, 'rules');
+      const results = await Promise.allSettled(values.rules.map((rule, index) => {
+        console.log(`🔧 DEBUG: Saving rule ${index}:`, JSON.stringify(rule, null, 2));
+        return saveRule(rule as any);
+      }));
+
+      console.log('🔧 DEBUG: All save results:', results);
 
       const rejected = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
       if (rejected.length > 0) {
+        console.log('🔧 DEBUG: Some saves failed:', rejected);
         const messages = Array.from(new Set(rejected.map(r => {
           const reason: any = r.reason;
           return typeof reason === 'string' ? reason : reason?.message || t('dashboard:losSetup.saveError');
@@ -331,6 +368,7 @@ export default function LosSetupRules() {
         return;
       }
 
+      console.log('🔧 DEBUG: All saves successful');
       toast({
         title: t('common:messages.success'),
         description: t('dashboard:losSetup.saveSuccess'),
@@ -503,17 +541,28 @@ export default function LosSetupRules() {
                     )}
                   </div>
                   <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
-                    <select
-                      {...form.register(`rules.${index}.day_of_week` as const)}
-                      disabled={isLoading || isSaving}
-                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {weekdays.map((day) => (
-                        <option key={day} value={day}>
-                          {day}
-                        </option>
-                      ))}
-                    </select>
+                    <Controller
+                      control={control}
+                      name={`rules.${index}.day_of_week` as const}
+                      render={({ field }) => (
+                        <select
+                          {...field}
+                          onChange={(e) => {
+                            console.log(`🔧 DEBUG: Day dropdown changed for rule ${index}:`, e.target.value);
+                            field.onChange(e.target.value);
+                            console.log(`🔧 DEBUG: Current form values after change:`, JSON.stringify(getValues(), null, 2));
+                          }}
+                          disabled={isLoading || isSaving}
+                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {weekdays.map((day) => (
+                            <option key={day} value={day}>
+                              {day}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    />
                     {formState.errors?.rules?.[index]?.day_of_week?.message && (
                       <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
                     )}
@@ -604,19 +653,30 @@ export default function LosSetupRules() {
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <div className="form-field">
-                        <select
-                          {...form.register(`rules.${index}.day_of_week` as const)}
-                          disabled={isLoading || isSaving}
-                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <option value="Monday">{t('common:days.monday', { defaultValue: 'Monday' })}</option>
-                          <option value="Tuesday">{t('common:days.tuesday', { defaultValue: 'Tuesday' })}</option>
-                          <option value="Wednesday">{t('common:days.wednesday', { defaultValue: 'Wednesday' })}</option>
-                          <option value="Thursday">{t('common:days.thursday', { defaultValue: 'Thursday' })}</option>
-                          <option value="Friday">{t('common:days.friday', { defaultValue: 'Friday' })}</option>
-                          <option value="Saturday">{t('common:days.saturday', { defaultValue: 'Saturday' })}</option>
-                          <option value="Sunday">{t('common:days.sunday', { defaultValue: 'Sunday' })}</option>
-                        </select>
+                        <Controller
+                          control={control}
+                          name={`rules.${index}.day_of_week` as const}
+                          render={({ field }) => (
+                            <select
+                              {...field}
+                              onChange={(e) => {
+                                console.log(`🔧 DEBUG: Day dropdown changed for rule ${index} (mobile):`, e.target.value);
+                                field.onChange(e.target.value);
+                                console.log(`🔧 DEBUG: Current form values after change:`, JSON.stringify(getValues(), null, 2));
+                              }}
+                              disabled={isLoading || isSaving}
+                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <option value="Monday">{t('common:days.monday', { defaultValue: 'Monday' })}</option>
+                              <option value="Tuesday">{t('common:days.tuesday', { defaultValue: 'Tuesday' })}</option>
+                              <option value="Wednesday">{t('common:days.wednesday', { defaultValue: 'Wednesday' })}</option>
+                              <option value="Thursday">{t('common:days.thursday', { defaultValue: 'Thursday' })}</option>
+                              <option value="Friday">{t('common:days.friday', { defaultValue: 'Friday' })}</option>
+                              <option value="Saturday">{t('common:days.saturday', { defaultValue: 'Saturday' })}</option>
+                              <option value="Sunday">{t('common:days.sunday', { defaultValue: 'Sunday' })}</option>
+                            </select>
+                          )}
+                        />
                         {formState.errors?.rules?.[index]?.day_of_week?.message && (
                           <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.day_of_week?.message)}</div>
                         )}
