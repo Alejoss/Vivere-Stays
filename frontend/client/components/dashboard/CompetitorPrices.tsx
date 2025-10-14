@@ -27,6 +27,7 @@ interface CompetitorPricesProps {
   selectedDate?: { day: number; month: string; year: string };
   propertyId?: string;
   onPriceUpdate?: () => void;
+  onModalClose?: () => void;
   selectedDayPriceHistory?: PriceHistoryEntry | null;
 }
 
@@ -44,6 +45,7 @@ export default function CompetitorPrices({
   selectedDate = { day: 1, month: "January", year: "2025" },
   propertyId,
   onPriceUpdate,
+  onModalClose,
   selectedDayPriceHistory,
 }: CompetitorPricesProps) {
   const [suggestedPrice, setSuggestedPrice] = useState("");
@@ -84,6 +86,8 @@ export default function CompetitorPrices({
       );
       console.log('[handleUpdatePrice] API response:', response);
       if (onPriceUpdate) onPriceUpdate();
+      // Close modal after successful update
+      if (onModalClose) onModalClose();
     } catch (error) {
       console.error('[handleUpdatePrice] API error:', error);
     }

@@ -37,7 +37,13 @@ export default function PropertyDashboard() {
     }
   };
 
-  const handlePriceUpdate = () => setCalendarRefreshKey((k) => k + 1);
+  const handlePriceUpdate = () => {
+    setCalendarRefreshKey((k) => k + 1);
+    // Close modal after successful price update
+    if (window.innerWidth < 1280) {
+      setIsModalOpen(false);
+    }
+  };
 
   const handlePriceOptionChange = (option: string) => {
     setSelectedPriceOption(option);

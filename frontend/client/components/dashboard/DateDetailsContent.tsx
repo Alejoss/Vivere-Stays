@@ -9,6 +9,7 @@ interface DateDetailsContentProps {
   selectedDate: { day: number; month: string; year: string } | null;
   propertyId?: string;
   onPriceUpdate?: () => void;
+  onModalClose?: () => void;
   hasPMS?: boolean;
   selectedPriceOption?: string;
 }
@@ -17,6 +18,7 @@ export default function DateDetailsContent({
   selectedDate, 
   propertyId, 
   onPriceUpdate, 
+  onModalClose,
   hasPMS, 
   selectedPriceOption 
 }: DateDetailsContentProps) {
@@ -77,6 +79,7 @@ export default function DateDetailsContent({
           selectedDate={selectedDate}
           propertyId={propertyId}
           onPriceUpdate={onPriceUpdate}
+          onModalClose={onModalClose}
           selectedDayPriceHistory={selectedDayPriceHistory}
         />
       )}

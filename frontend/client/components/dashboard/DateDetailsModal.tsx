@@ -35,6 +35,7 @@ export default function DateDetailsModal({
           selectedDate={selectedDate}
           propertyId={propertyId}
           onPriceUpdate={onPriceUpdate}
+          onModalClose={onClose}
           hasPMS={hasPMS}
           selectedPriceOption={selectedPriceOption}
         />
