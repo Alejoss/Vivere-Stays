@@ -642,9 +642,9 @@ export default function Competitors() {
     const processed = isProcessed ? competitor as PropertyCompetitor : null;
 
     // Get current values - use local input values if available, otherwise use original data
-    const localValues = localInputValues[competitor.id] || { name: '', url: '' };
-    const currentName = localValues.name || (isProcessed ? processed?.competitor_name : candidate?.competitor_name) || '';
-    const currentUrl = localValues.url || (isProcessed ? processed?.booking_link : candidate?.booking_link) || '';
+    const localValues = localInputValues[competitor.id];
+    const currentName = localValues?.name !== undefined ? localValues.name : (isProcessed ? processed?.competitor_name : candidate?.competitor_name) || '';
+    const currentUrl = localValues?.url !== undefined ? localValues.url : (isProcessed ? processed?.booking_link : candidate?.booking_link) || '';
 
     // Handle field blur (save on focus out)
     const handleFieldBlur = async (field: 'name' | 'url', value: string) => {
@@ -832,11 +832,11 @@ export default function Competitors() {
                         [competitor.id]: {
                           ...prev[competitor.id],
                           name: e.target.value,
-                          url: prev[competitor.id]?.url || ''
+                          url: prev[competitor.id]?.url !== undefined ? prev[competitor.id].url : (isProcessed ? processed?.booking_link : candidate?.booking_link) || ''
                         }
                       }));
                     }}
-                    onBlur={() => handleFieldBlur('name', currentName || '')}
+                    onBlur={(e) => handleFieldBlur('name', e.target.value)}
                     className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
                     placeholder={t('dashboard:competitors.competitorNamePlaceholder', { defaultValue: 'Enter competitor name' })}
                   />
@@ -867,12 +867,12 @@ export default function Competitors() {
                         ...prev,
                         [competitor.id]: {
                           ...prev[competitor.id],
-                          name: prev[competitor.id]?.name || '',
+                          name: prev[competitor.id]?.name !== undefined ? prev[competitor.id].name : (isProcessed ? processed?.competitor_name : candidate?.competitor_name) || '',
                           url: e.target.value
                         }
                       }));
                     }}
-                    onBlur={() => handleFieldBlur('url', currentUrl || '')}
+                    onBlur={(e) => handleFieldBlur('url', e.target.value)}
                     className="w-full bg-transparent text-[#4C5155] font-bold text-responsive-lg border-none outline-none"
                     placeholder={t('dashboard:competitors.competitorUrlPlaceholder', { defaultValue: 'Enter booking URL' })}
                   />
