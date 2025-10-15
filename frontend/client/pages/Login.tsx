@@ -6,6 +6,7 @@ import { useLogin, useGoogleLogin } from "../../shared/api/hooks";
 import { OnboardingStep } from "../../shared/api/onboarding";
 import { profilesService } from "../../shared/api/profiles";
 import { LoginRequest } from "../../shared/api/types";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -213,6 +214,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       {/* Logo */}
       <div className="text-center mb-10">
         <img

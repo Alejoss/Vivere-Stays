@@ -21,6 +21,7 @@
   "USERNAME_REQUIRED": "Benutzername ist erforderlich",
   "USERNAME_INVALID": "Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten",
   "USER_NOT_FOUND": "Benutzerkonto nicht gefunden",
+  "TERMS_NOT_AGREED": "Sie müssen den Nutzungsbedingungen und der Datenschutzerklärung zustimmen, um fortzufahren",
   
   "PROPERTY_NOT_FOUND": "Unterkunft nicht gefunden",
   "PROPERTY_NAME_REQUIRED": "Name der Unterkunft ist erforderlich",

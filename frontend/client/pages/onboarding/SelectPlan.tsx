@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { profilesService } from "../../../shared/api/profiles";
 import { queryKeys } from "../../../shared/api/hooks";
@@ -8,6 +9,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { paymentService } from "@shared/api/payments";
 import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
@@ -237,6 +239,11 @@ export default function SelectPlan() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       <OnboardingProgressTracker currentStep="select_plan" />
       {/* Logo */}
       <div className="container-margin-sm">
@@ -491,12 +498,20 @@ export default function SelectPlan() {
             <p className="text-responsive-lg text-[#485567]">
               {t('onboarding:selectPlan.subtitle')}
             </p>
-            <button
-              onClick={() => navigate('/plan-information')}
-              className="text-responsive-sm text-[#294758] underline hover:text-[#1e3340]"
-            >
-              {t('onboarding:selectPlan.moreInfo')}
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/plan-information')}
+                className="text-responsive-sm text-[#294758] underline hover:text-[#1e3340]"
+              >
+                {t('onboarding:selectPlan.moreInfo')}
+              </button>
+              <button
+                onClick={() => navigate("/add-competitor")}
+                className="text-responsive-sm text-[#64748B] underline hover:text-[#1e3340]"
+              >
+                {t('onboarding:selectPlan.skipPayment')}
+              </button>
+            </div>
           </div>
           <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-4">
             <div className="flex items-center justify-between">
@@ -631,14 +646,6 @@ export default function SelectPlan() {
               )}
             </button>
           </div>
-          
-          {/* Temporary Skip Payment Button */}
-          <button
-            onClick={() => navigate("/add-competitor")}
-            className="flex items-center gap-2 btn-padding-sm rounded-[10px] text-responsive-sm font-medium text-[#64748B] border border-[#E2E8F0] bg-white hover:bg-gray-50 transition-colors"
-          >
-            {t('onboarding:selectPlan.skipPayment')}
-          </button>
         </div>
       </div>
 

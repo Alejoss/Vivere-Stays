@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -12,6 +13,7 @@ import { removeLocalStorageItem, HOTEL_INFO_KEY, setLocalStorageItem } from "../
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { profilesService } from "../../../shared/api/profiles";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
 
 interface MSPPeriod {
@@ -369,6 +371,11 @@ export default function MSP() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       <OnboardingProgressTracker currentStep="msp" />
       {/* Logo */}
       <div className="text-center container-margin-base">
@@ -657,7 +664,7 @@ export default function MSP() {
         </div>
 
         {/* Action Buttons */}
-        <div className="action-buttons">
+        <div className="flex justify-center items-center gap-3">
           <button
             onClick={handleBack}
             className="flex items-center gap-2 btn-padding-sm border border-[#D9D9D9] bg-white rounded-md text-responsive-xs font-semibold text-[#294758] hover:bg-gray-50 transition-colors"

@@ -1,10 +1,12 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useCreateCompetitorCandidates } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelDataForAPI, getLocalStorageItem } from "../../../shared/localStorage";
 import { PropertyContext } from "../../../shared/PropertyContext";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
 
 interface CompetitorHotel {
@@ -242,6 +244,11 @@ export default function AddCompetitor() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       <OnboardingProgressTracker currentStep="add_competitor" />
       {/* Logo */}
       <div className="container-margin-sm">

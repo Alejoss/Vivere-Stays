@@ -13,7 +13,6 @@ import Login from "./pages/Login";
 import Logout from "./pages/Logout";
 import Register from "./pages/onboarding/Register";
 import ProfileCompletion from "./pages/onboarding/ProfileCompletion";
-import Terms from "./pages/onboarding/Terms";
 import VerifyEmail from "./pages/onboarding/VerifyEmail";
 import HotelInformationOnboarding from "./pages/onboarding/HotelInformationOnboarding";
 import PMSIntegration from "./pages/onboarding/PMSIntegration";
@@ -76,7 +75,6 @@ const App = () => (
             <Route path="/logout" element={<Logout />} />
             <Route path="/register" element={<OnboardingLayout><Register /></OnboardingLayout>} />
             <Route path="/profile-completion" element={<OnboardingLayout><ProfileCompletion /></OnboardingLayout>} />
-            <Route path="/terms" element={<OnboardingLayout><Terms /></OnboardingLayout>} />
             <Route path="/verify-email" element={<OnboardingLayout><VerifyEmail /></OnboardingLayout>} />
             <Route path="/hotel-information" element={<OnboardingLayout><HotelInformationOnboarding /></OnboardingLayout>} />
             <Route path="/pms-integration" element={<OnboardingLayout><PMSIntegration /></OnboardingLayout>} />

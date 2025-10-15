@@ -21,6 +21,7 @@
   "USERNAME_REQUIRED": "Username is required",
   "USERNAME_INVALID": "Username can only contain letters, numbers, and underscores",
   "USER_NOT_FOUND": "User account not found",
+  "TERMS_NOT_AGREED": "Please agree to the Terms of Service and Privacy Policy to continue",
   
   "PROPERTY_NOT_FOUND": "Property not found",
   "PROPERTY_NAME_REQUIRED": "Property name is required",

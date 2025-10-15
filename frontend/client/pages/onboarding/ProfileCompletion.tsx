@@ -5,6 +5,7 @@ import { profilesService } from "../../../shared/api/profiles";
 import { queryKeys } from "../../../shared/api/hooks";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 // Error Message Component
 const ErrorMessage = ({ message }: { message: string }) => {
@@ -212,6 +213,11 @@ export default function ProfileCompletion() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       <OnboardingProgressTracker currentStep="register" />
       <div className="max-w-4xl mx-auto">
         {/* Logo */}

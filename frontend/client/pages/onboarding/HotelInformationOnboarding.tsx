@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelInformationData, setHotelInformationData, HotelInformationData } from '../../../shared/localStorage';
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
 
 interface FormData {
@@ -375,6 +376,11 @@ export default function HotelInformationOnboarding() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       <OnboardingProgressTracker currentStep="hotel_information" />
       <div className="max-w-4xl mx-auto">
         {/* Logo */}

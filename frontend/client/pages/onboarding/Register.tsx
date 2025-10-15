@@ -6,8 +6,8 @@ import { useCheckUserExists } from "../../../shared/api/hooks";
 import { useRegister, useGoogleLogin } from "../../../shared/api/hooks";
 import { RegisterRequest } from "../../../shared/api/types";
 import { profilesService } from "../../../shared/api/profiles";
-import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
 import { FormFieldError } from "../../components/ErrorMessage";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
 
 // Password Strength Indicator Component
@@ -64,22 +64,21 @@ export default function Register() {
   const { t } = useTranslation(['auth', 'errors', 'common']);
   const checkUserExists = useCheckUserExists();
   
-  // Load saved form data from localStorage on component mount
-  const [formData, setFormData] = useState(() => {
-    const savedData = getLocalStorageItem<any>('registerFormData');
-    if (savedData) {
-      return savedData;
-    }
-    return {
-      firstName: "",
-      lastName: "",
-      dni: "",
-      phoneNumber: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    };
+  // Form data state - no longer using localStorage
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    dni: "",
+    phoneNumber: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
+  
+  // Terms acceptance state
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [receiveUpdates, setReceiveUpdates] = useState(true);
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -154,19 +153,11 @@ export default function Register() {
     }
   };
 
-  // Save form data to localStorage
-  const saveFormData = (data: typeof formData) => {
-    setLocalStorageItem('registerFormData', data);
-  };
-
   const handleInputChange =
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       const newFormData = { ...formData, [field]: value };
       setFormData(newFormData);
-      
-      // Save to localStorage on every change
-      saveFormData(newFormData);
 
       // Clear error when user starts typing
       if (errors[field]) {
@@ -214,6 +205,12 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if terms are agreed to
+    if (!agreeToTerms) {
+      setFormError(t('errors:TERMS_NOT_AGREED') || "Please agree to the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
+
     // Validate all required fields
     const requiredFields = [
       "firstName",
@@ -250,11 +247,22 @@ export default function Register() {
           username: formData.email, // Using email as username
         });
         
-        // If no error, user doesn't exist, proceed to terms
-        saveFormData(formData);
-        navigate("/terms");
+        // If no error, user doesn't exist, create the account immediately
+        const registrationData = {
+          username: formData.email, // Using email as username
+          email: formData.email,
+          password: formData.password,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          receive_updates: receiveUpdates, // Include email preferences
+        };
+        
+        await registerMutation.mutateAsync(registrationData);
+        
+        // Navigate directly to email verification
+        navigate("/verify-email");
       } catch (error: any) {
-        console.error("User existence check error:", error);
+        console.error("Registration error:", error);
         
         // Handle validation errors from backend
         if (error && typeof error === 'object' && 'detail' in error) {
@@ -262,10 +270,12 @@ export default function Register() {
             const detail = JSON.parse(error.detail);
             setErrors(detail);
           } catch (parseError) {
-            setFormError("An error occurred while checking user existence. Please try again.");
+            setFormError("An error occurred during registration. Please try again.");
           }
+        } else if (error && typeof error === 'object' && 'error' in error) {
+          setFormError(error.error);
         } else {
-          setFormError("An error occurred while checking user existence. Please try again.");
+          setFormError("An error occurred during registration. Please try again.");
         }
       } finally {
         setIsLoading(false);
@@ -360,6 +370,11 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       <div className="max-w-4xl mx-auto">
         {/* Logo */}
         <div className="text-center container-margin-base">
@@ -371,21 +386,6 @@ export default function Register() {
         </div>
 
         <div className="max-w-2xl mx-auto">
-          {/* Progress Header */}
-          <div className="flex justify-between items-center container-margin-base">
-            <span className="progress-step">
-              Step 1 of 2
-            </span>
-            <span className="progress-step">
-              50% Complete
-            </span>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="progress-bar container-margin-base relative">
-            <div className="progress-fill w-1/2"></div>
-          </div>
-
           {/* Main Card */}
           <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base relative">
             {/* User Icon */}
@@ -724,12 +724,77 @@ export default function Register() {
                 />
               </div>
 
+              {/* Terms Agreement Checkbox */}
+              <div className="flex items-start gap-2">
+                <div className="relative mt-1">
+                  <input
+                    type="checkbox"
+                    id="agreeToTerms"
+                    checked={agreeToTerms}
+                    onChange={(e) => setAgreeToTerms(e.target.checked)}
+                    className="w-5 h-5 border border-[#D7DFE8] rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#294859] checked:bg-[#294859] checked:border-[#294859]"
+                  />
+                </div>
+                <label
+                  htmlFor="agreeToTerms"
+                  className="text-[16px] text-[#485567] cursor-pointer"
+                >
+                  {t('auth:register.termsAgreement')}
+                </label>
+              </div>
+
+              {/* Updates Checkbox */}
+              <div className="flex items-start gap-2">
+                <div className="relative mt-1">
+                  <input
+                    type="checkbox"
+                    id="receiveUpdates"
+                    checked={receiveUpdates}
+                    onChange={(e) => setReceiveUpdates(e.target.checked)}
+                    className="w-5 h-5 border border-[#D7DFE8] rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#294859] checked:bg-[#294859] checked:border-[#294859]"
+                  />
+                </div>
+                <label
+                  htmlFor="receiveUpdates"
+                  className="text-[13px] text-[#485567] cursor-pointer"
+                >
+                  {t('auth:register.receiveUpdates')}
+                </label>
+              </div>
+
+              {/* Data Protection Section */}
+              <div className="bg-[#F8FAFC] border border-[#D7DFE8] rounded-[8px] p-6 mt-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 22 22"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M11 1.83325L2.75 5.04159V10.9999C2.75 14.2083 5.95833 19.2499 10.0833 20.1666C14.2083 19.2499 17.4167 14.2083 17.4167 10.9999V5.04159L10.0833 1.83325H11Z"
+                      stroke="#16B257"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <h3 className="text-[18px] font-bold text-[#1E1E1E]">
+                    {t('auth:terms.dataProtectionTitle')}
+                  </h3>
+                </div>
+                <p className="text-[16px] text-[#1E1E1E] leading-normal">
+                  {t('auth:terms.dataProtectionText')}
+                </p>
+              </div>
+
               {/* Continue Button */}
               <button
                 type="submit"
-                disabled={isLoading || checkUserExists.isPending}
+                disabled={isLoading || checkUserExists.isPending || !agreeToTerms}
                 className={`w-full btn-height-lg text-white font-bold text-responsive-base rounded-[10px] hover:bg-[#1e3340] transition-colors flex items-center justify-center gap-2 ${
-                  isLoading || checkUserExists.isPending ? "bg-gray-400 cursor-not-allowed" : "bg-[#294758]"
+                  isLoading || checkUserExists.isPending || !agreeToTerms ? "bg-gray-400 cursor-not-allowed" : "bg-[#294758]"
                 }`}
               >
                 {isLoading || checkUserExists.isPending ? (
@@ -738,7 +803,7 @@ export default function Register() {
                     {t('common:messages.loading')}
                   </>
                 ) : (
-                  <>{t('common:buttons.continue')}</>
+                  <>{t('auth:register.registerButton')}</>
                 )}
               </button>
             </form>

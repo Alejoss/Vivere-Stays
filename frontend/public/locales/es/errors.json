@@ -21,6 +21,7 @@
   "USERNAME_REQUIRED": "El nombre de usuario es obligatorio",
   "USERNAME_INVALID": "El nombre de usuario solo puede contener letras, números y guiones bajos",
   "USER_NOT_FOUND": "Cuenta de usuario no encontrada",
+  "TERMS_NOT_AGREED": "Debe aceptar los Términos de Servicio y la Política de Privacidad para continuar",
   
   "PROPERTY_NOT_FOUND": "Propiedad no encontrada",
   "PROPERTY_NAME_REQUIRED": "El nombre de la propiedad es obligatorio",

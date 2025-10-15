@@ -7,6 +7,7 @@ import OnboardingProgressTracker from "../../components/OnboardingProgressTracke
 import ContactSupportModal from "../../components/onboarding/ContactSupportModal";
 import { profilesService } from "../../../shared/api/profiles";
 import { toast } from "../../hooks/use-toast";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
 
 // Success Overlay Component
@@ -189,6 +190,11 @@ export default function VerifyEmail() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex items-center justify-center px-4 py-8 relative">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher variant="header" />
+      </div>
+      
       <OnboardingProgressTracker currentStep="verify_email" />
       <div className="w-full max-w-2xl">
         {/* Logo */}
