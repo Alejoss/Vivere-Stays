@@ -401,7 +401,17 @@
     "appliedDaysBefore": "aplicado {{from}}-{{to}} días antes",
     "newOffersPending": "{{count}} nueva(s) oferta(s) pendiente(s) de guardar",
     "saveSuccess": "Ofertas especiales guardadas exitosamente",
-    "loadError": "Error al cargar ofertas especiales"
+    "loadError": "Error al cargar ofertas especiales",
+    "tooltips": {
+      "appliedFromDays": {
+        "title": "Días Aplicados Desde",
+        "description": "Máximo de días antes del check-in para aplicar la oferta (ej., 60 = oferta disponible cuando la reserva es 60 días o menos antes del check-in)"
+      },
+      "appliedUntilDays": {
+        "title": "Días Aplicados Hasta",
+        "description": "Mínimo de días antes del check-in para aplicar la oferta (ej., 14 = oferta disponible cuando la reserva es 14 días o más antes del check-in)"
+      }
+    }
   },
   "competitors": {
     "title": "Competidores",

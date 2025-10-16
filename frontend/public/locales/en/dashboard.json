@@ -401,7 +401,17 @@
     "appliedDaysBefore": "applied {{from}}-{{to}} days before",
     "newOffersPending": "{{count}} new offer(s) pending save",
     "saveSuccess": "Special offers saved successfully",
-    "loadError": "Failed to load special offers"
+    "loadError": "Failed to load special offers",
+    "tooltips": {
+      "appliedFromDays": {
+        "title": "Applied From Days",
+        "description": "Maximum days before check-in to apply offer (e.g., 60 = offer available when booking is 60 days or less before check-in)"
+      },
+      "appliedUntilDays": {
+        "title": "Applied Until Days",
+        "description": "Minimum days before check-in to apply offer (e.g., 14 = offer available when booking is 14 days or more before check-in)"
+      }
+    }
   },
   "competitors": {
     "title": "Competitors",

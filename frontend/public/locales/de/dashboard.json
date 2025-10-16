@@ -401,7 +401,17 @@
     "appliedDaysBefore": "angewendet {{from}}-{{to}} Tage vorher",
     "newOffersPending": "{{count}} neue(s) Angebot(e) ausstehend",
     "saveSuccess": "Sonderangebote erfolgreich gespeichert",
-    "loadError": "Fehler beim Laden der Sonderangebote"
+    "loadError": "Fehler beim Laden der Sonderangebote",
+    "tooltips": {
+      "appliedFromDays": {
+        "title": "Angewandt Von Tagen",
+        "description": "Maximale Tage vor dem Check-in, um das Angebot anzuwenden (z.B. 60 = Angebot verfügbar, wenn die Buchung 60 Tage oder weniger vor dem Check-in ist)"
+      },
+      "appliedUntilDays": {
+        "title": "Angewandt Bis Tagen",
+        "description": "Mindesttage vor dem Check-in, um das Angebot anzuwenden (z.B. 14 = Angebot verfügbar, wenn die Buchung 14 Tage oder mehr vor dem Check-in ist)"
+      }
+    }
   },
   "competitors": {
     "title": "Wettbewerber",

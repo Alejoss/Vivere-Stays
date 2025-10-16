@@ -16,6 +16,7 @@ import { dynamicPricingService, SpecialOffer, CreateSpecialOfferRequest } from "
 import { z } from "zod";
 import { toast } from "../../hooks/use-toast";
 import { PropertyContext } from "../../../shared/PropertyContext";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import "../../styles/responsive-utilities.css";
 
 interface OfferFormData {
@@ -400,13 +401,29 @@ export default function SpecialOffers() {
               <div className="text-center">
                 <div className="flex items-center gap-1">
                   <span>{t('dashboard:specialOffers.availableFromDays', { defaultValue: 'Available From Days' })}</span>
-                  <Info size={17} className="text-gray-600 hidden lg:inline" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info size={17} className="text-gray-600 hidden lg:inline cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      <div className="font-semibold mb-1">{t('dashboard:specialOffers.tooltips.appliedFromDays.title')}</div>
+                      <div>{t('dashboard:specialOffers.tooltips.appliedFromDays.description')}</div>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               <div className="text-center">
                 <div className="flex items-center gap-1">
                   <span>{t('dashboard:specialOffers.availableUntilDays', { defaultValue: 'Available Until Days' })}</span>
-                  <Info size={17} className="text-gray-600 hidden lg:inline" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info size={17} className="text-gray-600 hidden lg:inline cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      <div className="font-semibold mb-1">{t('dashboard:specialOffers.tooltips.appliedUntilDays.title')}</div>
+                      <div>{t('dashboard:specialOffers.tooltips.appliedUntilDays.description')}</div>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               <div>{t('dashboard:specialOffers.type', { defaultValue: 'Type' })}</div>
@@ -747,7 +764,15 @@ export default function SpecialOffers() {
                         <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.availableFromDays', { defaultValue: 'Available From Days' })}
-                            <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info size={14} className="hidden lg:inline ml-1 text-gray-600 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs text-xs">
+                                <div className="font-semibold mb-1">{t('dashboard:specialOffers.tooltips.appliedFromDays.title')}</div>
+                                <div>{t('dashboard:specialOffers.tooltips.appliedFromDays.description')}</div>
+                              </TooltipContent>
+                            </Tooltip>
                           </label>
                           <div className="form-field">
                             <Controller
@@ -779,7 +804,15 @@ export default function SpecialOffers() {
                         <div className="form-field">
                           <label className="form-label">
                             {t('dashboard:specialOffers.availableUntilDays', { defaultValue: 'Available Until Days' })}
-                            <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info size={14} className="hidden lg:inline ml-1 text-gray-600 cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs text-xs">
+                                <div className="font-semibold mb-1">{t('dashboard:specialOffers.tooltips.appliedUntilDays.title')}</div>
+                                <div>{t('dashboard:specialOffers.tooltips.appliedUntilDays.description')}</div>
+                              </TooltipContent>
+                            </Tooltip>
                           </label>
                           <div className="form-field">
                             <Controller
