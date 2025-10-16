@@ -800,9 +800,24 @@ export default function Competitors() {
     return (
       <div
         key={competitor.id}
-        className="border border-[#B6C4DA] rounded-lg container-padding-base"
+        className="border border-[#B6C4DA] rounded-lg container-padding-base relative"
       >
-        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+        {/* Delete Button - Top right corner for all screen sizes */}
+        <button 
+          onClick={() => {
+            if (isProcessed) {
+              handleDeleteCompetitor(competitor.id, processed?.competitor_name || 'Unknown');
+            } else {
+              handleDeleteCandidate(competitor.id, candidate?.competitor_name || 'Unknown');
+            }
+          }}
+          className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors p-1 z-10"
+          title={`Delete ${isProcessed ? 'competitor' : 'candidate'}`}
+        >
+          <Trash2 size={20} />
+        </button>
+
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 pr-8">
           {/* Status Icon */}
           {isProcessed ? getProcessedStatusIcon() : getStatusIcon(candidate?.status || 'processing')}
 
@@ -902,43 +917,13 @@ export default function Competitors() {
               </div>
             )}
 
-            {/* Action Icons - Desktop only */}
+            {/* Action Icons - Desktop only (Info icon) */}
             <div className="hidden lg:flex form-gap-base">
               <button className="text-gray-500 hover:text-gray-700">
                 <Info size={20} />
               </button>
-              <button 
-                onClick={() => {
-                  if (isProcessed) {
-                    handleDeleteCompetitor(competitor.id, processed?.competitor_name || 'Unknown');
-                  } else {
-                    handleDeleteCandidate(competitor.id, candidate?.competitor_name || 'Unknown');
-                  }
-                }}
-                className="text-red-500 hover:text-red-700 transition-colors"
-                title={`Delete ${isProcessed ? 'competitor' : 'candidate'}`}
-              >
-                <Trash2 size={24} />
-              </button>
             </div>
           </div>
-        </div>
-
-        {/* Mobile Delete Button - Bottom right corner */}
-        <div className="lg:hidden flex justify-end mt-4">
-          <button 
-            onClick={() => {
-              if (isProcessed) {
-                handleDeleteCompetitor(competitor.id, processed?.competitor_name || 'Unknown');
-              } else {
-                handleDeleteCandidate(competitor.id, candidate?.competitor_name || 'Unknown');
-              }
-            }}
-            className="text-red-500 hover:text-red-700 transition-colors p-2"
-            title={`Delete ${isProcessed ? 'competitor' : 'candidate'}`}
-          >
-            <Trash2 size={24} />
-          </button>
         </div>
 
         {/* Additional info for candidates */}

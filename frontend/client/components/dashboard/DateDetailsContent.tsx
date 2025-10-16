@@ -86,7 +86,7 @@ export default function DateDetailsContent({
 
       {/* MSP Information */}
       {propertyId && selectedDate && !mspForDay.loading && mspForDay.msp && (
-        <div className="text-center text-[16px] font-medium text-gray-700 py-2">
+        <div className="text-center text-responsive-base font-medium text-[#294758] py-2">
           MSP for this day: ${mspForDay.msp.msp}
         </div>
       )}
@@ -100,22 +100,12 @@ export default function DateDetailsContent({
               size={25}
               className="text-hotel-warning-orange flex-shrink-0"
             />
-            <span className="text-[14px] font-medium text-hotel-warning-orange">
+            <span className="text-responsive-sm font-medium text-hotel-warning-orange">
               No PMS configured
             </span>
           </div>
         )}
         
-        {/* Profile Warning */}
-        <div className="flex items-center gap-[7px] px-[25px] py-[17px] border border-hotel-warning-orange-border rounded-lg bg-hotel-warning-orange-bg">
-          <AlertTriangle
-            size={25}
-            className="text-hotel-warning-orange flex-shrink-0"
-          />
-          <span className="text-[14px] font-medium text-hotel-warning-orange">
-            Complete your profile to get better recommendations
-          </span>
-        </div>
         
         {/* MSP Warning - show for selected date only */}
         {propertyId && selectedDate && !mspForDay.loading && !mspForDay.msp && (
@@ -124,7 +114,7 @@ export default function DateDetailsContent({
               size={25}
               className="text-hotel-warning-orange flex-shrink-0"
             />
-            <span className="text-[14px] font-medium text-hotel-warning-orange">
+            <span className="text-responsive-sm font-medium text-hotel-warning-orange">
               No MSP configured for this date
             </span>
           </div>
@@ -137,7 +127,7 @@ export default function DateDetailsContent({
               size={25}
               className="text-hotel-warning-orange flex-shrink-0"
             />
-            <span className="text-[14px] font-medium text-hotel-warning-orange">
+            <span className="text-responsive-sm font-medium text-hotel-warning-orange">
               If the PMS is not connected (live mode), changes will not be reflected in the PMS.
             </span>
           </div>

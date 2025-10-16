@@ -6,7 +6,8 @@ from .views import (
     SendVerificationEmailView, VerifyEmailCodeView,
     OnboardingProgressView, TestEmailView, ChangePasswordView, stripe_webhook, CreateCheckoutSession,
     SupportTicketView, OnboardingPMSSupportView, OnboardingEmailVerificationSupportView, OnboardingContactSalesView,
-    NotificationListView, NotificationDetailView, NotificationMarkAllReadView, NotificationUnreadCountView
+    NotificationListView, NotificationDetailView, NotificationMarkAllReadView, NotificationUnreadCountView,
+    CheckBookingUrlStatusView, CheckSpecialOffersStatusView
 )
 
 urlpatterns = [
@@ -49,4 +50,6 @@ urlpatterns = [
     path('notifications/<int:notification_id>/', NotificationDetailView.as_view(), name='notification-detail'),
     path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notifications-mark-all-read'),
     path('notifications/unread-count/', NotificationUnreadCountView.as_view(), name='notifications-unread-count'),
+    path('check-booking-url/', CheckBookingUrlStatusView.as_view(), name='check-booking-url'),
+    path('check-special-offers/', CheckSpecialOffersStatusView.as_view(), name='check-special-offers'),
 ]

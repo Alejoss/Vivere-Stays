@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { useForm, FormProvider, useFieldArray } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
 import {
@@ -82,12 +82,17 @@ export default function SpecialOffers() {
   const form = useForm<OffersForm>({
     resolver: zodResolver(OffersSchema),
     defaultValues: { offers: [] },
-    mode: 'onSubmit',
+    mode: 'onChange',
     reValidateMode: 'onChange',
     criteriaMode: 'firstError',
   });
-  const { control, formState, handleSubmit, reset, register, getValues, setFocus } = form;
+  const { control, formState, handleSubmit, reset, register, getValues, setFocus, watch } = form;
   const { fields, append, remove, update } = useFieldArray({ control, name: 'offers' });
+
+  // Watch form values for debugging
+  const watchedValues = watch();
+  console.log('🔧 FRONTEND DEBUG: Current watched form values:', watchedValues);
+  console.log('🔧 FRONTEND DEBUG: Current fields array:', fields);
 
   // Load existing offers on component mount
   useEffect(() => {
@@ -96,25 +101,41 @@ export default function SpecialOffers() {
     }
   }, [property?.id]);
 
+  // Debug effect to track fields changes
+  useEffect(() => {
+    console.log('🔧 FRONTEND DEBUG: Fields array changed:', fields);
+    console.log('🔧 FRONTEND DEBUG: Fields length:', fields.length);
+  }, [fields]);
+
   const loadOffers = async () => {
     if (!property?.id) return;
     
+    console.log('🔧 FRONTEND DEBUG: Loading offers for property:', property.id);
     setLoading(true);
     try {
       const response = await dynamicPricingService.getSpecialOffers(property.id);
+      console.log('🔧 FRONTEND DEBUG: Raw response from API:', response);
+      
+      const mappedOffers = (response.offers || []).map((offer: any) => ({
+        id: offer.id,
+        offer_name: offer.offer_name || '',
+        valid_from: offer.valid_from || '',
+        valid_until: offer.valid_until || '',
+        applied_from_days: offer.applied_from_days ?? null,
+        applied_until_days: offer.applied_until_days ?? null,
+        increment_type: offer.increment_type || 'Percentage',
+        increment_value: offer.increment_value ?? 0,
+      }));
+      
+      console.log('🔧 FRONTEND DEBUG: Mapped offers for form:', mappedOffers);
+      
       reset({
-        offers: (response.offers || []).map((offer: any) => ({
-          id: offer.id,
-          offer_name: offer.offer_name || '',
-          valid_from: offer.valid_from || '',
-          valid_until: offer.valid_until || '',
-          applied_from_days: offer.applied_from_days ?? null,
-          applied_until_days: offer.applied_until_days ?? null,
-          increment_type: offer.increment_type || 'Percentage',
-          increment_value: offer.increment_value ?? 0,
-        })),
+        offers: mappedOffers,
       });
+      
+      console.log('🔧 FRONTEND DEBUG: Form reset completed');
     } catch (err: any) {
+      console.error('🔧 FRONTEND DEBUG: Error loading offers:', err);
       const backendMsg = err?.response?.data?.message || err?.message || t('dashboard:specialOffers.loadError');
       toast({ title: t('common:messages.error'), description: backendMsg, variant: 'destructive' });
     } finally {
@@ -124,6 +145,7 @@ export default function SpecialOffers() {
 
   // Helper functions
   const addNewOffer = () => {
+    console.log('🔧 FRONTEND DEBUG: Adding new offer');
     append({
       offer_name: '',
       valid_from: '',
@@ -133,38 +155,50 @@ export default function SpecialOffers() {
       increment_type: 'Percentage',
       increment_value: 0,
     } as any);
+    console.log('🔧 FRONTEND DEBUG: New offer added, current form values:', getValues());
   };
 
   const updateOffer = (index: number, field: keyof OfferFormData, value: any) => {
-    const current = getValues().offers?.[index] || fields[index];
-    update(index, { ...current, [field]: value } as any);
+    // Note: This function is not needed when using register() approach
+    // The form values are automatically managed by react-hook-form
+    console.log(`updateOffer called but not needed with register() approach: ${field} = ${value}`);
   };
 
   const removeOffer = async (index: number) => {
+    console.log(`🔧 FRONTEND DEBUG: Removing offer at index ${index}`);
     const offer = getValues().offers?.[index] || (fields[index] as any);
+    console.log(`🔧 FRONTEND DEBUG: Offer to remove:`, offer);
     
     // If it's an existing offer, delete it from the server
     if (offer.id && !offer.isNew) {
       if (!property?.id) return;
       
       try {
+        console.log(`🔧 FRONTEND DEBUG: Deleting offer from server:`, { propertyId: property.id, offerId: offer.id });
         await dynamicPricingService.deleteSpecialOffer(property.id, offer.id);
         toast({
           title: t('common:messages.success'),
           description: "Offer deleted successfully",
         });
+        console.log(`🔧 FRONTEND DEBUG: Offer deleted successfully from server`);
       } catch (err: any) {
+        console.error(`🔧 FRONTEND DEBUG: Error deleting offer from server:`, err);
         const backendMsg = err?.response?.data?.message || err?.message || 'Failed to delete offer';
         toast({ title: 'Error', description: backendMsg, variant: 'destructive' });
         return;
       }
     }
     
+    console.log(`🔧 FRONTEND DEBUG: Removing offer from form at index ${index}`);
     remove(index);
+    console.log(`🔧 FRONTEND DEBUG: Offer removed from form, current values:`, getValues());
   };
 
   const onSubmit = async (values: OffersForm) => {
     if (!property?.id) return;
+    
+    console.log('🔧 FRONTEND DEBUG: Form submitted with values:', values);
+    console.log('🔧 FRONTEND DEBUG: All offers:', values.offers);
     
     setSaving(true);
     
@@ -172,6 +206,9 @@ export default function SpecialOffers() {
       const allOffers = values.offers || [];
       const newOffers = allOffers.filter(offer => !offer.id);
       const existingOffers = allOffers.filter(offer => !!offer.id);
+      
+      console.log('🔧 FRONTEND DEBUG: New offers:', newOffers);
+      console.log('🔧 FRONTEND DEBUG: Existing offers:', existingOffers);
       
       // Update existing offers
       for (const offer of existingOffers) {
@@ -398,94 +435,191 @@ export default function SpecialOffers() {
                     >
                       {/* Offer Name */}
                       <div>
-                        <input
-                          type="text"
-                          {...register(`offers.${index}.offer_name` as const)}
-                          placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
-                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <Controller
+                          name={`offers.${index}.offer_name` as const}
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="text"
+                                {...field}
+                                onChange={(e) => {
+                                  console.log(`🔧 FRONTEND DEBUG: Offer name changed for index ${index}:`, e.target.value);
+                                  field.onChange(e);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
+                                className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {fieldState.error && (
+                                <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.offers?.[index]?.offer_name?.message ? (
-                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
-                        ) : null}
                       </div>
 
                       {/* Valid From */}
                       <div>
-                        <input
-                          type="date"
-                          {...register(`offers.${index}.valid_from` as const)}
-                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black"
-                          placeholder="Select start date"
+                        <Controller
+                          name={`offers.${index}.valid_from` as const}
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="date"
+                                {...field}
+                                onChange={(e) => {
+                                  console.log(`🔧 FRONTEND DEBUG: Valid from changed for index ${index}:`, e.target.value);
+                                  field.onChange(e);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black"
+                                placeholder="Select start date"
+                              />
+                              {fieldState.error && (
+                                <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.offers?.[index]?.valid_from?.message ? (
-                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
-                        ) : null}
                       </div>
 
                       {/* Valid Until */}
                       <div>
-                        <input
-                          type="date"
-                          {...register(`offers.${index}.valid_until` as const)}
-                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black"
-                          placeholder="Select end date"
+                        <Controller
+                          name={`offers.${index}.valid_until` as const}
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="date"
+                                {...field}
+                                onChange={(e) => {
+                                  console.log(`🔧 FRONTEND DEBUG: Valid until changed for index ${index}:`, e.target.value);
+                                  field.onChange(e);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black"
+                                placeholder="Select end date"
+                              />
+                              {fieldState.error && (
+                                <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.offers?.[index]?.valid_until?.message ? (
-                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
-                        ) : null}
                       </div>
 
                       {/* Available From Days */}
                       <div>
-                        <input
-                          type="number"
-                          {...register(`offers.${index}.applied_from_days` as const)}
-                          placeholder="0"
-                          min="0"
-                          className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <Controller
+                          name={`offers.${index}.applied_from_days` as const}
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="number"
+                                {...field}
+                                onChange={(e) => {
+                                  const value = e.target.value === '' ? null : parseInt(e.target.value);
+                                  console.log(`🔧 FRONTEND DEBUG: Applied from days changed for index ${index}:`, value);
+                                  field.onChange(value);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                placeholder="0"
+                                min="0"
+                                className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {fieldState.error && (
+                                <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
-                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
-                        ) : null}
                       </div>
 
                       {/* Available Until Days */}
                       <div>
-                        <input
-                          type="number"
-                          {...register(`offers.${index}.applied_until_days` as const)}
-                          placeholder="0"
-                          min="0"
-                          className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <Controller
+                          name={`offers.${index}.applied_until_days` as const}
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="number"
+                                {...field}
+                                onChange={(e) => {
+                                  const value = e.target.value === '' ? null : parseInt(e.target.value);
+                                  console.log(`🔧 FRONTEND DEBUG: Applied until days changed for index ${index}:`, value);
+                                  field.onChange(value);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                placeholder="0"
+                                min="0"
+                                className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {fieldState.error && (
+                                <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
-                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
-                        ) : null}
                       </div>
 
                       {/* Type */}
                       <div>
-                        <select
-                          {...register(`offers.${index}.increment_type` as const)}
-                          className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none"
-                        >
-                          <option value="Percentage">Percentage</option>
-                          <option value="Additional">Additional</option>
-                        </select>
+                        <Controller
+                          name={`offers.${index}.increment_type` as const}
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <select
+                                {...field}
+                                onChange={(e) => {
+                                  console.log(`🔧 FRONTEND DEBUG: Increment type changed for index ${index}:`, e.target.value);
+                                  field.onChange(e);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                className="w-full input-padding-base input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black appearance-none"
+                              >
+                                <option value="Percentage">Percentage</option>
+                                <option value="Additional">Additional</option>
+                              </select>
+                              {fieldState.error && (
+                                <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
+                        />
                       </div>
 
                       {/* Value */}
                       <div>
-                        <input
-                          type="number"
-                          {...register(`offers.${index}.increment_value` as const)}
-                          placeholder="0"
-                          min="0"
-                          className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <Controller
+                          name={`offers.${index}.increment_value` as const}
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="number"
+                                {...field}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  console.log(`🔧 FRONTEND DEBUG: Increment value changed for index ${index}:`, value);
+                                  field.onChange(value);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                placeholder="0"
+                                min="0"
+                                className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              {fieldState.error && (
+                                <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.offers?.[index]?.increment_value?.message ? (
-                          <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
-                        ) : null}
                       </div>
 
                       {/* Actions */}
@@ -521,15 +655,28 @@ export default function SpecialOffers() {
                           {t('dashboard:specialOffers.offerName', { defaultValue: 'Offer Name' })}*
                         </label>
                         <div className="form-field">
-                          <input
-                            type="text"
-                            {...register(`offers.${index}.offer_name` as const)}
-                            placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
-                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          <Controller
+                            name={`offers.${index}.offer_name` as const}
+                            control={control}
+                            render={({ field, fieldState }) => (
+                              <>
+                                <input
+                                  type="text"
+                                  {...field}
+                                  onChange={(e) => {
+                                    console.log(`🔧 FRONTEND DEBUG: Mobile offer name changed for index ${index}:`, e.target.value);
+                                    field.onChange(e);
+                                    console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                  }}
+                                  placeholder={t('dashboard:specialOffers.offerNamePlaceholder', { defaultValue: 'Discount Name' })}
+                                  className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                {fieldState.error && (
+                                  <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                                )}
+                              </>
+                            )}
                           />
-                          {formState.errors?.offers?.[index]?.offer_name?.message ? (
-                            <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.offer_name?.message)}</div>
-                          ) : null}
                         </div>
                       </div>
 
@@ -540,15 +687,28 @@ export default function SpecialOffers() {
                             {t('dashboard:specialOffers.validFrom', { defaultValue: 'Valid From' })}*
                           </label>
                           <div className="form-field">
-                            <input
-                              type="date"
-                              {...register(`offers.${index}.valid_from` as const)}
-                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
-                              placeholder={t('dashboard:specialOffers.selectStartDate', { defaultValue: 'Select start date' })}
+                            <Controller
+                              name={`offers.${index}.valid_from` as const}
+                              control={control}
+                              render={({ field, fieldState }) => (
+                                <>
+                                  <input
+                                    type="date"
+                                    {...field}
+                                    onChange={(e) => {
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile valid from changed for index ${index}:`, e.target.value);
+                                      field.onChange(e);
+                                      console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                    }}
+                                    className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
+                                    placeholder={t('dashboard:specialOffers.selectStartDate', { defaultValue: 'Select start date' })}
+                                  />
+                                  {fieldState.error && (
+                                    <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                                  )}
+                                </>
+                              )}
                             />
-                            {formState.errors?.offers?.[index]?.valid_from?.message ? (
-                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_from?.message)}</div>
-                            ) : null}
                           </div>
                         </div>
                         <div className="form-field">
@@ -556,15 +716,28 @@ export default function SpecialOffers() {
                             {t('dashboard:specialOffers.validUntil', { defaultValue: 'Valid Until' })}*
                           </label>
                           <div className="form-field">
-                            <input
-                              type="date"
-                              {...register(`offers.${index}.valid_until` as const)}
-                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
-                              placeholder={t('dashboard:specialOffers.selectEndDate', { defaultValue: 'Select end date' })}
+                            <Controller
+                              name={`offers.${index}.valid_until` as const}
+                              control={control}
+                              render={({ field, fieldState }) => (
+                                <>
+                                  <input
+                                    type="date"
+                                    {...field}
+                                    onChange={(e) => {
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile valid until changed for index ${index}:`, e.target.value);
+                                      field.onChange(e);
+                                      console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                    }}
+                                    className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black"
+                                    placeholder={t('dashboard:specialOffers.selectEndDate', { defaultValue: 'Select end date' })}
+                                  />
+                                  {fieldState.error && (
+                                    <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                                  )}
+                                </>
+                              )}
                             />
-                            {formState.errors?.offers?.[index]?.valid_until?.message ? (
-                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.valid_until?.message)}</div>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -577,16 +750,30 @@ export default function SpecialOffers() {
                             <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
                           <div className="form-field">
-                            <input
-                              type="number"
-                              {...register(`offers.${index}.applied_from_days` as const)}
-                              placeholder="0"
-                              min="0"
-                              className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            <Controller
+                              name={`offers.${index}.applied_from_days` as const}
+                              control={control}
+                              render={({ field, fieldState }) => (
+                                <>
+                                  <input
+                                    type="number"
+                                    {...field}
+                                    onChange={(e) => {
+                                      const value = e.target.value === '' ? null : parseInt(e.target.value);
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile applied from days changed for index ${index}:`, value);
+                                      field.onChange(value);
+                                      console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                    }}
+                                    placeholder="0"
+                                    min="0"
+                                    className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  {fieldState.error && (
+                                    <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                                  )}
+                                </>
+                              )}
                             />
-                            {formState.errors?.offers?.[index]?.applied_from_days?.message ? (
-                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_from_days?.message)}</div>
-                            ) : null}
                           </div>
                         </div>
                         <div className="form-field">
@@ -595,16 +782,30 @@ export default function SpecialOffers() {
                             <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                           </label>
                           <div className="form-field">
-                            <input
-                              type="number"
-                              {...register(`offers.${index}.applied_until_days` as const)}
-                              placeholder="0"
-                              min="0"
-                              className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            <Controller
+                              name={`offers.${index}.applied_until_days` as const}
+                              control={control}
+                              render={({ field, fieldState }) => (
+                                <>
+                                  <input
+                                    type="number"
+                                    {...field}
+                                    onChange={(e) => {
+                                      const value = e.target.value === '' ? null : parseInt(e.target.value);
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile applied until days changed for index ${index}:`, value);
+                                      field.onChange(value);
+                                      console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                    }}
+                                    placeholder="0"
+                                    min="0"
+                                    className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  {fieldState.error && (
+                                    <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                                  )}
+                                </>
+                              )}
                             />
-                            {formState.errors?.offers?.[index]?.applied_until_days?.message ? (
-                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.applied_until_days?.message)}</div>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -616,13 +817,29 @@ export default function SpecialOffers() {
                             {t('dashboard:specialOffers.type', { defaultValue: 'Type' })}
                           </label>
                           <div className="form-field">
-                            <select
-                              {...register(`offers.${index}.increment_type` as const)}
-                              className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black appearance-none"
-                            >
-                              <option value="Percentage">{t('dashboard:availableRates.percentage')}</option>
-                              <option value="Additional">{t('dashboard:availableRates.additional')}</option>
-                            </select>
+                            <Controller
+                              name={`offers.${index}.increment_type` as const}
+                              control={control}
+                              render={({ field, fieldState }) => (
+                                <>
+                                  <select
+                                    {...field}
+                                    onChange={(e) => {
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile increment type changed for index ${index}:`, e.target.value);
+                                      field.onChange(e);
+                                      console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                    }}
+                                    className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black appearance-none"
+                                  >
+                                    <option value="Percentage">{t('dashboard:availableRates.percentage')}</option>
+                                    <option value="Additional">{t('dashboard:availableRates.additional')}</option>
+                                  </select>
+                                  {fieldState.error && (
+                                    <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                                  )}
+                                </>
+                              )}
+                            />
                           </div>
                         </div>
                         <div className="form-field">
@@ -630,16 +847,30 @@ export default function SpecialOffers() {
                             {t('dashboard:specialOffers.value', { defaultValue: 'Value' })}*
                           </label>
                           <div className="form-field">
-                            <input
-                              type="number"
-                              {...register(`offers.${index}.increment_value` as const)}
-                              placeholder="0"
-                              min="0"
-                              className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            <Controller
+                              name={`offers.${index}.increment_value` as const}
+                              control={control}
+                              render={({ field, fieldState }) => (
+                                <>
+                                  <input
+                                    type="number"
+                                    {...field}
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value) || 0;
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile increment value changed for index ${index}:`, value);
+                                      field.onChange(value);
+                                      console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                    }}
+                                    placeholder="0"
+                                    min="0"
+                                    className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                  {fieldState.error && (
+                                    <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
+                                  )}
+                                </>
+                              )}
                             />
-                            {formState.errors?.offers?.[index]?.increment_value?.message ? (
-                              <div className="mt-1 text-xs text-red-600">{String((formState.errors.offers as any)[index]?.increment_value?.message)}</div>
-                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -660,24 +891,37 @@ export default function SpecialOffers() {
               {t('dashboard:specialOffers.addOffer')}
             </button>
             <button 
-              onClick={handleSubmit(onSubmit, () => {
-                // Show a concise banner and focus first error
-                toast({
-                  title: t('common:messages.validationError', { defaultValue: 'Validation Error' }),
-                  description: t('common:messages.fixErrors', { defaultValue: 'Please fix the highlighted errors and try again.' }),
-                  variant: 'destructive',
+              onClick={() => {
+                console.log('🔧 FRONTEND DEBUG: Save button clicked');
+                console.log('🔧 FRONTEND DEBUG: Current form state:', {
+                  isValid: formState.isValid,
+                  errors: formState.errors,
+                  values: getValues(),
+                  fields: fields
                 });
-                // Try to focus the first invalid field
-                const offersErrors = formState.errors?.offers as any[] | undefined;
-                if (offersErrors && offersErrors.length > 0) {
-                  const firstIdx = offersErrors.findIndex(Boolean);
-                  if (firstIdx >= 0) {
-                    const errObj = offersErrors[firstIdx] || {};
-                    const firstField = Object.keys(errObj)[0];
-                    if (firstField) setFocus(`offers.${firstIdx}.${firstField}` as any);
+                
+                handleSubmit(onSubmit, () => {
+                  console.log('🔧 FRONTEND DEBUG: Form validation failed');
+                  console.log('🔧 FRONTEND DEBUG: Validation errors:', formState.errors);
+                  
+                  // Show a concise banner and focus first error
+                  toast({
+                    title: t('common:messages.validationError', { defaultValue: 'Validation Error' }),
+                    description: t('common:messages.fixErrors', { defaultValue: 'Please fix the highlighted errors and try again.' }),
+                    variant: 'destructive',
+                  });
+                  // Try to focus the first invalid field
+                  const offersErrors = formState.errors?.offers as any[] | undefined;
+                  if (offersErrors && offersErrors.length > 0) {
+                    const firstIdx = offersErrors.findIndex(Boolean);
+                    if (firstIdx >= 0) {
+                      const errObj = offersErrors[firstIdx] || {};
+                      const firstField = Object.keys(errObj)[0];
+                      if (firstField) setFocus(`offers.${firstIdx}.${firstField}` as any);
+                    }
                   }
-                }
-              })}
+                })();
+              }}
               disabled={saving || fields.length === 0}
               className="flex items-center gap-4 btn-padding-base bg-[#294758] text-white rounded-lg font-semibold hover:bg-[#234149] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-responsive-base"
             >

@@ -22,12 +22,25 @@ export default function Header() {
     navigate("/logout");
   };
 
+  const handleLogoClick = () => {
+    // Navigate to Price Calendar with property ID if available
+    if (context?.property?.id) {
+      navigate(`/dashboard/property/${context.property.id}`);
+    } else {
+      navigate("/dashboard/property");
+    }
+  };
+
   return (
     <div className="hidden lg:flex items-center justify-between px-4 lg:px-6 py-4 border-b border-hotel-border-light bg-white">
       {/* Hotel Name */}
-      <h1 className="text-[18px] lg:text-[20px] font-bold text-hotel-brand">
+      <button
+        onClick={handleLogoClick}
+        className="text-[18px] lg:text-[20px] font-bold text-hotel-brand hover:text-hotel-brand-dark transition-colors cursor-pointer"
+        title="Go to Price Calendar"
+      >
         {propertyName}
-      </h1>
+      </button>
 
       {/* Center Section - Connection Status Toggle */}
       <div className="flex-1 flex justify-center">

@@ -528,4 +528,28 @@ export const profilesService = {
       url: '/profiles/notifications/unread-count/',
     });
   },
+
+  async checkBookingUrlStatus(): Promise<{
+    message: string;
+    notification_created?: boolean;
+    properties_without_booking_url?: string[];
+  }> {
+    return apiRequest({
+      method: 'GET',
+      url: '/profiles/check-booking-url/',
+    });
+  },
+
+  async checkSpecialOffersStatus(): Promise<{
+    message: string;
+    notifications_created?: {
+      started: number;
+      ended: number;
+    };
+  }> {
+    return apiRequest({
+      method: 'GET',
+      url: '/profiles/check-special-offers/',
+    });
+  },
 }; 

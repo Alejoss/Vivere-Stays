@@ -24,7 +24,7 @@ import { ConnectionContext } from '../../../shared/ConnectionContext';
 import LanguageSwitcher from "../LanguageSwitcher";
 
 const navigationItems = [
-  { id: "daily-prices", label: "Daily Prices", icon: Calendar, path: "/dashboard/property" },
+  { id: "daily-prices", label: "Price Calendar", icon: Calendar, path: "/dashboard/property" },
   // Analytics handled as a submenu below
 ];
 
@@ -97,14 +97,25 @@ export default function Sidebar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-hotel-border-light">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              if (property?.id) {
+                navigate(`/dashboard/property/${property.id}`);
+              } else {
+                navigate("/dashboard/property");
+              }
+              closeMobileMenu();
+            }}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            title="Go to Price Calendar"
+          >
             <div className="w-8 h-8 bg-hotel-brand-dark rounded flex items-center justify-center">
               <span className="text-white font-bold text-sm">V</span>
             </div>
             <h1 className="text-lg font-bold text-hotel-brand">
               {property?.name || "Hotel"}
             </h1>
-          </div>
+          </button>
 
           {/* Hamburger Menu Button */}
           <button
@@ -335,17 +346,29 @@ export default function Sidebar() {
       <div className={`hidden lg:block ${isMinimized ? 'w-16' : 'w-[277px]'} h-screen bg-hotel-sidebar-bg border-r border-hotel-sidebar-border flex flex-col overflow-hidden transition-all duration-300 ease-in-out`}>
       {/* Logo */}
       <div className="flex justify-center items-center px-[10px] pt-[34px] pb-[24px]">
-        {!isMinimized ? (
-          <img
-            src="https://api.builder.io/api/v1/image/assets/TEMP/ccc50d58fcb7f83e65dfa6899517f0bb70d365f9?width=374"
-            alt="Vivere Stays Logo"
-            className="w-[187px] h-16"
-          />
-        ) : (
-          <div className="w-8 h-8 bg-hotel-brand-dark rounded flex items-center justify-center">
-            <span className="text-white font-bold text-sm">V</span>
-          </div>
-        )}
+        <button
+          onClick={() => {
+            if (property?.id) {
+              navigate(`/dashboard/property/${property.id}`);
+            } else {
+              navigate("/dashboard/property");
+            }
+          }}
+          className="hover:opacity-80 transition-opacity"
+          title="Go to Price Calendar"
+        >
+          {!isMinimized ? (
+            <img
+              src="https://api.builder.io/api/v1/image/assets/TEMP/ccc50d58fcb7f83e65dfa6899517f0bb70d365f9?width=374"
+              alt="Vivere Stays Logo"
+              className="w-[187px] h-16"
+            />
+          ) : (
+            <div className="w-8 h-8 bg-hotel-brand-dark rounded flex items-center justify-center">
+              <span className="text-white font-bold text-sm">V</span>
+            </div>
+          )}
+        </button>
       </div>
 
       {/* Divider */}

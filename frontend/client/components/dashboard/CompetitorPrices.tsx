@@ -100,11 +100,11 @@ export default function CompetitorPrices({
   return (
     <div className="flex flex-col p-[23px] border border-hotel-border-light rounded-lg bg-white gap-6">
       {/* Date Display */}
-      <div className="text-[2rem] font-bold text-hotel-brand text-center mb-2">
+      <div className="text-responsive-2xl font-bold text-[#287CAC] text-center mb-1">
         {formattedDate}
       </div>
       {/* Occupancy */}
-      <div className="text-[15px] font-bold text-gray-700 mb-[20px] text-center">
+      <div className="text-responsive-base font-semibold text-[#294758] mb-1 text-center">
         {occupancyValue !== null ? `Occupancy ${occupancyValue}%` : "Occupancy --"}
       </div>
       {/* Competitor List */}
@@ -125,10 +125,10 @@ export default function CompetitorPrices({
                   : ""
               }`}
             >
-              <span className="text-[14px] font-semibold text-black">
+              <span className="text-responsive-sm font-semibold text-[#294758]">
                 {competitor.name}
               </span>
-              <span className="text-[15px] font-semibold text-gray-600">
+              <span className="text-responsive-sm font-semibold text-[#8A8E94]">
                 {competitor.price !== null && competitor.price !== undefined ? `$${competitor.price}` : "--"}
               </span>
             </div>
@@ -137,12 +137,12 @@ export default function CompetitorPrices({
       </div>
       {/* Suggested Price Section */}
       <div className="border border-blue-300 rounded-[9px] bg-blue-50 p-[15px] flex flex-col items-center gap-2">
-        <div className="text-[15px] font-semibold text-blue-700 mb-[11px] text-center">
+        <div className="text-responsive-base font-semibold text-[#287CAC] mb-[11px] text-center">
           Set price for this day
         </div>
         {/* Price Input */}
         <div className="relative w-full mb-[10px]">
-          <div className="absolute left-[15px] top-1/2 transform -translate-y-1/2 text-[17px] font-medium text-blue-700">
+          <div className="absolute left-[15px] top-1/2 transform -translate-y-1/2 text-responsive-base font-medium text-[#287CAC]">
             $
           </div>
           <input
@@ -150,16 +150,26 @@ export default function CompetitorPrices({
             value={suggestedPrice}
             onChange={(e) => setSuggestedPrice(e.target.value)}
             placeholder={selectedDayPriceHistory ? selectedDayPriceHistory.price.toString() : "0"}
-            className="w-full pl-[35px] pr-[15px] py-[11px] border border-blue-300 rounded-md bg-white text-[16px] font-normal text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-[35px] pr-[15px] py-[11px] border border-blue-300 rounded-md bg-white text-responsive-base font-normal text-[#294758] focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         {/* Update Button */}
         <button
           onClick={handleUpdatePrice}
-          className="w-full py-[11px] bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-[14px] font-medium transition-colors mt-2"
+          className="w-full py-[11px] bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-responsive-sm font-medium transition-colors mt-2"
         >
           Update price
         </button>
+        
+        {/* Cancel Button */}
+        {onModalClose && (
+          <button
+            onClick={onModalClose}
+            className="w-full py-[11px] bg-gray-500 hover:bg-gray-600 rounded-lg text-white text-responsive-sm font-medium transition-colors mt-2"
+          >
+            Cancel
+          </button>
+        )}
       </div>
     </div>
   );

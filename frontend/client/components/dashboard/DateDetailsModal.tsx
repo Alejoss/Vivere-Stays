@@ -25,11 +25,6 @@ export default function DateDetailsModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-center text-xl font-bold text-hotel-brand">
-            Date Details
-          </DialogTitle>
-        </DialogHeader>
         
         <DateDetailsContent
           selectedDate={selectedDate}

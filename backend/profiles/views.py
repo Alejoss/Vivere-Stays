@@ -2034,3 +2034,71 @@ class NotificationUnreadCountView(APIView):
             return Response({
                 'error': 'Failed to get notification counts'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CheckBookingUrlStatusView(APIView):
+    """
+    Check booking URL status and trigger notifications if needed
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Check if user's properties have booking URLs configured
+        """
+        from dynamic_pricing.notification_triggers import trigger_booking_url_not_configured_notification
+        
+        try:
+            # Trigger the booking URL notification check
+            notification = trigger_booking_url_not_configured_notification(request.user)
+            
+            if notification:
+                return Response({
+                    'message': 'Booking URL check completed - notification created',
+                    'notification_created': True,
+                    'notification_id': notification.id
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'message': 'Booking URL check completed - no notification needed',
+                    'notification_created': False
+                }, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            logger.error(f"Error checking booking URL status for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to check booking URL status'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CheckSpecialOffersStatusView(APIView):
+    """
+    Check special offers status and trigger notifications if needed
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Check if user's special offers have started or ended
+        """
+        from dynamic_pricing.notification_triggers import (
+            trigger_special_offer_started_notification,
+            trigger_special_offer_ended_notification
+        )
+        
+        try:
+            started_notifications = trigger_special_offer_started_notification(request.user)
+            ended_notifications = trigger_special_offer_ended_notification(request.user)
+            
+            return Response({
+                'message': 'Special offers check completed',
+                'notifications_created': {
+                    'started': len(started_notifications),
+                    'ended': len(ended_notifications)
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error checking special offers status: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to check special offers status'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

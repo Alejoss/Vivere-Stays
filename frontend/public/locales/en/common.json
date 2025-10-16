@@ -49,6 +49,7 @@
     "no": "No",
     "optional": "Optional",
     "required": "Required",
+    "all": "All",
     "zero": "0",
     "example": "Example"
   },

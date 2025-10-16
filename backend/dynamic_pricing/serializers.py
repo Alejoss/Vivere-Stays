@@ -645,6 +645,27 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
             logger.error(f"Error creating offer increment: {str(e)}", exc_info=True)
             raise
 
+    def update(self, instance, validated_data):
+        """
+        Update offer increment with additional logging
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Updating offer increment {instance.id} with validated data: {validated_data}")
+        
+        try:
+            # Update the instance with the validated data
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            
+            instance.save()
+            logger.info(f"Offer increment {instance.id} updated successfully")
+            return instance
+        except Exception as e:
+            logger.error(f"Error updating offer increment {instance.id}: {str(e)}", exc_info=True)
+            raise
+
 
 class BulkOfferIncrementsSerializer(serializers.Serializer):
     """

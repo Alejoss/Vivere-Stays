@@ -519,26 +519,52 @@ export default function LosSetupRules() {
               {fields.map((rule, index) => (
                 <div key={rule.id || index} className="grid grid-cols-5 gap-0">
                   <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
-                    <input
-                      type="date"
-                      {...form.register(`rules.${index}.valid_from` as const)}
-                      disabled={isLoading || isSaving}
-                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    <Controller
+                      control={control}
+                      name={`rules.${index}.valid_from` as const}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <input
+                            type="date"
+                            {...field}
+                            onChange={(e) => {
+                              console.log(`🔧 FRONTEND DEBUG: Valid from changed for index ${index}:`, e.target.value);
+                              field.onChange(e);
+                              console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                            }}
+                            disabled={isLoading || isSaving}
+                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                          {fieldState.error && (
+                            <div className="container-margin-sm error-message">{fieldState.error.message}</div>
+                          )}
+                        </>
+                      )}
                     />
-                    {formState.errors?.rules?.[index]?.valid_from?.message && (
-                      <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
-                    )}
                   </div>
                   <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
-                    <input
-                      type="date"
-                      {...form.register(`rules.${index}.valid_until` as const)}
-                      disabled={isLoading || isSaving}
-                      className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    <Controller
+                      control={control}
+                      name={`rules.${index}.valid_until` as const}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <input
+                            type="date"
+                            {...field}
+                            onChange={(e) => {
+                              console.log(`🔧 FRONTEND DEBUG: Valid until changed for index ${index}:`, e.target.value);
+                              field.onChange(e);
+                              console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                            }}
+                            disabled={isLoading || isSaving}
+                            className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                          {fieldState.error && (
+                            <div className="container-margin-sm error-message">{fieldState.error.message}</div>
+                          )}
+                        </>
+                      )}
                     />
-                    {formState.errors?.rules?.[index]?.valid_until?.message && (
-                      <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
-                    )}
                   </div>
                   <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
                     <Controller
@@ -568,16 +594,30 @@ export default function LosSetupRules() {
                     )}
                   </div>
                   <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6]">
-                    <input
-                      type="number"
-                      {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
-                      disabled={isLoading || isSaving}
-                      className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      min="1"
+                    <Controller
+                      control={control}
+                      name={`rules.${index}.los_value` as const}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <input
+                            type="number"
+                            {...field}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 1;
+                              console.log(`🔧 FRONTEND DEBUG: LOS value changed for index ${index}:`, value);
+                              field.onChange(value);
+                              console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                            }}
+                            disabled={isLoading || isSaving}
+                            className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            min="1"
+                          />
+                          {fieldState.error && (
+                            <div className="container-margin-sm error-message">{fieldState.error.message}</div>
+                          )}
+                        </>
+                      )}
                     />
-                    {formState.errors?.rules?.[index]?.los_value?.message && (
-                      <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.los_value?.message)}</div>
-                    )}
                   </div>
                   <div className="bg-[#EFF6FF] container-padding-sm border border-[#D0DFE6] flex justify-center">
                     <button
@@ -615,15 +655,28 @@ export default function LosSetupRules() {
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <div className="form-field">
-                        <input
-                          type="date"
-                          {...form.register(`rules.${index}.valid_from` as const)}
-                          disabled={isLoading || isSaving}
-                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        <Controller
+                          control={control}
+                          name={`rules.${index}.valid_from` as const}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="date"
+                                {...field}
+                                onChange={(e) => {
+                                  console.log(`🔧 FRONTEND DEBUG: Mobile valid from changed for index ${index}:`, e.target.value);
+                                  field.onChange(e);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                disabled={isLoading || isSaving}
+                                className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                              />
+                              {fieldState.error && (
+                                <div className="container-margin-sm error-message">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.rules?.[index]?.valid_from?.message && (
-                          <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_from?.message)}</div>
-                        )}
                       </div>
                     </div>
                     <div className="form-field">
@@ -632,15 +685,28 @@ export default function LosSetupRules() {
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <div className="form-field">
-                        <input
-                          type="date"
-                          {...form.register(`rules.${index}.valid_until` as const)}
-                          disabled={isLoading || isSaving}
-                          className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        <Controller
+                          control={control}
+                          name={`rules.${index}.valid_until` as const}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="date"
+                                {...field}
+                                onChange={(e) => {
+                                  console.log(`🔧 FRONTEND DEBUG: Mobile valid until changed for index ${index}:`, e.target.value);
+                                  field.onChange(e);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                disabled={isLoading || isSaving}
+                                className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                              />
+                              {fieldState.error && (
+                                <div className="container-margin-sm error-message">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.rules?.[index]?.valid_until?.message && (
-                          <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.valid_until?.message)}</div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -688,16 +754,30 @@ export default function LosSetupRules() {
                         <Info size={14} className="hidden lg:inline ml-1 text-gray-600" />
                       </label>
                       <div className="form-field">
-                        <input
-                          type="number"
-                          {...form.register(`rules.${index}.los_value`, { valueAsNumber: true })}
-                          disabled={isLoading || isSaving}
-                          className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                          min="1"
+                        <Controller
+                          control={control}
+                          name={`rules.${index}.los_value` as const}
+                          render={({ field, fieldState }) => (
+                            <>
+                              <input
+                                type="number"
+                                {...field}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 1;
+                                  console.log(`🔧 FRONTEND DEBUG: Mobile LOS value changed for index ${index}:`, value);
+                                  field.onChange(value);
+                                  console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
+                                }}
+                                disabled={isLoading || isSaving}
+                                className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                min="1"
+                              />
+                              {fieldState.error && (
+                                <div className="container-margin-sm error-message">{fieldState.error.message}</div>
+                              )}
+                            </>
+                          )}
                         />
-                        {formState.errors?.rules?.[index]?.los_value?.message && (
-                          <div className="container-margin-sm error-message">{String(formState.errors.rules[index]?.los_value?.message)}</div>
-                        )}
                       </div>
                     </div>
                   </div>

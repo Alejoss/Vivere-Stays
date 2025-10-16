@@ -5,6 +5,7 @@
 The MSP (Minimum Selling Price) notification system automatically monitors MSP configuration for properties and creates notifications when:
 - MSP is not configured for **today**
 - MSP is not configured for **next week** (next 7 days)
+- MSP is not configured for **next month** (next calendar month)
 
 This ensures users are always notified when they're missing critical pricing configuration.
 
@@ -14,7 +15,7 @@ This ensures users are always notified when they're missing critical pricing con
 
 ### 1. **Notification Triggers**
 
-The system checks for missing MSP in two scenarios:
+The system checks for missing MSP in three scenarios:
 
 #### Today's MSP Missing
 - **Type**: `warning`
@@ -27,6 +28,12 @@ The system checks for missing MSP in two scenarios:
 - **Priority**: `medium`
 - **Title**: "MSP not configured for next week"
 - **Description**: "You don't have a Minimum Selling Price (MSP) configured for next week (Date range). We recommend setting it up to optimize your revenue."
+
+#### Next Month MSP Missing
+- **Type**: `warning`
+- **Priority**: `low`
+- **Title**: "MSP not configured for next month"
+- **Description**: "You don't have a Minimum Selling Price (MSP) configured for next month (Month Year). Consider setting it up to stay ahead."
 
 ### 2. **Automatic Triggering**
 
@@ -66,6 +73,10 @@ GET /api/dynamic-pricing/properties/{property_id}/check-msp/
     {
       "type": "msp_missing_next_week",
       "notification_id": 43
+    },
+    {
+      "type": "msp_missing_next_month",
+      "notification_id": 44
     }
   ],
   "coverage_stats": {
@@ -287,6 +298,18 @@ has_complete_coverage, missing_dates = check_msp_configured_next_week(property)
 
 if not has_complete_coverage:
     print(f"Missing MSP for {len(missing_dates)} days: {missing_dates}")
+```
+
+### Check MSP for Next Month
+
+```python
+from dynamic_pricing.notification_triggers import check_msp_configured_next_month
+
+property = Property.objects.get(id='abc-123')
+has_complete_coverage, missing_dates = check_msp_configured_next_month(property)
+
+if not has_complete_coverage:
+    print(f"Missing MSP for {len(missing_dates)} days in next month: {missing_dates}")
 ```
 
 ### Check MSP for Custom Date Range

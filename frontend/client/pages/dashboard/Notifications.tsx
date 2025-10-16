@@ -38,9 +38,29 @@ export default function Notifications() {
           // Don't fail the whole page if MSP check fails
         }
         
-        // Then fetch all notifications
+        // Then, trigger booking URL check
+        // This will create notifications if booking URLs are missing
+        try {
+          await profilesService.checkBookingUrlStatus();
+          console.log('Booking URL check completed');
+        } catch (bookingUrlError) {
+          console.warn('Booking URL check failed (non-critical):', bookingUrlError);
+          // Don't fail the whole page if booking URL check fails
+        }
+        
+        // Then, trigger special offers check
+        // This will create notifications if special offers have started or ended
+        try {
+          await profilesService.checkSpecialOffersStatus();
+          console.log('Special offers check completed');
+        } catch (specialOffersError) {
+          console.warn('Special offers check failed (non-critical):', specialOffersError);
+          // Don't fail the whole page if special offers check fails
+        }
+        
+        // Then fetch all notifications (always fetch all, filter on frontend)
         const response = await profilesService.getNotifications({ 
-          filter: currentFilter === 'unread' ? 'unread' : 'all',
+          filter: 'all',
           limit: 100 
         });
         
@@ -65,7 +85,7 @@ export default function Notifications() {
     }
     
     loadNotifications();
-  }, [currentFilter]); // Reload when filter changes
+  }, []); // Only load once on component mount
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
   const newCount = notifications.filter((n) => n.isNew).length;

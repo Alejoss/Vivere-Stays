@@ -23,6 +23,11 @@ const getDaysInMonth = (year: number, month: number) => {
   return new Date(year, month + 1, 0).getDate();
 };
 
+// Shared responsive sizing so headers and cells stay aligned across breakpoints
+const columnWidthClasses = "w-[50px] sm:w-[70px] md:w-[100px] lg:w-[125px] xl:w-[150px] 2xl:w-[175px]";
+const cellHeightClasses = "h-[45px] sm:h-[55px] md:h-[75px] lg:h-[95px] xl:h-[110px] 2xl:h-[125px]";
+const containerMinWidthClasses = "min-w-[350px] sm:min-w-[490px] md:min-w-[700px] lg:min-w-[875px] xl:min-w-[1050px] 2xl:min-w-[1225px]";
+
 // Function to generate calendar data for any month/year
 const generateCalendarData = (
   year: number,
@@ -104,7 +109,7 @@ function CalendarCell({
   return (
     <button
       onClick={onClick}
-      className={`flex w-[45px] sm:w-[60px] md:w-[80px] lg:w-[100px] xl:w-[120px] h-[45px] sm:h-[55px] md:h-[65px] lg:h-[75px] xl:h-[85px] rounded-lg ${getOccupancyColor(occupancy)} p-[4px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-4 border-yellow-400 z-10' : ''}`}
+      className={`flex ${columnWidthClasses} ${cellHeightClasses} rounded-lg ${getOccupancyColor(occupancy)} p-[4px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-4 border-yellow-400 z-10' : ''}`}
     >
       {/* Lock icon at top right if overwrite is true */}
       {overwrite && (
@@ -113,10 +118,10 @@ function CalendarCell({
         </span>
       )}
       <div className="flex flex-col items-center gap-[2px] sm:gap-[3px] md:gap-[4px] text-white">
-        <span className="text-[8px] sm:text-[10px] md:text-[12px] lg:text-[14px] xl:text-[16px] font-normal leading-tight">
+        <span className="text-responsive-xs font-normal leading-tight">
           {price}
         </span>
-        <span className="text-[10px] sm:text-[11px] md:text-[12px] lg:text-[13px] xl:text-[14px] font-normal leading-tight">
+        <span className="text-responsive-xs font-normal leading-tight">
           {day}
         </span>
       </div>
@@ -324,7 +329,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#294758] mx-auto mb-4"></div>
-            <p className="text-[16px] text-[#485567]">{t('dashboard:calendar.loadingProperties')}</p>
+            <p className="text-responsive-base text-[#485567]">{t('dashboard:calendar.loadingProperties')}</p>
           </div>
         </div>
       </div>
@@ -337,7 +342,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       <div className="w-full max-w-none bg-white border border-hotel-border-light rounded-[9px] p-4 lg:p-[26px]">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-[16px] text-[#485567]">{t('dashboard:calendar.noPropertiesFound')}</p>
+            <p className="text-responsive-base text-[#485567]">{t('dashboard:calendar.noPropertiesFound')}</p>
           </div>
         </div>
       </div>
@@ -353,7 +358,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-[57px]">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <h2 className="text-[20px] sm:text-[24px] font-bold text-gray-700">{t('dashboard:calendar.title')}</h2>
+          <h2 className="text-responsive-xl font-bold text-[#294758]">{t('dashboard:calendar.title')}</h2>
           
           {/* Price Type Dropdown */}
           <div className="relative">
@@ -361,7 +366,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center justify-between px-[15px] py-[13px] border border-hotel-border-light rounded-md bg-white hover:bg-gray-50 transition-colors w-full sm:min-w-[180px]"
             >
-              <span className="text-[14px] font-normal text-black">
+              <span className="text-responsive-sm font-normal text-[#294758]">
                 {selectedPrice}
               </span>
               <ChevronDown
@@ -376,10 +381,10 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
                   <button
                     key={option}
                     onClick={() => handlePriceOptionSelect(option)}
-                    className={`w-full px-[15px] py-[13px] text-left text-[14px] font-normal hover:bg-gray-50 transition-colors ${
+                    className={`w-full px-[15px] py-[13px] text-left text-responsive-sm font-normal hover:bg-gray-50 transition-colors ${
                       selectedPrice === option
                         ? "bg-blue-50 text-blue-700"
-                        : "text-black"
+                        : "text-[#294758]"
                     }`}
                   >
                     {option}
@@ -388,24 +393,24 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
               </div>
             )}
           </div>
+
+          {/* Property Selector - only show if no propertyId is provided */}
+          {!propertyId && userPropertiesData?.properties && (
+            <select
+              value={selectedPropertyId || ''}
+              onChange={(e) => setSelectedPropertyId(e.target.value)}
+              className="px-3 py-2 border border-[#E7E7EA] rounded-[5px] bg-white text-black w-full sm:w-auto"
+            >
+              {userPropertiesData.properties.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Property Selector - only show if no propertyId is provided */}
-            {!propertyId && userPropertiesData?.properties && (
-              <select
-                value={selectedPropertyId || ''}
-                onChange={(e) => setSelectedPropertyId(e.target.value)}
-                className="px-3 py-2 border border-[#E7E7EA] rounded-[5px] bg-white text-black w-full sm:w-auto"
-              >
-                {userPropertiesData.properties.map((property) => (
-                  <option key={property.id} value={property.id}>
-                    {property.name}
-                  </option>
-                ))}
-              </select>
-            )}
-
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 ml-auto">
           {/* Navigation controls */}
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Navigation buttons */}
@@ -422,7 +427,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
                 onClick={toggleMonthPicker}
                 className="flex items-center justify-center gap-1 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors w-[140px] sm:w-[180px]"
               >
-                <span className="text-[16px] sm:text-[19px] font-semibold text-black">
+                <span className="text-responsive-lg font-semibold text-[#294758]">
                   {monthNames[currentMonth]} {currentYear}
                 </span>
                 <ChevronUp
@@ -433,7 +438,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
 
               {/* Month/Year Picker Dropdown */}
               {showMonthPicker && (
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
+                <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
                   {/* Year Selector */}
                   <div className="flex items-center justify-between mb-4">
                     <button
@@ -498,15 +503,15 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       )}
 
       {/* Calendar */}
-      <div className="flex flex-col gap-[8px] sm:gap-[12px] md:gap-[14px] overflow-x-auto">
+      <div className={`flex flex-col gap-[8px] sm:gap-[12px] md:gap-[14px] overflow-x-auto`}>
         {/* Day Headers */}
-        <div className="flex items-center gap-[2px] sm:gap-1 min-w-[315px] sm:min-w-[420px] md:min-w-[560px] lg:min-w-[700px]">
+        <div className={`flex items-center gap-[2px] sm:gap-1 ${containerMinWidthClasses}`}>
           {dayHeaders.map((day) => (
             <div
               key={day}
-              className="flex w-[45px] sm:w-[60px] md:w-[80px] lg:w-[100px] xl:w-[120px] justify-center items-center py-1"
+              className={`flex ${columnWidthClasses} justify-center items-center py-1`}
             >
-              <span className="text-[10px] sm:text-[12px] md:text-[14px] lg:text-[16px] font-medium text-gray-500">
+              <span className="text-responsive-sm font-medium text-[#8A8E94]">
                 {day}
               </span>
             </div>
@@ -514,7 +519,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex flex-col gap-[2px] sm:gap-1 min-w-[315px] sm:min-w-[420px] md:min-w-[560px] lg:min-w-[700px]">
+        <div className={`flex flex-col gap-[2px] sm:gap-1 ${containerMinWidthClasses}`}>
           {calendarData.map((week, weekIndex) => (
             <div key={weekIndex} className="flex items-center gap-[2px] sm:gap-1">
               {week.map((cell, cellIndex) =>
@@ -531,7 +536,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
                 ) : (
                   <div
                     key={`empty-${weekIndex}-${cellIndex}`}
-                    className="w-[45px] sm:w-[60px] md:w-[80px] lg:w-[100px] xl:w-[120px] h-[45px] sm:h-[55px] md:h-[65px] lg:h-[75px] xl:h-[85px]"
+                    className={`${columnWidthClasses} ${cellHeightClasses}`}
                   />
                 ),
               )}
@@ -543,19 +548,19 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-4">
           <div className="flex items-center gap-2">
             <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-low" />
-            <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
+            <span className="text-responsive-sm font-normal text-[#294758]">
               {t('dashboard:calendar.occupancyLevels.low')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-medium" />
-            <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
+            <span className="text-responsive-sm font-normal text-[#294758]">
               {t('dashboard:calendar.occupancyLevels.medium')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px] bg-hotel-occupancy-high" />
-            <span className="text-[10px] sm:text-[12px] md:text-[14px] font-normal text-black">
+            <span className="text-responsive-sm font-normal text-[#294758]">
               {t('dashboard:calendar.occupancyLevels.high')}
             </span>
           </div>
