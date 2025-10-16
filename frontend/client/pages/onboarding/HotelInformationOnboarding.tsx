@@ -375,14 +375,14 @@ export default function HotelInformationOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+    <div className="min-h-screen bg-[#F6F9FD] py-8 px-4 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />
       </div>
       
       <OnboardingProgressTracker currentStep="hotel_information" />
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto px-4">
         {/* Logo */}
         <div className="text-center mb-10">
           <img
@@ -393,14 +393,15 @@ export default function HotelInformationOnboarding() {
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full max-w-4xl mb-8">
-          <div className="flex items-center justify-center gap-[14px]">
+        <div className="w-full mb-8 px-4 hidden sm:block">
+          <div className="flex items-center justify-center gap-2 sm:gap-[14px] flex-wrap overflow-x-auto">
             {/* Account - Completed */}
-            <div className="flex items-center gap-[14px]">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-[14px] min-w-fit">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <svg
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
+                  className="sm:w-6 sm:h-6"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -414,24 +415,24 @@ export default function HotelInformationOnboarding() {
                     fill="#16B257"
                   />
                 </svg>
-                <span className="text-responsive-lg text-[#16B257] font-medium">
+                <span className="text-sm sm:text-responsive-lg text-[#16B257] font-medium whitespace-nowrap hidden sm:block">
                   Account
                 </span>
               </div>
-              <div className="w-[31px] h-[2px] bg-[#294859]"></div>
+              <div className="w-[20px] sm:w-[31px] h-[2px] bg-[#294859] hidden sm:block"></div>
             </div>
 
             {/* Hotel Details - Current */}
-            <div className="flex items-center gap-[14px]">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-[1.67px] border-[#294859] rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-[#294859] rounded-full"></div>
+            <div className="flex items-center gap-2 sm:gap-[14px] min-w-fit">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-[1.67px] border-[#294859] rounded-full flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#294859] rounded-full"></div>
                 </div>
-                <span className="text-responsive-lg text-[#294859] font-medium">
+                <span className="text-sm sm:text-responsive-lg text-[#294859] font-medium whitespace-nowrap hidden sm:block">
                   Hotel Details
                 </span>
               </div>
-              <div className="w-[31px] h-[2px] bg-[#294859]"></div>
+              <div className="w-[20px] sm:w-[31px] h-[2px] bg-[#294859] hidden sm:block"></div>
             </div>
 
             {/* Remaining steps - Inactive */}
@@ -442,15 +443,15 @@ export default function HotelInformationOnboarding() {
               "Add Competitor",
               "MSP",
             ].map((step, index) => (
-              <div key={step} className="flex items-center gap-[14px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border border-[#9CAABD] rounded-full"></div>
-                  <span className="text-responsive-lg text-[#9CAABD] font-medium">
+              <div key={step} className="flex items-center gap-2 sm:gap-[14px] min-w-fit">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 border border-[#9CAABD] rounded-full"></div>
+                  <span className="text-sm sm:text-responsive-lg text-[#9CAABD] font-medium whitespace-nowrap hidden sm:block">
                     {step}
                   </span>
                 </div>
                 {index < 4 && (
-                  <div className="w-[31px] h-[2px] bg-[#9CAABD]"></div>
+                  <div className="w-[20px] sm:w-[31px] h-[2px] bg-[#9CAABD] hidden sm:block"></div>
                 )}
               </div>
             ))}
@@ -458,7 +459,7 @@ export default function HotelInformationOnboarding() {
         </div>
 
         {/* Main Form Card */}
-        <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-3xl relative">
+        <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-4xl mx-auto relative">
           {/* Hotel Icon */}
           <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-gradient-to-r from-[#D7E4EB] to-[#CEF4FC] border-[0.5px] border-[#9CAABD] rounded-[10px] flex items-center justify-center">
             <svg
@@ -486,7 +487,7 @@ export default function HotelInformationOnboarding() {
           </div>
 
           {/* Header */}
-          <div className="text-center mt-16 container-margin-sm">
+          <div className="text-center mt-20 md:mt-16 container-margin-sm">
             <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
               {t('onboarding:hotelInformation.title')}
             </h1>
@@ -495,7 +496,7 @@ export default function HotelInformationOnboarding() {
             </p>
           </div>
 
-          <div className="space-y-5 max-w-2xl mx-auto">
+          <div className="space-y-5 max-w-3xl mx-auto">
             {/* Hotel Name */}
             <div className="form-field">
               <label className="form-label">

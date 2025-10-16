@@ -23,14 +23,14 @@ export default function Payment() {
   // };
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-[#F6F9FD] flex items-center justify-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />
       </div>
       
       <OnboardingProgressTracker currentStep="payment" />
-      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-3xl text-center">
+      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-4xl text-center">
         <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-4">{t('onboarding:payment.title')}</h1>
         <p className="text-responsive-lg text-[#485567] mb-8">
           {t('onboarding:payment.subtitle')}

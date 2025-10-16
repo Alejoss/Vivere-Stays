@@ -1,5 +1,6 @@
 import { AlertTriangle } from "lucide-react";
 import { useEffect, useState, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import CompetitorPrices from "./CompetitorPrices";
 import { usePriceHistory } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
@@ -22,6 +23,7 @@ export default function DateDetailsContent({
   hasPMS, 
   selectedPriceOption 
 }: DateDetailsContentProps) {
+  const { t } = useTranslation(['dashboard', 'common']);
   console.log('[DateDetailsContent] hasPMS:', hasPMS);
   
   // Always call the hook, handle data conditionally
@@ -101,7 +103,7 @@ export default function DateDetailsContent({
               className="text-hotel-warning-orange flex-shrink-0"
             />
             <span className="text-responsive-sm font-medium text-hotel-warning-orange">
-              No PMS configured
+              {t('dashboard:calendar.noPmsConfigured')}
             </span>
           </div>
         )}
@@ -115,7 +117,7 @@ export default function DateDetailsContent({
               className="text-hotel-warning-orange flex-shrink-0"
             />
             <span className="text-responsive-sm font-medium text-hotel-warning-orange">
-              No MSP configured for this date
+              {t('dashboard:calendar.noMspConfigured')}
             </span>
           </div>
         )}
@@ -128,7 +130,7 @@ export default function DateDetailsContent({
               className="text-hotel-warning-orange flex-shrink-0"
             />
             <span className="text-responsive-sm font-medium text-hotel-warning-orange">
-              If the PMS is not connected (live mode), changes will not be reflected in the PMS.
+              {t('dashboard:calendar.pmsWarning')}
             </span>
           </div>
         )}

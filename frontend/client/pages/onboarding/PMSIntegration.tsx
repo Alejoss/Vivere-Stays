@@ -241,7 +241,7 @@ export default function PMSIntegration() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />
@@ -258,8 +258,8 @@ export default function PMSIntegration() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full max-w-4xl mb-8">
-        <div className="flex items-center justify-center gap-[14px]">
+      <div className="w-full mb-8 px-4 hidden sm:block">
+        <div className="flex items-center justify-center gap-2 sm:gap-[14px] flex-wrap overflow-x-auto">
           {/* Account - Completed */}
           <div className="flex items-center gap-[14px]">
             <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ export default function PMSIntegration() {
                   fill="#16B257"
                 />
               </svg>
-              <span className="text-[18px] text-[#16B257] font-medium">
+              <span className="text-[18px] text-[#16B257] font-medium hidden sm:block">
                 Account
               </span>
             </div>
@@ -305,7 +305,7 @@ export default function PMSIntegration() {
                   fill="#16B257"
                 />
               </svg>
-              <span className="text-[18px] text-[#16B257] font-medium">
+              <span className="text-[18px] text-[#16B257] font-medium hidden sm:block">
                 Hotel Details
               </span>
             </div>
@@ -318,7 +318,7 @@ export default function PMSIntegration() {
               <div className="w-5 h-5 border-[1.67px] border-[#294859] rounded-full flex items-center justify-center">
                 <div className="w-2 h-2 bg-[#294859] rounded-full"></div>
               </div>
-              <span className="text-[18px] text-[#294859] font-medium">
+              <span className="text-[18px] text-[#294859] font-medium hidden sm:block">
                 PMS Integration
               </span>
             </div>
@@ -331,7 +331,7 @@ export default function PMSIntegration() {
               <div key={step} className="flex items-center gap-[14px]">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 border border-[#9CAABD] rounded-full"></div>
-                  <span className="text-[18px] text-[#9CAABD] font-medium">
+                  <span className="text-[18px] text-[#9CAABD] font-medium hidden sm:block">
                     {step}
                   </span>
                 </div>
@@ -345,7 +345,7 @@ export default function PMSIntegration() {
       </div>
 
       {/* Main Form Card */}
-      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 w-full max-w-3xl relative">
+      <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 w-full max-w-4xl mx-auto relative">
         {/* PMS Icon */}
         <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-14 h-14 bg-gradient-to-r from-[#D7E4EB] to-[#CEF4FC] border-[0.5px] border-[#9CAABD] rounded-[10px] flex items-center justify-center">
           <svg
@@ -367,7 +367,7 @@ export default function PMSIntegration() {
         </div>
 
         {/* Header */}
-        <div className="text-center mt-16 mb-8">
+        <div className="text-center mt-20 md:mt-16 mb-8">
           <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
             {t('onboarding:pmsIntegration.title')}
           </h1>
@@ -382,12 +382,12 @@ export default function PMSIntegration() {
             <label className="text-[16px] text-[#485567] font-medium">
               {t('onboarding:pmsIntegration.selectLabel')}
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-[21px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[21px]">
               {pmsOptions.map((option) => (
                 <button
                   key={option.id}
                   onClick={() => setSelectedPMS(option.id as PMSOption)}
-                  className={`w-[184px] h-[54px] px-[17px] py-[17px] rounded-[8px] border text-[16px] font-normal transition-colors ${
+                  className={`w-full h-[54px] px-[17px] py-[17px] rounded-[8px] border text-[16px] font-normal transition-colors ${
                     selectedPMS === option.id
                       ? "bg-[#294859] border-[#294859] text-white"
                       : "bg-white border-[#D7DFE8] text-[#9CAABD]"
@@ -483,7 +483,7 @@ export default function PMSIntegration() {
             <button
               onClick={handleContinue}
               disabled={isLoading || !selectedPMS || (selectedPMS === "other" && !customPMSName.trim())}
-              className={`flex-1 h-[55px] px-[85px] py-[18px] rounded-[10px] text-white text-[16px] font-bold transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 h-[55px] px-4 py-[18px] rounded-[10px] text-white text-[16px] font-bold transition-colors flex items-center justify-center gap-2 ${
                 isLoading || !selectedPMS || (selectedPMS === "other" && !customPMSName.trim())
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#294758] hover:bg-[#1e3340]"

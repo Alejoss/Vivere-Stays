@@ -189,7 +189,7 @@ export default function VerifyEmail() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] flex items-center justify-center px-4 py-8 relative">
+    <div className="min-h-screen bg-[#F6F9FD] flex items-center justify-center px-4 py-8 relative w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />
@@ -232,7 +232,7 @@ export default function VerifyEmail() {
           </div>
 
           {/* Header */}
-          <div className="text-center mt-16 container-margin-sm">
+          <div className="text-center mt-20 md:mt-16 container-margin-sm">
             <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
               {t('auth:verification.title')}
             </h1>

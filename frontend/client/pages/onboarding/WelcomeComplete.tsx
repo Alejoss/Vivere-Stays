@@ -82,7 +82,7 @@ export default function WelcomeComplete() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />

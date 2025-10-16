@@ -27,6 +27,8 @@
     "loadingProperties": "Unterkünfte werden geladen...",
     "noPropertiesFound": "Keine Unterkünfte gefunden. Bitte fügen Sie zuerst eine Unterkunft hinzu.",
     "pmsWarning": "Wenn das PMS nicht verbunden ist (Live-Modus), werden Änderungen nicht im PMS angezeigt.",
+    "noPmsConfigured": "Kein PMS konfiguriert",
+    "noMspConfigured": "Kein MSP für dieses Datum konfiguriert",
     "months": {
       "january": "Januar",
       "february": "Februar",

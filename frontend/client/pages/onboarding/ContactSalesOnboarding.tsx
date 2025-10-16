@@ -92,7 +92,7 @@ export default function ContactSalesOnboarding() {
   // Show loading state while fetching profile or sending email
   if (profileLoading || isSendingEmail) {
     return (
-      <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center justify-center px-4 py-8">
+      <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center justify-center px-4 py-8 w-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294758] mx-auto mb-4"></div>
           <p className="text-[16px] text-[#485567]">
@@ -104,7 +104,7 @@ export default function ContactSalesOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />

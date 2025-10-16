@@ -1,7 +1,6 @@
 import {
   Calendar,
   BarChart3,
-  TrendingUp,
   User,
   Bell,
   HelpCircle,
@@ -237,17 +236,6 @@ export default function Sidebar() {
                         <BarChart3 size={16} />
                         <span>{t('dashboard:navigation.performance')}</span>
                       </button>
-                      <button
-                        onClick={() => handleMobileNavigation("/dashboard/analytics/pickup")}
-                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-colors ${
-                          location.pathname === "/dashboard/analytics/pickup" 
-                            ? "bg-blue-600 text-white" 
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        <TrendingUp size={16} />
-                        <span>{t('dashboard:navigation.pickup')}</span>
-                      </button>
                     </div>
                   )}
                 </div>
@@ -469,16 +457,6 @@ export default function Sidebar() {
               >
                 <BarChart3 size={16} color={location.pathname === "/dashboard/analytics/performance" ? "white" : "black"} />
                 <span>{t('dashboard:navigation.performance')}</span>
-              </button>
-              {/* Pickup */}
-              <button
-                onClick={() => handleNavigation("/dashboard/analytics/pickup")}
-                className={`flex items-center gap-2 px-2 py-2 rounded transition-colors text-sm ${
-                  location.pathname === "/dashboard/analytics/pickup" ? "bg-blue-600 text-white" : "hover:bg-gray-100 text-black"
-                }`}
-              >
-                <TrendingUp size={16} color={location.pathname === "/dashboard/analytics/pickup" ? "white" : "black"} />
-                <span>{t('dashboard:navigation.pickup')}</span>
               </button>
             </div>
           )}

@@ -76,7 +76,7 @@ export default function Register() {
   });
   
   // Terms acceptance state
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(true);
   const [receiveUpdates, setReceiveUpdates] = useState(true);
   
   const [showPassword, setShowPassword] = useState(false);
@@ -369,13 +369,13 @@ export default function Register() {
   }, [googleLoginMutation, navigate]);
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+    <div className="min-h-screen bg-[#F6F9FD] py-8 px-4 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />
       </div>
       
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto px-4">
         {/* Logo */}
         <div className="text-center container-margin-base">
           <img
@@ -385,7 +385,7 @@ export default function Register() {
           />
         </div>
 
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           {/* Main Card */}
           <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base relative">
             {/* User Icon */}
@@ -412,7 +412,7 @@ export default function Register() {
             </div>
 
             {/* Header */}
-            <div className="text-center mt-16 container-margin-base">
+            <div className="text-center mt-20 md:mt-16 container-margin-base">
               <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-3">
                 {t('auth:register.title')}
               </h1>
@@ -756,7 +756,7 @@ export default function Register() {
                 </div>
                 <label
                   htmlFor="receiveUpdates"
-                  className="text-[13px] text-[#485567] cursor-pointer"
+                  className="text-[16px] text-[#485567] cursor-pointer"
                 >
                   {t('auth:register.receiveUpdates')}
                 </label>

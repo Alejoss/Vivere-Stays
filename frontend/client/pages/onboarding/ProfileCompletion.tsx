@@ -212,14 +212,14 @@ export default function ProfileCompletion() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] py-8 px-4">
+    <div className="min-h-screen bg-[#F6F9FD] py-8 px-4 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />
       </div>
       
       <OnboardingProgressTracker currentStep="register" />
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto px-4">
         {/* Logo */}
         <div className="text-center mb-10">
           <img
@@ -241,7 +241,7 @@ export default function ProfileCompletion() {
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full h-[10px] bg-[#E2E8F0] rounded-[6px] mb-10 relative">
+          <div className="w-full h-[10px] bg-[#E2E8F0] rounded-[6px] mb-10 relative hidden sm:block">
             <div className="w-3/4 h-full bg-gradient-to-r from-[#285A6E] to-[#03CBF5] rounded-[6px]"></div>
           </div>
 
@@ -271,7 +271,7 @@ export default function ProfileCompletion() {
             </div>
 
             {/* Header */}
-            <div className="text-center mt-16 mb-12">
+            <div className="text-center mt-20 md:mt-16 mb-12">
               <h1 className="text-[34px] font-bold text-[#1E1E1E] mb-3">
                 {t('onboarding:profileCompletion.title')}
               </h1>

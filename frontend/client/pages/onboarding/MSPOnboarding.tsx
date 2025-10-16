@@ -370,7 +370,7 @@ export default function MSP() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8">
+    <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher variant="header" />
@@ -387,7 +387,7 @@ export default function MSP() {
       </div>
 
       {/* Progress Bar */}
-      <div className="flex justify-center items-center container-margin-base w-full max-w-[1245px]">
+      <div className="flex justify-center items-center container-margin-base w-full max-w-[1245px] hidden sm:block">
         {/* Payment - Completed */}
         <div className="flex items-center gap-[14px]">
           <div className="flex justify-center items-center gap-2">
@@ -407,7 +407,7 @@ export default function MSP() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-responsive-lg font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257] hidden sm:block">
               Payment
             </span>
           </div>
@@ -433,7 +433,7 @@ export default function MSP() {
                 fill="#16B257"
               />
             </svg>
-            <span className="text-responsive-lg font-medium text-[#16B257]">
+            <span className="text-responsive-lg font-medium text-[#16B257] hidden sm:block">
               Add Competitor Hotels
             </span>
           </div>
@@ -468,7 +468,7 @@ export default function MSP() {
                 </clipPath>
               </defs>
             </svg>
-            <span className="text-responsive-lg font-medium text-[#9CAABD]">MSP</span>
+            <span className="text-responsive-lg font-medium text-[#9CAABD] hidden sm:block">MSP</span>
           </div>
         </div>
       </div>

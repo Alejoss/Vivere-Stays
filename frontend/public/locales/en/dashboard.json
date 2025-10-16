@@ -27,6 +27,8 @@
     "loadingProperties": "Loading properties...",
     "noPropertiesFound": "No properties found. Please add a property first.",
     "pmsWarning": "If the PMS is not connected (live mode), changes will not be reflected in the PMS.",
+    "noPmsConfigured": "No PMS configured",
+    "noMspConfigured": "No MSP configured for this date",
     "months": {
       "january": "January",
       "february": "February",
