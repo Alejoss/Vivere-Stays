@@ -169,7 +169,6 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   // Price options from translations
   const priceOptions = [
     t('dashboard:calendar.priceTypes.averageDailyRate'),
-    t('dashboard:calendar.priceTypes.pmsPrice'),
     t('dashboard:calendar.priceTypes.competitorAverage'),
     t('dashboard:calendar.priceTypes.msp'),
   ];
