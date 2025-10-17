@@ -8,6 +8,8 @@ from .views import (
     MinimumSellingPriceView,
     PropertyMSPView,
     PriceHistoryView,
+    MSPPriceHistoryView,
+    CompetitorAveragePriceHistoryView,
     OverwritePriceView,
     OverwritePriceRangeView,
     FetchCompetitorsView,
@@ -86,6 +88,8 @@ urlpatterns = [
     
     # Price History endpoints
     path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),
+    path('properties/<str:property_id>/msp-price-history/', MSPPriceHistoryView.as_view(), name='msp-price-history'),
+    path('properties/<str:property_id>/competitor-average-price-history/', CompetitorAveragePriceHistoryView.as_view(), name='competitor-average-price-history'),
     path('properties/<str:property_id>/price-history/<str:checkin_date>/overwrite/', OverwritePriceView.as_view(), name='overwrite-price'),
     path('properties/<str:property_id>/price-history/overwrite-range/', OverwritePriceRangeView.as_view(), name='overwrite-price-range'),
     

@@ -1,7 +1,7 @@
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Lock, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { usePriceHistory, useUserProperties } from "../../../shared/api/hooks";
+import { usePriceHistory, useMSPPriceHistory, useCompetitorAveragePriceHistory, useUserProperties } from "../../../shared/api/hooks";
 import { getLocalStorageItem, setLocalStorageItem, getVivereConnection } from "../../../shared/localStorage";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 
@@ -10,6 +10,7 @@ type CalendarCell = {
   price: string;
   occupancy: string;
   overwrite: boolean;
+  isNoMSP?: boolean; // Flag to indicate when to show "No MSP" with warning
 } | null;
 
 // Month names now come from translations
@@ -32,7 +33,11 @@ const containerMinWidthClasses = "min-w-[350px] sm:min-w-[490px] md:min-w-[700px
 const generateCalendarData = (
   year: number,
   month: number,
-  priceHistory: Array<{ checkin_date: string; price: number; occupancy_level: string; overwrite: boolean }> = []
+  priceHistory: Array<{ checkin_date: string; price: number; occupancy_level: string; overwrite: boolean }> = [],
+  mspPriceHistory: Array<{ checkin_date: string; price: number; occupancy_level: string; overwrite: boolean }> = [],
+  competitorAveragePriceHistory: Array<{ checkin_date: string; price: number; occupancy_level: string; overwrite: boolean }> = [],
+  isMSPMode: boolean = false,
+  isCompetitorAverageMode: boolean = false
 ): CalendarCell[][] => {
   const firstDay = getFirstDayOfMonth(year, month);
   const daysInMonth = getDaysInMonth(year, month);
@@ -49,13 +54,64 @@ const generateCalendarData = (
   for (let day = 1; day <= daysInMonth; day++) {
     // Find price data for this day
     const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-    const priceData = priceHistory.find(item => item.checkin_date === dateStr);
-    currentWeek.push({
-      day,
-      price: priceData ? `$${priceData.price}` : "$0", // Default price if no data
-      occupancy: priceData ? priceData.occupancy_level : "medium", // Default occupancy if no data
-      overwrite: priceData ? priceData.overwrite : false,
-    });
+    
+    if (isMSPMode) {
+      // MSP mode: look for MSP data
+      const mspData = mspPriceHistory.find(item => item.checkin_date === dateStr);
+      if (mspData) {
+        currentWeek.push({
+          day,
+          price: `$${mspData.price}`,
+          occupancy: mspData.occupancy_level,
+          overwrite: false, // MSP doesn't have overwrite concept
+          isNoMSP: false,
+        });
+      } else {
+        // No MSP data for this date
+        currentWeek.push({
+          day,
+          price: "No MSP",
+          occupancy: "medium", // Default occupancy
+          overwrite: false,
+          isNoMSP: true,
+        });
+      }
+    } else if (isCompetitorAverageMode) {
+      // Competitor Average mode: look for competitor average data
+      const competitorAvgData = competitorAveragePriceHistory.find(item => item.checkin_date === dateStr);
+      // Always get occupancy from price history for consistent coloring
+      const priceData = priceHistory.find(item => item.checkin_date === dateStr);
+      const occupancyLevel = priceData ? priceData.occupancy_level : "medium";
+      
+      if (competitorAvgData) {
+        currentWeek.push({
+          day,
+          price: `$${competitorAvgData.price}`,
+          occupancy: occupancyLevel, // Use occupancy from price history for consistent coloring
+          overwrite: false, // Competitor average doesn't have overwrite concept
+          isNoMSP: false,
+        });
+      } else {
+        // No competitor average data for this date, but still show occupancy coloring
+        currentWeek.push({
+          day,
+          price: "No Data",
+          occupancy: occupancyLevel, // Use occupancy from price history for consistent coloring
+          overwrite: false,
+          isNoMSP: false,
+        });
+      }
+    } else {
+      // Regular price mode: look for price history data
+      const priceData = priceHistory.find(item => item.checkin_date === dateStr);
+      currentWeek.push({
+        day,
+        price: priceData ? `$${priceData.price}` : "$0", // Default price if no data
+        occupancy: priceData ? priceData.occupancy_level : "medium", // Default occupancy if no data
+        overwrite: priceData ? priceData.overwrite : false,
+        isNoMSP: false,
+      });
+    }
     // If the week is complete (7 days), start a new week
     if (currentWeek.length === 7) {
       weeks.push(currentWeek);
@@ -98,6 +154,7 @@ function CalendarCell({
   overwrite,
   onClick,
   highlight = false,
+  isNoMSP = false,
 }: {
   day: number;
   price: string;
@@ -105,20 +162,24 @@ function CalendarCell({
   overwrite: boolean;
   onClick: () => void;
   highlight?: boolean;
+  isNoMSP?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       className={`flex ${columnWidthClasses} ${cellHeightClasses} rounded-lg ${getOccupancyColor(occupancy)} p-[4px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-4 border-yellow-400 z-10' : ''}`}
     >
-      {/* Lock icon at top right if overwrite is true */}
-      {overwrite && (
+      {/* Lock icon at top right if overwrite is true (but not in MSP mode) */}
+      {overwrite && !isNoMSP && (
         <span className="absolute top-0.5 right-0.5 text-white opacity-80">
           <Lock size={10} className="sm:w-3 sm:h-3 md:w-4 md:h-4" />
         </span>
       )}
       <div className="flex flex-col items-center gap-[2px] sm:gap-[3px] md:gap-[4px] text-white">
-        <span className="text-responsive-xs font-normal leading-tight">
+        <span className="text-responsive-xs font-normal leading-tight flex items-center gap-1">
+          {isNoMSP && (
+            <AlertTriangle size={8} className="sm:w-2 sm:h-2 md:w-3 md:h-3" />
+          )}
           {price}
         </span>
         <span className="text-responsive-xs font-normal leading-tight">
@@ -187,6 +248,22 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   
   // Get price history for the selected property and month
   const { data: priceHistoryData, isLoading: priceHistoryLoading } = usePriceHistory(
+    selectedPropertyId || '',
+    currentYear,
+    currentMonth + 1, // Convert to 1-indexed for API
+    refreshKey // Pass refreshKey as a dependency
+  );
+
+  // Get MSP price history for the selected property and month
+  const { data: mspPriceHistoryData, isLoading: mspPriceHistoryLoading } = useMSPPriceHistory(
+    selectedPropertyId || '',
+    currentYear,
+    currentMonth + 1, // Convert to 1-indexed for API
+    refreshKey // Pass refreshKey as a dependency
+  );
+
+  // Get Competitor Average price history for the selected property and month
+  const { data: competitorAveragePriceHistoryData, isLoading: competitorAveragePriceHistoryLoading } = useCompetitorAveragePriceHistory(
     selectedPropertyId || '',
     currentYear,
     currentMonth + 1, // Convert to 1-indexed for API
@@ -262,10 +339,18 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     checkMSP();
   }, [selectedPropertyId]); // Run when property changes
 
+  // Determine if we're in MSP mode or Competitor Average mode based on selected price type
+  const isMSPMode = selectedPrice === t('dashboard:calendar.priceTypes.msp');
+  const isCompetitorAverageMode = selectedPrice === t('dashboard:calendar.priceTypes.competitorAverage');
+  
   const calendarData = generateCalendarData(
     currentYear, 
     currentMonth, 
-    priceHistoryData?.price_history || []
+    priceHistoryData?.price_history || [],
+    mspPriceHistoryData?.price_history || [],
+    competitorAveragePriceHistoryData?.price_history || [],
+    isMSPMode,
+    isCompetitorAverageMode
   );
 
   const goToPreviousMonth = () => {
@@ -531,6 +616,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
                     overwrite={cell.overwrite}
                     onClick={() => handleDateClick(cell.day)}
                     highlight={isToday(cell.day)}
+                    isNoMSP={cell.isNoMSP}
                   />
                 ) : (
                   <div

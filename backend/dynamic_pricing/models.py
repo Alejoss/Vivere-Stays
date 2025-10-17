@@ -315,6 +315,7 @@ class DpPriceChangeHistory(models.Model):
     overwrite_los = models.IntegerField(null=True, blank=True)  # Overwrite LOS (from RM)
     base_price = models.IntegerField()  # Base price used in calculation
     base_price_choice = models.CharField(max_length=255)  # "competitor" or "manual"
+    competitor_average = models.FloatField(null=True, blank=True)  # Competitor average price
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

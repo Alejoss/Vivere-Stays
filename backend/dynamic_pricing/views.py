@@ -931,6 +931,246 @@ class PriceHistoryView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class MSPPriceHistoryView(APIView):
+    """
+    API endpoint for retrieving MSP price history data for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve MSP price history data for a specific property
+        Returns the MSP values from DpPriceChangeHistory for each checkin_date
+        """
+        print(f"[MSPPriceHistoryView] GET request - User: {request.user.username}, Property ID: {property_id}")
+        logger.info(f"MSP price history requested - User: {request.user.username}, Property ID: {property_id}")
+        
+        try:
+            user_profile = request.user.profile
+            print(f"[MSPPriceHistoryView] User profile ID: {user_profile.id}")
+            
+            # Get user's properties for debugging
+            user_properties = user_profile.get_properties()
+            user_property_ids = list(user_properties.values_list('id', flat=True))
+            print(f"[MSPPriceHistoryView] User has {user_properties.count()} properties: {user_property_ids}")
+            logger.info(f"User {request.user.username} has {user_properties.count()} properties: {user_property_ids}")
+            
+            if not user_profile.properties.filter(id=property_id).exists():
+                print(f"[MSPPriceHistoryView] ACCESS DENIED - Property {property_id} not found in user's properties")
+                logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership. User properties: {user_property_ids}")
+                return Response({
+                    'message': 'Property not found or access denied'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            print(f"[MSPPriceHistoryView] ACCESS GRANTED - Property {property_id} found in user's properties")
+            logger.info(f"Access granted to property {property_id} for user {request.user.username}")
+            
+            property_obj = get_object_or_404(Property, id=property_id)
+            print(f"[MSPPriceHistoryView] Property found: {property_obj.name}")
+
+            year = request.query_params.get('year', timezone.now().year)
+            month = request.query_params.get('month', timezone.now().month)
+            print(f"[MSPPriceHistoryView] Query params - Year: {year}, Month: {month}")
+            try:
+                year = int(year)
+                month = int(month)
+                print(f"[MSPPriceHistoryView] Parsed params - Year: {year}, Month: {month}")
+            except ValueError:
+                print(f"[MSPPriceHistoryView] Invalid year/month parameters: {year}, {month}")
+                return Response({
+                    'message': 'Invalid year or month parameter'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculate date range for the month
+            start_date = datetime(year, month, 1).date()
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+            else:
+                end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+
+            # For each day in the month, get the latest record by as_of and extract MSP data
+            msp_price_history = []
+            for day in range(1, (end_date - start_date).days + 2):
+                checkin_date = start_date + timedelta(days=day - 1)
+                latest_record = DpPriceChangeHistory.objects.filter(
+                    property_id=property_id,
+                    checkin_date=checkin_date
+                ).order_by('-as_of').first()
+                
+                if latest_record:
+                    # Create MSP price history entry with same structure as price history
+                    msp_entry = {
+                        'checkin_date': checkin_date.strftime('%Y-%m-%d'),
+                        'price': latest_record.msp,  # Use MSP value from DpPriceChangeHistory
+                        'occupancy_level': self._get_occupancy_level(latest_record.occupancy),
+                        'overwrite': False,  # MSP doesn't have overwrite concept
+                        'occupancy': latest_record.occupancy
+                    }
+                    msp_price_history.append(msp_entry)
+
+            msp_price_history.sort(key=lambda x: x['checkin_date'])
+            print(f"[MSPPriceHistoryView] Returning {len(msp_price_history)} MSP price history entries")
+
+            response_data = {
+                'property_id': property_id,
+                'property_name': property_obj.name,
+                'year': year,
+                'month': month,
+                'price_history': msp_price_history,
+                'count': len(msp_price_history)
+            }
+            print(f"[MSPPriceHistoryView] SUCCESS - Returning response with {len(msp_price_history)} entries")
+            logger.info(f"Successfully returned {len(msp_price_history)} MSP price history entries for property {property_id}")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Property.DoesNotExist:
+            print(f"[MSPPriceHistoryView] ERROR - Property {property_id} does not exist in database")
+            logger.warning(f"Property {property_id} not found in database")
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"[MSPPriceHistoryView] ERROR - Exception occurred: {str(e)}")
+            logger.error(f"Error retrieving MSP price history for property {property_id}: {str(e)}", exc_info=True)
+            return Response({
+                'message': 'An error occurred while retrieving MSP price history',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _get_occupancy_level(self, occupancy):
+        """
+        Return occupancy level as string (low, medium, high) - same logic as PriceHistorySerializer
+        """
+        if occupancy is None:
+            return "medium"
+        if occupancy <= 35:
+            return "low"
+        elif occupancy <= 69:
+            return "medium"
+        else:
+            return "high"
+
+
+class CompetitorAveragePriceHistoryView(APIView):
+    """
+    API endpoint for retrieving Competitor Average price history data for a property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Retrieve Competitor Average price history data for a specific property
+        Returns the competitor_average values from DpPriceChangeHistory for each checkin_date
+        """
+        print(f"[CompetitorAveragePriceHistoryView] GET request - User: {request.user.username}, Property ID: {property_id}")
+        logger.info(f"Competitor Average price history requested - User: {request.user.username}, Property ID: {property_id}")
+        
+        try:
+            user_profile = request.user.profile
+            print(f"[CompetitorAveragePriceHistoryView] User profile ID: {user_profile.id}")
+            
+            # Get user's properties for debugging
+            user_properties = user_profile.get_properties()
+            user_property_ids = list(user_properties.values_list('id', flat=True))
+            print(f"[CompetitorAveragePriceHistoryView] User has {user_properties.count()} properties: {user_property_ids}")
+            logger.info(f"User {request.user.username} has {user_properties.count()} properties: {user_property_ids}")
+            
+            if not user_profile.properties.filter(id=property_id).exists():
+                print(f"[CompetitorAveragePriceHistoryView] ACCESS DENIED - Property {property_id} not found in user's properties")
+                logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership. User properties: {user_property_ids}")
+                return Response({
+                    'message': 'Property not found or access denied'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            print(f"[CompetitorAveragePriceHistoryView] ACCESS GRANTED - Property {property_id} found in user's properties")
+            logger.info(f"Access granted to property {property_id} for user {request.user.username}")
+            
+            property_obj = get_object_or_404(Property, id=property_id)
+            print(f"[CompetitorAveragePriceHistoryView] Property found: {property_obj.name}")
+
+            year = request.query_params.get('year', timezone.now().year)
+            month = request.query_params.get('month', timezone.now().month)
+            print(f"[CompetitorAveragePriceHistoryView] Query params - Year: {year}, Month: {month}")
+            try:
+                year = int(year)
+                month = int(month)
+                print(f"[CompetitorAveragePriceHistoryView] Parsed params - Year: {year}, Month: {month}")
+            except ValueError:
+                print(f"[CompetitorAveragePriceHistoryView] Invalid year/month parameters: {year}, {month}")
+                return Response({
+                    'message': 'Invalid year or month parameter'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculate date range for the month
+            start_date = datetime(year, month, 1).date()
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+            else:
+                end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+
+            # For each day in the month, get the latest record by as_of and extract competitor_average data
+            competitor_avg_price_history = []
+            for day in range(1, (end_date - start_date).days + 2):
+                checkin_date = start_date + timedelta(days=day - 1)
+                latest_record = DpPriceChangeHistory.objects.filter(
+                    property_id=property_id,
+                    checkin_date=checkin_date
+                ).order_by('-as_of').first()
+                
+                if latest_record and latest_record.competitor_average is not None:
+                    # Create competitor average price history entry with same structure as price history
+                    competitor_avg_entry = {
+                        'checkin_date': checkin_date.strftime('%Y-%m-%d'),
+                        'price': latest_record.competitor_average,  # Use competitor_average value from DpPriceChangeHistory
+                        'occupancy_level': self._get_occupancy_level(latest_record.occupancy),
+                        'overwrite': False,  # Competitor average doesn't have overwrite concept
+                        'occupancy': latest_record.occupancy
+                    }
+                    competitor_avg_price_history.append(competitor_avg_entry)
+
+            competitor_avg_price_history.sort(key=lambda x: x['checkin_date'])
+            print(f"[CompetitorAveragePriceHistoryView] Returning {len(competitor_avg_price_history)} competitor average price history entries")
+
+            response_data = {
+                'property_id': property_id,
+                'property_name': property_obj.name,
+                'year': year,
+                'month': month,
+                'price_history': competitor_avg_price_history,
+                'count': len(competitor_avg_price_history)
+            }
+            print(f"[CompetitorAveragePriceHistoryView] SUCCESS - Returning response with {len(competitor_avg_price_history)} entries")
+            logger.info(f"Successfully returned {len(competitor_avg_price_history)} competitor average price history entries for property {property_id}")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Property.DoesNotExist:
+            print(f"[CompetitorAveragePriceHistoryView] ERROR - Property {property_id} does not exist in database")
+            logger.warning(f"Property {property_id} not found in database")
+            return Response({
+                'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"[CompetitorAveragePriceHistoryView] ERROR - Exception occurred: {str(e)}")
+            logger.error(f"Error retrieving competitor average price history for property {property_id}: {str(e)}", exc_info=True)
+            return Response({
+                'message': 'An error occurred while retrieving competitor average price history',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _get_occupancy_level(self, occupancy):
+        """
+        Return occupancy level as string (low, medium, high) - same logic as PriceHistorySerializer
+        """
+        if occupancy is None:
+            return "medium"
+        if occupancy <= 35:
+            return "low"
+        elif occupancy <= 69:
+            return "medium"
+        else:
+            return "high"
+
+
 class OverwritePriceView(APIView):
     permission_classes = [IsAuthenticated]
 

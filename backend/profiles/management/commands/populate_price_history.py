@@ -62,6 +62,7 @@ class Command(BaseCommand):
                     checkin_date = today - timedelta(days=i)
                     occupancy = random.uniform(0, 100)
                     msp = random.randint(150, 250)
+                    competitor_average = int(msp * 2)  # About 2 times the MSP price
                     recom_price = int(msp * 1.5)
                     overwrite_price = None
                     if random.random() < 0.1:
@@ -79,6 +80,7 @@ class Command(BaseCommand):
                             as_of=as_of_now,
                             occupancy=occupancy,
                             msp=msp,
+                            competitor_average=competitor_average,
                             recom_price=recom_price,
                             overwrite_price=overwrite_price,
                             recom_los=recom_los,
@@ -94,6 +96,7 @@ class Command(BaseCommand):
                     checkin_date = today + timedelta(days=i)
                     occupancy = random.uniform(0, 100)
                     msp = random.randint(150, 250)
+                    competitor_average = int(msp * 2)  # About 2 times the MSP price
                     recom_price = int(msp * 1.5)
                     overwrite_price = None
                     if random.random() < 0.1:
@@ -111,6 +114,7 @@ class Command(BaseCommand):
                             as_of=as_of_now,
                             occupancy=occupancy,
                             msp=msp,
+                            competitor_average=competitor_average,
                             recom_price=recom_price,
                             overwrite_price=overwrite_price,
                             recom_los=recom_los,

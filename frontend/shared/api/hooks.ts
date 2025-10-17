@@ -207,6 +207,24 @@ export const usePriceHistory = (propertyId: string, year?: number, month?: numbe
   });
 };
 
+export const useMSPPriceHistory = (propertyId: string, year?: number, month?: number, refreshKey?: number) => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'msp-price-history', propertyId, year, month, refreshKey],
+    queryFn: () => dynamicPricingService.getMSPPriceHistory(propertyId, year, month),
+    enabled: !!propertyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useCompetitorAveragePriceHistory = (propertyId: string, year?: number, month?: number, refreshKey?: number) => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'competitor-average-price-history', propertyId, year, month, refreshKey],
+    queryFn: () => dynamicPricingService.getCompetitorAveragePriceHistory(propertyId, year, month),
+    enabled: !!propertyId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
 export const useProperties = () => {
   return useQuery({
     queryKey: ['dynamic-pricing', 'properties'],

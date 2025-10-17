@@ -508,6 +508,40 @@ export const dynamicPricingService = {
     });
   },
 
+  async getMSPPriceHistory(
+    propertyId: string, 
+    year?: number, 
+    month?: number
+  ): Promise<PriceHistoryResponse> {
+    const params = new URLSearchParams();
+    if (year !== undefined) params.append('year', year.toString());
+    if (month !== undefined) params.append('month', month.toString());
+    
+    const url = `/dynamic-pricing/properties/${propertyId}/msp-price-history/${params.toString() ? `?${params.toString()}` : ''}`;
+    
+    return apiRequest<PriceHistoryResponse>({
+      method: 'GET',
+      url,
+    });
+  },
+
+  async getCompetitorAveragePriceHistory(
+    propertyId: string, 
+    year?: number, 
+    month?: number
+  ): Promise<PriceHistoryResponse> {
+    const params = new URLSearchParams();
+    if (year !== undefined) params.append('year', year.toString());
+    if (month !== undefined) params.append('month', month.toString());
+    
+    const url = `/dynamic-pricing/properties/${propertyId}/competitor-average-price-history/${params.toString() ? `?${params.toString()}` : ''}`;
+    
+    return apiRequest<PriceHistoryResponse>({
+      method: 'GET',
+      url,
+    });
+  },
+
   // Property endpoints
   async getProperties(): Promise<PropertyListResponse> {
     return apiRequest<PropertyListResponse>({
