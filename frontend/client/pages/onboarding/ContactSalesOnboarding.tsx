@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { useProfile } from "../../../shared/api/hooks";
 import { getLocalStorageItem } from "../../../shared/localStorage";
 import { profilesService } from "../../../shared/api/profiles";
@@ -110,7 +109,6 @@ export default function ContactSalesOnboarding() {
         <LanguageSwitcher variant="header" />
       </div>
       
-      <OnboardingProgressTracker currentStep="contact_sales" />
       
       {/* Logo */}
       <div className="mb-8">

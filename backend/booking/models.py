@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -8,6 +9,10 @@ logger = logging.getLogger(__name__)
 class PriceHistory(models.Model):
     """
     Model representing price history data for hotel bookings.
+    
+    NOTE: This model represents a table managed by an external schema/system.
+    Django will NOT create/modify this table structure (managed=False).
+    Only for read operations and foreign key relationships.
     """
     hotel_id = models.CharField(max_length=255)
     hotel_name = models.CharField(max_length=255)
@@ -44,6 +49,8 @@ class PriceHistory(models.Model):
     region = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
+        managed = settings.DEBUG  # True in dev/staging, False in production
+        db_table = 'booking.price_history'
         unique_together = [
             'hotel_id', 'checkin_date', 'checkout_date', 'b_id', 
             'b_roomtype_id', 'b_blocks_b_block_id', 'b_blocks_b_cancellation_type', 
@@ -56,40 +63,4 @@ class PriceHistory(models.Model):
     def save(self, *args, **kwargs):
         logger.info(f"Saving price history for hotel {self.hotel_id} from {self.checkin_date} to {self.checkout_date}")
         super().save(*args, **kwargs)
-
-
-class Competitor(models.Model):
-    """
-    Model representing competitor hotels for price monitoring.
-    """
-    competitor_id = models.CharField(max_length=255)
-    competitor_name = models.CharField(max_length=255)
-    booking_link = models.URLField(null=True, blank=True)  # Made optional
-    valid_from = models.DateTimeField(default=timezone.now)
-    valid_to = models.DateTimeField(null=True, blank=True)
-    daily_num_days = models.IntegerField(default=15)
-    weekly_num_days = models.IntegerField(default=90)
-    bimonthly_num_days = models.IntegerField(default=180)
-    quarterly_num_days = models.IntegerField(default=365)
-    first_cutoff_hour_cet = models.IntegerField(default=11)
-    second_cutoff_hour_cet = models.IntegerField(default=17)
-    region = models.CharField(max_length=100, null=True, blank=True)
-
-    class Meta:
-        unique_together = ['competitor_id', 'valid_from']
-
-    def __str__(self):
-        return f"{self.competitor_name} ({self.competitor_id}) - Valid from {self.valid_from}"
-
-    def save(self, *args, **kwargs):
-        logger.info(f"Saving competitor {self.competitor_id} with validity from {self.valid_from}")
-        super().save(*args, **kwargs)
-
-    @property
-    def is_currently_valid(self):
-        """Check if this competitor configuration is currently valid."""
-        from django.utils import timezone
-        now = timezone.now()
-        return self.valid_from <= now and (self.valid_to is None or self.valid_to > now)
-
 

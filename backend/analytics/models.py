@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 
 
 class UnifiedReservations(models.Model):
@@ -35,8 +36,8 @@ class UnifiedReservations(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        # Using a prefixed table name to indicate original schema intent
-        db_table = 'core_unified_reservations'
+        managed = settings.DEBUG  # True in dev/staging, False in production
+        db_table = 'core.unified_reservations'
         unique_together = (
             ('reservation_id', 'property'),
         )
@@ -84,7 +85,8 @@ class DailyPerformance(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'core_daily_performance'
+        managed = settings.DEBUG  # True in dev/staging, False in production
+        db_table = 'core.daily_performance'
         unique_together = (
             ('property', 'pms_source', 'kpi_date', 'metric_type'),
         )

@@ -9,6 +9,14 @@ export interface PriceHistoryEntry {
   occupancy: number;
 }
 
+// Types for Overwrite Price History
+export interface OverwritePriceHistoryEntry {
+  property_id: string;
+  checkin_date: string;
+  overwrite_price: number | null;
+  updated_at: string;
+}
+
 export interface PriceHistoryResponse {
   property_id: string;
   property_name: string;
@@ -172,6 +180,34 @@ export interface PropertyCompetitor {
 export interface PropertyCompetitorsResponse {
   competitors: PropertyCompetitor[];
   count: number;
+}
+
+// Types for Competitors (simplified model)
+export interface Competitor {
+  competitor_id: string;
+  competitor_name: string;
+  booking_link?: string;
+}
+
+export interface CompetitorCreateRequest {
+  property_id: string;
+  booking_link: string;
+}
+
+export interface CompetitorBulkCreateRequest {
+  competitor_names: string[];
+}
+
+export interface CompetitorCreateResponse {
+  message: string;
+  competitor: Competitor;
+}
+
+export interface CompetitorBulkCreateResponse {
+  message: string;
+  created_competitors: Competitor[];
+  errors?: Array<{ name: string; error: string }>;
+  property_id: string;
 }
 
 // Types for Special Offers (Offer Increments)
@@ -582,14 +618,14 @@ export const dynamicPricingService = {
   },
 
   /**
-   * Set a manual overwrite price for a specific date by creating a new price history record.
+   * Set a manual overwrite price for a specific date by creating an overwrite price record.
    */
   async updateOverwritePrice(
     propertyId: string,
     checkinDate: string,
     overwritePrice: number
-  ): Promise<{ message: string; price_history: PriceHistoryEntry }> {
-    return apiRequest<{ message: string; price_history: PriceHistoryEntry }>({
+  ): Promise<{ message: string; overwrite_record: OverwritePriceHistoryEntry }> {
+    return apiRequest<{ message: string; overwrite_record: OverwritePriceHistoryEntry }>({
       method: 'PATCH',
       url: `/dynamic-pricing/properties/${propertyId}/price-history/${checkinDate}/overwrite/`,
       data: { overwrite_price: overwritePrice },
@@ -604,8 +640,24 @@ export const dynamicPricingService = {
     startDate: string,
     endDate: string,
     overwritePrice: number
-  ): Promise<{ message: string; created: any[]; errors: string[]; start_date: string; end_date: string; overwrite_price: number }> {
-    return apiRequest<{ message: string; created: any[]; errors: string[]; start_date: string; end_date: string; overwrite_price: number }>({
+  ): Promise<{ 
+    message: string; 
+    created: OverwritePriceHistoryEntry[]; 
+    updated: OverwritePriceHistoryEntry[];
+    errors: string[]; 
+    start_date: string; 
+    end_date: string; 
+    overwrite_price: number 
+  }> {
+    return apiRequest<{ 
+      message: string; 
+      created: OverwritePriceHistoryEntry[]; 
+      updated: OverwritePriceHistoryEntry[];
+      errors: string[]; 
+      start_date: string; 
+      end_date: string; 
+      overwrite_price: number 
+    }>({
       method: 'POST',
       url: `/dynamic-pricing/properties/${propertyId}/price-history/overwrite-range/`,
       data: {
@@ -899,6 +951,44 @@ export const dynamicPricingService = {
     return apiRequest<{ message: string; competitor_id: string; competitor_name: string }>({
       method: 'DELETE',
       url: `/dynamic-pricing/properties/${propertyId}/competitors/${competitorId}/delete/`,
+    });
+  },
+
+  // New competitor endpoints moved from booking app
+  async getCompetitors(): Promise<{ competitors: Competitor[]; count: number }> {
+    return apiRequest<{ competitors: Competitor[]; count: number }>({
+      method: 'GET',
+      url: '/dynamic-pricing/competitors/',
+    });
+  },
+
+  async createCompetitor(data: CompetitorCreateRequest): Promise<CompetitorCreateResponse> {
+    return apiRequest<CompetitorCreateResponse>({
+      method: 'POST',
+      url: '/dynamic-pricing/competitors/create/',
+      data,
+    });
+  },
+
+  async bulkCreateCompetitors(data: CompetitorBulkCreateRequest): Promise<CompetitorBulkCreateResponse> {
+    return apiRequest<CompetitorBulkCreateResponse>({
+      method: 'POST',
+      url: '/dynamic-pricing/competitors/bulk-create/',
+      data,
+    });
+  },
+
+  async getCompetitor(competitorId: string): Promise<Competitor> {
+    return apiRequest<Competitor>({
+      method: 'GET',
+      url: `/dynamic-pricing/competitors/${competitorId}/`,
+    });
+  },
+
+  async getPropertyCompetitorsList(propertyId: string): Promise<PropertyCompetitorsResponse> {
+    return apiRequest<PropertyCompetitorsResponse>({
+      method: 'GET',
+      url: `/dynamic-pricing/properties/${propertyId}/competitors-list/`,
     });
   },
 

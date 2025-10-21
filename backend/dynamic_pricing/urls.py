@@ -48,6 +48,12 @@ from .views import (
     PropertyAvailableRatesUpdateView,
     InitializePropertyDefaultsView,
     CheckMSPStatusView,
+    # Competitor views moved from booking app
+    CompetitorCreateView,
+    CompetitorDetailView,
+    CompetitorListView,
+    PropertyCompetitorsView,
+    BulkCompetitorCreateView,
 )
 
 app_name = 'dynamic_pricing'
@@ -80,6 +86,13 @@ urlpatterns = [
     path('competitors/nearby/', NearbyHotelsView.as_view(), name='nearby-hotels'),
     path('competitors/candidates/bulk-create/', BulkCompetitorCandidateCreateView.as_view(), name='bulk-create-competitor-candidates'),
     path('properties/<str:property_id>/competitors/candidates/bulk-create/', BulkCompetitorCandidateCreateView.as_view(), name='bulk-create-competitor-candidates-for-property'),
+    
+    # Competitor endpoints moved from booking app
+    path('competitors/', CompetitorListView.as_view(), name='competitor-list'),
+    path('competitors/create/', CompetitorCreateView.as_view(), name='competitor-create'),
+    path('competitors/bulk-create/', BulkCompetitorCreateView.as_view(), name='competitor-bulk-create'),
+    path('competitors/<str:competitor_id>/', CompetitorDetailView.as_view(), name='competitor-detail'),
+    path('properties/<str:property_id>/competitors-list/', PropertyCompetitorsView.as_view(), name='property-competitors-list'),
     
     # Minimum Selling Price endpoints
     path('msp/', MinimumSellingPriceView.as_view(), name='msp'),

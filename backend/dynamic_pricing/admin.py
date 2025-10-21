@@ -3,7 +3,7 @@ from .models import (
     Property, PropertyManagementSystem, DpGeneralSettings, DpPropertyCompetitor,
     DpDynamicIncrementsV2, DpOfferIncrements, DpLosSetup, DpLosReduction,
     DpMinimumSellingPrice, DpRoomRates, DpPriceChangeHistory,
-    UnifiedRoomsAndRates
+    UnifiedRoomsAndRates, Competitor, OverwritePriceHistory
 )
 
 
@@ -13,6 +13,13 @@ class PropertyManagementSystemAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('name',)
+
+
+@admin.register(Competitor)
+class CompetitorAdmin(admin.ModelAdmin):
+    list_display = ['competitor_id', 'competitor_name', 'booking_link']
+    search_fields = ['competitor_id', 'competitor_name', 'booking_link']
+    readonly_fields = ['competitor_id']
 
 
 @admin.register(Property)
@@ -115,6 +122,29 @@ class UnifiedRoomsAndRatesAdmin(admin.ModelAdmin):
     )
 
 
+@admin.register(OverwritePriceHistory)
+class OverwritePriceHistoryAdmin(admin.ModelAdmin):
+    list_display = ['property_id', 'checkin_date', 'overwrite_price', 'user', 'updated_at']
+    list_filter = ['checkin_date', 'updated_at', 'property_id']
+    search_fields = ['property_id__name', 'checkin_date', 'user__username']
+    readonly_fields = ['updated_at']
+    ordering = ['-updated_at']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('property_id', 'checkin_date', 'overwrite_price')
+        }),
+        ('User Information', {
+            'fields': ('user',)
+        }),
+        ('Timestamps', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
 # Register the models
 admin.site.register(DpDynamicIncrementsV2, DpDynamicIncrementsV2Admin)
-admin.site.register(DpPriceChangeHistory)
+# Note: DpPriceChangeHistory is unmanaged (external schema) - only for read operations
+# admin.site.register(DpPriceChangeHistory)  # Commented out since model is managed externally

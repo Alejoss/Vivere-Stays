@@ -2,8 +2,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import datetime, timedelta
 import random
-from dynamic_pricing.models import Property, DpPropertyCompetitor, DpHistoricalCompetitorPrice
-from booking.models import Competitor
+from dynamic_pricing.models import Property, DpPropertyCompetitor, DpHistoricalCompetitorPrice, Competitor
 
 class Command(BaseCommand):
     help = 'Populate DpHistoricalCompetitorPrice with dummy data for each Property and 3 competitors (100 years before and after today)'
@@ -49,8 +48,6 @@ class Command(BaseCommand):
                     defaults={
                         'competitor_name': comp_name,
                         'booking_link': '',
-                        'valid_from': timezone.now(),
-                        'valid_to': None,
                     }
                 )
                 competitors.append(comp)

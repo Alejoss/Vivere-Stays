@@ -53,6 +53,9 @@ class Profile(models.Model):
         help_text="Whether the user has completed the onboarding process"
     )
 
+    class Meta:
+        db_table = 'webapp_backend.profiles_profile'
+
     def __str__(self):
         return self.user.username
 
@@ -137,6 +140,7 @@ class PMSIntegrationRequirement(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.profiles_pmsintegrationrequirement'
         verbose_name = 'PMS Integration Requirement'
         verbose_name_plural = 'PMS Integration Requirements'
         unique_together = ('property_obj', 'profile')  # One integration per property per profile
@@ -170,7 +174,7 @@ class EmailVerificationCode(models.Model):
     is_used = models.BooleanField(default=False)
     
     class Meta:
-        db_table = 'email_verification_codes'
+        db_table = 'webapp_backend.profiles_emailverificationcode'
         indexes = [
             models.Index(fields=['email', 'created_at']),
             models.Index(fields=['user', 'created_at']),
@@ -222,6 +226,7 @@ class SupportTicket(models.Model):
     resolved_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
+        db_table = 'webapp_backend.profiles_supportticket'
         verbose_name = 'Support Ticket'
         verbose_name_plural = 'Support Tickets'
         ordering = ['-created_at']
@@ -263,6 +268,10 @@ class Payment(models.Model):
     invoice_id = models.CharField(max_length=255, default='', blank=True, null=True)
     # Stripe raw response for debugging (optional, but very useful)
     raw_response = models.JSONField(default=dict, blank=True, null=True)
+
+    class Meta:
+        db_table = 'webapp_backend.profiles_payment'
+
     def __str__(self):
         return f"Payment for {self.user.username} - {self.stripe_session_id}"
 
@@ -327,6 +336,7 @@ class Notification(models.Model):
                                      help_text="Optional expiration timestamp for time-sensitive notifications")
     
     class Meta:
+        db_table = 'webapp_backend.profiles_notification'
         verbose_name = 'Notification'
         verbose_name_plural = 'Notifications'
         ordering = ['-created_at']

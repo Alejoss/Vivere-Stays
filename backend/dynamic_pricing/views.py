@@ -15,7 +15,7 @@ import requests
 from decouple import config
 from django.conf import settings
 
-from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings, DpOfferIncrements, DpDynamicIncrementsV2, DpLosReduction, DpLosSetup, DpRoomRates, UnifiedRoomsAndRates
+from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings, DpOfferIncrements, DpDynamicIncrementsV2, DpLosReduction, DpLosSetup, DpRoomRates, UnifiedRoomsAndRates, Competitor, DpPropertyCompetitor, OverwritePriceHistory
 from .serializers import (
     PropertyCreateSerializer, 
     PropertyDetailSerializer, 
@@ -37,7 +37,12 @@ from .serializers import (
     BulkDpLosSetupSerializer,
     UnifiedRoomsAndRatesSerializer,
     AvailableRatesUnifiedSerializer,
-    BulkAvailableRatesUpdateSerializer
+    BulkAvailableRatesUpdateSerializer,
+    CompetitorCreateSerializer,
+    CompetitorDetailSerializer,
+    CompetitorListSerializer,
+    BulkCompetitorCreateSerializer,
+    OverwritePriceHistorySerializer
 )
 
 from rest_framework.decorators import action
@@ -1176,50 +1181,38 @@ class OverwritePriceView(APIView):
 
     def patch(self, request, property_id, checkin_date):
         """
-        Create a new price history record for a given property and checkin_date, copying all fields from the latest record but setting overwrite_price to the provided value.
+        Create or update an overwrite price record for a given property and checkin_date.
         """
         try:
             print(f"[OverwritePriceView] User: {request.user}")
             print(f"[OverwritePriceView] PATCH property_id={property_id}, checkin_date={checkin_date}")
+            
             # Validate property
             property_obj = get_object_or_404(Property, id=property_id)
-            # Find the latest price history record for this date
-            price_record = (
-                DpPriceChangeHistory.objects
-                .filter(property_id=property_id, checkin_date=checkin_date)
-                .order_by('-as_of')
-                .first()
-            )
-            if not price_record:
-                print(f"[OverwritePriceView] No price history found for property {property_id} on {checkin_date}")
-                return Response({'error': 'Price history not found.'}, status=status.HTTP_404_NOT_FOUND)
-
+            
             new_price = request.data.get('overwrite_price')
             print(f"[OverwritePriceView] New overwrite_price: {new_price}")
             if new_price is None:
                 print(f"[OverwritePriceView] overwrite_price missing in request data: {request.data}")
                 return Response({'error': 'overwrite_price is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create a new record with the same fields, but updated overwrite_price and as_of
-            new_record = DpPriceChangeHistory.objects.create(
-                property_id=price_record.property_id,
-                user=request.user,
-                pms_hotel_id=price_record.pms_hotel_id,
-                checkin_date=price_record.checkin_date,
-                as_of=timezone.now(),
-                occupancy=price_record.occupancy,
-                msp=price_record.msp,
-                recom_price=price_record.recom_price,
-                overwrite_price=new_price,
-                recom_los=price_record.recom_los,
-                overwrite_los=price_record.overwrite_los,
-                base_price=price_record.base_price,
-                base_price_choice=price_record.base_price_choice,
+            # Create or update the overwrite price history record
+            overwrite_record, created = OverwritePriceHistory.objects.update_or_create(
+                property_id=property_id,
+                checkin_date=checkin_date,
+                defaults={
+                    'user': request.user,
+                    'overwrite_price': new_price
+                }
             )
-            print(f"[OverwritePriceView] Created new price history record with id: {new_record.id}")
+            
+            print(f"[OverwritePriceView] {'Created' if created else 'Updated'} overwrite price record with id: {overwrite_record.id}")
 
-            serializer = PriceHistorySerializer(new_record)
-            return Response({'message': 'Overwrite price set. New price history record created.', 'price_history': serializer.data}, status=status.HTTP_201_CREATED)
+            serializer = OverwritePriceHistorySerializer(overwrite_record)
+            return Response({
+                'message': f'Overwrite price {created and "set" or "updated"}.', 
+                'overwrite_record': serializer.data
+            }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
         except Exception as e:
             print(f"[OverwritePriceView] Exception: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1363,44 +1356,42 @@ class OverwritePriceRangeView(APIView):
                 return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
             if end_date < start_date:
                 return Response({'error': 'end_date must be after or equal to start_date.'}, status=status.HTTP_400_BAD_REQUEST)
+            
             property_obj = get_object_or_404(Property, id=property_id)
             created_records = []
+            updated_records = []
             errors = []
+            
             for i in range((end_date - start_date).days + 1):
                 checkin_date = start_date + timedelta(days=i)
-                price_record = (
-                    DpPriceChangeHistory.objects
-                    .filter(property_id=property_id, checkin_date=checkin_date)
-                    .order_by('-as_of')
-                    .first()
-                )
-                if not price_record:
-                    errors.append(str(checkin_date))
-                    continue
-                new_record = DpPriceChangeHistory.objects.create(
-                    property_id=price_record.property_id,
-                    user=request.user,
-                    pms_hotel_id=price_record.pms_hotel_id,
-                    checkin_date=price_record.checkin_date,
-                    as_of=timezone.now(),
-                    occupancy=price_record.occupancy,
-                    msp=price_record.msp,
-                    recom_price=price_record.recom_price,
-                    overwrite_price=overwrite_price,
-                    recom_los=price_record.recom_los,
-                    overwrite_los=price_record.overwrite_los,
-                    base_price=price_record.base_price,
-                    base_price_choice=price_record.base_price_choice,
-                )
-                created_records.append(PriceHistorySerializer(new_record).data)
+                try:
+                    overwrite_record, created = OverwritePriceHistory.objects.update_or_create(
+                        property_id=property_id,
+                        checkin_date=checkin_date,
+                        defaults={
+                            'user': request.user,
+                            'overwrite_price': overwrite_price
+                        }
+                    )
+                    
+                    serializer_data = OverwritePriceHistorySerializer(overwrite_record).data
+                    if created:
+                        created_records.append(serializer_data)
+                    else:
+                        updated_records.append(serializer_data)
+                        
+                except Exception as e:
+                    errors.append(f"{checkin_date}: {str(e)}")
+            
             return Response({
-                'message': f'Processed {len(created_records)} dates. {len(errors)} errors.',
+                'message': f'Processed {len(created_records)} new overwrites, {len(updated_records)} updates. {len(errors)} errors.',
                 'created': created_records,
+                'updated': updated_records,
                 'errors': errors,
                 'start_date': start_date_str,
                 'end_date': end_date_str,
                 'overwrite_price': overwrite_price,
-            }, status=status.HTTP_201_CREATED if created_records else status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_201_CREATED if created_records or updated_records else status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -1514,7 +1505,6 @@ def competitor_prices_weekly_chart(request, property_id):
     """
     from datetime import datetime, timedelta
     from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice
-    from booking.models import Competitor
 
     # Parse start_date
     start_date_str = request.query_params.get('start_date')
@@ -1573,7 +1563,6 @@ def competitor_prices_for_date(request, property_id):
     """
     from datetime import datetime
     from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice
-    from booking.models import Competitor
 
     print(f"[DEBUG] competitor_prices_for_date called with property_id={property_id}")
     print(f"[DEBUG] request.path: {request.path}")
@@ -4054,4 +4043,277 @@ class InitializePropertyDefaultsView(APIView):
             return Response({
                 'error': 'An error occurred while initializing property defaults',
                 'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# Competitor views moved from booking app
+class BulkCompetitorCreateView(APIView):
+    """
+    API endpoint for creating multiple competitors at once
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Create multiple competitors for a property with booking URLs
+        """
+        try:
+            serializer = BulkCompetitorCreateSerializer(data=request.data, context={'request': request})
+            
+            if serializer.is_valid():
+                # Create the competitors
+                result = serializer.save()
+                
+                # Prepare response data
+                created_competitors = result['created_competitors']
+                errors = result['errors']
+                property_id = result['property_id']
+                
+                # Serialize the created competitors
+                competitor_serializer = CompetitorDetailSerializer(created_competitors, many=True)
+                
+                response_data = {
+                    'message': f'Successfully created {len(created_competitors)} competitors',
+                    'property_id': property_id,
+                    'created_competitors': competitor_serializer.data,
+                    'total_created': len(created_competitors),
+                    'total_errors': len(errors)
+                }
+                
+                if errors:
+                    response_data['errors'] = errors
+                    response_data['message'] += f' with {len(errors)} errors'
+                
+                logger.info(f"Bulk competitor creation completed: {len(created_competitors)} created, {len(errors)} errors")
+                
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            else:
+                logger.warning(f"Bulk competitor creation failed - validation errors: {serializer.errors}")
+                return Response({
+                    'message': 'Bulk competitor creation failed',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error in bulk competitor creation: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the competitors',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompetitorCreateView(APIView):
+    """
+    API endpoint for creating a new Competitor for a Property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Create a new competitor for a property with minimal data (booking URL)
+        """
+        try:
+            serializer = CompetitorCreateSerializer(data=request.data)
+            
+            if serializer.is_valid():
+                # Create the competitor
+                competitor = serializer.save()
+                
+                # Get the property ID from the validated data
+                property_id = request.data.get('property_id')
+                if property_id:
+                    # Create the property-competitor relationship
+                    try:
+                        property_instance = Property.objects.get(id=property_id)
+                        dp_property_competitor, created = DpPropertyCompetitor.objects.get_or_create(
+                            property_id=property_instance,
+                            competitor_id=competitor,
+                            user=request.user
+                        )
+                        
+                        if created:
+                            logger.info(f"Created property-competitor relationship: {property_id} - {competitor.competitor_id}")
+                        else:
+                            logger.info(f"Property-competitor relationship already exists: {property_id} - {competitor.competitor_id}")
+                            
+                    except Property.DoesNotExist:
+                        logger.error(f"Property {property_id} not found when creating competitor relationship")
+                        # Continue anyway since the competitor was created successfully
+                
+                # Return the created competitor with full details
+                detail_serializer = CompetitorDetailSerializer(competitor)
+                
+                logger.info(f"Competitor created successfully: {competitor.competitor_id} - {competitor.competitor_name}")
+                
+                return Response({
+                    'message': 'Competitor created successfully',
+                    'competitor': detail_serializer.data,
+                    'property_id': property_id
+                }, status=status.HTTP_201_CREATED)
+            else:
+                logger.warning(f"Competitor creation failed - validation errors: {serializer.errors}")
+                return Response({
+                    'message': 'Competitor creation failed',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating competitor: {str(e)}")
+            return Response({
+                'message': 'An error occurred while creating the competitor',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompetitorDetailView(APIView):
+    """
+    API endpoint for retrieving, updating, and deleting a specific Competitor
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, competitor_id):
+        """
+        Retrieve a specific competitor by ID
+        """
+        try:
+            competitor = get_object_or_404(Competitor, competitor_id=competitor_id)
+            serializer = CompetitorDetailSerializer(competitor)
+            
+            return Response({
+                'competitor': serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving competitor {competitor_id}: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving the competitor',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self, request, competitor_id):
+        """
+        Update a specific competitor by ID
+        """
+        try:
+            competitor = get_object_or_404(Competitor, competitor_id=competitor_id)
+            serializer = CompetitorDetailSerializer(competitor, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                
+                logger.info(f"Competitor updated successfully: {competitor_id}")
+                
+                return Response({
+                    'message': 'Competitor updated successfully',
+                    'competitor': serializer.data
+                }, status=status.HTTP_200_OK)
+            else:
+                logger.warning(f"Competitor update failed - validation errors: {serializer.errors}")
+                return Response({
+                    'message': 'Competitor update failed',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error updating competitor {competitor_id}: {str(e)}")
+            return Response({
+                'message': 'An error occurred while updating the competitor',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request, competitor_id):
+        """
+        Delete a specific competitor by ID
+        """
+        try:
+            competitor = get_object_or_404(Competitor, competitor_id=competitor_id)
+            competitor.delete()
+            
+            logger.info(f"Competitor deleted successfully: {competitor_id}")
+            
+            return Response({
+                'message': 'Competitor deleted successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error deleting competitor {competitor_id}: {str(e)}")
+            return Response({
+                'message': 'An error occurred while deleting the competitor',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CompetitorListView(APIView):
+    """
+    API endpoint for listing all competitors
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Retrieve a list of all competitors
+        """
+        try:
+            # Get query parameters for filtering
+            property_id = request.query_params.get('property_id')
+            
+            # Build queryset
+            queryset = Competitor.objects.all()
+            
+            if property_id:
+                # Filter competitors that are associated with the specific property
+                queryset = queryset.filter(
+                    dp_property_competitor__property_id=property_id
+                )
+            
+            # Order by competitor name
+            queryset = queryset.order_by('competitor_name')
+            
+            serializer = CompetitorListSerializer(queryset, many=True)
+            
+            return Response({
+                'competitors': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving competitors list: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving the competitors list',
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PropertyCompetitorsView(APIView):
+    """
+    API endpoint for managing competitors for a specific property
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, property_id):
+        """
+        Get all competitors for a specific property
+        """
+        try:
+            property_instance = get_object_or_404(Property, id=property_id)
+            
+            # Get competitors associated with this property
+            competitors = Competitor.objects.filter(
+                dp_property_competitor__property_id=property_instance
+            ).order_by('competitor_name')
+            
+            serializer = CompetitorListSerializer(competitors, many=True)
+            
+            return Response({
+                'property_id': property_id,
+                'property_name': property_instance.name,
+                'competitors': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving competitors for property {property_id}: {str(e)}")
+            return Response({
+                'message': 'An error occurred while retrieving the property competitors',
+                'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profilesService } from "../../../shared/api/profiles";
 import { queryKeys } from "../../../shared/api/hooks";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 
@@ -218,7 +217,6 @@ export default function ProfileCompletion() {
         <LanguageSwitcher variant="header" />
       </div>
       
-      <OnboardingProgressTracker currentStep="register" />
       <div className="w-full max-w-6xl mx-auto px-4">
         {/* Logo */}
         <div className="text-center mb-10">
@@ -240,10 +238,6 @@ export default function ProfileCompletion() {
             </span>
           </div>
 
-          {/* Progress Bar */}
-          <div className="w-full h-[10px] bg-[#E2E8F0] rounded-[6px] mb-10 relative hidden sm:block">
-            <div className="w-3/4 h-full bg-gradient-to-r from-[#285A6E] to-[#03CBF5] rounded-[6px]"></div>
-          </div>
 
           {/* Main Card */}
           <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 relative">

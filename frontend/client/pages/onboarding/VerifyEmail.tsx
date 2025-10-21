@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../shared/api/client";
 import { useCurrentUser } from "../../../shared/api/hooks";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import ContactSupportModal from "../../components/onboarding/ContactSupportModal";
 import { profilesService } from "../../../shared/api/profiles";
 import { toast } from "../../hooks/use-toast";
@@ -195,7 +194,6 @@ export default function VerifyEmail() {
         <LanguageSwitcher variant="header" />
       </div>
       
-      <OnboardingProgressTracker currentStep="verify_email" />
       <div className="w-full max-w-2xl">
         {/* Logo */}
         <div className="text-center mb-8">

@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
 
@@ -29,7 +28,6 @@ export default function Payment() {
         <LanguageSwitcher variant="header" />
       </div>
       
-      <OnboardingProgressTracker currentStep="payment" />
       <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-4xl text-center">
         <h1 className="text-responsive-3xl font-bold text-[#1E1E1E] mb-4">{t('onboarding:payment.title')}</h1>
         <p className="text-responsive-lg text-[#485567] mb-8">

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { getLocalStorageItem } from "../../../shared/localStorage";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
@@ -88,7 +87,6 @@ export default function WelcomeComplete() {
         <LanguageSwitcher variant="header" />
       </div>
       
-      <OnboardingProgressTracker currentStep="complete" />
       {/* Logo */}
       <div className="mb-8">
         <img

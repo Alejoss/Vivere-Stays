@@ -1,9 +1,26 @@
 # Django models for the dynamic pricing schema
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 from profiles.models import Profile
-from booking.models import Competitor
 from django.contrib.auth.models import User
+
+class Competitor(models.Model):
+    """
+    Model representing competitor hotels for price monitoring.
+    """
+    competitor_id = models.CharField(max_length=255, unique=True)
+    competitor_name = models.CharField(max_length=255)
+    booking_link = models.URLField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_competitor'
+        verbose_name = 'Competitor'
+        verbose_name_plural = 'Competitors'
+    
+    def __str__(self):
+        return f"{self.competitor_name} ({self.competitor_id})"
+
 
 class PropertyManagementSystem(models.Model):
     """
@@ -14,6 +31,7 @@ class PropertyManagementSystem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_propertymanagementsystem'
         verbose_name = 'Property Management System'
         verbose_name_plural = 'Property Management Systems'
 
@@ -60,6 +78,7 @@ class Property(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_property'
         verbose_name = 'Property'
         verbose_name_plural = 'Properties'
 
@@ -104,6 +123,7 @@ class DpGeneralSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dpgeneralsettings'
         verbose_name = 'Dynamic Pricing General Settings'
         verbose_name_plural = 'Dynamic Pricing General Settings'
 
@@ -124,6 +144,7 @@ class DpPropertyCompetitor(models.Model):
     only_follow = models.BooleanField(default=False)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dppropertycompetitor'
         unique_together = ('property_id', 'competitor_id')
         verbose_name = 'Property Competitor'
         verbose_name_plural = 'Property Competitors'
@@ -169,6 +190,7 @@ class DpDynamicIncrementsV2(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dpdynamicincrementsv2'
         unique_together = ('property_id', 'occupancy_category', 'lead_time_category')
         verbose_name = 'Dynamic Increment V2'
         verbose_name_plural = 'Dynamic Increments V2'
@@ -194,6 +216,7 @@ class DpOfferIncrements(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dpofferincrements'
         unique_together = ('property_id', 'valid_from', 'valid_until')
         verbose_name = 'Offer Increment'
         verbose_name_plural = 'Offer Increments'
@@ -216,6 +239,7 @@ class DpLosSetup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dplossetup'
         unique_together = ('property_id', 'valid_from', 'day_of_week')
         verbose_name = 'LOS Setup'
         verbose_name_plural = 'LOS Setups'
@@ -238,6 +262,7 @@ class DpLosReduction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dplosreduction'
         unique_together = ('property_id', 'occupancy_category', 'lead_time_category')
         verbose_name = 'LOS Reduction'
         verbose_name_plural = 'LOS Reductions'
@@ -260,6 +285,7 @@ class DpMinimumSellingPrice(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dpminimumsellingprice'
         unique_together = ('property_id', 'valid_from')
         verbose_name = 'Minimum Selling Price'
         verbose_name_plural = 'Minimum Selling Prices'
@@ -288,6 +314,7 @@ class DpRoomRates(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_dproomrates'
         unique_together = ('property_id', 'rate_id')
         verbose_name = 'Room Rate'
         verbose_name_plural = 'Room Rates'
@@ -298,29 +325,35 @@ class DpRoomRates(models.Model):
 
 class DpPriceChangeHistory(models.Model):
     """
-    Dynamic pricing price change history - tracks pricing decisions over time
+    Dynamic pricing price change history - tracks pricing decisions over time.
+    
+    NOTE: This model represents a table managed by an external schema/system.
+    Django will NOT create/modify this table structure (managed=False).
+    Only for read operations and foreign key relationships.
+    
+    The overwrite_price field has been moved to OverwritePriceHistory model.
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='price_change_history', help_text="User who owns this property")
-    pms_hotel_id = models.CharField(max_length=255)
-    checkin_date = models.DateField()  # Date for which the price change was calculated
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='price_change_history', help_text="User who owns this property")    
+    checkin_date = models.DateField()  # Date for which the price change was calculated    
+    # overwrite_price field moved to OverwritePriceHistory model
+    updated_at = models.DateTimeField(auto_now=True)
+    # Key pricing data (managed externally)
+    created_at = models.DateTimeField(auto_now_add=True)
     as_of = models.DateTimeField()  # Timestamp when the data was captured
-
-    # Key pricing data
     occupancy = models.FloatField(null=True, blank=True)  # Occupancy level
+    pms_hotel_id = models.CharField(max_length=255)
     msp = models.IntegerField()  # Minimum Selling Price
-    recom_price = models.IntegerField()  # Recommended price
-    overwrite_price = models.IntegerField(null=True, blank=True)  # Overwrite price (from RM)
+    recom_price = models.IntegerField()  # Recommended price    
     recom_los = models.IntegerField()  # Recommended LOS
     overwrite_los = models.IntegerField(null=True, blank=True)  # Overwrite LOS (from RM)
     base_price = models.IntegerField()  # Base price used in calculation
     base_price_choice = models.CharField(max_length=255)  # "competitor" or "manual"
     competitor_average = models.FloatField(null=True, blank=True)  # Competitor average price
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
+        managed = settings.DEBUG  # True in dev/staging, False in production
+        db_table = 'booking.dp_price_change_history'
         unique_together = ('property_id', 'checkin_date', 'as_of')
         verbose_name = 'Price Change History'
         verbose_name_plural = 'Price Change Histories'
@@ -332,9 +365,13 @@ class DpPriceChangeHistory(models.Model):
 class DpHistoricalCompetitorPrice(models.Model):
     """
     Historical competitor prices (imported from booking.historical_competitor_prices)
+    
+    NOTE: This model represents a table managed by an external schema/system.
+    Django will NOT create/modify this table structure (managed=False).
+    Only for read operations and foreign key relationships.
     """
     competitor = models.ForeignKey(
-        'booking.Competitor',
+        Competitor,
         on_delete=models.CASCADE,
         db_column='competitor_id',
         related_name='historical_prices',
@@ -357,6 +394,8 @@ class DpHistoricalCompetitorPrice(models.Model):
     update_tz = models.DateTimeField()
 
     class Meta:
+        managed = settings.DEBUG  # True in dev/staging, False in production
+        db_table = 'booking.dp_historical_competitor_price'
         unique_together = ('competitor', 'checkin_date', 'room_name')
         verbose_name = 'Historical Competitor Price'
         verbose_name_plural = 'Historical Competitor Prices'
@@ -379,7 +418,7 @@ class CompetitorCandidate(models.Model):
     competitor_name = models.CharField(max_length=255, help_text="Name of the competitor hotel")
     booking_link = models.URLField(null=True, blank=True, help_text="Booking.com URL for the competitor")
     suggested_by_user = models.BooleanField(default=False, help_text="Whether this competitor was suggested by the user")
-    
+
     # Relationships
     property_id = models.ForeignKey(
         Property, 
@@ -427,6 +466,7 @@ class CompetitorCandidate(models.Model):
     error_message = models.TextField(null=True, blank=True, help_text="Error message if status is 'error'")
     
     class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_competitorcandidate'
         verbose_name = 'Competitor Candidate'
         verbose_name_plural = 'Competitor Candidates'
         unique_together = ('property_id', 'competitor_name')
@@ -474,6 +514,10 @@ class UnifiedRoomsAndRates(models.Model):
     """
     Unified rooms and rates consolidated across PMSs.
     Mirrors SQL table core.unified_rooms_and_rates.
+    
+    NOTE: This model represents a table managed by an external schema/system.
+    Django will NOT create/modify this table structure (managed=False).
+    Only for read operations and foreign key relationships.
     """
 
     PMS_SOURCE_CHOICES = [
@@ -505,6 +549,7 @@ class UnifiedRoomsAndRates(models.Model):
     last_updated = models.DateTimeField(default=timezone.now)
 
     class Meta:
+        managed = settings.DEBUG  # True in dev/staging, False in production
         db_table = 'core.unified_rooms_and_rates'
         verbose_name = 'Unified Room and Rate'
         verbose_name_plural = 'Unified Rooms and Rates'
@@ -519,4 +564,25 @@ class UnifiedRoomsAndRates(models.Model):
 
     def __str__(self):
         return f"{self.property_id_id} - Room {self.room_id} / Rate {self.rate_id}"
+
+
+class OverwritePriceHistory(models.Model):
+    """
+    Model for storing price overwrites separately from the main price history data.
+    This handles only the overwrite_price field that was previously part of DpPriceChangeHistory.
+    """
+    property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='overwrite_price_history', help_text="User who owns this property")    
+    checkin_date = models.DateField()  # Date for which the price change was calculated    
+    overwrite_price = models.IntegerField(null=True, blank=True)  # Overwrite price (from RM)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'webapp_backend.dynamic_pricing_overwritepricehistory'
+        verbose_name = 'Overwrite Price History'
+        verbose_name_plural = 'Overwrite Price Histories'
+        unique_together = ('property_id', 'checkin_date')
+
+    def __str__(self):
+        return f"{self.property_id.name} - {self.checkin_date} - Overwrite: {self.overwrite_price}"
 

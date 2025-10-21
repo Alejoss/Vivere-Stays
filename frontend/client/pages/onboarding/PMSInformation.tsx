@@ -1,6 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 export default function PMSInformation() {
@@ -24,7 +23,6 @@ export default function PMSInformation() {
         <LanguageSwitcher variant="header" />
       </div>
       
-      <OnboardingProgressTracker currentStep="pms_integration" />
       <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] px-8 py-12 w-full max-w-3xl text-center">
         {/* Warning Icon */}
         <div className="flex justify-center mb-6">

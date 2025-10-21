@@ -101,8 +101,7 @@ DATABASES = {
         'HOST': config('POSTGRES_HOST', default='postgres'),
         'PORT': config('POSTGRES_PORT', default='5432'),
         'OPTIONS': {
-            # Remove SSL requirement for local development
-            # 'sslmode': 'require',  # Required for Aiven PostgreSQL
+            'options': '-c search_path=webapp_backend,booking,core,public'
         },
     }
 }

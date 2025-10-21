@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import OnboardingProgressTracker from "../../components/OnboardingProgressTracker";
 import { getHotelInformationData, setHotelInformationData, HotelInformationData } from '../../../shared/localStorage';
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import "../../styles/responsive-utilities.css";
@@ -381,7 +380,6 @@ export default function HotelInformationOnboarding() {
         <LanguageSwitcher variant="header" />
       </div>
       
-      <OnboardingProgressTracker currentStep="hotel_information" />
       <div className="w-full max-w-6xl mx-auto px-4">
         {/* Logo */}
         <div className="text-center mb-10">
@@ -392,71 +390,6 @@ export default function HotelInformationOnboarding() {
           />
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full mb-8 px-4 hidden sm:block">
-          <div className="flex items-center justify-center gap-2 sm:gap-[14px] flex-wrap overflow-x-auto">
-            {/* Account - Completed */}
-            <div className="flex items-center gap-2 sm:gap-[14px] min-w-fit">
-              <div className="flex items-center gap-1 sm:gap-2">
-                <svg
-                  width="20"
-                  height="20"
-                  className="sm:w-6 sm:h-6"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M11 15.25C10.807 15.2352 10.6276 15.1455 10.5 15L7.49998 12C7.43314 11.86 7.41133 11.7028 7.43756 11.5499C7.46379 11.3971 7.53676 11.2561 7.64643 11.1464C7.7561 11.0368 7.89707 10.9638 8.04993 10.9376C8.20279 10.9113 8.36003 10.9331 8.49998 11L10.97 13.47L19.5 4.99998C19.6399 4.93314 19.7972 4.91133 19.95 4.93756C20.1029 4.96379 20.2439 5.03676 20.3535 5.14643C20.4632 5.2561 20.5362 5.39707 20.5624 5.54993C20.5886 5.70279 20.5668 5.86003 20.5 5.99998L11.5 15C11.3724 15.1455 11.1929 15.2352 11 15.25Z"
-                    fill="#16B257"
-                  />
-                  <path
-                    d="M12.5 20.9999C10.8915 20.9973 9.313 20.5637 7.92891 19.7442C6.54481 18.9246 5.40566 17.7491 4.62999 16.3399C4.04118 15.2896 3.67682 14.1284 3.55999 12.9299C3.37697 11.172 3.7156 9.39911 4.53363 7.83239C5.35167 6.26568 6.6129 4.9745 8.15999 4.11993C9.21036 3.53112 10.3715 3.16677 11.57 3.04993C12.7641 2.92259 13.9717 3.03825 15.12 3.38993C15.2224 3.4104 15.3195 3.45205 15.4049 3.51222C15.4903 3.57238 15.5622 3.64973 15.616 3.73931C15.6698 3.82889 15.7043 3.92871 15.7173 4.03239C15.7302 4.13607 15.7214 4.24131 15.6913 4.34136C15.6612 4.44142 15.6105 4.53409 15.5425 4.61343C15.4745 4.69276 15.3907 4.75702 15.2965 4.80208C15.2022 4.84713 15.0995 4.87199 14.9951 4.87507C14.8907 4.87814 14.7867 4.85936 14.69 4.81993C13.7187 4.52732 12.6987 4.43211 11.69 4.53993C10.6928 4.6412 9.72661 4.94399 8.84999 5.42993C8.00512 5.89603 7.25813 6.52079 6.64999 7.26993C6.02385 8.03309 5.55628 8.91352 5.27467 9.85965C4.99307 10.8058 4.90308 11.7986 5.00999 12.7799C5.11126 13.7771 5.41405 14.7433 5.89999 15.6199C6.36609 16.4648 6.99084 17.2118 7.73999 17.8199C8.50315 18.4461 9.38357 18.9136 10.3297 19.1952C11.2758 19.4768 12.2686 19.5668 13.25 19.4599C14.2472 19.3587 15.2134 19.0559 16.09 18.5699C16.9349 18.1038 17.6818 17.4791 18.29 16.7299C18.9161 15.9668 19.3837 15.0863 19.6653 14.1402C19.9469 13.1941 20.0369 12.2013 19.93 11.2199C19.9101 11.0117 19.9737 10.8042 20.1069 10.6429C20.24 10.4816 20.4318 10.3798 20.64 10.3599C20.8482 10.34 21.0558 10.4037 21.217 10.5368C21.3783 10.67 21.4801 10.8617 21.5 11.0699C21.6821 12.8289 21.342 14.6025 20.5221 16.1694C19.7022 17.7362 18.4389 19.0268 16.89 19.8799C15.8284 20.4928 14.1493 20.8745 12.93 20.9999H12.5Z"
-                    fill="#16B257"
-                  />
-                </svg>
-                <span className="text-sm sm:text-responsive-lg text-[#16B257] font-medium whitespace-nowrap hidden sm:block">
-                  Account
-                </span>
-              </div>
-              <div className="w-[20px] sm:w-[31px] h-[2px] bg-[#294859] hidden sm:block"></div>
-            </div>
-
-            {/* Hotel Details - Current */}
-            <div className="flex items-center gap-2 sm:gap-[14px] min-w-fit">
-              <div className="flex items-center gap-1 sm:gap-2">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 border-[1.67px] border-[#294859] rounded-full flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#294859] rounded-full"></div>
-                </div>
-                <span className="text-sm sm:text-responsive-lg text-[#294859] font-medium whitespace-nowrap hidden sm:block">
-                  Hotel Details
-                </span>
-              </div>
-              <div className="w-[20px] sm:w-[31px] h-[2px] bg-[#294859] hidden sm:block"></div>
-            </div>
-
-            {/* Remaining steps - Inactive */}
-            {[
-              "PMS Integration",
-              "Select Plan",
-              "Payment",
-              "Add Competitor",
-              "MSP",
-            ].map((step, index) => (
-              <div key={step} className="flex items-center gap-2 sm:gap-[14px] min-w-fit">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 border border-[#9CAABD] rounded-full"></div>
-                  <span className="text-sm sm:text-responsive-lg text-[#9CAABD] font-medium whitespace-nowrap hidden sm:block">
-                    {step}
-                  </span>
-                </div>
-                {index < 4 && (
-                  <div className="w-[20px] sm:w-[31px] h-[2px] bg-[#9CAABD] hidden sm:block"></div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Main Form Card */}
         <div className="bg-white rounded-[20px] shadow-[0_0_30px_0_rgba(0,0,0,0.25)] container-padding-base w-full max-w-4xl mx-auto relative">
