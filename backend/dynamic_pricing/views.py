@@ -508,9 +508,9 @@ class PropertyMSPView(APIView):
     """
     permission_classes = [IsAuthenticated]
     
-    def get(self, request, property_id):
+    def get(self, request, property_id, msp_id=None):
         """
-        Get MSP entries for a specific property
+        Get MSP entries for a specific property, optionally for a specific MSP entry
         """
         try:
             # Get the property and ensure it exists
@@ -525,22 +525,42 @@ class PropertyMSPView(APIView):
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            msp_entries = DpMinimumSellingPrice.objects.filter(
-                property_id=property_instance
-            ).order_by('valid_from')
-            
-            serializer = MinimumSellingPriceSerializer(msp_entries, many=True)
-            
-            return Response({
-                'msp_entries': serializer.data,
-                'count': len(serializer.data),
-                'property_id': property_id,
-                'property_name': property_instance.name
-            }, status=status.HTTP_200_OK)
+            if msp_id:
+                # Get specific MSP entry
+                msp_entry = get_object_or_404(
+                    DpMinimumSellingPrice,
+                    id=msp_id,
+                    property_id=property_instance
+                )
+                serializer = MinimumSellingPriceSerializer(msp_entry)
+                
+                return Response({
+                    'msp_entry': serializer.data,
+                    'property_id': property_id,
+                    'property_name': property_instance.name
+                }, status=status.HTTP_200_OK)
+            else:
+                # Get all MSP entries for the property
+                msp_entries = DpMinimumSellingPrice.objects.filter(
+                    property_id=property_instance
+                ).order_by('valid_from')
+                
+                serializer = MinimumSellingPriceSerializer(msp_entries, many=True)
+                
+                return Response({
+                    'msp_entries': serializer.data,
+                    'count': len(serializer.data),
+                    'property_id': property_id,
+                    'property_name': property_instance.name
+                }, status=status.HTTP_200_OK)
             
         except Property.DoesNotExist:
             return Response({
                 'message': 'Property not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except DpMinimumSellingPrice.DoesNotExist:
+            return Response({
+                'message': 'MSP entry not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error retrieving MSP entries for property {property_id}: {str(e)}")

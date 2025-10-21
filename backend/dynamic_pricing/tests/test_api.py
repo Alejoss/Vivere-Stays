@@ -153,4 +153,42 @@ class TestPropertyAPI:
         url = reverse('dynamic_pricing:property-list')
         response = api_client.get(url)
         
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED 
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.api
+class TestPropertyMSPAPI:
+    """Test cases for Property MSP API endpoints."""
+    
+    def test_get_property_msp_list(self, authenticated_client):
+        """Test getting MSP entries for a property."""
+        # First create a property
+        create_url = reverse('dynamic_pricing:property-create')
+        property_data = {
+            'name': fake.company(),
+            'booking_hotel_url': 'https://www.booking.com/hotel/example.html',
+            'street_address': fake.street_address(),
+            'city': fake.city(),
+            'country': fake.country(),
+            'postal_code': fake.postcode()
+        }
+        create_response = authenticated_client.post(create_url, property_data, format='json')
+        property_id = create_response.data['property']['id']
+        
+        # Get MSP entries
+        msp_url = reverse('dynamic_pricing:property-msp', kwargs={'property_id': property_id})
+        response = authenticated_client.get(msp_url)
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert 'msp_entries' in response.data
+        assert 'count' in response.data
+        assert 'property_id' in response.data
+        assert 'property_name' in response.data
+    
+    def test_get_property_msp_with_invalid_id(self, authenticated_client):
+        """Test getting MSP entries with invalid property ID."""
+        msp_url = reverse('dynamic_pricing:property-msp', kwargs={'property_id': 'invalid-id'})
+        response = authenticated_client.get(msp_url)
+        
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert 'message' in response.data 

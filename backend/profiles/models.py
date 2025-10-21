@@ -276,6 +276,44 @@ class Payment(models.Model):
         return f"Payment for {self.user.username} - {self.stripe_session_id}"
 
 
+class Invoice(models.Model):
+    """
+    Model to store invoice PDFs with optional relationship to Payment model.
+    Allows for invoices that may or may not be associated with Stripe payments.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices')
+    payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, 
+                               related_name='invoices', help_text="Optional relationship to Stripe payment")
+    invoice_number = models.CharField(max_length=100, unique=True, help_text="Unique invoice number")
+    invoice_date = models.DateField(help_text="Date when invoice was created")
+    pdf_file = models.FileField(
+        upload_to='invoices/%Y/%m/', 
+        help_text="PDF invoice document"
+    )
+
+    class Meta:
+        db_table = 'webapp_backend.profiles_invoice'
+        verbose_name = 'Invoice'
+        verbose_name_plural = 'Invoices'
+        ordering = ['-invoice_date']
+        indexes = [
+            models.Index(fields=['user', 'invoice_date']),
+            models.Index(fields=['invoice_number']),
+        ]
+
+    def __str__(self):
+        return f"Invoice {self.invoice_number} - {self.user.username}"
+
+    def save(self, *args, **kwargs):
+        # Auto-generate invoice number if not provided
+        if not self.invoice_number:
+            from django.utils import timezone
+            timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
+            self.invoice_number = f"INV-{timestamp}-{self.user.id}"
+        
+        super().save(*args, **kwargs)
+
+
 class Notification(models.Model):
     """
     Model to store user notifications with various types and statuses

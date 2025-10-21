@@ -275,3 +275,8 @@ COMPETITOR_API_BASE_URL = config('COMPETITOR_API_BASE_URL', default='https://hot
 
 # Hotel Competitor Service Settings
 HOTEL_COMPETITOR_SERVICE_TOKEN = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='na')
+
+# Admin site configuration
+ADMIN_SITE_HEADER = "Vivere Administration"
+ADMIN_SITE_TITLE = "Vivere Administration"
+ADMIN_INDEX_TITLE = "Vivere Administration"

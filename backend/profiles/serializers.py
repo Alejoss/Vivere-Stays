@@ -3,7 +3,7 @@ import logging
 
 from django.contrib.auth.models import User
 
-from profiles.models import Profile, PMSIntegrationRequirement, SupportTicket, Notification
+from profiles.models import Profile, PMSIntegrationRequirement, SupportTicket, Notification, Invoice
 from vivere_stays.error_codes import ErrorCode
 
 # Get logger for profiles serializers
@@ -365,3 +365,29 @@ class NotificationUpdateSerializer(serializers.ModelSerializer):
             instance.save()
         
         return instance
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Invoice model
+    """
+    pdf_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'invoice_number', 'invoice_date', 'pdf_file', 'pdf_url',
+            'payment', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+    
+    def get_pdf_url(self, obj):
+        """
+        Get the full URL for the PDF file
+        """
+        if obj.pdf_file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.pdf_file.url)
+            return obj.pdf_file.url
+        return None

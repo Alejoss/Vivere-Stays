@@ -7,6 +7,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+# Import admin configuration to apply custom admin site settings
+from . import admin as admin_config
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/profiles/', include('profiles.urls')),

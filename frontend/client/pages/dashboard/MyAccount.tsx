@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { User, Mail, Calendar, Lock, Eye, EyeOff, Check } from "lucide-react";
+import { User, Mail, Calendar, Lock, Eye, EyeOff, Check, FileText, Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { profilesService, ProfileData, PasswordChangeRequest } from "../../../shared/api/profiles";
+import { profilesService, ProfileData, PasswordChangeRequest, InvoiceData } from "../../../shared/api/profiles";
 import { useToast } from "../../../client/hooks/use-toast";
 
 // Password Strength Indicator Component
@@ -72,10 +72,13 @@ export default function MyAccount() {
     general?: string;
   }>({});
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadProfile();
+    loadInvoices();
   }, []);
 
   const loadProfile = async () => {
@@ -92,6 +95,23 @@ export default function MyAccount() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadInvoices = async () => {
+    try {
+      setInvoicesLoading(true);
+      const invoicesData = await profilesService.getInvoices();
+      setInvoices(invoicesData.invoices);
+    } catch (error) {
+      console.error("Error loading invoices:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load invoices",
+        variant: "destructive",
+      });
+    } finally {
+      setInvoicesLoading(false);
     }
   };
 
@@ -465,6 +485,66 @@ export default function MyAccount() {
                 <li>• Cannot be the same as your current password</li>
               </ul>
             </div>
+          </div>
+        </div>
+
+        {/* Invoices Section */}
+        <div className="mt-8">
+          <div className="bg-white border border-[#E4E4E4] rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-[#294758] rounded-full flex items-center justify-center">
+                <FileText className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-[#294758]">Invoices</h2>
+            </div>
+
+            {invoicesLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#294758] mx-auto mb-4"></div>
+                <p className="text-[#6B7280]">Loading invoices...</p>
+              </div>
+            ) : invoices.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="w-12 h-12 text-[#9CAABD] mx-auto mb-4" />
+                <p className="text-[#6B7280]">No invoices available</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {invoices.map((invoice) => (
+                  <div
+                    key={invoice.id}
+                    className="flex items-center justify-between p-4 bg-[#F9FAFB] rounded-lg border border-[#E4E4E4] hover:bg-[#F3F4F6] transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-[#294758] rounded-full flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[#111827]">{invoice.invoice_number}</p>
+                        <p className="text-[12px] text-[#6B7280]">
+                          {new Date(invoice.invoice_date).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={invoice.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#294758] text-white rounded-lg hover:bg-[#1F2937] transition-colors text-sm font-medium"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download PDF
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

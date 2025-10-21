@@ -127,6 +127,21 @@ export interface PasswordChangeRequest {
   new_password: string;
 }
 
+export interface InvoiceData {
+  id: number;
+  invoice_number: string;
+  invoice_date: string;
+  pdf_file: string;
+  pdf_url: string;
+  payment: number | null;
+  created_at: string;
+}
+
+export interface InvoicesResponse {
+  invoices: InvoiceData[];
+  count: number;
+}
+
 export interface SupportTicketData {
   id?: number;
   user?: number;
@@ -550,6 +565,13 @@ export const profilesService = {
     return apiRequest({
       method: 'GET',
       url: '/profiles/check-special-offers/',
+    });
+  },
+
+  async getInvoices(): Promise<InvoicesResponse> {
+    return apiRequest<InvoicesResponse>({
+      method: 'GET',
+      url: '/profiles/invoices/',
     });
   },
 }; 

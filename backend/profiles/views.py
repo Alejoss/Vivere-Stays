@@ -30,8 +30,8 @@ from datetime import datetime
 import jwt
 import json
 
-from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer, SupportTicketSerializer, NotificationSerializer, NotificationCreateSerializer, NotificationUpdateSerializer
-from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket, Notification
+from profiles.serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PropertyAssociationSerializer, PMSIntegrationRequirementSerializer, SupportTicketSerializer, NotificationSerializer, NotificationCreateSerializer, NotificationUpdateSerializer, InvoiceSerializer
+from profiles.models import Profile, PMSIntegrationRequirement, Payment, SupportTicket, Notification, Invoice
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -2101,4 +2101,38 @@ class CheckSpecialOffersStatusView(APIView):
             logger.error(f"Error checking special offers status: {str(e)}", exc_info=True)
             return Response({
                 'error': 'Failed to check special offers status'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class InvoiceListView(APIView):
+    """
+    API view for retrieving user invoices
+    GET: List all invoices for the authenticated user
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get invoices for the authenticated user
+        """
+        try:
+            user = request.user
+            
+            # Get invoices for the user, ordered by invoice date (newest first)
+            invoices = Invoice.objects.filter(user=user).order_by('-invoice_date')
+            
+            # Serialize the invoices
+            serializer = InvoiceSerializer(invoices, many=True, context={'request': request})
+            
+            logger.info(f"Retrieved {len(serializer.data)} invoices for user {user.username}")
+            
+            return Response({
+                'invoices': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error retrieving invoices for user {request.user.username}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to retrieve invoices'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
