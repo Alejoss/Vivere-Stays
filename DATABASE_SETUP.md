@@ -114,9 +114,8 @@ User: vivere_user
 SSL Mode: Not set
 ✓ Database connection successful!
 PostgreSQL Version: PostgreSQL 16.0
-Available schemas: webapp_backend, booking, core, public
+Available schemas: booking, core, public
 ✓ All required schemas present
-✓ Schema 'webapp_backend' has tables
 ✓ Schema 'booking' has tables
 ✓ Schema 'core' has tables
 ✓ Schema 'public' has tables

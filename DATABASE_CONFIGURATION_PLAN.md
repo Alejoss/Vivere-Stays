@@ -43,7 +43,7 @@ if ENVIRONMENT == 'production' or USE_REMOTE_DB:
             'HOST': config('PROD_POSTGRES_HOST'),
             'PORT': config('PROD_POSTGRES_PORT', default='5432'),
             'OPTIONS': {
-                'options': '-c search_path=webapp_backend,booking,core,public',
+                'options': '-c search_path=public,booking,core',
                 'sslmode': config('PROD_POSTGRES_SSLMODE', default='require'),
             },
             'CONN_MAX_AGE': 60,  # Connection pooling
@@ -60,7 +60,7 @@ else:
             'HOST': config('POSTGRES_HOST', default='postgres'),
             'PORT': config('POSTGRES_PORT', default='5432'),
             'OPTIONS': {
-                'options': '-c search_path=webapp_backend,booking,core,public'
+                'options': '-c search_path=public,booking,core'
             },
         }
     }

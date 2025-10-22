@@ -38,7 +38,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"Available schemas: {', '.join(schemas)}")
                 
                 # Check if required schemas exist
-                required_schemas = ['webapp_backend', 'booking', 'core', 'public']
+                required_schemas = ['booking', 'core', 'public']
                 missing_schemas = [schema for schema in required_schemas if schema not in schemas]
                 if missing_schemas:
                     self.stdout.write(self.style.WARNING(f"Missing schemas: {', '.join(missing_schemas)}"))
