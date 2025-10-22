@@ -59,10 +59,10 @@ docker-compose -f docker-compose.remote.yml up -d
 - **Database**: Local PostgreSQL container
 - **Configuration**: `ENVIRONMENT=development`, `USE_REMOTE_DB=False`
 
-### env.production.test.txt (Test Production DB Locally)
-- **Purpose**: Test production database connection before deployment
+### env.staging.txt (Staging Deployment)
+- **Purpose**: Staging server deployment
 - **Database**: Remote production database
-- **Configuration**: `ENVIRONMENT=development`, `USE_REMOTE_DB=True`
+- **Configuration**: `ENVIRONMENT=production`, `USE_REMOTE_DB=True`
 
 ### env.production.txt (Production Deployment)
 - **Purpose**: Actual production deployment
