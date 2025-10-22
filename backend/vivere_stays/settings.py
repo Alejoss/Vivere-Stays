@@ -107,7 +107,7 @@ if ENVIRONMENT == 'production' or USE_REMOTE_DB:
             'HOST': config('PROD_POSTGRES_HOST'),
             'PORT': config('PROD_POSTGRES_PORT', default='5432'),
             'OPTIONS': {
-                'options': '-c search_path=webapp_backend,booking,core,public',
+                'options': '-c search_path=public,booking,core',
                 'sslmode': config('PROD_POSTGRES_SSLMODE', default='require'),
             },
             'CONN_MAX_AGE': 60,  # Connection pooling for production
@@ -124,7 +124,7 @@ else:
             'HOST': config('POSTGRES_HOST', default='postgres'),
             'PORT': config('POSTGRES_PORT', default='5432'),
             'OPTIONS': {
-                'options': '-c search_path=webapp_backend,booking,core,public'
+                'options': '-c search_path=public,booking,core'
             },
         }
     }
@@ -298,6 +298,8 @@ COMPETITOR_API_BASE_URL = config('COMPETITOR_API_BASE_URL', default='https://hot
 
 # Hotel Competitor Service Settings
 HOTEL_COMPETITOR_SERVICE_TOKEN = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='na')
+
+# Database router removed - using custom migration approach instead
 
 # Admin site configuration
 ADMIN_SITE_HEADER = "Vivere Administration"

@@ -14,7 +14,7 @@ class Competitor(models.Model):
     booking_link = models.URLField(null=True, blank=True)
     
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_competitor'
+        db_table = 'dynamic_pricing_competitor'
         verbose_name = 'Competitor'
         verbose_name_plural = 'Competitors'
     
@@ -31,7 +31,7 @@ class PropertyManagementSystem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_propertymanagementsystem'
+        db_table = 'dynamic_pricing_propertymanagementsystem'
         verbose_name = 'Property Management System'
         verbose_name_plural = 'Property Management Systems'
 
@@ -78,7 +78,7 @@ class Property(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_property'
+        db_table = 'dynamic_pricing_property'
         verbose_name = 'Property'
         verbose_name_plural = 'Properties'
 
@@ -123,7 +123,7 @@ class DpGeneralSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dpgeneralsettings'
+        db_table = 'dynamic_pricing_dpgeneralsettings'
         verbose_name = 'Dynamic Pricing General Settings'
         verbose_name_plural = 'Dynamic Pricing General Settings'
 
@@ -144,7 +144,7 @@ class DpPropertyCompetitor(models.Model):
     only_follow = models.BooleanField(default=False)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dppropertycompetitor'
+        db_table = 'dynamic_pricing_dppropertycompetitor'
         unique_together = ('property_id', 'competitor_id')
         verbose_name = 'Property Competitor'
         verbose_name_plural = 'Property Competitors'
@@ -190,7 +190,7 @@ class DpDynamicIncrementsV2(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dpdynamicincrementsv2'
+        db_table = 'dynamic_pricing_dpdynamicincrementsv2'
         unique_together = ('property_id', 'occupancy_category', 'lead_time_category')
         verbose_name = 'Dynamic Increment V2'
         verbose_name_plural = 'Dynamic Increments V2'
@@ -216,7 +216,7 @@ class DpOfferIncrements(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dpofferincrements'
+        db_table = 'dynamic_pricing_dpofferincrements'
         unique_together = ('property_id', 'valid_from', 'valid_until')
         verbose_name = 'Offer Increment'
         verbose_name_plural = 'Offer Increments'
@@ -239,7 +239,7 @@ class DpLosSetup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dplossetup'
+        db_table = 'dynamic_pricing_dplossetup'
         unique_together = ('property_id', 'valid_from', 'day_of_week')
         verbose_name = 'LOS Setup'
         verbose_name_plural = 'LOS Setups'
@@ -262,7 +262,7 @@ class DpLosReduction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dplosreduction'
+        db_table = 'dynamic_pricing_dplosreduction'
         unique_together = ('property_id', 'occupancy_category', 'lead_time_category')
         verbose_name = 'LOS Reduction'
         verbose_name_plural = 'LOS Reductions'
@@ -285,7 +285,7 @@ class DpMinimumSellingPrice(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dpminimumsellingprice'
+        db_table = 'dynamic_pricing_dpminimumsellingprice'
         unique_together = ('property_id', 'valid_from')
         verbose_name = 'Minimum Selling Price'
         verbose_name_plural = 'Minimum Selling Prices'
@@ -314,7 +314,7 @@ class DpRoomRates(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_dproomrates'
+        db_table = 'dynamic_pricing_dproomrates'
         unique_together = ('property_id', 'rate_id')
         verbose_name = 'Room Rate'
         verbose_name_plural = 'Room Rates'
@@ -466,7 +466,7 @@ class CompetitorCandidate(models.Model):
     error_message = models.TextField(null=True, blank=True, help_text="Error message if status is 'error'")
     
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_competitorcandidate'
+        db_table = 'dynamic_pricing_competitorcandidate'
         verbose_name = 'Competitor Candidate'
         verbose_name_plural = 'Competitor Candidates'
         unique_together = ('property_id', 'competitor_name')
@@ -578,7 +578,7 @@ class OverwritePriceHistory(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'webapp_backend.dynamic_pricing_overwritepricehistory'
+        db_table = 'dynamic_pricing_overwritepricehistory'
         verbose_name = 'Overwrite Price History'
         verbose_name_plural = 'Overwrite Price Histories'
         unique_together = ('property_id', 'checkin_date')
