@@ -1,5 +1,4 @@
-
-# Default Docker Compose (Local Development)
+# Local Development Docker Compose
 # Uses local PostgreSQL container
 
 services:
@@ -49,7 +48,6 @@ services:
     networks:
       - vivere_network
 
-
 networks:
   vivere_network:
     driver: bridge
@@ -57,4 +55,4 @@ networks:
 volumes:
   postgres_data:
   static_volume:
-  media_volume: 
+  media_volume:

@@ -91,20 +91,43 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vivere_stays.wsgi.application'
 
-# Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('POSTGRES_DB', default='vivere_stays'),
-        'USER': config('POSTGRES_USER', default='vivere_user'),
-        'PASSWORD': config('POSTGRES_PASSWORD', default='vivere_password'),
-        'HOST': config('POSTGRES_HOST', default='postgres'),
-        'PORT': config('POSTGRES_PORT', default='5432'),
-        'OPTIONS': {
-            'options': '-c search_path=webapp_backend,booking,core,public'
-        },
+# Database Configuration
+# Environment-based database configuration
+ENVIRONMENT = config('ENVIRONMENT', default='development')
+USE_REMOTE_DB = config('USE_REMOTE_DB', default=False, cast=bool)
+
+if ENVIRONMENT == 'production' or USE_REMOTE_DB:
+    # Use remote production database
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('PROD_POSTGRES_DB'),
+            'USER': config('PROD_POSTGRES_USER'),
+            'PASSWORD': config('PROD_POSTGRES_PASSWORD'),
+            'HOST': config('PROD_POSTGRES_HOST'),
+            'PORT': config('PROD_POSTGRES_PORT', default='5432'),
+            'OPTIONS': {
+                'options': '-c search_path=webapp_backend,booking,core,public',
+                'sslmode': config('PROD_POSTGRES_SSLMODE', default='require'),
+            },
+            'CONN_MAX_AGE': 60,  # Connection pooling for production
+        }
     }
-}
+else:
+    # Use local Docker PostgreSQL
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('POSTGRES_DB', default='vivere_stays'),
+            'USER': config('POSTGRES_USER', default='vivere_user'),
+            'PASSWORD': config('POSTGRES_PASSWORD', default='vivere_password'),
+            'HOST': config('POSTGRES_HOST', default='postgres'),
+            'PORT': config('POSTGRES_PORT', default='5432'),
+            'OPTIONS': {
+                'options': '-c search_path=webapp_backend,booking,core,public'
+            },
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
