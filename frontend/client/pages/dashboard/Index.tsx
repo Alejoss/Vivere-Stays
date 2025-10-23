@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import PriceCalendar from "../../components/dashboard/PriceCalendar";
 import RightSidebar from "../../components/dashboard/RightSidebar";
 import { PropertyContext } from "../../../shared/PropertyContext";
+import { hasPMSConfigured } from "../../../shared/utils/pmsUtils";
 
 export default function Index() {
   const [selectedDate, setSelectedDate] = useState<{
@@ -31,7 +32,7 @@ export default function Index() {
 
       {/* Right Sidebar */}
       <div className="lg:block md:block sm:hidden">
-        <RightSidebar selectedDate={selectedDate} hasPMS={!!property?.pms} />
+        <RightSidebar selectedDate={selectedDate} hasPMS={hasPMSConfigured(property)} />
       </div>
     </div>
   );

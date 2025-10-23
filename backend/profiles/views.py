@@ -1008,7 +1008,7 @@ class PMSIntegrationRequirementView(APIView):
                 }, status=status.HTTP_404_NOT_FOUND)
             
             # Prepare data for serializer
-            pms_id = request.data.get('pms_id')
+            pms_system_id = request.data.get('pms_system')
             custom_pms_name = request.data.get('custom_pms_name')
             
             data = {
@@ -1017,11 +1017,11 @@ class PMSIntegrationRequirementView(APIView):
                 'custom_pms_name': custom_pms_name,
             }
             
-            # If pms_id is provided, get the PMS object
-            if pms_id:
+            # If pms_system is provided, get the PMS object
+            if pms_system_id:
                 try:
                     from dynamic_pricing.models import PropertyManagementSystem
-                    pms_system = PropertyManagementSystem.objects.get(id=pms_id)
+                    pms_system = PropertyManagementSystem.objects.get(id=pms_system_id)
                     data['pms_system'] = pms_system.id
                 except PropertyManagementSystem.DoesNotExist:
                     return Response({

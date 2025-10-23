@@ -35,6 +35,8 @@ export interface Property {
   property_type: string;
   number_of_rooms: number;
   is_active: boolean;
+  pms?: PropertyManagementSystem | null;
+  pms_name?: string | null;
   created_at: string;
   updated_at: string;
 }

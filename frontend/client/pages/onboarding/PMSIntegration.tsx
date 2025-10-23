@@ -139,21 +139,21 @@ export default function PMSIntegration() {
       
       if (selectedPMS === "none") {
         // No PMS selected
-        integrationData.pms_id = null;
+        integrationData.pms_system = null;
         integrationData.custom_pms_name = null;
       } else if (selectedPMS === "other") {
         // Custom PMS
-        integrationData.pms_id = null;
+        integrationData.pms_system = null;
         integrationData.custom_pms_name = customPMSName.trim();
       } else {
         // Standard PMS - use the actual PMS ID
         const selectedPMSOption = pmsOptions.find(option => option.id === selectedPMS);
         if (selectedPMSOption && selectedPMSOption.type === 'pms') {
-          integrationData.pms_id = parseInt(selectedPMS);
+          integrationData.pms_system = parseInt(selectedPMS);
           integrationData.custom_pms_name = null;
         } else {
           // Fallback for any other selection
-          integrationData.pms_id = null;
+          integrationData.pms_system = null;
           integrationData.custom_pms_name = selectedPMS;
         }
       }

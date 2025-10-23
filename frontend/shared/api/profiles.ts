@@ -44,7 +44,7 @@ export interface HotelInformation {
 }
 
 export interface PMSIntegrationData {
-  pms_id?: number;
+  pms_system?: number;
   custom_pms_name?: string;
 }
 
@@ -52,10 +52,10 @@ export interface PMSIntegrationResponse {
   message: string;
   integration: {
     id: number;
-    property: number;
+    property_obj: number;
     property_name: string;
     profile: number;
-    pms: number | null;
+    pms_system: number | null;
     pms_name: string | null;
     status: string;
     status_display: string;

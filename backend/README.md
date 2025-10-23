@@ -2,6 +2,7 @@
 
 docker-compose exec vivere_backend python manage.py makemigrations
 docker-compose exec vivere_backend python manage.py migrate
+docker-compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
 
 # Startapp
 docker-compose exec vivere_backend python manage.py startapp booking

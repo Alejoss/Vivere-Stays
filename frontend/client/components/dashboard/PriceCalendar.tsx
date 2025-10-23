@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { usePriceHistory, useMSPPriceHistory, useCompetitorAveragePriceHistory, useUserProperties } from "../../../shared/api/hooks";
 import { getLocalStorageItem, setLocalStorageItem, getVivereConnection } from "../../../shared/localStorage";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
+import { hasPMSConfigured } from "../../../shared/utils/pmsUtils";
 
 type CalendarCell = {
   day: number;
@@ -434,7 +435,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   }
 
   // Determine if PMS is missing
-  const hasPMS = propertyData && (propertyData.pms || propertyData.pms_name);
+  const hasPMS = hasPMSConfigured(propertyData);
   const isConnected = getVivereConnection();
 
   return (

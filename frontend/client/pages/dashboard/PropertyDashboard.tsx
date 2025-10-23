@@ -5,6 +5,7 @@ import PriceCalendar from "../../components/dashboard/PriceCalendar";
 import RightSidebar from "../../components/dashboard/RightSidebar";
 import DateDetailsModal from "../../components/dashboard/DateDetailsModal";
 import { PropertyContext } from "../../../shared/PropertyContext";
+import { hasPMSConfigured } from "../../../shared/utils/pmsUtils";
 
 export default function PropertyDashboard() {
   const { t } = useTranslation(['dashboard', 'common']);
@@ -72,6 +73,8 @@ export default function PropertyDashboard() {
   }
 
   console.log('[PropertyDashboard] property.pms_name:', property.pms_name);
+  console.log('[PropertyDashboard] property.pms:', property.pms);
+  console.log('[PropertyDashboard] hasPMSConfigured:', hasPMSConfigured(property));
 
   return (
     <div className="flex-1 flex overflow-hidden">
@@ -94,7 +97,7 @@ export default function PropertyDashboard() {
           selectedDate={selectedDate} 
           propertyId={effectivePropertyId} 
           onPriceUpdate={handlePriceUpdate} 
-          hasPMS={!!property.pms_name}
+          hasPMS={hasPMSConfigured(property)}
           selectedPriceOption={selectedPriceOption}
         />
       </div>
@@ -106,7 +109,7 @@ export default function PropertyDashboard() {
         selectedDate={selectedDate}
         propertyId={effectivePropertyId}
         onPriceUpdate={handlePriceUpdate}
-        hasPMS={!!property.pms_name}
+        hasPMS={hasPMSConfigured(property)}
         selectedPriceOption={selectedPriceOption}
       />
     </div>
