@@ -146,10 +146,11 @@ export default function PMSIntegration() {
         integrationData.pms_system = null;
         integrationData.custom_pms_name = customPMSName.trim();
       } else {
-        // Standard PMS - use the actual PMS ID
+        // Standard PMS - find the PMS option and use its actual ID
         const selectedPMSOption = pmsOptions.find(option => option.id === selectedPMS);
         if (selectedPMSOption && selectedPMSOption.type === 'pms') {
-          integrationData.pms_system = parseInt(selectedPMS);
+          // Use the actual PMS ID from the API data
+          integrationData.pms_system = parseInt(selectedPMSOption.id);
           integrationData.custom_pms_name = null;
         } else {
           // Fallback for any other selection

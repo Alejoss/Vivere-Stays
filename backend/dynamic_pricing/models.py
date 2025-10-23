@@ -11,7 +11,7 @@ class Competitor(models.Model):
     """
     competitor_id = models.CharField(max_length=255, unique=True)
     competitor_name = models.CharField(max_length=255)
-    booking_link = models.URLField(null=True, blank=True)
+    booking_link = models.URLField(null=True, blank=True)    
     
     class Meta:
         db_table = 'dynamic_pricing_competitor'

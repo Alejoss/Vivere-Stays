@@ -145,7 +145,7 @@ This creates dummy price history data for the past 100 days and future 100 days 
 
 **Populate Daily Performance Analytics:**
 ```bash
-docker-compose exec vivere_backend python manage.py populate_daily_performance
+c
 ```
 
 This seeds the analytics system with sample performance data.

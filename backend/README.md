@@ -2,6 +2,8 @@
 
 docker-compose exec vivere_backend python manage.py makemigrations
 docker-compose exec vivere_backend python manage.py migrate
+
+# docker remote db (production db)
 docker-compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
 
 # Startapp
