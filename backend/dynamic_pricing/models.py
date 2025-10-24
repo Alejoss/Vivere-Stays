@@ -370,12 +370,13 @@ class DpHistoricalCompetitorPrice(models.Model):
     Django will NOT create/modify this table structure (managed=False).
     Only for read operations and foreign key relationships.
     """
-    competitor = models.ForeignKey(
+    competitor_id = models.ForeignKey(
         Competitor,
         on_delete=models.CASCADE,
         db_column='competitor_id',
         related_name='historical_prices',
     )
+    scraped_hotel_id = models.CharField(max_length=255)
     hotel_name = models.CharField(max_length=255)
     room_name = models.CharField(max_length=255)
     checkin_date = models.DateField()
@@ -396,7 +397,6 @@ class DpHistoricalCompetitorPrice(models.Model):
     class Meta:
         managed = settings.DEBUG  # True in dev/staging, False in production
         db_table = 'booking.dp_historical_competitor_price'
-        unique_together = ('competitor', 'checkin_date', 'room_name')
         verbose_name = 'Historical Competitor Price'
         verbose_name_plural = 'Historical Competitor Prices'
 
