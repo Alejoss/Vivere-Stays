@@ -247,6 +247,10 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_PATH': '/',
 }
 
+# Test Database Configuration
+# Django automatically creates a test database with the same configuration
+# but with a '_test' suffix. No special configuration needed for standard testing.
+
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')

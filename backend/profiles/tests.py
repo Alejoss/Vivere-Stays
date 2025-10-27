@@ -30,12 +30,12 @@ class ProfileModelTests(TestCase):
         self.assertEqual(str(self.profile), 'testuser')
         self.assertEqual(self.profile.user.username, 'testuser')
         self.assertEqual(self.profile.timezone, 'UTC')
-        self.assertIsNone(self.profile.profile_picture)
+        self.assertIsNone(self.profile.profile_picture.name)
 
     def test_profile_with_picture(self):
         """Test profile with profile picture"""
         # This would be tested with actual file upload in a real scenario
-        self.assertIsNone(self.profile.profile_picture)
+        self.assertIsNone(self.profile.profile_picture.name)
 
     def test_profile_timezone_update(self):
         """Test profile timezone field updates"""
@@ -87,7 +87,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_check_auth_unauthenticated(self):
         """Test authentication check for unauthenticated user"""
-        url = reverse('profiles:check_auth')
+        url = reverse('check-auth')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -97,7 +97,7 @@ class AuthenticationViewsTests(APITestCase):
     def test_check_auth_authenticated(self):
         """Test authentication check for authenticated user"""
         self.client.force_authenticate(user=self.user)
-        url = reverse('profiles:check_auth')
+        url = reverse('check-auth')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -106,7 +106,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_register_view(self):
         """Test user registration"""
-        url = reverse('profiles:register')
+        url = reverse('register')
         data = {
             'username': 'newuser',
             'email': 'newuser@example.com',
@@ -128,7 +128,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_register_view_duplicate_username(self):
         """Test registration with duplicate username"""
-        url = reverse('profiles:register')
+        url = reverse('register')
         data = {
             'username': 'testuser',  # Already exists
             'email': 'another@example.com',
@@ -141,7 +141,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_register_view_duplicate_email(self):
         """Test registration with duplicate email"""
-        url = reverse('profiles:register')
+        url = reverse('register')
         data = {
             'username': 'anotheruser',
             'email': 'test@example.com',  # Already exists
@@ -154,7 +154,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_login_view_success(self):
         """Test successful login"""
-        url = reverse('profiles:login')
+        url = reverse('login')
         data = {
             'username': 'testuser',
             'password': 'testpass123'
@@ -163,12 +163,12 @@ class AuthenticationViewsTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('access', response.data)
-        self.assertIn('id', response.data)
-        self.assertEqual(response.data['username'], 'testuser')
+        self.assertIn('user', response.data)
+        self.assertEqual(response.data['user']['username'], 'testuser')
 
     def test_login_view_invalid_credentials(self):
         """Test login with invalid credentials"""
-        url = reverse('profiles:login')
+        url = reverse('login')
         data = {
             'username': 'testuser',
             'password': 'wrongpassword'
@@ -180,7 +180,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_logout_view(self):
         """Test logout functionality"""
-        url = reverse('profiles:logout')
+        url = reverse('logout')
         response = self.client.post(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -188,7 +188,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_get_csrf_token(self):
         """Test CSRF token endpoint"""
-        url = reverse('profiles:get_csrf_token')
+        url = reverse('get-csrf-token')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -197,7 +197,7 @@ class AuthenticationViewsTests(APITestCase):
     def test_user_properties_view(self):
         """Test user properties endpoint"""
         self.client.force_authenticate(user=self.user)
-        url = reverse('profiles:user_properties')
+        url = reverse('user-properties')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -208,7 +208,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_user_properties_view_unauthenticated(self):
         """Test user properties endpoint without authentication"""
-        url = reverse('profiles:user_properties')
+        url = reverse('user-properties')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -216,7 +216,7 @@ class AuthenticationViewsTests(APITestCase):
     def test_property_association_view_invalid_data(self):
         """Test property association with invalid data"""
         self.client.force_authenticate(user=self.user)
-        url = reverse('profiles:property_association')
+        url = reverse('property-association')
         
         # Test with missing fields
         data = {'property_id': 'test_prop'}
@@ -230,7 +230,7 @@ class AuthenticationViewsTests(APITestCase):
 
     def test_property_association_view_unauthenticated(self):
         """Test property association without authentication"""
-        url = reverse('profiles:property_association')
+        url = reverse('property-association')
         data = {'property_id': 'test_prop', 'action': 'add'}
         response = self.client.post(url, data)
         
@@ -303,10 +303,14 @@ class SerializerTests(TestCase):
     def test_property_association_serializer(self):
         """Test PropertyAssociationSerializer"""
         from profiles.serializers import PropertyAssociationSerializer
+        from test_utils import create_test_property
+        
+        # Create a test property first
+        property = create_test_property()
         
         # Test valid data
         data = {
-            'property_id': 'test_prop_123',
+            'property_id': property.id,
             'action': 'add'
         }
         serializer = PropertyAssociationSerializer(data=data)
@@ -314,7 +318,7 @@ class SerializerTests(TestCase):
         
         # Test invalid action
         data = {
-            'property_id': 'test_prop_123',
+            'property_id': property.id,
             'action': 'invalid'
         }
         serializer = PropertyAssociationSerializer(data=data)

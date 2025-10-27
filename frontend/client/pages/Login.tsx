@@ -65,10 +65,10 @@ export default function Login() {
         console.log('📍 Login: Current onboarding step:', currentStep);
         console.log('📍 Login: Current step type:', typeof currentStep);
         
-        // For users at register step, check if they need to complete their profile
+        // For users at register step, redirect to dashboard (same as completed users)
         if (currentStep === 'register' && !progressData.completed) {
-          console.log('📝 Login: User at register step and onboarding not completed, redirecting to profile completion');
-          navigate("/profile-completion");
+          console.log('📝 Login: User at register step, redirecting to dashboard');
+          navigate("/dashboard");
           return;
         }
         
@@ -155,10 +155,10 @@ export default function Login() {
         const currentStep = progressData.current_step;
         console.log('📍 Google Login: Current onboarding step:', currentStep);
         
-        // For new Google users, check if they need to complete their profile
+        // For new Google users, redirect to dashboard (same as completed users)
         if (currentStep === 'register' && !progressData.completed) {
-          console.log('📝 Google Login: User at register step and onboarding not completed, redirecting to profile completion');
-          navigate("/profile-completion");
+          console.log('📝 Google Login: User at register step, redirecting to dashboard');
+          navigate("/dashboard");
           return;
         }
         

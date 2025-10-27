@@ -26,9 +26,6 @@ pytz==2024.2
 postmarker==1.0
 
 # Testing and Development
-pytest==7.4.3
-pytest-django==4.7.0
-pytest-cov==4.1.0
 factory-boy==3.3.0
 faker==20.1.0
 coverage==7.3.2

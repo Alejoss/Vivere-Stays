@@ -1,1 +1,1 @@
-# Tests package for dynamic_pricing app 
+# Dynamic pricing app tests

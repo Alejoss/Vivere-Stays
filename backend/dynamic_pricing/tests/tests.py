@@ -2,12 +2,14 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.urls import reverse
 
-from .models import (
+from dynamic_pricing.models import (
     Property, DpGeneralSettings, DpPropertyCompetitor,
     DpDynamicIncrementsV2, DpOfferIncrements, DpLosSetup, DpLosReduction,
     DpMinimumSellingPrice, DpRoomRates
 )
+from test_utils import create_test_user, create_test_property
 
 
 class PropertyModelTest(TestCase):
@@ -22,6 +24,7 @@ class PropertyModelTest(TestCase):
             spreadsheet_id='SPREADSHEET001',
             city='Test City',
             country='Test Country',
+            number_of_rooms=50,
             is_active=True
         )
 
@@ -41,16 +44,18 @@ class DpGeneralSettingsModelTest(TestCase):
     """Test cases for DpGeneralSettings model"""
 
     def setUp(self):
+        self.user = create_test_user()
         self.property = Property.objects.create(
             id='TEST001',
             name='Test Hotel',
             pms_name='apaleo',
             pms_hotel_id='AP001',
-            spreadsheet_id='SPREADSHEET001'
+            spreadsheet_id='SPREADSHEET001',
+            number_of_rooms=50
         )
         self.settings = DpGeneralSettings.objects.create(
             property_id=self.property,
-            base_rate_code='BASE_RATE',
+            user=self.user,
             min_competitors=3,
             comp_price_calculation='min',
             pricing_status='online',
@@ -73,71 +78,53 @@ class DpPropertyCompetitorModelTest(TestCase):
     """Test cases for DpPropertyCompetitor model"""
 
     def setUp(self):
+        self.user = create_test_user()
         self.property = Property.objects.create(
             id='TEST001',
             name='Test Hotel',
             pms_name='apaleo',
             pms_hotel_id='AP001',
-            spreadsheet_id='SPREADSHEET001'
+            spreadsheet_id='SPREADSHEET001',
+            number_of_rooms=50
+        )
+        # Create a Competitor instance first
+        from dynamic_pricing.models import Competitor
+        competitor = Competitor.objects.create(
+            competitor_id='COMP001',
+            competitor_name='Test Competitor'
         )
         self.competitor = DpPropertyCompetitor.objects.create(
             property_id=self.property,
-            competitor_id='COMP001'
+            user=self.user,
+            competitor_id=competitor
         )
 
     def test_competitor_creation(self):
         """Test that a competitor relationship can be created"""
         self.assertEqual(self.competitor.property_id, self.property)
-        self.assertEqual(self.competitor.competitor_id, 'COMP001')
+        self.assertEqual(self.competitor.competitor_id.competitor_id, 'COMP001')
 
     def test_competitor_str_representation(self):
         """Test the string representation of DpPropertyCompetitor"""
-        expected = 'Test Hotel - Competitor COMP001'
+        expected = 'Test Hotel - Competitor Test Competitor (COMP001)'
         self.assertEqual(str(self.competitor), expected)
-
-
-class DpDynamicIncrementsV1ModelTest(TestCase):
-    """Test cases for DpDynamicIncrementsV1 model"""
-
-    def setUp(self):
-        self.property = Property.objects.create(
-            id='TEST001',
-            name='Test Hotel',
-            pms_name='apaleo',
-            pms_hotel_id='AP001',
-            spreadsheet_id='SPREADSHEET001'
-        )
-        self.increment = DpDynamicIncrementsV1.objects.create(
-            property_id=self.property,
-            var_name='occupancy',
-            var_from=0.0,
-            var_to=50.0,
-            increment_type='Additional',
-            increment_value=10.0
-        )
-
-    def test_increment_creation(self):
-        """Test that an increment can be created"""
-        self.assertEqual(self.increment.property_id, self.property)
-        self.assertEqual(self.increment.var_name, 'occupancy')
-        self.assertEqual(self.increment.increment_value, 10.0)
-
-    def test_increment_str_representation(self):
-        """Test the string representation of DpDynamicIncrementsV1"""
-        expected = 'Test Hotel - occupancy (0.0-50.0)'
-        self.assertEqual(str(self.increment), expected)
 
 
 class DpDynamicIncrementsV2ModelTest(TestCase):
     """Test cases for DpDynamicIncrementsV2 model"""
 
     def setUp(self):
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123'
+        )
         self.property = Property.objects.create(
             id='TEST001',
             name='Test Hotel',
             pms_name='apaleo',
             pms_hotel_id='AP001',
-            spreadsheet_id='SPREADSHEET001'
+            spreadsheet_id='SPREADSHEET001',
+            number_of_rooms=50
         )
         self.increment = DpDynamicIncrementsV2.objects.create(
             property_id=self.property,
@@ -164,10 +151,7 @@ class PropertyAPITest(APITestCase):
     """Test cases for Property API endpoints"""
 
     def setUp(self):
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123'
-        )
+        self.user = create_test_user()
         self.client.force_authenticate(user=self.user)
         
         self.property = Property.objects.create(
@@ -177,30 +161,38 @@ class PropertyAPITest(APITestCase):
             pms_hotel_id='AP001',
             spreadsheet_id='SPREADSHEET001',
             city='Test City',
-            country='Test Country'
+            country='Test Country',
+            number_of_rooms=50
         )
+        
+        # Associate property with user's profile
+        self.user.profile.add_property(self.property)
 
     def test_property_list(self):
         """Test getting list of properties"""
-        response = self.client.get('/api/v1/properties/')
+        url = reverse('dynamic_pricing:property-list')
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_property_detail(self):
         """Test getting property details"""
-        response = self.client.get(f'/api/v1/properties/{self.property.id}/')
+        url = reverse('dynamic_pricing:property-detail', kwargs={'property_id': self.property.id})
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'Test Hotel')
+        self.assertEqual(response.data['property']['name'], 'Test Hotel')
 
     def test_property_pricing_settings(self):
         """Test getting property pricing settings"""
         # Create settings for the property
         DpGeneralSettings.objects.create(
             property_id=self.property,
+            user=self.user,
             pricing_status='online',
             los_status='online',
             min_competitors=3
         )
         
-        response = self.client.get(f'/api/v1/properties/{self.property.id}/pricing_settings/')
+        url = reverse('dynamic_pricing:general-settings-update', kwargs={'property_id': self.property.id})
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['pricing_status'], 'online')

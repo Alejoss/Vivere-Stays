@@ -1048,6 +1048,30 @@ class PMSIntegrationRequirementView(APIView):
             if serializer.is_valid():
                 integration = serializer.save()
                 
+                # Update the Property's PMS field to match the integration requirement
+                if pms_system_id:
+                    try:
+                        from dynamic_pricing.models import PropertyManagementSystem
+                        pms_system = PropertyManagementSystem.objects.get(id=pms_system_id)
+                        property_obj.pms = pms_system
+                        property_obj.pms_name = pms_system.name
+                        property_obj.save()
+                        logger.info(f"Updated Property {property_obj.id} PMS to: {pms_system.name}")
+                    except PropertyManagementSystem.DoesNotExist:
+                        logger.error(f"PMS system {pms_system_id} not found when updating property")
+                elif custom_pms_name:
+                    # For custom PMS, set pms_name but leave pms as null
+                    property_obj.pms = None
+                    property_obj.pms_name = custom_pms_name
+                    property_obj.save()
+                    logger.info(f"Updated Property {property_obj.id} with custom PMS: {custom_pms_name}")
+                else:
+                    # No PMS selected
+                    property_obj.pms = None
+                    property_obj.pms_name = None
+                    property_obj.save()
+                    logger.info(f"Updated Property {property_obj.id} to have no PMS")
+                
                 logger.info(f"PMS integration requirement created/updated: {integration}")
                 
                 return Response({
