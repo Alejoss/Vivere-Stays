@@ -91,11 +91,10 @@ def create_test_property_with_pms(user=None, **kwargs):
     return property
 
 
-def create_test_competitor(competitor_id='COMP001', competitor_name='Test Competitor'):
+def create_test_competitor(competitor_name='Test Competitor'):
     """Create a test competitor."""
     from dynamic_pricing.models import Competitor
     return Competitor.objects.create(
-        competitor_id=competitor_id,
         competitor_name=competitor_name
     )
 
@@ -130,7 +129,7 @@ def create_test_property_competitor(property, user=None, competitor=None, **kwar
     defaults = {
         'property_id': property,
         'user': user,
-        'competitor_id': competitor,
+        'competitor': competitor,
         'only_follow': False
     }
     defaults.update(kwargs)

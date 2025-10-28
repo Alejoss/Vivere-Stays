@@ -90,23 +90,22 @@ class DpPropertyCompetitorModelTest(TestCase):
         # Create a Competitor instance first
         from dynamic_pricing.models import Competitor
         competitor = Competitor.objects.create(
-            competitor_id='COMP001',
             competitor_name='Test Competitor'
         )
         self.competitor = DpPropertyCompetitor.objects.create(
             property_id=self.property,
             user=self.user,
-            competitor_id=competitor
+            competitor=competitor
         )
 
     def test_competitor_creation(self):
         """Test that a competitor relationship can be created"""
         self.assertEqual(self.competitor.property_id, self.property)
-        self.assertEqual(self.competitor.competitor_id.competitor_id, 'COMP001')
+        self.assertEqual(self.competitor.competitor.competitor_name, 'Test Competitor')
 
     def test_competitor_str_representation(self):
         """Test the string representation of DpPropertyCompetitor"""
-        expected = 'Test Hotel - Competitor Test Competitor (COMP001)'
+        expected = 'Test Hotel - Competitor Test Competitor (ID: 1)'
         self.assertEqual(str(self.competitor), expected)
 
 

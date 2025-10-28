@@ -17,9 +17,9 @@ class PropertyManagementSystemAdmin(admin.ModelAdmin):
 
 @admin.register(Competitor)
 class CompetitorAdmin(admin.ModelAdmin):
-    list_display = ['competitor_id', 'competitor_name', 'booking_link']
-    search_fields = ['competitor_id', 'competitor_name', 'booking_link']
-    readonly_fields = ['competitor_id']
+    list_display = ['id', 'competitor_name', 'booking_link']
+    search_fields = ['competitor_name', 'booking_link']
+    readonly_fields = ['id']
 
 
 @admin.register(Property)
@@ -41,9 +41,9 @@ class DpGeneralSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(DpPropertyCompetitor)
 class DpPropertyCompetitorAdmin(admin.ModelAdmin):
-    list_display = ('property_id', 'competitor_id', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('property_id__name', 'competitor_id')
+    list_display = ('property_id', 'competitor', 'only_follow', 'created_at')
+    list_filter = ('created_at', 'only_follow')
+    search_fields = ('property_id__name', 'competitor__competitor_name')
     readonly_fields = ('created_at', 'updated_at')
 
 

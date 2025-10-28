@@ -307,7 +307,7 @@ class HistoricalCompetitorPriceSerializer(serializers.ModelSerializer):
     """
     Serializer for DpHistoricalCompetitorPrice model.
     """
-    competitor_id = serializers.CharField(source='competitor.competitor_id', read_only=True)
+    competitor_id = serializers.IntegerField(source='competitor.id', read_only=True)
     competitor_name = serializers.CharField(source='competitor.competitor_name', read_only=True)
 
     class Meta:
@@ -583,9 +583,9 @@ class PropertyCompetitorSerializer(serializers.ModelSerializer):
     """
     Serializer for DpPropertyCompetitor with competitor details
     """
-    competitor_id = serializers.CharField(source='competitor_id.competitor_id')
-    competitor_name = serializers.CharField(source='competitor_id.competitor_name')
-    booking_link = serializers.URLField(source='competitor_id.booking_link')
+    competitor_id = serializers.IntegerField(source='competitor.id')
+    competitor_name = serializers.CharField(source='competitor.competitor_name')
+    booking_link = serializers.URLField(source='competitor.booking_link')
     only_follow = serializers.BooleanField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
@@ -1536,36 +1536,35 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
         
         for competitor_name in competitor_names:
             try:
-                # Generate a unique competitor_id from the name
+                # Generate a unique competitor name
                 import re
                 
-                # Clean the name and create a unique ID
+                # Clean the name
                 clean_name = re.sub(r'[^a-zA-Z0-9]', '', competitor_name.lower())
-                competitor_id = hashlib.md5(competitor_name.encode()).hexdigest()[:10]
                 
-                # Check if competitor already exists
-                if Competitor.objects.filter(competitor_id=competitor_id).exists():
+                # Check if competitor already exists by name
+                if Competitor.objects.filter(competitor_name=competitor_name.strip()).exists():
                     # Update existing competitor
-                    competitor = Competitor.objects.get(competitor_id=competitor_id)
-                    competitor.competitor_name = competitor_name.strip()
+                    competitor = Competitor.objects.get(competitor_name=competitor_name.strip())
+                    competitor.booking_link = validated_data.get('booking_link', '')
                     competitor.save()
-                    logger.info(f"Updated existing competitor: {competitor_id}")
+                    logger.info(f"Updated existing competitor: {competitor_name.strip()}")
                 else:
                     # Create new competitor
                     competitor = Competitor.objects.create(
-                        competitor_id=competitor_id,
-                        competitor_name=competitor_name.strip()
+                        competitor_name=competitor_name.strip(),
+                        booking_link=validated_data.get('booking_link', '')
                     )
-                    logger.info(f"Created new competitor: {competitor_id}")
+                    logger.info(f"Created new competitor: {competitor_name.strip()}")
                 
                 # Create or update the property-competitor relationship
                 dp_property_competitor, created = DpPropertyCompetitor.objects.get_or_create(
                     property_id=property_instance,
-                    competitor_id=competitor
+                    competitor=competitor
                 )
                 
                 if created:
-                    logger.info(f"Created property-competitor relationship: {property_instance.id} - {competitor_id}")
+                    logger.info(f"Created property-competitor relationship: {property_instance.id} - {competitor.competitor_name}")
                 
                 created_competitors.append(competitor)
                 
@@ -1647,7 +1646,7 @@ class CompetitorCreateSerializer(serializers.ModelSerializer):
         property_id = validated_data.pop('property_id')
         booking_link = validated_data['booking_link']
         
-        # Extract competitor_id from the booking link
+        # Extract competitor name from the booking link
         # Booking.com URLs have the format: https://www.booking.com/hotel/COUNTRY/HOTEL-NAME.html
         try:
             # Clean the URL by removing query parameters
@@ -1660,30 +1659,29 @@ class CompetitorCreateSerializer(serializers.ModelSerializer):
                 if hotel_index + 2 < len(url_parts):  # We need both country and hotel name
                     country = url_parts[hotel_index + 1]
                     hotel_name = url_parts[hotel_index + 2].replace('.html', '')
-                    competitor_id = f"{country}/{hotel_name}"
+                    competitor_name = f"{country}/{hotel_name}"
                 elif hotel_index + 1 < len(url_parts):
                     # Fallback: just use the country if hotel name is missing
-                    competitor_id = url_parts[hotel_index + 1]
+                    competitor_name = url_parts[hotel_index + 1]
                 else:
                     # Fallback: use a hash of the URL
-                    competitor_id = hashlib.md5(booking_link.encode()).hexdigest()[:10]
+                    competitor_name = f"Competitor {hashlib.md5(booking_link.encode()).hexdigest()[:10]}"
             else:
                 # Fallback: use a hash of the URL
-                competitor_id = hashlib.md5(booking_link.encode()).hexdigest()[:10]
+                competitor_name = f"Competitor {hashlib.md5(booking_link.encode()).hexdigest()[:10]}"
         except Exception as e:
-            self.logger.warning(f"Error extracting competitor_id from URL {booking_link}: {str(e)}")
+            self.logger.warning(f"Error extracting competitor name from URL {booking_link}: {str(e)}")
             # Fallback: use a hash of the URL
-            competitor_id = hashlib.md5(booking_link.encode()).hexdigest()[:10]
+            competitor_name = f"Competitor {hashlib.md5(booking_link.encode()).hexdigest()[:10]}"
         
         # Set minimal required fields for the competitor
-        validated_data['competitor_id'] = competitor_id
-        validated_data['competitor_name'] = f"Competitor {competitor_id}"  # Placeholder name
+        validated_data['competitor_name'] = competitor_name
         validated_data['booking_link'] = booking_link
         
         # Create the competitor
         competitor = super().create(validated_data)
         
-        self.logger.info(f"Created competitor {competitor_id} for property {property_id} with URL {booking_link}")
+        self.logger.info(f"Created competitor {competitor.competitor_name} for property {property_id} with URL {booking_link}")
         
         return competitor
 
@@ -1695,9 +1693,9 @@ class CompetitorDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Competitor
         fields = [
-            'competitor_id', 'competitor_name', 'booking_link'
+            'id', 'competitor_name', 'booking_link'
         ]
-        read_only_fields = ['competitor_id']
+        read_only_fields = ['id']
 
 
 class CompetitorListSerializer(serializers.ModelSerializer):
@@ -1707,7 +1705,7 @@ class CompetitorListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Competitor
         fields = [
-            'competitor_id', 'competitor_name', 'booking_link'
+            'id', 'competitor_name', 'booking_link'
         ] 
 
 

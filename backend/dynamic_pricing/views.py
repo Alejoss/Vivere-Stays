@@ -1488,7 +1488,7 @@ def get_lowest_competitor_prices_queryset(base_queryset=None):
     qs = qs.annotate(
         rn=Window(
             expression=RowNumber(),
-            partition_by=[F('competitor'), F('checkin_date')],
+            partition_by=[F('competitor_id'), F('checkin_date')],
             order_by=F('raw_price').asc(nulls_last=True)
         )
     ).filter(rn=1)
@@ -1499,13 +1499,13 @@ def get_lowest_competitor_prices_queryset(base_queryset=None):
 @permission_classes([IsAuthenticated])
 def lowest_competitor_prices(request):
     """
-    Retrieve, for each (competitor_id, checkin_date), the historical competitor price row with the lowest raw_price.
+    Retrieve, for each (competitor, checkin_date), the historical competitor price row with the lowest raw_price.
     Filters out rows where max_persons < 0 or hotel_name == 'NOT PARSABLE'.
     Equivalent to the following SQL:
 
         SELECT * FROM (
           SELECT *, ROW_NUMBER() OVER(
-            PARTITION BY cp.competitor_id, cp.checkin_date
+            PARTITION BY cp.competitor, cp.checkin_date
             ORDER BY cp.raw_price ASC
           ) as rn
           FROM booking.historical_competitor_prices cp
@@ -1518,7 +1518,7 @@ def lowest_competitor_prices(request):
         WHERE rn = 1;
 
     Returns:
-        List of lowest price records per (competitor_id, checkin_date).
+        List of lowest price records per (competitor, checkin_date).
     """
     qs = get_lowest_competitor_prices_queryset()
     serializer = HistoricalCompetitorPriceSerializer(qs, many=True)
@@ -1562,15 +1562,15 @@ def competitor_prices_weekly_chart(request, property_id):
         property_id=property_id,
         deleted_at__isnull=True
     )
-    competitor_ids = list(competitor_links.values_list('competitor_id', flat=True))
-    competitors = Competitor.objects.filter(id__in=competitor_ids)
+    competitors = list(competitor_links.values_list('competitor', flat=True))
+    competitors = Competitor.objects.filter(id__in=competitors)
     # Get lowest prices for these competitors and dates
     price_qs = DpHistoricalCompetitorPrice.objects.filter(
-        competitor_id__in=competitor_ids,
+        competitor_id__in=competitors,
         checkin_date__in=week_dates
     )
     lowest_prices = get_lowest_competitor_prices_queryset(price_qs)
-    # Build a lookup: {(competitor_id, checkin_date): price}
+    # Build a lookup: {(competitor, checkin_date): price}
     price_lookup = {}
     for row in lowest_prices:
         price_lookup[(row.competitor_id, row.checkin_date)] = row.raw_price
@@ -1627,17 +1627,17 @@ def competitor_prices_for_date(request, property_id):
         deleted_at__isnull=True
     )
     print(f"[DEBUG] competitor_links found: {competitor_links.count()}")
-    competitor_ids = list(competitor_links.values_list('competitor_id', flat=True))
-    print(f"[DEBUG] competitor_ids: {competitor_ids}")
-    competitors = Competitor.objects.filter(id__in=competitor_ids)
+    competitors = list(competitor_links.values_list('competitor', flat=True))
+    print(f"[DEBUG] competitors: {competitors}")
+    competitors = Competitor.objects.filter(id__in=competitors)
     print(f"[DEBUG] competitors found: {competitors.count()}")
     # Get lowest prices for these competitors for the date
     price_qs = DpHistoricalCompetitorPrice.objects.filter(
-        competitor_id__in=competitor_ids,
+        competitor_id__in=competitors,
         checkin_date=date_obj
     )
     lowest_prices = get_lowest_competitor_prices_queryset(price_qs)
-    # Build a lookup: {competitor_id: row}
+    # Build a lookup: {competitor: row}
     price_lookup = {row.competitor_id: row for row in lowest_prices}
     # Build response
     competitors_data = []
@@ -2336,7 +2336,7 @@ class PropertyCompetitorsListView(APIView):
             property_competitors = DpPropertyCompetitor.objects.filter(
                 property_id=property_instance,
                 deleted_at__isnull=True
-            ).select_related('competitor_id').order_by('created_at')
+            ).select_related('competitor').order_by('created_at')
 
             serializer = PropertyCompetitorSerializer(property_competitors, many=True)
 
@@ -2495,7 +2495,7 @@ class PropertyCompetitorUpdateView(APIView):
                 print(f"📝 Updating only_follow: {old_only_follow} -> {property_competitor.only_follow}")
             
             # Update competitor details if provided
-            competitor = property_competitor.competitor_id
+            competitor = property_competitor.competitor
             print(f"📊 Current competitor data: name='{competitor.competitor_name}', booking_link='{competitor.booking_link}'")
             
             if 'competitor_name' in request.data:
@@ -2515,7 +2515,7 @@ class PropertyCompetitorUpdateView(APIView):
             serializer = PropertyCompetitorSerializer(property_competitor)
             print(f"📊 Final competitor data: {serializer.data}")
             
-            print(f"Updated property competitor {competitor_id} for property {property_id}")
+            print(f"Updated property competitor {competitor} for property {property_id}")
             
             return Response({
                 'message': 'Property competitor updated successfully',
@@ -2653,7 +2653,7 @@ class PropertyCompetitorDeleteView(APIView):
                                                   deleted_at__isnull=True)
             
             print(f"✅ Property competitor found: {property_competitor.id}")
-            print(f"📊 Competitor name: {property_competitor.competitor_id.competitor_name}")
+            print(f"📊 Competitor name: {property_competitor.competitor.competitor_name}")
             print(f"📊 Current deleted_at: {property_competitor.deleted_at}")
             
             # Soft delete the competitor by setting deleted_at timestamp
@@ -2666,7 +2666,7 @@ class PropertyCompetitorDeleteView(APIView):
             return Response({
                 'message': 'Property competitor deleted successfully',
                 'competitor_id': competitor_id,
-                'competitor_name': property_competitor.competitor_id.competitor_name
+                'competitor_name': property_competitor.competitor.competitor_name
             }, status=status.HTTP_200_OK)
             
         except Property.DoesNotExist:
@@ -4181,14 +4181,14 @@ class CompetitorCreateView(APIView):
                         property_instance = Property.objects.get(id=property_id)
                         dp_property_competitor, created = DpPropertyCompetitor.objects.get_or_create(
                             property_id=property_instance,
-                            competitor_id=competitor,
+                            competitor=competitor,
                             user=request.user
                         )
                         
                         if created:
-                            logger.info(f"Created property-competitor relationship: {property_id} - {competitor.competitor_id}")
+                            logger.info(f"Created property-competitor relationship: {property_id} - {competitor.competitor}")
                         else:
-                            logger.info(f"Property-competitor relationship already exists: {property_id} - {competitor.competitor_id}")
+                            logger.info(f"Property-competitor relationship already exists: {property_id} - {competitor.competitor}")
                             
                     except Property.DoesNotExist:
                         logger.error(f"Property {property_id} not found when creating competitor relationship")
@@ -4197,7 +4197,7 @@ class CompetitorCreateView(APIView):
                 # Return the created competitor with full details
                 detail_serializer = CompetitorDetailSerializer(competitor)
                 
-                logger.info(f"Competitor created successfully: {competitor.competitor_id} - {competitor.competitor_name}")
+                logger.info(f"Competitor created successfully: {competitor.competitor} - {competitor.competitor_name}")
                 
                 return Response({
                     'message': 'Competitor created successfully',
@@ -4230,7 +4230,7 @@ class CompetitorDetailView(APIView):
         Retrieve a specific competitor by ID
         """
         try:
-            competitor = get_object_or_404(Competitor, competitor_id=competitor_id)
+            competitor = get_object_or_404(Competitor, id=competitor_id)
             serializer = CompetitorDetailSerializer(competitor)
             
             return Response({
@@ -4238,7 +4238,7 @@ class CompetitorDetailView(APIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error retrieving competitor {competitor_id}: {str(e)}")
+            logger.error(f"Error retrieving competitor {competitor}: {str(e)}")
             return Response({
                 'message': 'An error occurred while retrieving the competitor',
                 'error': str(e)
@@ -4249,13 +4249,13 @@ class CompetitorDetailView(APIView):
         Update a specific competitor by ID
         """
         try:
-            competitor = get_object_or_404(Competitor, competitor_id=competitor_id)
+            competitor = get_object_or_404(Competitor, id=competitor_id)
             serializer = CompetitorDetailSerializer(competitor, data=request.data, partial=True)
             
             if serializer.is_valid():
                 serializer.save()
                 
-                logger.info(f"Competitor updated successfully: {competitor_id}")
+                logger.info(f"Competitor updated successfully: {competitor}")
                 
                 return Response({
                     'message': 'Competitor updated successfully',
@@ -4269,7 +4269,7 @@ class CompetitorDetailView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
-            logger.error(f"Error updating competitor {competitor_id}: {str(e)}")
+            logger.error(f"Error updating competitor {competitor}: {str(e)}")
             return Response({
                 'message': 'An error occurred while updating the competitor',
                 'error': str(e)
@@ -4280,7 +4280,7 @@ class CompetitorDetailView(APIView):
         Delete a specific competitor by ID
         """
         try:
-            competitor = get_object_or_404(Competitor, competitor_id=competitor_id)
+            competitor = get_object_or_404(Competitor, id=competitor_id)
             competitor.delete()
             
             logger.info(f"Competitor deleted successfully: {competitor_id}")
@@ -4290,7 +4290,7 @@ class CompetitorDetailView(APIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            logger.error(f"Error deleting competitor {competitor_id}: {str(e)}")
+            logger.error(f"Error deleting competitor {competitor}: {str(e)}")
             return Response({
                 'message': 'An error occurred while deleting the competitor',
                 'error': str(e)

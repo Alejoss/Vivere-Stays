@@ -9,7 +9,6 @@ class Competitor(models.Model):
     """
     Model representing competitor hotels for price monitoring.
     """
-    competitor_id = models.CharField(max_length=255, unique=True)
     competitor_name = models.CharField(max_length=255)
     booking_link = models.URLField(null=True, blank=True)    
     
@@ -19,7 +18,7 @@ class Competitor(models.Model):
         verbose_name_plural = 'Competitors'
     
     def __str__(self):
-        return f"{self.competitor_name} ({self.competitor_id})"
+        return f"{self.competitor_name} (ID: {self.id})"
 
 
 class PropertyManagementSystem(models.Model):
@@ -137,7 +136,7 @@ class DpPropertyCompetitor(models.Model):
     """
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='property_competitors', help_text="User who owns this property")
-    competitor_id = models.ForeignKey(Competitor, on_delete=models.CASCADE, db_column='competitor_id')
+    competitor = models.ForeignKey(Competitor, on_delete=models.CASCADE, related_name='property_competitors')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -145,12 +144,12 @@ class DpPropertyCompetitor(models.Model):
 
     class Meta:
         db_table = 'dynamic_pricing_dppropertycompetitor'
-        unique_together = ('property_id', 'competitor_id')
+        unique_together = ('property_id', 'competitor')
         verbose_name = 'Property Competitor'
         verbose_name_plural = 'Property Competitors'
 
     def __str__(self):
-        return f"{self.property_id.name} - Competitor {self.competitor_id}"
+        return f"{self.property_id.name} - Competitor {self.competitor.competitor_name}"
 
 
 class DpDynamicIncrementsV2(models.Model):
@@ -371,7 +370,6 @@ class DpHistoricalCompetitorPrice(models.Model):
     competitor_id = models.ForeignKey(
         Competitor,
         on_delete=models.CASCADE,
-        db_column='competitor_id',
         related_name='historical_prices',
     )
     scraped_hotel_id = models.CharField(max_length=255)

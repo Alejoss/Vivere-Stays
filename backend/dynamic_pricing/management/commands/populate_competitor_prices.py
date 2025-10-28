@@ -44,9 +44,8 @@ class Command(BaseCommand):
             for i in range(3):
                 comp_name = f"Competitor {i+1} for {property_obj.name}"
                 comp, created = Competitor.objects.get_or_create(
-                    competitor_id=f"{property_obj.id}_comp_{i+1}",
+                    competitor_name=comp_name,
                     defaults={
-                        'competitor_name': comp_name,
                         'booking_link': '',
                     }
                 )
@@ -62,7 +61,7 @@ class Command(BaseCommand):
                         DpPropertyCompetitor.objects.get_or_create(
                             property_id=property_obj,
                             user=user,
-                            competitor_id=comp
+                            competitor=comp
                         )
             # For each competitor, create price history
             for comp in competitors:
