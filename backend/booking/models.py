@@ -49,7 +49,7 @@ class PriceHistory(models.Model):
     region = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
-        managed = settings.DEBUG  # True in dev/staging, False in production
+        managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
         db_table = 'booking.price_history'
         unique_together = [
             'hotel_id', 'checkin_date', 'checkout_date', 'b_id', 

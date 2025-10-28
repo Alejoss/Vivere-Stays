@@ -202,25 +202,25 @@ export const usePriceHistory = (propertyId: string, year?: number, month?: numbe
   return useQuery({
     queryKey: ['dynamic-pricing', 'price-history', propertyId, year, month, refreshKey],
     queryFn: () => dynamicPricingService.getPriceHistory(propertyId, year, month),
-    enabled: !!propertyId,
+    enabled: !!propertyId && !!year && !!month, // Only run when all required params are present
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
-export const useMSPPriceHistory = (propertyId: string, year?: number, month?: number, refreshKey?: number) => {
+export const useMSPPriceHistory = (propertyId: string, year?: number, month?: number, refreshKey?: number, shouldFetch: boolean = true) => {
   return useQuery({
     queryKey: ['dynamic-pricing', 'msp-price-history', propertyId, year, month, refreshKey],
     queryFn: () => dynamicPricingService.getMSPPriceHistory(propertyId, year, month),
-    enabled: !!propertyId,
+    enabled: !!propertyId && !!year && !!month && shouldFetch,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
-export const useCompetitorAveragePriceHistory = (propertyId: string, year?: number, month?: number, refreshKey?: number) => {
+export const useCompetitorAveragePriceHistory = (propertyId: string, year?: number, month?: number, refreshKey?: number, shouldFetch: boolean = true) => {
   return useQuery({
     queryKey: ['dynamic-pricing', 'competitor-average-price-history', propertyId, year, month, refreshKey],
     queryFn: () => dynamicPricingService.getCompetitorAveragePriceHistory(propertyId, year, month),
-    enabled: !!propertyId,
+    enabled: !!propertyId && !!year && !!month && shouldFetch,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

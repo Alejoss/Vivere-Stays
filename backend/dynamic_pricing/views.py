@@ -868,6 +868,9 @@ class PriceHistoryView(APIView):
         Retrieve price history data for a specific property
         Returns the most recent price data for each checkin_date
         """
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        print(f"[DEBUG] Price History requested for property {property_id}, year {year}, month {month}")
         print(f"[PriceHistoryView] GET request - User: {request.user.username}, Property ID: {property_id}")
         logger.info(f"Price history requested - User: {request.user.username}, Property ID: {property_id}")
         
@@ -914,17 +917,22 @@ class PriceHistoryView(APIView):
             else:
                 end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
 
-            # For each day in the month, get the latest record by as_of
-            price_history = []
-            for day in range(1, (end_date - start_date).days + 2):
-                checkin_date = start_date + timedelta(days=day - 1)
-                latest_record = DpPriceChangeHistory.objects.filter(
+            # Single bulk query for the month, reduce to latest per checkin_date
+            qs = (
+                DpPriceChangeHistory.objects
+                .filter(
                     property_id=property_id,
-                    checkin_date=checkin_date
-                ).order_by('-as_of').first()
-                if latest_record:
-                    serializer = PriceHistorySerializer(latest_record)
-                    price_history.append(serializer.data)
+                    checkin_date__gte=start_date,
+                    checkin_date__lte=end_date,
+                )
+                .order_by('checkin_date', '-as_of')
+            )
+            latest_by_date = {}
+            for row in qs:
+                if row.checkin_date not in latest_by_date:
+                    latest_by_date[row.checkin_date] = row
+            price_history = [PriceHistorySerializer(obj).data for obj in latest_by_date.values()]
+            price_history.sort(key=lambda x: x['checkin_date'])
 
             price_history.sort(key=lambda x: x['checkin_date'])
             print(f"[PriceHistoryView] Returning {len(price_history)} price history entries")
@@ -967,6 +975,9 @@ class MSPPriceHistoryView(APIView):
         Retrieve MSP price history data for a specific property
         Returns the MSP values from DpPriceChangeHistory for each checkin_date
         """
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        print(f"[DEBUG] MSP Price History requested for property {property_id}, year {year}, month {month}")
         print(f"[MSPPriceHistoryView] GET request - User: {request.user.username}, Property ID: {property_id}")
         logger.info(f"MSP price history requested - User: {request.user.username}, Property ID: {property_id}")
         
@@ -1013,26 +1024,29 @@ class MSPPriceHistoryView(APIView):
             else:
                 end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
 
-            # For each day in the month, get the latest record by as_of and extract MSP data
-            msp_price_history = []
-            for day in range(1, (end_date - start_date).days + 2):
-                checkin_date = start_date + timedelta(days=day - 1)
-                latest_record = DpPriceChangeHistory.objects.filter(
+            # Single bulk query for the month, reduce to latest per checkin_date
+            qs = (
+                DpPriceChangeHistory.objects
+                .filter(
                     property_id=property_id,
-                    checkin_date=checkin_date
-                ).order_by('-as_of').first()
-                
-                if latest_record:
-                    # Create MSP price history entry with same structure as price history
-                    msp_entry = {
-                        'checkin_date': checkin_date.strftime('%Y-%m-%d'),
-                        'price': latest_record.msp,  # Use MSP value from DpPriceChangeHistory
-                        'occupancy_level': self._get_occupancy_level(latest_record.occupancy),
-                        'overwrite': False,  # MSP doesn't have overwrite concept
-                        'occupancy': latest_record.occupancy
-                    }
-                    msp_price_history.append(msp_entry)
-
+                    checkin_date__gte=start_date,
+                    checkin_date__lte=end_date,
+                )
+                .order_by('checkin_date', '-as_of')
+            )
+            latest_by_date = {}
+            for row in qs:
+                if row.checkin_date not in latest_by_date:
+                    latest_by_date[row.checkin_date] = row
+            msp_price_history = []
+            for row in latest_by_date.values():
+                msp_price_history.append({
+                    'checkin_date': row.checkin_date.strftime('%Y-%m-%d'),
+                    'price': row.msp,
+                    'occupancy_level': self._get_occupancy_level(row.occupancy),
+                    'overwrite': False,
+                    'occupancy': row.occupancy,
+                })
             msp_price_history.sort(key=lambda x: x['checkin_date'])
             print(f"[MSPPriceHistoryView] Returning {len(msp_price_history)} MSP price history entries")
 
@@ -1087,6 +1101,9 @@ class CompetitorAveragePriceHistoryView(APIView):
         Retrieve Competitor Average price history data for a specific property
         Returns the competitor_average values from DpPriceChangeHistory for each checkin_date
         """
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        print(f"[DEBUG] Competitor Average requested for property {property_id}, year {year}, month {month}")
         print(f"[CompetitorAveragePriceHistoryView] GET request - User: {request.user.username}, Property ID: {property_id}")
         logger.info(f"Competitor Average price history requested - User: {request.user.username}, Property ID: {property_id}")
         
@@ -1133,26 +1150,30 @@ class CompetitorAveragePriceHistoryView(APIView):
             else:
                 end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
 
-            # For each day in the month, get the latest record by as_of and extract competitor_average data
-            competitor_avg_price_history = []
-            for day in range(1, (end_date - start_date).days + 2):
-                checkin_date = start_date + timedelta(days=day - 1)
-                latest_record = DpPriceChangeHistory.objects.filter(
+            # Single bulk query for the month, reduce to latest per checkin_date
+            qs = (
+                DpPriceChangeHistory.objects
+                .filter(
                     property_id=property_id,
-                    checkin_date=checkin_date
-                ).order_by('-as_of').first()
-                
-                if latest_record and latest_record.competitor_average is not None:
-                    # Create competitor average price history entry with same structure as price history
-                    competitor_avg_entry = {
-                        'checkin_date': checkin_date.strftime('%Y-%m-%d'),
-                        'price': latest_record.competitor_average,  # Use competitor_average value from DpPriceChangeHistory
-                        'occupancy_level': self._get_occupancy_level(latest_record.occupancy),
-                        'overwrite': False,  # Competitor average doesn't have overwrite concept
-                        'occupancy': latest_record.occupancy
-                    }
-                    competitor_avg_price_history.append(competitor_avg_entry)
-
+                    checkin_date__gte=start_date,
+                    checkin_date__lte=end_date,
+                )
+                .order_by('checkin_date', '-as_of')
+            )
+            latest_by_date = {}
+            for row in qs:
+                if row.checkin_date not in latest_by_date:
+                    latest_by_date[row.checkin_date] = row
+            competitor_avg_price_history = []
+            for row in latest_by_date.values():
+                if row.competitor_average is not None:
+                    competitor_avg_price_history.append({
+                        'checkin_date': row.checkin_date.strftime('%Y-%m-%d'),
+                        'price': row.competitor_average,
+                        'occupancy_level': self._get_occupancy_level(row.occupancy),
+                        'overwrite': False,
+                        'occupancy': row.occupancy,
+                    })
             competitor_avg_price_history.sort(key=lambda x: x['checkin_date'])
             print(f"[CompetitorAveragePriceHistoryView] Returning {len(competitor_avg_price_history)} competitor average price history entries")
 
@@ -3972,13 +3993,17 @@ class InitializePropertyDefaultsView(APIView):
         from .default_values import DEFAULT_DYNAMIC_INCREMENTS, DEFAULT_GENERAL_SETTINGS
         
         try:
+            # Debug prints to trace request lifecycle
+            print(f"[InitializePropertyDefaultsView] INIT user_id={getattr(request.user, 'id', None)} property_id={property_id}")
             # Get the property
             property_instance = get_object_or_404(Property, id=property_id)
             logger.info(f"Initializing defaults for property: {property_id}")
+            print(f"[InitializePropertyDefaultsView] Property resolved id={property_instance.id} name={getattr(property_instance, 'name', None)}")
             
             # Check if user has access to this property
             if not property_instance.profiles.filter(user=request.user).exists():
                 logger.warning(f"User {request.user.id} does not have access to property {property_id}")
+                print(f"[InitializePropertyDefaultsView] PERMISSION DENIED user_id={request.user.id} property_id={property_id}")
                 return Response({
                     'error': 'You do not have permission to access this property'
                 }, status=status.HTTP_403_FORBIDDEN)
@@ -3998,9 +4023,11 @@ class InitializePropertyDefaultsView(APIView):
             
             if settings_created:
                 logger.info(f"Created DpGeneralSettings for property {property_id}")
+                print(f"[InitializePropertyDefaultsView] Created DpGeneralSettings property_id={property_id}")
                 created_count += 1
             else:
                 logger.info(f"DpGeneralSettings already exists for property {property_id}")
+                print(f"[InitializePropertyDefaultsView] DpGeneralSettings already exists property_id={property_id}")
                 skipped_count += 1
             
             # 2. Create DpDynamicIncrementsV2 entries (56 total)
@@ -4032,15 +4059,17 @@ class InitializePropertyDefaultsView(APIView):
                 except Exception as e:
                     error_msg = f"Error creating increment for {increment_data['occupancy_category']}/{increment_data['lead_time_category']}: {str(e)}"
                     logger.error(error_msg)
+                    print(f"[InitializePropertyDefaultsView] {error_msg}")
                     errors.append(error_msg)
             
             logger.info(f"Created {increments_created} dynamic increments, skipped {increments_skipped} existing ones")
+            print(f"[InitializePropertyDefaultsView] Summary increments_created={increments_created} increments_skipped={increments_skipped} settings_created={settings_created}")
             
             # Calculate totals
             total_created = created_count + increments_created
             total_skipped = skipped_count + increments_skipped
             
-            return Response({
+            response_payload = {
                 'message': 'Property defaults initialized successfully',
                 'property_id': property_id,
                 'summary': {
@@ -4051,15 +4080,20 @@ class InitializePropertyDefaultsView(APIView):
                     'total_skipped': total_skipped
                 },
                 'errors': errors if errors else None
-            }, status=status.HTTP_201_CREATED if total_created > 0 else status.HTTP_200_OK)
+            }
+            resp_status = status.HTTP_201_CREATED if total_created > 0 else status.HTTP_200_OK
+            print(f"[InitializePropertyDefaultsView] RESP status={resp_status} property_id={property_id}")
+            return Response(response_payload, status=resp_status)
             
         except Property.DoesNotExist:
             logger.error(f"Property {property_id} not found")
+            print(f"[InitializePropertyDefaultsView] Property not found property_id={property_id}")
             return Response({
                 'error': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Error initializing defaults for property {property_id}: {str(e)}", exc_info=True)
+            print(f"[InitializePropertyDefaultsView] ERROR property_id={property_id} error={str(e)}")
             return Response({
                 'error': 'An error occurred while initializing property defaults',
                 'detail': str(e)

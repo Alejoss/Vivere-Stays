@@ -1273,6 +1273,8 @@ export const dynamicPricingService = {
     }>({
       method: 'POST',
       url: `/dynamic-pricing/properties/${propertyId}/initialize-defaults/`,
+      // This endpoint can perform multiple DB operations (56 rules), so allow more time
+      timeout: 30000,
     });
   },
 

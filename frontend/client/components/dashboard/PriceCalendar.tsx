@@ -247,7 +247,11 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   // Get user properties (only if no propertyId is provided)
   const { data: userPropertiesData, isLoading: propertiesLoading } = useUserProperties();
   
-  // Get price history for the selected property and month
+  // Determine current mode from selectedPrice
+  const isMSPMode = selectedPrice === t('dashboard:calendar.priceTypes.msp');
+  const isCompetitorAverageMode = selectedPrice === t('dashboard:calendar.priceTypes.competitorAverage');
+  
+  // Get price history for the selected property and month (always fetched for occupancy coloring)
   const { data: priceHistoryData, isLoading: priceHistoryLoading } = usePriceHistory(
     selectedPropertyId || '',
     currentYear,
@@ -255,20 +259,22 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     refreshKey // Pass refreshKey as a dependency
   );
 
-  // Get MSP price history for the selected property and month
+  // Get MSP price history only when MSP mode is selected
   const { data: mspPriceHistoryData, isLoading: mspPriceHistoryLoading } = useMSPPriceHistory(
     selectedPropertyId || '',
     currentYear,
     currentMonth + 1, // Convert to 1-indexed for API
-    refreshKey // Pass refreshKey as a dependency
+    refreshKey, // Pass refreshKey as a dependency
+    isMSPMode // Only fetch when MSP mode is selected
   );
 
-  // Get Competitor Average price history for the selected property and month
+  // Get Competitor Average price history only when Competitor Average mode is selected
   const { data: competitorAveragePriceHistoryData, isLoading: competitorAveragePriceHistoryLoading } = useCompetitorAveragePriceHistory(
     selectedPropertyId || '',
     currentYear,
     currentMonth + 1, // Convert to 1-indexed for API
-    refreshKey // Pass refreshKey as a dependency
+    refreshKey, // Pass refreshKey as a dependency
+    isCompetitorAverageMode // Only fetch when Competitor Average mode is selected
   );
 
   // Fetch property data if not in localStorage
@@ -307,42 +313,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     }
   }, [propertyId, selectedPropertyId]);
 
-  // Check MSP status when component loads or property changes
-  useEffect(() => {
-    async function checkMSP() {
-      if (!selectedPropertyId) return;
-      
-      try {
-        const result = await dynamicPricingService.checkMSPStatus(selectedPropertyId);
-        
-        // Log notifications created (if any)
-        if (result.notifications_created.length > 0) {
-          console.log(`MSP Check: ${result.notifications_created.length} notification(s) created for ${result.property_name}`);
-          
-          // Optional: Show a toast notification to user
-          // You can integrate with your toast system here if you have one
-        }
-        
-        // Log coverage stats for debugging
-        if (result.coverage_stats.coverage_percentage < 100) {
-          console.warn(
-            `MSP Coverage: ${result.coverage_stats.coverage_percentage}% ` +
-            `(${result.coverage_stats.covered_days}/${result.coverage_stats.total_days} days covered)`
-          );
-        }
-      } catch (error) {
-        // Silently fail - this is a background check
-        // Don't disrupt user experience if MSP check fails
-        console.error('MSP check failed:', error);
-      }
-    }
-    
-    checkMSP();
-  }, [selectedPropertyId]); // Run when property changes
 
-  // Determine if we're in MSP mode or Competitor Average mode based on selected price type
-  const isMSPMode = selectedPrice === t('dashboard:calendar.priceTypes.msp');
-  const isCompetitorAverageMode = selectedPrice === t('dashboard:calendar.priceTypes.competitorAverage');
   
   const calendarData = generateCalendarData(
     currentYear, 

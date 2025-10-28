@@ -36,7 +36,7 @@ class UnifiedReservations(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = settings.DEBUG  # True in dev/staging, False in production
+        managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
         db_table = 'core.unified_reservations'
         unique_together = (
             ('reservation_id', 'property'),
@@ -85,7 +85,7 @@ class DailyPerformance(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = settings.DEBUG  # True in dev/staging, False in production
+        managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
         db_table = 'core.daily_performance'
         unique_together = (
             ('property', 'pms_source', 'kpi_date', 'metric_type'),

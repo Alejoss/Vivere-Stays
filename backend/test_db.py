@@ -73,6 +73,61 @@ def test_database_connection():
                             print(f"⚠ Schema '{schema}' exists but has no tables")
                     except Exception as e:
                         print(f"✗ Error accessing schema '{schema}': {str(e)}")
+            
+            # Check for price_change_history table specifically
+            print("\n=== Checking price_change_history table ===")
+            try:
+                # Check if table exists in any schema
+                cursor.execute("""
+                    SELECT table_schema, table_name 
+                    FROM information_schema.tables 
+                    WHERE table_name = 'price_change_history'
+                """)
+                price_history_tables = cursor.fetchall()
+                
+                if price_history_tables:
+                    for schema_name, table_name in price_history_tables:
+                        print(f"✓ Found table '{table_name}' in schema '{schema_name}'")
+                        
+                        # Get table structure
+                        cursor.execute(f"""
+                            SELECT column_name, data_type, is_nullable, column_default
+                            FROM information_schema.columns 
+                            WHERE table_schema = '{schema_name}' 
+                            AND table_name = '{table_name}'
+                            ORDER BY ordinal_position
+                        """)
+                        columns = cursor.fetchall()
+                        
+                        print(f"  Table structure for {schema_name}.{table_name}:")
+                        for col_name, data_type, nullable, default in columns:
+                            null_str = "NULL" if nullable == "YES" else "NOT NULL"
+                            default_str = f" DEFAULT {default}" if default else ""
+                            print(f"    - {col_name}: {data_type} {null_str}{default_str}")
+                        
+                        # Check if it has any data
+                        cursor.execute(f"SELECT COUNT(*) FROM {schema_name}.{table_name}")
+                        row_count = cursor.fetchone()[0]
+                        print(f"  Row count: {row_count}")
+                        
+                else:
+                    print("✗ Table 'price_change_history' not found in any schema")
+                    
+                    # List all tables that might be similar
+                    cursor.execute("""
+                        SELECT table_schema, table_name 
+                        FROM information_schema.tables 
+                        WHERE table_name LIKE '%price%' OR table_name LIKE '%history%'
+                        ORDER BY table_schema, table_name
+                    """)
+                    similar_tables = cursor.fetchall()
+                    if similar_tables:
+                        print("  Similar tables found:")
+                        for schema_name, table_name in similar_tables:
+                            print(f"    - {schema_name}.{table_name}")
+                            
+            except Exception as e:
+                print(f"✗ Error checking price_change_history table: {str(e)}")
                         
     except Exception as e:
         print(f"✗ Database connection failed: {str(e)}")

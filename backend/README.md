@@ -2,12 +2,14 @@
 
 docker-compose exec vivere_backend python manage.py makemigrations
 docker-compose exec vivere_backend python manage.py migrate
+
 docker-compose exec vivre_backend python manage.py test --settings=vivere_stays.test_settings
 
 # Run tests with default settings (slower)
 docker-compose exec vivre_backend python manage.py test
 
 # docker remote db (production db)
+docker-compose -f docker-compose.remote.yml up --build
 docker-compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
 
 # Startapp

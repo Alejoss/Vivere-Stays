@@ -15,6 +15,11 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+# Database model management settings
+# Set to True to let Django manage external schema tables (for local development)
+# Set to False to use externally managed tables (for production/remote database)
+MANAGE_EXTERNAL_SCHEMA_TABLES = config('MANAGE_EXTERNAL_SCHEMA_TABLES', default=False, cast=bool)
+
 # ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
 ALLOWED_HOSTS = ['*']
 
@@ -107,7 +112,7 @@ if ENVIRONMENT == 'production' or USE_REMOTE_DB:
             'HOST': config('PROD_POSTGRES_HOST'),
             'PORT': config('PROD_POSTGRES_PORT', default='5432'),
             'OPTIONS': {
-                'options': '-c search_path=public,booking,core',
+                'options': '-c search_path=public,dynamic,booking,core',
                 'sslmode': config('PROD_POSTGRES_SSLMODE', default='require'),
             },
             'CONN_MAX_AGE': 60,  # Connection pooling for production
@@ -124,7 +129,7 @@ else:
             'HOST': config('POSTGRES_HOST', default='postgres'),
             'PORT': config('POSTGRES_PORT', default='5432'),
             'OPTIONS': {
-                'options': '-c search_path=public,booking,core'
+                'options': '-c search_path=public,dynamic,booking,core'
             },
         }
     }

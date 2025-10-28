@@ -34,6 +34,8 @@ export default function WelcomeComplete() {
   }, []);
 
   const handleGoToDashboard = async () => {
+    const clickTs = Date.now();
+    console.log('[WelcomeComplete] Go to Dashboard clicked at', new Date(clickTs).toISOString());
     setError("");
     setIsInitializing(true);
     
@@ -49,16 +51,40 @@ export default function WelcomeComplete() {
       }
       
       console.log('[WelcomeComplete] Initializing defaults for property:', selectedPropertyId);
+      const reqUrl = `/dynamic-pricing/properties/${selectedPropertyId}/initialize-defaults/`;
+      console.log('[WelcomeComplete] Request URL:', reqUrl);
+      console.log('[WelcomeComplete] Navigator.onLine:', navigator.onLine);
+      
+      const start = performance.now();
       
       // Initialize property defaults (DpGeneralSettings and DpDynamicIncrementsV2)
       const result = await dynamicPricingService.initializePropertyDefaults(selectedPropertyId);
+      const durationMs = Math.round(performance.now() - start);
+      console.log('[WelcomeComplete] API success in', durationMs, 'ms. Response:', result);
       
       console.log('[WelcomeComplete] Defaults initialized successfully:', result);
       
       // Navigate to dashboard after successful initialization
       navigate("/dashboard");
     } catch (err: any) {
-      console.error('[WelcomeComplete] Error initializing property defaults:', err);
+      const durationMsg = typeof performance !== 'undefined' ? ` after ~${Math.round(performance.now())}ms from mount` : '';
+      console.error('[WelcomeComplete] Error initializing property defaults' + durationMsg + ':', err);
+      
+      // Network diagnostics
+      // Try to unwrap typical fetch/axios style errors
+      const status = err?.response?.status ?? err?.status;
+      const statusText = err?.response?.statusText ?? err?.statusText;
+      const url = err?.config?.url ?? err?.request?.url;
+      console.log('[WelcomeComplete] Error diagnostics:', {
+        navigatorOnline: typeof navigator !== 'undefined' ? navigator.onLine : undefined,
+        status,
+        statusText,
+        url,
+        hasResponseData: !!err?.response?.data,
+      });
+      if (err?.response?.data) {
+        console.log('[WelcomeComplete] Response data:', err.response.data);
+      }
       
       // Extract error message
       let errorMessage = "Failed to initialize property settings. Please try again.";
@@ -69,6 +95,9 @@ export default function WelcomeComplete() {
           errorMessage = err.detail;
         } else if ('message' in err) {
           errorMessage = err.message;
+        }
+        if (err?.response?.data?.error) {
+          errorMessage = err.response.data.error;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;

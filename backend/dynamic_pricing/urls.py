@@ -97,7 +97,7 @@ urlpatterns = [
     # Minimum Selling Price endpoints
     path('msp/', MinimumSellingPriceView.as_view(), name='msp'),
     path('properties/<str:property_id>/msp/', PropertyMSPView.as_view(), name='property-msp'),
-    path('properties/<str:property_id>/msp/<str:msp_id>/', PropertyMSPView.as_view(), name='property-msp-delete'),
+    path('properties/<str:property_id>/msp/<int:msp_id>/', PropertyMSPView.as_view(), name='property-msp-delete'),
     
     # Price History endpoints
     path('properties/<str:property_id>/price-history/', PriceHistoryView.as_view(), name='price-history'),

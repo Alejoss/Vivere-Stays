@@ -337,9 +337,7 @@ class DpPriceChangeHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='price_change_history', help_text="User who owns this property")    
     checkin_date = models.DateField()  # Date for which the price change was calculated    
     # overwrite_price field moved to OverwritePriceHistory model
-    updated_at = models.DateTimeField(auto_now=True)
     # Key pricing data (managed externally)
-    created_at = models.DateTimeField(auto_now_add=True)
     as_of = models.DateTimeField()  # Timestamp when the data was captured
     occupancy = models.FloatField(null=True, blank=True)  # Occupancy level
     pms_hotel_id = models.CharField(max_length=255)
@@ -352,8 +350,8 @@ class DpPriceChangeHistory(models.Model):
     competitor_average = models.FloatField(null=True, blank=True)  # Competitor average price
 
     class Meta:
-        managed = settings.DEBUG  # True in dev/staging, False in production
-        db_table = 'booking.dp_price_change_history'
+        managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
+        db_table = 'price_change_history'
         unique_together = ('property_id', 'checkin_date', 'as_of')
         verbose_name = 'Price Change History'
         verbose_name_plural = 'Price Change Histories'
@@ -395,7 +393,7 @@ class DpHistoricalCompetitorPrice(models.Model):
     update_tz = models.DateTimeField()
 
     class Meta:
-        managed = settings.DEBUG  # True in dev/staging, False in production
+        managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
         db_table = 'booking.dp_historical_competitor_price'
         verbose_name = 'Historical Competitor Price'
         verbose_name_plural = 'Historical Competitor Prices'
@@ -549,7 +547,7 @@ class UnifiedRoomsAndRates(models.Model):
     last_updated = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        managed = settings.DEBUG  # True in dev/staging, False in production
+        managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
         db_table = 'core.unified_rooms_and_rates'
         verbose_name = 'Unified Room and Rate'
         verbose_name_plural = 'Unified Rooms and Rates'
