@@ -371,6 +371,7 @@ class DpHistoricalCompetitorPrice(models.Model):
         Competitor,
         on_delete=models.CASCADE,
         related_name='historical_prices',
+        db_column='competitor_id',
     )
     scraped_hotel_id = models.CharField(max_length=255)
     hotel_name = models.CharField(max_length=255)
@@ -392,7 +393,7 @@ class DpHistoricalCompetitorPrice(models.Model):
 
     class Meta:
         managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
-        db_table = 'booking.historical_competitor_prices'
+        db_table = 'historical_competitor_prices'
         verbose_name = 'Historical Competitor Price'
         verbose_name_plural = 'Historical Competitor Prices'
 
