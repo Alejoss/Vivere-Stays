@@ -99,6 +99,7 @@ export interface CompetitorWeeklyPricesResponse {
     id: number;
     name: string;
     prices: (number | null)[];
+    sold_out?: boolean[];
   }>;
 }
 

@@ -1384,7 +1384,7 @@ class AvailableRatesUnifiedSerializer(serializers.Serializer):
     
     # Fields from DpRoomRates (configuration)
     increment_type = serializers.CharField(default='Percentage')
-    increment_value = serializers.IntegerField(default=0)
+    increment_value = serializers.FloatField(default=0)
     is_base_rate = serializers.BooleanField(default=False)
     
     def to_representation(self, instance):
@@ -1416,19 +1416,8 @@ class AvailableRatesUpdateSerializer(serializers.Serializer):
     """
     rate_id = serializers.CharField()
     increment_type = serializers.ChoiceField(choices=DpRoomRates.INCREMENT_TYPE_CHOICES)
-    increment_value = serializers.IntegerField()
+    increment_value = serializers.FloatField()
     is_base_rate = serializers.BooleanField()
-    
-    def validate_increment_value(self, value):
-        """
-        Validate increment value based on increment type
-        """
-        if value < 0:
-            raise serializers.ValidationError(
-                "Increment value cannot be negative",
-                code=ErrorCode.RATE_INCREMENT_VALUE_NEGATIVE
-            )
-        return value
 
 
 class BulkAvailableRatesUpdateSerializer(serializers.Serializer):

@@ -1707,29 +1707,35 @@ def competitor_prices_weekly_chart(request, property_id):
             # Ignore rows with non-numeric price
             pass
 
-    # Build response with the same shape used by the frontend
+    # Build response with the same shape used by the frontend, plus sold_out flags per day
     competitors_data = []
     for comp in competitors:
         slug = competitor_slug_by_id.get(comp.id)
         comp_map = price_map.get(slug, {})
         prices_for_week = []
+        sold_out_for_week = []
         for d in week_dates:
             entry = comp_map.get(d)
             if not entry:
                 prices_for_week.append(None)
+                sold_out_for_week.append(False)
                 continue
             if entry['best_price'] is not None:
                 prices_for_week.append(entry['best_price'])
+                sold_out_for_week.append(False)
             elif entry['sold_out']:
                 # Represent sold-out as null (no numeric price)
                 prices_for_week.append(None)
+                sold_out_for_week.append(True)
             else:
                 prices_for_week.append(None)
+                sold_out_for_week.append(False)
 
         competitors_data.append({
             'id': comp.id,
             'name': comp.competitor_name,
             'prices': prices_for_week,
+            'sold_out': sold_out_for_week,
         })
 
     return Response({

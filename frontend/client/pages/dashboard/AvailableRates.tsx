@@ -122,7 +122,7 @@ export default function AvailableRates() {
   };
 
   const updateIncrementValue = (rateId: string, value: string) => {
-    const numericValue = parseInt(value) || 0;
+    const numericValue = value === '' || value === '-' ? 0 : parseFloat(value) || 0;
     setEditableRates(prev => 
       prev.map(rate => 
         rate.rate_id === rateId 
@@ -340,7 +340,7 @@ export default function AvailableRates() {
                           value={rate.increment_value}
                           onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
                           className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
-                          min="0"
+                          step="0.01"
                         />
                       </div>
 
@@ -426,7 +426,7 @@ export default function AvailableRates() {
                             value={rate.increment_value}
                             onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
                             className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
-                            min="0"
+                            step="0.01"
                           />
                         </div>
                       </div>

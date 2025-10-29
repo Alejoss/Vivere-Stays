@@ -308,7 +308,7 @@ class DpRoomRates(models.Model):
     rate_id = models.CharField(max_length=255)
     is_base_rate = models.BooleanField(default=False)
     increment_type = models.CharField(max_length=255, choices=INCREMENT_TYPE_CHOICES, default='Percentage')
-    increment_value = models.IntegerField(default=0)
+    increment_value = models.FloatField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

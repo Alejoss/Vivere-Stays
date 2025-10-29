@@ -608,10 +608,14 @@ function WeeklyPriceOverview({
           <div className="flex-1 flex items-center justify-center px-4">
             {visibleDays.map(({ date, index }) => {
               const value = competitor.prices[index];
+              const isSoldOut = Array.isArray((competitor as any).sold_out) ? (competitor as any).sold_out[index] : false;
+              const display = isSoldOut
+                ? 'Sold Out'
+                : (value !== null && value !== undefined ? `$${value}` : '--');
               return (
                 <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
-                  <div className="px-3 py-1 bg-gray-100 rounded text-[13px] text-gray-600">
-                    {value !== null && value !== undefined ? `$${value}` : '--'}
+                  <div className={`px-3 py-1 bg-gray-100 rounded text-[13px] ${isSoldOut ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                    {display}
                   </div>
                 </div>
               );
@@ -634,10 +638,14 @@ function WeeklyPriceOverview({
           <div className="flex-1 flex items-center justify-center px-4">
             {competitorData.dates.map((date, index) => {
               const value = competitor.prices[index];
+              const isSoldOut = Array.isArray((competitor as any).sold_out) ? (competitor as any).sold_out[index] : false;
+              const display = isSoldOut
+                ? 'Sold Out'
+                : (value !== null && value !== undefined ? `$${value}` : '--');
               return (
                 <div key={index} className="w-[78px] lg:w-[90px] xl:w-[110px] flex justify-center">
-                  <div className="px-3 py-1 bg-gray-100 rounded text-[13px] text-gray-600">
-                    {value !== null && value !== undefined ? `$${value}` : '--'}
+                  <div className={`px-3 py-1 bg-gray-100 rounded text-[13px] ${isSoldOut ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                    {display}
                   </div>
                 </div>
               );
@@ -788,7 +796,7 @@ function StayPeriodSelector({
     const out = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000);
     return `${out.getFullYear()}-${String(out.getMonth() + 1).padStart(2, '0')}-${String(out.getDate()).padStart(2, '0')}`;
   });
-  const [totalPrice, setTotalPrice] = useState("337.50");
+  const [totalPrice, setTotalPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [nightlyRate, setNightlyRate] = useState("67.50"); // Default value
   const [nightlyRateLoading, setNightlyRateLoading] = useState(false);
