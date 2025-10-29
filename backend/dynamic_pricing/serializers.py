@@ -18,6 +18,7 @@ from .models import (
     OverwritePriceHistory
 )
 from vivere_stays.error_codes import ErrorCode
+from vivere_stays.logging_utils import get_logger, log_database_operation, LogLevel, LoggerNames
 
 
 class PropertyManagementSystemSerializer(serializers.ModelSerializer):
@@ -653,32 +654,47 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
         """
         Create offer increment with additional logging and user assignment
         """
-        import logging
-        logger = logging.getLogger(__name__)
+        logger = get_logger(LoggerNames.DYNAMIC_PRICING)
         
         # Set the user from the request context
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             validated_data['user'] = request.user
         
-        logger.info(f"Creating offer increment with validated data: {validated_data}")
+        log_database_operation(
+            logger, "CREATE", "DpOfferIncrements",
+            request=request, user=request.user if request else None,
+            validated_data=validated_data
+        )
         
         try:
             offer_increment = super().create(validated_data)
-            logger.info(f"Offer increment created successfully with ID: {offer_increment.id}")
+            log_database_operation(
+                logger, "CREATE", "DpOfferIncrements",
+                offer_increment.id, request, request.user if request else None,
+                success=True
+            )
             return offer_increment
         except Exception as e:
-            logger.error(f"Error creating offer increment: {str(e)}", exc_info=True)
+            log_database_operation(
+                logger, "CREATE", "DpOfferIncrements",
+                request=request, user=request.user if request else None,
+                error=str(e), success=False
+            )
             raise
 
     def update(self, instance, validated_data):
         """
         Update offer increment with additional logging
         """
-        import logging
-        logger = logging.getLogger(__name__)
+        logger = get_logger(LoggerNames.DYNAMIC_PRICING)
+        request = self.context.get('request')
         
-        logger.info(f"Updating offer increment {instance.id} with validated data: {validated_data}")
+        log_database_operation(
+            logger, "UPDATE", "DpOfferIncrements",
+            instance.id, request, request.user if request else None,
+            validated_data=validated_data
+        )
         
         try:
             # Update the instance with the validated data
@@ -686,10 +702,18 @@ class OfferIncrementsSerializer(serializers.ModelSerializer):
                 setattr(instance, attr, value)
             
             instance.save()
-            logger.info(f"Offer increment {instance.id} updated successfully")
+            log_database_operation(
+                logger, "UPDATE", "DpOfferIncrements",
+                instance.id, request, request.user if request else None,
+                success=True
+            )
             return instance
         except Exception as e:
-            logger.error(f"Error updating offer increment {instance.id}: {str(e)}", exc_info=True)
+            log_database_operation(
+                logger, "UPDATE", "DpOfferIncrements",
+                instance.id, request, request.user if request else None,
+                error=str(e), success=False
+            )
             raise
 
 

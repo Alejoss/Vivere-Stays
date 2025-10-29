@@ -315,10 +315,10 @@ export default function Register() {
         const currentStep = progressData.current_step;
         console.log('📍 Google Register: Current onboarding step:', currentStep);
         
-        // For new Google users, check if they need to complete their profile
+        // For new Google users, redirect to dashboard (same as completed users)
         if (currentStep === 'register' && !progressData.completed) {
-          console.log('📝 Google Register: User at register step and onboarding not completed, redirecting to profile completion');
-          navigate("/profile-completion");
+          console.log('📝 Google Register: User at register step, redirecting to dashboard');
+          navigate("/dashboard");
           return;
         }
         

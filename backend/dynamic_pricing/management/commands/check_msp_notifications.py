@@ -20,8 +20,9 @@ from dynamic_pricing.notification_triggers import (
     check_and_notify_msp_status
 )
 import logging
+from vivere_stays.logging_utils import get_logger, log_operation, LogLevel, LoggerNames
 
-logger = logging.getLogger(__name__)
+logger = get_logger(LoggerNames.DYNAMIC_PRICING)
 
 
 class Command(BaseCommand):
@@ -49,9 +50,26 @@ class Command(BaseCommand):
         property_id = options.get('property_id')
         all_users = options.get('all_users')
 
+        log_operation(
+            logger, LogLevel.INFO,
+            f"Starting MSP notification check command",
+            "msp_check_command_start",
+            None, None,
+            user_id=user_id,
+            property_id=property_id,
+            all_users=all_users
+        )
+
         try:
             if property_id:
                 # Check specific property
+                log_operation(
+                    logger, LogLevel.INFO,
+                    f"Checking MSP for specific property",
+                    "msp_check_property",
+                    None, None,
+                    property_id=property_id
+                )
                 self.stdout.write(f"Checking MSP for property: {property_id}")
                 
                 try:
@@ -62,6 +80,16 @@ class Command(BaseCommand):
                         user = property_obj.profiles.first().user
                         result = check_and_notify_msp_status(user, property_obj)
                         
+                        log_operation(
+                            logger, LogLevel.INFO,
+                            f"MSP check completed for property",
+                            "msp_check_property_success",
+                            None, user,
+                            property_id=property_id,
+                            property_name=property_obj.name,
+                            notifications_created=result['count']
+                        )
+                        
                         self.stdout.write(
                             self.style.SUCCESS(
                                 f"✓ Property {property_obj.name}: "
@@ -69,6 +97,13 @@ class Command(BaseCommand):
                             )
                         )
                     else:
+                        log_operation(
+                            logger, LogLevel.WARNING,
+                            f"Property has no associated users",
+                            "msp_check_property_no_users",
+                            None, None,
+                            property_id=property_id
+                        )
                         self.stdout.write(
                             self.style.WARNING(
                                 f"Property {property_id} has no associated users"
@@ -76,6 +111,13 @@ class Command(BaseCommand):
                         )
                         
                 except Property.DoesNotExist:
+                    log_operation(
+                        logger, LogLevel.ERROR,
+                        f"Property not found",
+                        "msp_check_property_not_found",
+                        None, None,
+                        property_id=property_id
+                    )
                     self.stdout.write(
                         self.style.ERROR(f"Property {property_id} not found")
                     )

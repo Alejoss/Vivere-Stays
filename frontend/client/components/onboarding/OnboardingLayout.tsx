@@ -13,8 +13,7 @@ export default function OnboardingLayout({ children }: OnboardingLayoutProps) {
   // This prevents 401 errors during registration when user isn't authenticated yet
   const stepsWithoutProperty = [
     '/register',
-    '/verify-email',
-    '/profile-completion'
+    '/verify-email'
   ];
   
   const needsPropertyProvider = !stepsWithoutProperty.includes(location.pathname);

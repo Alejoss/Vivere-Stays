@@ -29,3 +29,7 @@ postmarker==1.0
 factory-boy==3.3.0
 faker==20.1.0
 coverage==7.3.2
+
+# Logging and Monitoring
+sentry-sdk[django]==1.40.6
+python-json-logger==2.0.7

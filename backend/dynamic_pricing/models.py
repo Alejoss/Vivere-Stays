@@ -392,7 +392,7 @@ class DpHistoricalCompetitorPrice(models.Model):
 
     class Meta:
         managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
-        db_table = 'booking.dp_historical_competitor_price'
+        db_table = 'booking.historical_competitor_prices'
         verbose_name = 'Historical Competitor Price'
         verbose_name_plural = 'Historical Competitor Prices'
 

@@ -1,6 +1,7 @@
 import logging
 
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from vivere_stays.logging_utils import get_logger, log_operation, log_business_event, LogLevel, LoggerNames
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -49,15 +50,20 @@ import stripe
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 endpoint_secret = settings.STRIPE_WEBHOOK_SECRET 
-logger = logging.getLogger(__name__)
+logger = get_logger(LoggerNames.PROFILES)
 
 class CreateCheckoutSession(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        print("🔔 CreateCheckoutSession: Request received!")
-        print(f"🔔 CreateCheckoutSession: User: {request.user.username} (ID: {request.user.id})")
-        print(f"🔔 CreateCheckoutSession: Request data: {request.data}")
+        log_business_event(
+            logger, "checkout_session_request",
+            f"Stripe checkout session request received from user {request.user.username}",
+            request, request.user,
+            plan_type=request.data.get("planType"),
+            number_of_rooms=request.data.get("numberOfRooms"),
+            calculated_price=request.data.get("calculatedPrice")
+        )
         
         user = request.user
         data = request.data
@@ -66,24 +72,62 @@ class CreateCheckoutSession(APIView):
         number_of_rooms = data.get("numberOfRooms")
         calculated_price = data.get("calculatedPrice")
 
-        print(f"🔔 CreateCheckoutSession: Plan type: {plan_type}")
-        print(f"🔔 CreateCheckoutSession: Number of rooms: {number_of_rooms}")
-        print(f"🔔 CreateCheckoutSession: Calculated price: {calculated_price}")
+        log_operation(
+            logger, LogLevel.DEBUG,
+            f"Processing checkout session for plan: {plan_type}",
+            "checkout_session_processing",
+            request, request.user,
+            plan_type=plan_type,
+            number_of_rooms=number_of_rooms,
+            calculated_price=calculated_price
+        )
 
         unit_amount = int(calculated_price * 100)
-        print(f"🔔 CreateCheckoutSession: Unit amount (cents): {unit_amount}")
+        
+        log_operation(
+            logger, LogLevel.DEBUG,
+            f"Unit amount calculated: {unit_amount} cents",
+            "unit_amount_calculated",
+            request, request.user,
+            unit_amount=unit_amount,
+            calculated_price=calculated_price
+        )
 
         try:
-            print("🔔 CreateCheckoutSession: Creating Stripe price...")
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Creating Stripe price for {plan_type} plan",
+                "stripe_price_creation",
+                request, request.user,
+                plan_type=plan_type,
+                unit_amount=unit_amount
+            )
+            
             price = stripe.Price.create(
                 unit_amount=unit_amount,
                 currency="usd",
                 recurring={"interval": "month"},
                 product_data={"name": f"{plan_type.title()} Plan"},
             )
-            print(f"🔔 CreateCheckoutSession: Stripe price created successfully! Price ID: {price.id}")
+            
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Stripe price created successfully",
+                "stripe_price_created",
+                request, request.user,
+                price_id=price.id,
+                plan_type=plan_type
+            )
 
-            print("🔔 CreateCheckoutSession: Creating Stripe checkout session...")
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Creating Stripe checkout session",
+                "stripe_session_creation",
+                request, request.user,
+                price_id=price.id,
+                plan_type=plan_type
+            )
+            
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
                 line_items=[{"price": price.id, "quantity": 1}],
@@ -96,14 +140,29 @@ class CreateCheckoutSession(APIView):
                     "number_of_rooms": str(number_of_rooms),
                 },
             )
-            print(f"🔔 CreateCheckoutSession: Stripe session created successfully! Session ID: {session.id}")
-            print(f"🔔 CreateCheckoutSession: Session URL: {session.url}")
+            
+            log_business_event(
+                logger, "checkout_session_created",
+                f"Stripe checkout session created successfully for user {request.user.username}",
+                request, request.user,
+                session_id=session.id,
+                plan_type=plan_type,
+                number_of_rooms=number_of_rooms,
+                price_id=price.id
+            )
 
             return Response({"sessionId": session.id})
             
         except Exception as e:
-            print(f"❌ CreateCheckoutSession: Error creating Stripe session: {str(e)}")
-            print(f"❌ CreateCheckoutSession: Error type: {type(e).__name__}")
+            log_operation(
+                logger, LogLevel.ERROR,
+                f"Error creating Stripe session: {str(e)}",
+                "stripe_session_error",
+                request, request.user,
+                error=str(e),
+                error_type=type(e).__name__,
+                plan_type=plan_type
+            )
             return Response(
                 {"error": f"Failed to create checkout session: {str(e)}"}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -111,54 +170,116 @@ class CreateCheckoutSession(APIView):
  
 @csrf_exempt
 def stripe_webhook(request):
-    print("🔔 Stripe webhook received!")
-    print(f"Request method: {request.method}")
-    print(f"Request headers: {dict(request.META)}")
+    log_operation(
+        logger, LogLevel.INFO,
+        f"Stripe webhook received",
+        "stripe_webhook_received",
+        request, None,
+        method=request.method,
+        payload_length=len(request.body)
+    )
     
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
     endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
     
-    print(f"Payload length: {len(payload)}")
-    print(f"Signature header: {sig_header}")
-    print(f"Endpoint secret configured: {bool(endpoint_secret)}")
+    log_operation(
+        logger, LogLevel.DEBUG,
+        f"Webhook signature verification",
+        "webhook_signature_check",
+        request, None,
+        has_signature=bool(sig_header),
+        has_secret=bool(endpoint_secret)
+    )
 
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, endpoint_secret
         )
-        print(f"✅ Verified event: {event['id']}")
-        print(f"Event type: {event['type']}")
+        log_operation(
+            logger, LogLevel.INFO,
+            f"Stripe webhook event verified",
+            "webhook_event_verified",
+            request, None,
+            event_id=event['id'],
+            event_type=event['type']
+        )
     except ValueError as e:
-        print(f"❌ Invalid payload: {e}")
+        log_operation(
+            logger, LogLevel.ERROR,
+            f"Invalid webhook payload: {e}",
+            "webhook_invalid_payload",
+            request, None,
+            error=str(e)
+        )
         return JsonResponse({"error": "Invalid payload"}, status=400)
     except stripe.SignatureVerificationError as e:
-        print(f"❌ Invalid signature: {e}")
+        log_operation(
+            logger, LogLevel.ERROR,
+            f"Invalid webhook signature: {e}",
+            "webhook_invalid_signature",
+            request, None,
+            error=str(e)
+        )
         return JsonResponse({"error": "Invalid signature"}, status=400)
 
     
     if event["type"] == "checkout.session.completed":
-        print("💳 Processing checkout.session.completed event")
+        log_business_event(
+            logger, "checkout_session_completed",
+            f"Processing checkout.session.completed event",
+            request, None,
+            event_id=event['id']
+        )
+        
         session = event["data"]["object"]
         user_id = session["metadata"].get("user_id")
-        print(f"User ID from metadata: {user_id}")
+        
+        log_operation(
+            logger, LogLevel.DEBUG,
+            f"User ID extracted from session metadata",
+            "user_id_extracted",
+            request, None,
+            user_id=user_id
+        )
         
         try:
             user = User.objects.get(id=user_id)
-            print(f"Found user: {user.username} ({user.email})")
+            log_operation(
+                logger, LogLevel.INFO,
+                f"User found for payment processing",
+                "user_found_for_payment",
+                request, user,
+                user_id=user_id,
+                username=user.username,
+                email=user.email
+            )
         except User.DoesNotExist:
-            print(f"❌ User with ID {user_id} not found!")
+            log_operation(
+                logger, LogLevel.ERROR,
+                f"User with ID {user_id} not found for payment processing",
+                "user_not_found_for_payment",
+                request, None,
+                user_id=user_id
+            )
             return JsonResponse({"error": "User not found"}, status=404)
-        
-        print('payment done')
-        print(f"Session data: {session}")
         
         # You can access details here
         customer_id = session.get("customer")
         subscription_id = session.get("subscription")
         client_email = session.get("customer_details", {}).get("email")
 
-        print(f"Customer: {customer_id}, Email: {client_email}, Subscription: {subscription_id}")
+        log_operation(
+            logger, LogLevel.DEBUG,
+            f"Payment details extracted from session",
+            "payment_details_extracted",
+            request, user,
+            customer_id=customer_id,
+            subscription_id=subscription_id,
+            client_email=client_email,
+            amount_total=session.get("amount_total"),
+            currency=session.get("currency")
+        )
 
         try:
             payment = Payment.objects.create(
@@ -174,15 +295,46 @@ def stripe_webhook(request):
                 invoice_id=session.get("invoice"),
                 raw_response=session,  # optional
             )
-            print(f"✅ Payment record created: {payment.id}")
+            
+            log_business_event(
+                logger, "payment_record_created",
+                f"Payment record created successfully for user {user.username}",
+                request, user,
+                payment_id=payment.id,
+                amount_total=session["amount_total"],
+                currency=session["currency"],
+                subscription_id=subscription_id
+            )
         except Exception as e:
-            print(f"❌ Error creating payment record: {e}")
+            log_operation(
+                logger, LogLevel.ERROR,
+                f"Error creating payment record: {e}",
+                "payment_record_creation_error",
+                request, user,
+                error=str(e),
+                user_id=user_id,
+                session_id=session["id"]
+            )
             return JsonResponse({"error": "Failed to create payment record"}, status=500)
 
     else:
-        print(f"⚠️ Unhandled event type: {event['type']}")
+        log_operation(
+            logger, LogLevel.INFO,
+            f"Unhandled webhook event type: {event['type']}",
+            "unhandled_webhook_event",
+            request, None,
+            event_type=event['type'],
+            event_id=event['id']
+        )
 
-    print("✅ Webhook processed successfully")
+    log_operation(
+        logger, LogLevel.INFO,
+        f"Webhook processed successfully",
+        "webhook_processed_success",
+        request, None,
+        event_type=event['type'],
+        event_id=event['id']
+    )
     return JsonResponse({"status": "success"}, status=200)
 class CheckAuth(APIView):
     permission_classes = [AllowAny]

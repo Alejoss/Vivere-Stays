@@ -62,6 +62,9 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'vivere_stays.middleware.RequestLoggingMiddleware',
+    'vivere_stays.middleware.UserContextMiddleware',
+    'vivere_stays.middleware.PerformanceLoggingMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -314,3 +317,11 @@ HOTEL_COMPETITOR_SERVICE_TOKEN = config('HOTEL_COMPETITOR_SERVICE_TOKEN', defaul
 ADMIN_SITE_HEADER = "Vivere Administration"
 ADMIN_SITE_TITLE = "Vivere Administration"
 ADMIN_INDEX_TITLE = "Vivere Administration"
+
+# Logging Configuration
+from .logging_config import configure_logging
+LOGGING = configure_logging()
+
+# Sentry Configuration
+from .sentry_config import init_sentry
+init_sentry()

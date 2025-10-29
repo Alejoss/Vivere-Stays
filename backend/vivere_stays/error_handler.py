@@ -74,6 +74,35 @@ def custom_exception_handler(exc, context):
     # Log the exception for debugging
     view = context.get('view', None)
     request = context.get('request', None)
+    
+    # Add Sentry breadcrumbs for better error context
+    try:
+        from .sentry_config import add_breadcrumb, set_extra_context
+        add_breadcrumb(
+            message=f"API Exception: {exc.__class__.__name__}",
+            category="api_error",
+            level="error",
+            data={
+                'view': view.__class__.__name__ if view else 'Unknown',
+                'status_code': response.status_code,
+                'user_id': request.user.id if request and request.user.is_authenticated else None,
+                'path': request.path if request else None,
+                'method': request.method if request else None,
+            }
+        )
+        set_extra_context(
+            exception_type=exc.__class__.__name__,
+            view_name=view.__class__.__name__ if view else None,
+            status_code=response.status_code,
+            request_path=request.path if request else None,
+            request_method=request.method if request else None,
+        )
+    except ImportError:
+        # Sentry not configured, continue with regular logging
+        pass
+    
+    # Enhanced logging with request ID
+    request_id = getattr(request, 'request_id', None) if request else None
     logger.warning(
         f"API Exception: {exc.__class__.__name__} in {view.__class__.__name__ if view else 'Unknown'} "
         f"- Status: {response.status_code} - User: {request.user if request else 'Anonymous'}",
@@ -83,6 +112,9 @@ def custom_exception_handler(exc, context):
             'view': view.__class__.__name__ if view else None,
             'status_code': response.status_code,
             'user': str(request.user) if request else None,
+            'request_id': request_id,
+            'path': request.path if request else None,
+            'method': request.method if request else None,
         }
     )
     

@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
 from django.shortcuts import get_object_or_404
 import logging
+import time
 from datetime import datetime, timedelta
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -14,6 +15,7 @@ from .serializers import MinimumSellingPriceSerializer
 import requests
 from decouple import config
 from django.conf import settings
+from vivere_stays.logging_utils import get_logger, log_operation, log_api_call, LogLevel, LoggerNames
 
 from .models import Property, PropertyManagementSystem, DpMinimumSellingPrice, DpPriceChangeHistory, DpGeneralSettings, DpOfferIncrements, DpDynamicIncrementsV2, DpLosReduction, DpLosSetup, DpRoomRates, UnifiedRoomsAndRates, Competitor, DpPropertyCompetitor, OverwritePriceHistory
 from .serializers import (
@@ -52,7 +54,7 @@ from django.db import models
 import requests
 
 # Get logger for dynamic_pricing views
-logger = logging.getLogger(__name__)
+logger = get_logger(LoggerNames.DYNAMIC_PRICING)
 
 
 class PropertyManagementSystemListView(APIView):
@@ -870,42 +872,85 @@ class PriceHistoryView(APIView):
         """
         year = request.GET.get('year')
         month = request.GET.get('month')
-        print(f"[DEBUG] Price History requested for property {property_id}, year {year}, month {month}")
-        print(f"[PriceHistoryView] GET request - User: {request.user.username}, Property ID: {property_id}")
-        logger.info(f"Price history requested - User: {request.user.username}, Property ID: {property_id}")
+        
+        log_operation(
+            logger, LogLevel.INFO, 
+            f"Price history requested for property {property_id}",
+            "price_history_request",
+            request, request.user,
+            property_id=property_id, year=year, month=month
+        )
         
         try:
             user_profile = request.user.profile
-            print(f"[PriceHistoryView] User profile ID: {user_profile.id}")
             
             # Get user's properties for debugging
             user_properties = user_profile.get_properties()
             user_property_ids = list(user_properties.values_list('id', flat=True))
-            print(f"[PriceHistoryView] User has {user_properties.count()} properties: {user_property_ids}")
-            logger.info(f"User {request.user.username} has {user_properties.count()} properties: {user_property_ids}")
+            
+            log_operation(
+                logger, LogLevel.DEBUG,
+                f"User has {user_properties.count()} properties",
+                "user_properties_check",
+                request, request.user,
+                property_count=user_properties.count(),
+                user_property_ids=user_property_ids
+            )
             
             if not user_profile.properties.filter(id=property_id).exists():
-                print(f"[PriceHistoryView] ACCESS DENIED - Property {property_id} not found in user's properties")
-                logger.warning(f"User {request.user.username} attempted to access property {property_id} without ownership. User properties: {user_property_ids}")
+                log_operation(
+                    logger, LogLevel.WARNING,
+                    f"Access denied - Property {property_id} not found in user's properties",
+                    "property_access_denied",
+                    request, request.user,
+                    property_id=property_id,
+                    user_property_ids=user_property_ids
+                )
                 return Response({
                     'message': 'Property not found or access denied'
                 }, status=status.HTTP_404_NOT_FOUND)
 
-            print(f"[PriceHistoryView] ACCESS GRANTED - Property {property_id} found in user's properties")
-            logger.info(f"Access granted to property {property_id} for user {request.user.username}")
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Access granted to property {property_id}",
+                "property_access_granted",
+                request, request.user,
+                property_id=property_id
+            )
             
             property_obj = get_object_or_404(Property, id=property_id)
-            print(f"[PriceHistoryView] Property found: {property_obj.name}")
+            
+            log_operation(
+                logger, LogLevel.DEBUG,
+                f"Property found: {property_obj.name}",
+                "property_retrieved",
+                request, request.user,
+                property_id=property_id,
+                property_name=property_obj.name
+            )
 
             year = request.query_params.get('year', timezone.now().year)
             month = request.query_params.get('month', timezone.now().month)
-            print(f"[PriceHistoryView] Query params - Year: {year}, Month: {month}")
+            
             try:
                 year = int(year)
                 month = int(month)
-                print(f"[PriceHistoryView] Parsed params - Year: {year}, Month: {month}")
+                
+                log_operation(
+                    logger, LogLevel.DEBUG,
+                    f"Query params parsed successfully",
+                    "query_params_parsed",
+                    request, request.user,
+                    year=year, month=month
+                )
             except ValueError:
-                print(f"[PriceHistoryView] Invalid year/month parameters: {year}, {month}")
+                log_operation(
+                    logger, LogLevel.WARNING,
+                    f"Invalid year/month parameters: {year}, {month}",
+                    "invalid_query_params",
+                    request, request.user,
+                    year=year, month=month
+                )
                 return Response({
                     'message': 'Invalid year or month parameter'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -935,7 +980,15 @@ class PriceHistoryView(APIView):
             price_history.sort(key=lambda x: x['checkin_date'])
 
             price_history.sort(key=lambda x: x['checkin_date'])
-            print(f"[PriceHistoryView] Returning {len(price_history)} price history entries")
+            
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Returning {len(price_history)} price history entries",
+                "price_history_retrieved",
+                request, request.user,
+                property_id=property_id,
+                entry_count=len(price_history)
+            )
 
             response_data = {
                 'property_id': property_id,
@@ -945,19 +998,37 @@ class PriceHistoryView(APIView):
                 'price_history': price_history,
                 'count': len(price_history)
             }
-            print(f"[PriceHistoryView] SUCCESS - Returning response with {len(price_history)} entries")
-            logger.info(f"Successfully returned {len(price_history)} price history entries for property {property_id}")
+            
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Successfully returning response with {len(price_history)} entries",
+                "price_history_success",
+                request, request.user,
+                property_id=property_id,
+                entry_count=len(price_history)
+            )
             
             return Response(response_data, status=status.HTTP_200_OK)
         except Property.DoesNotExist:
-            print(f"[PriceHistoryView] ERROR - Property {property_id} does not exist in database")
-            logger.warning(f"Property {property_id} not found in database")
+            log_operation(
+                logger, LogLevel.WARNING,
+                f"Property {property_id} does not exist in database",
+                "property_not_found",
+                request, request.user,
+                property_id=property_id
+            )
             return Response({
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(f"[PriceHistoryView] ERROR - Exception occurred: {str(e)}")
-            logger.error(f"Error retrieving price history for property {property_id}: {str(e)}", exc_info=True)
+            log_operation(
+                logger, LogLevel.ERROR,
+                f"Exception occurred while retrieving price history: {str(e)}",
+                "price_history_error",
+                request, request.user,
+                property_id=property_id,
+                error=str(e)
+            )
             return Response({
                 'message': 'An error occurred while retrieving price history',
                 'error': str(e)
@@ -1664,16 +1735,33 @@ class FetchCompetitorsView(APIView):
         Fetch competitors from the external API using a Booking.com URL.
         Expected request body: {"booking_url": "https://booking.com/hotel/..."}
         """
-        print(f"[FetchCompetitorsView] Starting request processing")
-        print(f"[FetchCompetitorsView] Request data: {request.data}")
+        log_operation(
+            logger, LogLevel.INFO,
+            "Starting competitor fetch request processing",
+            "competitor_fetch_start",
+            request, getattr(request, 'user', None),
+            request_data=request.data
+        )
         
         try:
             # Get the booking URL from the request
             booking_url = request.data.get('booking_url')
-            print(f"[FetchCompetitorsView] Booking URL: {booking_url}")
+            
+            log_operation(
+                logger, LogLevel.DEBUG,
+                f"Booking URL extracted: {booking_url}",
+                "booking_url_extracted",
+                request, getattr(request, 'user', None),
+                booking_url=booking_url
+            )
             
             if not booking_url:
-                print(f"[FetchCompetitorsView] ERROR: No booking_url provided")
+                log_operation(
+                    logger, LogLevel.WARNING,
+                    "No booking_url provided in request",
+                    "missing_booking_url",
+                    request, getattr(request, 'user', None)
+                )
                 return Response({
                     'error': 'booking_url is required in request body'
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -1682,12 +1770,22 @@ class FetchCompetitorsView(APIView):
             api_base_url = settings.COMPETITOR_API_BASE_URL
             api_token = config('HOTEL_COMPETITOR_SERVICE_TOKEN', default='')
             
-            print(f"[FetchCompetitorsView] API Base URL: {api_base_url}")
-            print(f"[FetchCompetitorsView] API Token: {api_token[:10]}..." if api_token else "None")
+            log_operation(
+                logger, LogLevel.DEBUG,
+                f"API configuration loaded",
+                "api_config_loaded",
+                request, getattr(request, 'user', None),
+                api_base_url=api_base_url,
+                has_token=bool(api_token)
+            )
             
             if not api_token:
-                print(f"[FetchCompetitorsView] ERROR: No API token configured")
-                logger.error("Competitor API configuration missing: COMPETITOR_API_TOKEN")
+                log_operation(
+                    logger, LogLevel.ERROR,
+                    "No API token configured for competitor service",
+                    "missing_api_token",
+                    request, getattr(request, 'user', None)
+                )
                 return Response({
                     'error': 'Competitor API not properly configured'
                 }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -1703,75 +1801,132 @@ class FetchCompetitorsView(APIView):
                 'num_competitors': 5
             }
 
-            print(f"[FetchCompetitorsView] Full API URL: {api_url}")
-            print(f"[FetchCompetitorsView] Headers: {headers}")
-            print(f"[FetchCompetitorsView] Payload: {payload}")
-
-            logger.info(f"Calling external competitor API: {api_url}")
-            logger.info(f"Request payload: {payload}")
+            log_api_call(
+                logger, LogLevel.INFO,
+                f"Calling external competitor API",
+                "competitor_api",
+                api_url,
+                "POST",
+                request=request,
+                user=getattr(request, 'user', None),
+                payload=payload
+            )
 
             # Make the request to the external API
-            print(f"[FetchCompetitorsView] Making HTTP request...")
+            start_time = time.time()
             response = requests.post(api_url, headers=headers, json=payload, timeout=30)
-            print(f"[FetchCompetitorsView] Response status code: {response.status_code}")
-            print(f"[FetchCompetitorsView] Response headers: {dict(response.headers)}")
+            response_time = time.time() - start_time
             
-            # Print response content for debugging
-            try:
-                response_text = response.text
-                print(f"[FetchCompetitorsView] Response text: {response_text}")
-                if response_text:
-                    print(f"[FetchCompetitorsView] Response text length: {len(response_text)}")
-            except Exception as e:
-                print(f"[FetchCompetitorsView] Error reading response text: {e}")
+            log_api_call(
+                logger, LogLevel.INFO,
+                f"External API response received",
+                "competitor_api",
+                api_url,
+                "POST",
+                response.status_code,
+                response_time,
+                request=request,
+                user=getattr(request, 'user', None),
+                response_size=len(response.content) if hasattr(response, 'content') else 0
+            )
             
             if response.status_code == 401:
-                print(f"[FetchCompetitorsView] ERROR: 401 Unauthorized - Authentication failed")
-                logger.error("Authentication failed with external competitor API")
+                log_api_call(
+                    logger, LogLevel.ERROR,
+                    f"Authentication failed with external competitor API",
+                    "competitor_api",
+                    api_url,
+                    "POST",
+                    response.status_code,
+                    response_time,
+                    request=request,
+                    user=getattr(request, 'user', None)
+                )
                 return Response({
                     'error': 'Authentication failed with competitor API'
                 }, status=status.HTTP_401_UNAUTHORIZED)
             
             if response.status_code == 404:
-                print(f"[FetchCompetitorsView] ERROR: 404 Not Found - No competitors found")
-                logger.warning(f"No competitors found for URL: {booking_url}")
+                log_api_call(
+                    logger, LogLevel.WARNING,
+                    f"No competitors found for URL",
+                    "competitor_api",
+                    api_url,
+                    "POST",
+                    response.status_code,
+                    response_time,
+                    request=request,
+                    user=getattr(request, 'user', None),
+                    booking_url=booking_url
+                )
                 return Response({
                     'error': 'No competitors found for the provided Booking.com URL'
                 }, status=status.HTTP_404_NOT_FOUND)
             
-            print(f"[FetchCompetitorsView] Response status is not 401 or 404, checking for other errors...")
-            
             try:
                 response.raise_for_status()
-                print(f"[FetchCompetitorsView] Response status is OK, proceeding to parse JSON")
+                log_operation(
+                    logger, LogLevel.DEBUG,
+                    f"Response status is OK, proceeding to parse JSON",
+                    "api_response_ok",
+                    request, getattr(request, 'user', None),
+                    status_code=response.status_code
+                )
             except requests.exceptions.HTTPError as e:
-                print(f"[FetchCompetitorsView] HTTP Error: {e}")
-                print(f"[FetchCompetitorsView] Response content: {response.text}")
+                log_api_call(
+                    logger, LogLevel.ERROR,
+                    f"HTTP Error from external API: {e}",
+                    "competitor_api",
+                    api_url,
+                    "POST",
+                    response.status_code,
+                    response_time,
+                    request=request,
+                    user=getattr(request, 'user', None),
+                    error=str(e),
+                    response_content=response.text[:500]  # Truncate for logging
+                )
                 raise
             
             # Parse the response
             try:
                 api_response = response.json()
-                print(f"[FetchCompetitorsView] Successfully parsed JSON response")
-                print(f"[FetchCompetitorsView] API Response keys: {list(api_response.keys()) if isinstance(api_response, dict) else 'Not a dict'}")
+                log_operation(
+                    logger, LogLevel.DEBUG,
+                    f"Successfully parsed JSON response",
+                    "json_parsed",
+                    request, getattr(request, 'user', None),
+                    response_keys=list(api_response.keys()) if isinstance(api_response, dict) else 'Not a dict'
+                )
                 
                 logger.info(f"External API response: {api_response}")
             except Exception as e:
-                print(f"[FetchCompetitorsView] ERROR parsing JSON response: {e}")
-                print(f"[FetchCompetitorsView] Raw response text: {response.text}")
+                log_operation(
+                    logger, LogLevel.ERROR,
+                    f"Error parsing JSON response: {e}",
+                    "json_parse_error",
+                    request, getattr(request, 'user', None),
+                    error=str(e),
+                    raw_response=response.text[:500]  # Truncate for logging
+                )
                 raise
             
             # Extract the competitors from the response
             competitors = api_response.get('competitors', [])
             target_hotel = api_response.get('target_hotel', {})
             
-            print(f"[FetchCompetitorsView] Found {len(competitors)} competitors in response")
-            print(f"[FetchCompetitorsView] Target hotel: {target_hotel.get('name', 'Unknown')}")
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Found {len(competitors)} competitors in response",
+                "competitors_found",
+                request, getattr(request, 'user', None),
+                competitor_count=len(competitors),
+                target_hotel_name=target_hotel.get('name', 'Unknown')
+            )
             
             # Process and return the competitors
             processed_competitors = []
             for i, comp in enumerate(competitors):
-                print(f"[FetchCompetitorsView] Processing competitor {i+1}: {comp}")
                 hotel_data = comp.get('hotel', {})
                 processed_competitor = {
                     'name': hotel_data.get('name', 'Unknown Hotel'),
@@ -1783,7 +1938,15 @@ class FetchCompetitorsView(APIView):
                     'amenities': hotel_data.get('amenities', [])
                 }
                 processed_competitors.append(processed_competitor)
-                print(f"[FetchCompetitorsView] Processed competitor: {processed_competitor['name']}")
+                
+                log_operation(
+                    logger, LogLevel.DEBUG,
+                    f"Processed competitor: {processed_competitor['name']}",
+                    "competitor_processed",
+                    request, getattr(request, 'user', None),
+                    competitor_name=processed_competitor['name'],
+                    competitor_index=i+1
+                )
 
             final_response = {
                 'message': f'Successfully found {len(processed_competitors)} competitors',
@@ -1798,31 +1961,52 @@ class FetchCompetitorsView(APIView):
                 'total_competitors_found': api_response.get('total_competitors_found')
             }
             
-            print(f"[FetchCompetitorsView] SUCCESS: Returning response with {len(processed_competitors)} competitors")
-            print(f"[FetchCompetitorsView] Final response: {final_response}")
+            log_operation(
+                logger, LogLevel.INFO,
+                f"Successfully returning response with {len(processed_competitors)} competitors",
+                "competitor_fetch_success",
+                request, getattr(request, 'user', None),
+                competitor_count=len(processed_competitors),
+                target_hotel_name=target_hotel.get('name', 'Unknown')
+            )
             
             return Response(final_response, status=status.HTTP_200_OK)
             
         except requests.exceptions.Timeout:
-            print(f"[FetchCompetitorsView] ERROR: Request timeout")
-            logger.error("Timeout while calling external competitor API")
+            log_operation(
+                logger, LogLevel.ERROR,
+                f"Request timeout while calling external competitor API",
+                "competitor_api_timeout",
+                request, getattr(request, 'user', None),
+                booking_url=booking_url
+            )
             return Response({
                 'error': 'Request to competitor API timed out'
             }, status=status.HTTP_504_GATEWAY_TIMEOUT)
             
         except requests.exceptions.RequestException as e:
-            print(f"[FetchCompetitorsView] ERROR: Request exception: {e}")
-            logger.error(f"Error calling external competitor API: {str(e)}")
+            log_operation(
+                logger, LogLevel.ERROR,
+                f"Request exception while calling external competitor API: {e}",
+                "competitor_api_request_error",
+                request, getattr(request, 'user', None),
+                error=str(e),
+                booking_url=booking_url
+            )
             return Response({
                 'error': f'Failed to call competitor API: {str(e)}'
             }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             
         except Exception as e:
-            print(f"[FetchCompetitorsView] ERROR: Unexpected exception: {e}")
-            print(f"[FetchCompetitorsView] Exception type: {type(e)}")
-            import traceback
-            print(f"[FetchCompetitorsView] Traceback: {traceback.format_exc()}")
-            logger.error(f"Unexpected error in FetchCompetitorsView: {str(e)}")
+            log_operation(
+                logger, LogLevel.ERROR,
+                f"Unexpected exception in FetchCompetitorsView: {e}",
+                "competitor_fetch_unexpected_error",
+                request, getattr(request, 'user', None),
+                error=str(e),
+                error_type=type(e).__name__,
+                booking_url=booking_url
+            )
             return Response({
                 'error': 'An unexpected error occurred while fetching competitors'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
