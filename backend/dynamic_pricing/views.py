@@ -1642,7 +1642,7 @@ def competitor_prices_weekly_chart(request, property_id):
         }
     """
     from datetime import datetime, timedelta
-    from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice, CompetitorPriceMV, Competitor
+    from .models import DpPropertyCompetitor, CompetitorPriceMV, Competitor
 
     # Parse start_date
     start_date_str = request.query_params.get('start_date')
@@ -1661,28 +1661,80 @@ def competitor_prices_weekly_chart(request, property_id):
     )
     competitors = list(competitor_links.values_list('competitor', flat=True))
     competitors = Competitor.objects.filter(id__in=competitors)
-    # Get lowest prices for these competitors and dates
-    price_qs = DpHistoricalCompetitorPrice.objects.filter(
-        competitor_id__in=competitors,
-        checkin_date__in=week_dates
+    # Normalize competitor names to MV competitor_id slugs (lowercase, spaces -> dashes)
+    def _to_slug(name: str) -> str:
+        return name.lower().replace(' ', '-') if name else name
+
+    competitor_slug_by_id = {comp.id: _to_slug(comp.competitor_name) for comp in competitors}
+    mv_competitor_ids = list(competitor_slug_by_id.values())
+
+    # Fetch all MV rows for the competitor slugs across the week dates
+    mv_rows_qs = (
+        CompetitorPriceMV.objects
+        .filter(competitor_id__in=mv_competitor_ids, checkin_date__in=week_dates)
+        .order_by('competitor_id', 'checkin_date', 'price', 'room_name')
     )
-    lowest_prices = get_lowest_competitor_prices_queryset(price_qs)
-    # Build a lookup: {(competitor, checkin_date): price}
-    price_lookup = {}
-    for row in lowest_prices:
-        price_lookup[(row.competitor_id, row.checkin_date)] = row.raw_price
-    # Build response
+
+    # Build lookup: slug -> date -> {best_price: number|None, sold_out: bool}
+    price_map = {}
+    for row in mv_rows_qs.values('competitor_id', 'checkin_date', 'price', 'sold_out_message'):
+        slug = row['competitor_id']
+        checkin_date = row['checkin_date']
+        price = row['price']
+        sold_out_message = row.get('sold_out_message')
+
+        comp_map = price_map.setdefault(slug, {})
+        day_entry = comp_map.setdefault(checkin_date, {'best_price': None, 'sold_out': False})
+
+        # Determine if this row indicates sold out
+        price_is_zero = False
+        try:
+            price_is_zero = (price is not None and float(price) == 0.0)
+        except Exception:
+            price_is_zero = False
+
+        if price_is_zero and sold_out_message:
+            day_entry['sold_out'] = True
+            # Do not set numeric price when sold out; continue
+            continue
+
+        # Track minimum non-zero positive price
+        try:
+            if price is not None and float(price) > 0.0:
+                if day_entry['best_price'] is None or float(price) < float(day_entry['best_price']):
+                    day_entry['best_price'] = price
+        except Exception:
+            # Ignore rows with non-numeric price
+            pass
+
+    # Build response with the same shape used by the frontend
     competitors_data = []
     for comp in competitors:
-        prices = [price_lookup.get((comp.id, d), None) for d in week_dates]
+        slug = competitor_slug_by_id.get(comp.id)
+        comp_map = price_map.get(slug, {})
+        prices_for_week = []
+        for d in week_dates:
+            entry = comp_map.get(d)
+            if not entry:
+                prices_for_week.append(None)
+                continue
+            if entry['best_price'] is not None:
+                prices_for_week.append(entry['best_price'])
+            elif entry['sold_out']:
+                # Represent sold-out as null (no numeric price)
+                prices_for_week.append(None)
+            else:
+                prices_for_week.append(None)
+
         competitors_data.append({
             'id': comp.id,
             'name': comp.competitor_name,
-            'prices': prices
+            'prices': prices_for_week,
         })
+
     return Response({
         'dates': [d.isoformat() for d in week_dates],
-        'competitors': competitors_data
+        'competitors': competitors_data,
     }, status=status.HTTP_200_OK)
 
 
