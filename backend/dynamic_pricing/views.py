@@ -1412,6 +1412,9 @@ def price_history_for_date_range(request, property_id):
                 price_data = serializer.data
                 price_history.append(price_data)
                 
+                # Debug logging for occupancy
+                print(f"[price_history_for_date_range] Date: {current_date}, Raw occupancy: {latest_record.occupancy}, Serialized occupancy: {price_data.get('occupancy')}, Occupancy level: {price_data.get('occupancy_level')}")
+                
                 # Add to total for average calculation
                 if price_data['price'] is not None:
                     total_price += price_data['price']
@@ -1731,7 +1734,7 @@ def competitor_prices_for_date(request, property_id):
         .filter(competitor_id__in=mv_competitor_ids, checkin_date=date_obj)
         .order_by('competitor_id', 'price', 'room_name')
     )
-    mv_rows = list(mv_rows_qs.values('competitor_id', 'hotel_name', 'room_name', 'price', 'raw_price', 'currency', 'update_tz'))
+    mv_rows = list(mv_rows_qs.values('competitor_id', 'hotel_name', 'room_name', 'price', 'raw_price', 'currency', 'sold_out_message', 'update_tz'))
     # (removed verbose MV logging)
     
     results = mv_rows
@@ -1750,12 +1753,28 @@ def competitor_prices_for_date(request, property_id):
         row = price_lookup.get(comp_slug)
         
         if row:
+            # Determine sold-out state: price equals 0 and sold_out_message present
+            sold_out = False
+            try:
+                price_val = row['price']
+                price_is_zero = price_val is not None and float(price_val) == 0.0
+            except Exception:
+                price_is_zero = False
+            sold_out = bool(price_is_zero and row.get('sold_out_message'))
+
+            # If price is zero and not sold out, hide this competitor (skip)
+            if price_is_zero and not sold_out:
+                continue
+
             competitor_data = {
                 'id': comp.id,
                 'name': comp.competitor_name,
-                'price': row['price'],
+                # If sold out, hide numeric price and signal sold_out to client
+                'price': None if sold_out else row['price'],
                 'currency': row.get('currency'),
                 'room_name': row.get('room_name'),
+                'sold_out': sold_out,
+                'sold_out_message': row.get('sold_out_message') if sold_out else None,
             }
             competitors_data.append(competitor_data)
         else:
@@ -4018,9 +4037,22 @@ class PropertyAvailableRatesView(APIView):
             available_rates = UnifiedRoomsAndRates.objects.filter(
                 property_id=property_instance
             ).order_by('room_id', 'rate_id')
-            
-            # Serialize the data using the unified serializer
-            serializer = AvailableRatesUnifiedSerializer(available_rates, many=True)
+
+            # Build a pre-fetched map of DpRoomRates by rate_id to avoid N+1
+            rate_ids = list(available_rates.values_list('rate_id', flat=True))
+            config_qs = DpRoomRates.objects.filter(
+                property_id=property_instance,
+                user=request.user,
+                rate_id__in=rate_ids
+            ).values('rate_id', 'increment_type', 'increment_value', 'is_base_rate')
+            rate_config_by_rate_id = {c['rate_id']: c for c in config_qs}
+
+            # Serialize the data using the unified serializer with context map
+            serializer = AvailableRatesUnifiedSerializer(
+                available_rates,
+                many=True,
+                context={'rate_config_by_rate_id': rate_config_by_rate_id}
+            )
             
             return Response({
                 'rates': serializer.data,
@@ -4050,6 +4082,8 @@ class PropertyAvailableRatesUpdateView(APIView):
         Update available rates configuration for a specific property
         """
         try:
+            from django.db import transaction
+            from django.utils import timezone
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
             
@@ -4072,54 +4106,74 @@ class PropertyAvailableRatesUpdateView(APIView):
             
             validated_data = serializer.validated_data
             rates_data = validated_data['rates']
-            
+
             updated_rates = []
             created_rates = []
             errors = []
-            
-            # Process each rate configuration
-            for rate_data in rates_data:
-                try:
-                    rate_id = rate_data['rate_id']
-                    increment_type = rate_data['increment_type']
-                    increment_value = rate_data['increment_value']
-                    is_base_rate = rate_data['is_base_rate']
-                    
-                    # If this rate is being set as base rate, unset all other base rates for this property
-                    if is_base_rate:
-                        DpRoomRates.objects.filter(
-                            property_id=property_instance,
-                            user=request.user
-                        ).update(is_base_rate=False)
-                    
-                    # Get or create the DpRoomRates object
-                    room_rate, created = DpRoomRates.objects.get_or_create(
+
+            with transaction.atomic():
+                # If any item is set as base rate, unset all others ONCE
+                if any(r.get('is_base_rate') for r in rates_data):
+                    DpRoomRates.objects.filter(
                         property_id=property_instance,
-                        user=request.user,
-                        rate_id=rate_id,
-                        defaults={
-                            'increment_type': increment_type,
-                            'increment_value': increment_value,
-                            'is_base_rate': is_base_rate
-                        }
+                        user=request.user
+                    ).update(is_base_rate=False)
+
+                rate_ids = [r['rate_id'] for r in rates_data]
+                existing_qs = DpRoomRates.objects.filter(
+                    property_id=property_instance,
+                    user=request.user,
+                    rate_id__in=rate_ids
+                )
+                existing_by_rate_id = {rr.rate_id: rr for rr in existing_qs}
+
+                to_create = []
+                to_update = []
+
+                now = timezone.now()
+
+                for rate_data in rates_data:
+                    try:
+                        rate_id = rate_data['rate_id']
+                        increment_type = rate_data['increment_type']
+                        increment_value = rate_data['increment_value']
+                        is_base_rate = rate_data['is_base_rate']
+
+                        if rate_id in existing_by_rate_id:
+                            room_rate = existing_by_rate_id[rate_id]
+                            room_rate.increment_type = increment_type
+                            room_rate.increment_value = increment_value
+                            room_rate.is_base_rate = is_base_rate
+                            room_rate.updated_at = now
+                            to_update.append(room_rate)
+                        else:
+                            room_rate = DpRoomRates(
+                                property_id=property_instance,
+                                user=request.user,
+                                rate_id=rate_id,
+                                increment_type=increment_type,
+                                increment_value=increment_value,
+                                is_base_rate=is_base_rate,
+                                created_at=now,
+                                updated_at=now,
+                            )
+                            to_create.append(room_rate)
+                    except Exception as e:
+                        errors.append({
+                            'rate_id': rate_data.get('rate_id', 'unknown'),
+                            'error': str(e)
+                        })
+
+                if to_create:
+                    DpRoomRates.objects.bulk_create(to_create, ignore_conflicts=True)
+                    created_rates.extend(to_create)
+                if to_update:
+                    DpRoomRates.objects.bulk_update(
+                        to_update,
+                        ['increment_type', 'increment_value', 'is_base_rate', 'updated_at']
                     )
-                    
-                    if not created:
-                        # Update existing record
-                        room_rate.increment_type = increment_type
-                        room_rate.increment_value = increment_value
-                        room_rate.is_base_rate = is_base_rate
-                        room_rate.save()
-                        updated_rates.append(room_rate)
-                    else:
-                        created_rates.append(room_rate)
-                        
-                except Exception as e:
-                    errors.append({
-                        'rate_id': rate_data.get('rate_id', 'unknown'),
-                        'error': str(e)
-                    })
-            
+                    updated_rates.extend(to_update)
+
             return Response({
                 'message': 'Available rates configuration updated successfully',
                 'property_id': property_instance.id,

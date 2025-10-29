@@ -242,6 +242,16 @@ export const useProperty = (propertyId: string) => {
   });
 };
 
+// Single-date price history (includes occupancy and occupancy_level)
+export const usePriceForDate = (propertyId: string | undefined, dateISO: string | undefined, refreshKey?: number) => {
+  return useQuery({
+    queryKey: ['dynamic-pricing', 'price-for-date', propertyId, dateISO, refreshKey],
+    queryFn: () => dynamicPricingService.getPriceForDate(propertyId as string, dateISO as string),
+    enabled: !!propertyId && !!dateISO,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export const useDynamicPMSList = () => {
   return useQuery({
     queryKey: ['dynamic-pricing', 'pms-list'],

@@ -111,7 +111,7 @@ export default function CompetitorPrices({
 
   // Format date as "August 23rd"
   const formattedDate = `${selectedDate.month} ${selectedDate.day}${getOrdinal(selectedDate.day)}`;
-  const occupancyValue = selectedDayPriceHistory ? Math.round(selectedDayPriceHistory.occupancy) : null;
+  const occupancyValue = selectedDayPriceHistory ? Math.round(selectedDayPriceHistory.occupancy * 100) : null;
 
   return (
     <div className="flex flex-col p-[23px] border border-hotel-border-light rounded-lg bg-white gap-6">
@@ -129,14 +129,16 @@ export default function CompetitorPrices({
           <div className="text-center text-gray-500 py-4">Loading competitor prices...</div>
         ) : error ? (
           <div className="text-center text-red-500 py-4">{error}</div>
-        ) : competitorData.length === 0 ? (
+        ) : competitorData.filter(c => c.sold_out || (c.price !== null && c.price !== undefined && c.price !== 0)).length === 0 ? (
           <div className="text-center text-gray-500 py-4">No competitor data</div>
         ) : (
-          competitorData.map((competitor, index) => (
+          competitorData
+            .filter((competitor) => competitor.sold_out || (competitor.price !== null && competitor.price !== undefined && competitor.price !== 0))
+            .map((competitor, index, arr) => (
             <div
               key={competitor.id}
               className={`flex justify-between items-center py-[13px] px-[2px] ${
-                index < competitorData.length - 1
+                index < arr.length - 1
                   ? "border-b-[1.5px] border-hotel-border-light"
                   : ""
               }`}
@@ -145,7 +147,11 @@ export default function CompetitorPrices({
                 {competitor.name}
               </span>
               <span className="text-responsive-sm font-semibold text-[#8A8E94]">
-                {competitor.price !== null && competitor.price !== undefined ? `$${competitor.price}` : "--"}
+                {competitor.sold_out
+                  ? "Sold Out"
+                  : (competitor.price !== null && competitor.price !== undefined
+                      ? `$${competitor.price}`
+                      : "--")}
               </span>
             </div>
           ))

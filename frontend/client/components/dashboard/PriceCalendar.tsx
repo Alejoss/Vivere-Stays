@@ -252,7 +252,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   const isCompetitorAverageMode = selectedPrice === t('dashboard:calendar.priceTypes.competitorAverage');
   
   // Get price history for the selected property and month (always fetched for occupancy coloring)
-  const { data: priceHistoryData, isLoading: priceHistoryLoading } = usePriceHistory(
+  const { data: priceHistoryData, isLoading: priceHistoryLoading, isError: priceHistoryError, error: priceHistoryErr } = usePriceHistory(
     selectedPropertyId || '',
     currentYear,
     currentMonth + 1, // Convert to 1-indexed for API
@@ -555,6 +555,18 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       {!isConnected && !hasPMS && (
         <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
           {t('dashboard:calendar.pmsWarning')}
+        </div>
+      )}
+
+      {/* Error/Loading for price history */}
+      {priceHistoryLoading && (
+        <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded">
+          {t('dashboard:calendar.loadingPrices', 'Loading prices...')}
+        </div>
+      )}
+      {priceHistoryError && (
+        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-800 rounded">
+          {t('dashboard:calendar.errorLoadingPrices', 'Failed to load prices. Please try again.')}
         </div>
       )}
 

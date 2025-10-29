@@ -587,7 +587,7 @@ class UnifiedRoomsAndRates(models.Model):
 
     class Meta:
         managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
-        db_table = 'core.unified_rooms_and_rates'
+        db_table = 'unified_rooms_and_rates'
         verbose_name = 'Unified Room and Rate'
         verbose_name_plural = 'Unified Rooms and Rates'
         unique_together = (

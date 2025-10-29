@@ -2,7 +2,7 @@ import { AlertTriangle } from "lucide-react";
 import { useEffect, useState, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import CompetitorPrices from "./CompetitorPrices";
-import { usePriceHistory } from "../../../shared/api/hooks";
+import { usePriceForDate } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { ConnectionContext } from '../../../shared/ConnectionContext';
 
@@ -26,16 +26,23 @@ export default function DateDetailsContent({
   const { t } = useTranslation(['dashboard', 'common']);
   console.log('[DateDetailsContent] hasPMS:', hasPMS);
   
-  // Always call the hook, handle data conditionally
-  const year = selectedDate ? parseInt(selectedDate.year, 10) : undefined;
-  const month = selectedDate ? new Date(`${selectedDate.month} 1, 2000`).getMonth() + 1 : undefined;
-  const { data: priceHistoryData } = usePriceHistory(propertyId || '', year, month);
+  // Compute ISO date for selected date (or today fallback)
+  const computeISODate = (d: { day: number; month: string; year: string } | null) => {
+    if (!d) return undefined;
+    const monthNum = new Date(`${d.month} 1, 2000`).getMonth() + 1;
+    if (isNaN(monthNum)) return undefined;
+    const iso = `${d.year}-${monthNum.toString().padStart(2, '0')}-${d.day.toString().padStart(2, '0')}`;
+    console.log('[DateDetailsContent] computeISODate', { input: d, monthNum, iso });
+    return iso;
+  };
 
-  let selectedDayPriceHistory = null;
-  if (priceHistoryData && selectedDate && month !== undefined) {
-    const dateStr = `${selectedDate.year}-${month.toString().padStart(2, '0')}-${selectedDate.day.toString().padStart(2, '0')}`;
-    selectedDayPriceHistory = priceHistoryData.price_history.find((entry: any) => entry.checkin_date === dateStr) || null;
-  }
+  const selectedISODate = computeISODate(selectedDate);
+  const { data: selectedDayPriceHistory } = usePriceForDate(propertyId, selectedISODate);
+  console.log('[DateDetailsContent] hook result', {
+    propertyId,
+    selectedISODate,
+    selectedDayPriceHistory,
+  });
   
   const [mspForDay, setMspForDay] = useState<null | { loading: boolean; msp: any | null }>({ loading: false, msp: null });
 

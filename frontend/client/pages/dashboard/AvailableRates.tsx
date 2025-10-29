@@ -69,16 +69,35 @@ export default function AvailableRates() {
     setSaving(true);
 
     try {
-      // Prepare the data for the API
-      const ratesData = editableRates.map(rate => ({
+      // Prepare only changed rows to minimize payload
+      const originalByRateId = new Map(rates.map(r => [r.rate_id, r]));
+      const changed = editableRates.filter(er => {
+        const orig = originalByRateId.get(er.rate_id);
+        if (!orig) return true; // treat as changed if not present
+        return (
+          orig.increment_type !== er.increment_type ||
+          orig.increment_value !== er.increment_value ||
+          orig.is_base_rate !== er.is_base_rate
+        );
+      });
+
+      const ratesData = changed.map(rate => ({
         rate_id: rate.rate_id,
         increment_type: rate.increment_type,
         increment_value: rate.increment_value,
-        is_base_rate: rate.is_base_rate
+        is_base_rate: rate.is_base_rate,
       }));
 
+      if (ratesData.length === 0) {
+        toast({
+          title: t('common:messages.info', { defaultValue: 'Info' }),
+          description: t('dashboard:availableRates.noChanges', { defaultValue: 'No changes to save.' })
+        });
+        return;
+      }
+
       const response = await dynamicPricingService.updateAvailableRates(property.id, {
-        rates: ratesData
+        rates: ratesData,
       });
 
       toast({

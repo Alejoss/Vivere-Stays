@@ -108,6 +108,8 @@ export interface CompetitorPriceForDate {
   price: number | null;
   currency: string | null;
   room_name: string | null;
+  sold_out?: boolean;
+  sold_out_message?: string | null;
 }
 
 export interface PriceHistoryForDateRangeResponse {
@@ -543,6 +545,8 @@ export const dynamicPricingService = {
     return apiRequest<PriceHistoryResponse>({
       method: 'GET',
       url,
+      // Backend can take ~20s; override default client timeout
+      timeout: 30000,
     });
   },
 
@@ -560,6 +564,7 @@ export const dynamicPricingService = {
     return apiRequest<PriceHistoryResponse>({
       method: 'GET',
       url,
+      timeout: 30000,
     });
   },
 
@@ -577,6 +582,7 @@ export const dynamicPricingService = {
     return apiRequest<PriceHistoryResponse>({
       method: 'GET',
       url,
+      timeout: 30000,
     });
   },
 
@@ -807,6 +813,31 @@ export const dynamicPricingService = {
       method: 'GET',
       url,
     });
+  },
+
+  /**
+   * Fetches price history for a single date. Convenience over the date-range endpoint.
+   * Returns the matching entry or null if none.
+   */
+  async getPriceForDate(
+    propertyId: string,
+    dateISO: string
+  ): Promise<PriceHistoryEntry | null> {
+    console.log('[dynamicPricingService.getPriceForDate] start', { propertyId, dateISO });
+    const resp = await dynamicPricingService.getPriceHistoryForDateRange(
+      propertyId,
+      dateISO,
+      dateISO
+    );
+    console.log('[dynamicPricingService.getPriceForDate] range response', {
+      count: resp.count,
+      start_date: resp.start_date,
+      end_date: resp.end_date,
+      price_history: resp.price_history,
+    });
+    const match = resp.price_history.find((e) => e.checkin_date === dateISO);
+    console.log('[dynamicPricingService.getPriceForDate] match', match);
+    return match ?? null;
   },
 
   /**
@@ -1252,6 +1283,8 @@ export const dynamicPricingService = {
       method: 'POST',
       url: `/dynamic-pricing/properties/${propertyId}/available-rates/update/`,
       data,
+      // Increase timeout for potentially heavy bulk updates
+      timeout: 30000,
     });
   },
 

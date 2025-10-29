@@ -250,7 +250,7 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     price = serializers.SerializerMethodField()
     occupancy_level = serializers.SerializerMethodField()
     overwrite = serializers.SerializerMethodField()
-    occupancy = serializers.FloatField()  # Add raw occupancy
+    occupancy = serializers.FloatField(required=False, allow_null=True)  # Add raw occupancy
     
     class Meta:
         model = DpPriceChangeHistory
@@ -1394,18 +1394,15 @@ class AvailableRatesUnifiedSerializer(serializers.Serializer):
         # Get the base data from UnifiedRoomsAndRates
         data = super().to_representation(instance)
         
-        # Try to get the corresponding DpRoomRates configuration
-        try:
-            room_rate_config = DpRoomRates.objects.get(
-                property_id=instance.property_id,
-                rate_id=instance.rate_id
-            )
-            # Override with actual configuration values
-            data['increment_type'] = room_rate_config.increment_type
-            data['increment_value'] = room_rate_config.increment_value
-            data['is_base_rate'] = room_rate_config.is_base_rate
-        except DpRoomRates.DoesNotExist:
-            # If no configuration exists, use defaults
+        # Prefer a pre-fetched configuration map (avoids N+1 queries)
+        config_map = self.context.get('rate_config_by_rate_id') if isinstance(self.context, dict) else None
+        if config_map and instance.rate_id in config_map:
+            cfg = config_map[instance.rate_id]
+            data['increment_type'] = cfg.get('increment_type', 'Percentage')
+            data['increment_value'] = cfg.get('increment_value', 0)
+            data['is_base_rate'] = cfg.get('is_base_rate', False)
+        else:
+            # If no configuration exists, use defaults without hitting DB
             data['increment_type'] = 'Percentage'
             data['increment_value'] = 0
             data['is_base_rate'] = False
