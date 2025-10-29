@@ -54,7 +54,11 @@ export default function CompetitorPrices({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!propertyId || !selectedDate) return;
+    console.log('[CompetitorPrices] useEffect triggered with:', { propertyId, selectedDate });
+    if (!propertyId || !selectedDate) {
+      console.log('[CompetitorPrices] Missing required props, skipping API call');
+      return;
+    }
     setLoading(true);
     setError(null);
     setCompetitorData([]);
@@ -63,11 +67,23 @@ export default function CompetitorPrices({
     const checkinDate = `${selectedDate.year}-${monthIndex
       .toString()
       .padStart(2, "0")}-${selectedDate.day.toString().padStart(2, "0")}`;
+    
+    console.log('[CompetitorPrices] Making API call with:', { propertyId, checkinDate, monthIndex });
+    
     dynamicPricingService
       .getCompetitorPricesForDate(propertyId, checkinDate)
-      .then((data) => setCompetitorData(data))
-      .catch(() => setError("Failed to load competitor prices"))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        console.log('[CompetitorPrices] API response received:', data);
+        setCompetitorData(data);
+      })
+      .catch((error) => {
+        console.error('[CompetitorPrices] API call failed:', error);
+        setError("Failed to load competitor prices");
+      })
+      .finally(() => {
+        console.log('[CompetitorPrices] API call completed');
+        setLoading(false);
+      });
   }, [propertyId, selectedDate]);
 
   const handleUpdatePrice = async () => {

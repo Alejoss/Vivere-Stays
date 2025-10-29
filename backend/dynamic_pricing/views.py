@@ -1551,11 +1551,25 @@ def get_lowest_competitor_prices_queryset(base_queryset=None):
     from .models import DpHistoricalCompetitorPrice
     from django.db import models
 
+    print(f"[COMPETITOR_PRICES_DEBUG] ===== START get_lowest_competitor_prices_queryset =====")
+    print(f"[COMPETITOR_PRICES_DEBUG] base_queryset provided: {base_queryset is not None}")
+    
     qs = base_queryset or DpHistoricalCompetitorPrice.objects.all()
+    print(f"[COMPETITOR_PRICES_DEBUG] Initial queryset count: {qs.count()}")
+    
+    # Apply filters
     qs = qs.filter(
         models.Q(max_persons__lt=0) | models.Q(max_persons__gte=2),
-        ~models.Q(hotel_name='NOT PARSABLE')
+        ~models.Q(hotel_name='NOT PARSABLE'),
+        models.Q(raw_price__gt=0)  # Exclude records with price 0 or null
     )
+    print(f"[COMPETITOR_PRICES_DEBUG] After filtering (max_persons, hotel_name, and raw_price > 0): {qs.count()}")
+    
+    # Show sample of filtered data
+    sample_records = qs[:3]
+    for record in sample_records:
+        print(f"[COMPETITOR_PRICES_DEBUG] - Sample record: competitor_id={record.competitor_id}, price={record.raw_price}, max_persons={record.max_persons}, hotel_name='{record.hotel_name}'")
+    
     qs = qs.annotate(
         rn=Window(
             expression=RowNumber(),
@@ -1563,6 +1577,15 @@ def get_lowest_competitor_prices_queryset(base_queryset=None):
             order_by=F('raw_price').asc(nulls_last=True)
         )
     ).filter(rn=1)
+    
+    print(f"[COMPETITOR_PRICES_DEBUG] After window function and filtering (rn=1): {qs.count()}")
+    
+    # Show final results
+    final_records = list(qs)
+    for record in final_records:
+        print(f"[COMPETITOR_PRICES_DEBUG] - Final record: competitor_id={record.competitor_id}, price={record.raw_price}, room_name='{record.room_name}'")
+    
+    print(f"[COMPETITOR_PRICES_DEBUG] ===== END get_lowest_competitor_prices_queryset =====")
     return qs
 
 
@@ -1616,7 +1639,7 @@ def competitor_prices_weekly_chart(request, property_id):
         }
     """
     from datetime import datetime, timedelta
-    from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice
+    from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice, CompetitorPriceMV, Competitor
 
     # Parse start_date
     start_date_str = request.query_params.get('start_date')
@@ -1674,53 +1697,72 @@ def competitor_prices_for_date(request, property_id):
         ]
     """
     from datetime import datetime
-    from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice
+    from .models import DpPropertyCompetitor, DpHistoricalCompetitorPrice, CompetitorPriceMV, Competitor
 
-    print(f"[DEBUG] competitor_prices_for_date called with property_id={property_id}")
-    print(f"[DEBUG] request.path: {request.path}")
-    print(f"[DEBUG] request.query_params: {request.query_params}")
+    # Minimal request context
     
     # Parse date
     date_str = request.query_params.get('date')
-    print(f"[DEBUG] date_str from query params: {date_str}")
     if not date_str:
-        print("[DEBUG] Missing date parameter")
         return Response({'error': 'date query parameter is required (YYYY-MM-DD)'}, status=status.HTTP_400_BAD_REQUEST)
     try:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-        print(f"[DEBUG] parsed date_obj: {date_obj}")
     except ValueError:
-        print(f"[DEBUG] Invalid date format: {date_str}")
         return Response({'error': 'Invalid date format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+    
     # Get competitors for the property (excluding deleted ones)
     competitor_links = DpPropertyCompetitor.objects.filter(
         property_id=property_id,
         deleted_at__isnull=True
     )
-    print(f"[DEBUG] competitor_links found: {competitor_links.count()}")
+    if competitor_links.count() == 0:
+        return Response([], status=status.HTTP_200_OK)
+    
     competitors = list(competitor_links.values_list('competitor', flat=True))
-    print(f"[DEBUG] competitors: {competitors}")
     competitors = Competitor.objects.filter(id__in=competitors)
-    print(f"[DEBUG] competitors found: {competitors.count()}")
-    # Get lowest prices for these competitors for the date
-    price_qs = DpHistoricalCompetitorPrice.objects.filter(
-        competitor_id__in=competitors,
-        checkin_date=date_obj
+    # (removed verbose diagnostics against MV)
+    
+    # Fetch prices from materialized view using Django ORM (no raw SQL)
+    # Convert competitor names to slug format for matching with MV
+    mv_competitor_ids = [c.competitor_name.lower().replace(' ', '-') for c in competitors]
+    
+    mv_rows_qs = (
+        CompetitorPriceMV.objects
+        .filter(competitor_id__in=mv_competitor_ids, checkin_date=date_obj)
+        .order_by('competitor_id', 'price', 'room_name')
     )
-    lowest_prices = get_lowest_competitor_prices_queryset(price_qs)
-    # Build a lookup: {competitor: row}
-    price_lookup = {row.competitor_id: row for row in lowest_prices}
-    # Build response
+    mv_rows = list(mv_rows_qs.values('competitor_id', 'hotel_name', 'room_name', 'price', 'raw_price', 'currency', 'update_tz'))
+    # (removed verbose MV logging)
+    
+    results = mv_rows
+    
+    # Build a lookup by competitor_id (scraped_hotel_id)
+    price_lookup = {row['competitor_id']: row for row in results}
+    
+    # Create a mapping from competitor names to competitor IDs for lookup
+    competitor_name_to_id = {comp.competitor_name.lower().replace(' ', '-'): comp.id for comp in competitors}
+    
+    # Build response - match competitors with their prices
     competitors_data = []
     for comp in competitors:
-        row = price_lookup.get(comp.id)
-        competitors_data.append({
-            'id': comp.id,
-            'name': comp.competitor_name,
-            'price': row.raw_price if row else None,
-            'currency': row.currency if row else None,
-            'room_name': row.room_name if row else None,
-        })
+        # Try to find a matching row by competitor name (converted to slug format)
+        comp_slug = comp.competitor_name.lower().replace(' ', '-')
+        row = price_lookup.get(comp_slug)
+        
+        if row:
+            competitor_data = {
+                'id': comp.id,
+                'name': comp.competitor_name,
+                'price': row['price'],
+                'currency': row.get('currency'),
+                'room_name': row.get('room_name'),
+            }
+            competitors_data.append(competitor_data)
+        else:
+            pass
+
+    # Minimal summary log
+    print(f"[COMPETITOR_PRICES] {len(competitors_data)} competitors returned for {date_obj}")
     return Response(competitors_data, status=status.HTTP_200_OK)
 
 

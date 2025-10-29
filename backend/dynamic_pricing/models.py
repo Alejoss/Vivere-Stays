@@ -401,6 +401,46 @@ class DpHistoricalCompetitorPrice(models.Model):
         return f"{self.competitor.competitor_name} - {self.room_name} ({self.checkin_date})"
 
 
+class CompetitorPriceMV(models.Model):
+    """
+    Materialized view for competitor prices - read-only model
+    Maps to booking.comp_prices_mv materialized view
+    """
+    competitor_id = models.CharField(max_length=255)  # e.g. 'adarve'
+    hotel_name = models.CharField(max_length=255)
+    room_name = models.CharField(max_length=255, null=True, blank=True)
+
+    checkin_date = models.DateField()
+    checkout_date = models.DateField(null=True, blank=True)
+
+    raw_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=10, null=True, blank=True)
+    cancellation_type = models.CharField(max_length=255, null=True, blank=True)
+
+    max_persons = models.IntegerField(null=True, blank=True)
+    min_los = models.IntegerField(null=True, blank=True)
+
+    sold_out_message = models.CharField(max_length=500, null=True, blank=True)
+    taking_reservations = models.BooleanField(null=True, blank=True)
+    scrape_date = models.DateField(null=True, blank=True)
+    is_available = models.IntegerField(null=True, blank=True)  # source uses INT
+    num_days = models.IntegerField(null=True, blank=True)
+
+    update_tz = models.DateTimeField()
+
+    class Meta:
+        managed = False  # it's a materialized view
+        db_table = 'comp_prices_mv'
+        indexes = [
+            models.Index(fields=['competitor_id', 'checkin_date']),
+            models.Index(fields=['checkin_date']),
+        ]
+
+    def __str__(self):
+        return f"{self.hotel_name} ({self.competitor_id}) {self.checkin_date}: {self.price}"
+
+
 class CompetitorCandidate(models.Model):
     """
     Competitor candidates for properties - stores suggested competitors before they become active

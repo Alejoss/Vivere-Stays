@@ -776,10 +776,19 @@ export const dynamicPricingService = {
    */
   async getCompetitorPricesForDate(propertyId: string, date: string): Promise<CompetitorPriceForDate[]> {
     const url = `/dynamic-pricing/properties/${propertyId}/competitors/date/?date=${date}`;
-    return apiRequest<CompetitorPriceForDate[]>({
-      method: 'GET',
-      url,
-    });
+    console.log('[dynamicPricingService.getCompetitorPricesForDate] Making request:', { propertyId, date, url });
+    
+    try {
+      const result = await apiRequest<CompetitorPriceForDate[]>({
+        method: 'GET',
+        url,
+      });
+      console.log('[dynamicPricingService.getCompetitorPricesForDate] Response received:', result);
+      return result;
+    } catch (error) {
+      console.error('[dynamicPricingService.getCompetitorPricesForDate] Request failed:', error);
+      throw error;
+    }
   },
 
   /**
