@@ -25,11 +25,12 @@ ssh root@46.62.171.162
 docker-compose down
 ./deploy-all.sh
 docker-compose logs -f vivere_backend
-populate do
-
-test@vivere.com
-Test12345
 19391
+
+# Production IP
+http://35.226.220.107:8000/api/profiles/check-auth/
+
+
 
 Django REST API backend for the Vivere Stays vacation rental platform.
 
