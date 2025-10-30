@@ -55,6 +55,8 @@ export default function DynamicSetup() {
   const [rules, setRules] = useState<DynamicRule[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Temporary input values to allow '-', '.' during typing without coercion
+  const [tempValues, setTempValues] = useState<Record<string, string>>({});
 
   // Load existing rules on component mount
   useEffect(() => {
@@ -127,6 +129,22 @@ export default function DynamicSetup() {
     }
     
     setRules(updatedRules);
+  };
+
+  // Update temporary string while typing for numeric increment_value
+  const handleIncrementTempChange = (index: number, value: string) => {
+    const key = rules[index]?.id ? String(rules[index].id) : `new-${index}`;
+    setTempValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Commit string to numeric on blur/enter
+  const commitIncrementValue = (index: number) => {
+    const key = rules[index]?.id ? String(rules[index].id) : `new-${index}`;
+    const raw = tempValues[key];
+    const numericValue = raw === undefined ? undefined : parseFloat(raw);
+    const finalValue = Number.isFinite(numericValue as number) ? (numericValue as number) : 0;
+    updateRule(index, 'increment_value', finalValue);
+    setTempValues(({ [key]: _omit, ...rest }) => rest);
   };
 
   const removeRule = async (index: number) => {
@@ -417,10 +435,17 @@ export default function DynamicSetup() {
                       {/* Increment Value */}
                       <div>
                         <input
-                          type="number"
-                          value={rule.increment_value}
-                          onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
+                          type="text"
+                          value={
+                            tempValues[rule.id ? String(rule.id) : `new-${index}`] ?? String(rule.increment_value)
+                          }
+                          onChange={(e) => handleIncrementTempChange(index, e.target.value)}
+                          onBlur={() => commitIncrementValue(index)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitIncrementValue(index);
+                          }}
                           placeholder={t('common:common.zero', { defaultValue: '0' })}
+                          inputMode="decimal"
                           className="w-full input-padding-sm input-height-base text-responsive-xs border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[234px]"
                         />
                       </div>
@@ -498,10 +523,17 @@ export default function DynamicSetup() {
                           </label>
                           <div className="form-field">
                             <input
-                              type="number"
-                              value={rule.increment_value}
-                              onChange={(e) => updateRule(index, 'increment_value', parseFloat(e.target.value) || 0)}
+                              type="text"
+                              value={
+                                tempValues[rule.id ? String(rule.id) : `new-${index}`] ?? String(rule.increment_value)
+                              }
+                              onChange={(e) => handleIncrementTempChange(index, e.target.value)}
+                              onBlur={() => commitIncrementValue(index)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') commitIncrementValue(index);
+                              }}
                               placeholder={t('common:common.zero', { defaultValue: '0' })}
+                              inputMode="decimal"
                               className="w-full input-padding-base input-height-base text-responsive-sm border border-gray-300 rounded bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </div>

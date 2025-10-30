@@ -37,7 +37,7 @@ class UnifiedReservations(models.Model):
 
     class Meta:
         managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
-        db_table = 'core.unified_reservations'
+        db_table = 'unified_reservations'
         unique_together = (
             ('reservation_id', 'property'),
         )
@@ -86,7 +86,7 @@ class DailyPerformance(models.Model):
 
     class Meta:
         managed = settings.MANAGE_EXTERNAL_SCHEMA_TABLES  # Use dedicated setting for external schema tables
-        db_table = 'core.daily_performance'
+        db_table = 'daily_performance'
         unique_together = (
             ('property', 'pms_source', 'kpi_date', 'metric_type'),
         )

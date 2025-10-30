@@ -31,16 +31,16 @@ interface OfferFormData {
   isNew?: boolean;
 }
 
-// Zod schema for standardized validation (aligns with LOS approach)
+// Zod schema for standardized validation (allows negative values where applicable)
 const OfferSchema = z.object({
   id: z.number().optional(),
   offer_name: z.string().trim().min(1, 'Offer name is required'),
   valid_from: z.string().min(1, 'Valid from date is required'),
   valid_until: z.string().min(1, 'Valid until date is required'),
-  applied_from_days: z.union([z.coerce.number().int().min(0), z.null()]),
-  applied_until_days: z.union([z.coerce.number().int().min(0), z.null()]),
+  applied_from_days: z.union([z.coerce.number().int(), z.null()]),
+  applied_until_days: z.union([z.coerce.number().int(), z.null()]),
   increment_type: z.enum(['Percentage', 'Additional']),
-  increment_value: z.coerce.number().min(0, 'Value must be ≥ 0'),
+  increment_value: z.coerce.number(),
 }).superRefine((val, ctx) => {
   // valid_from must be strictly before valid_until
   const from = new Date(val.valid_from);
@@ -536,17 +536,18 @@ export default function SpecialOffers() {
                           render={({ field, fieldState }) => (
                             <>
                               <input
-                                type="number"
+                                type="text"
                                 {...field}
+                                value={field.value ?? ''}
                                 onChange={(e) => {
-                                  const value = e.target.value === '' ? null : parseInt(e.target.value);
-                                  console.log(`🔧 FRONTEND DEBUG: Applied from days changed for index ${index}:`, value);
+                                  const value = e.target.value;
+                                  console.log(`🔧 FRONTEND DEBUG: Applied from days (raw) changed for index ${index}:`, value);
                                   field.onChange(value);
                                   console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
                                 }}
                                 placeholder="0"
-                                min="0"
                                 className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                inputMode="numeric"
                               />
                               {fieldState.error && (
                                 <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
@@ -564,17 +565,18 @@ export default function SpecialOffers() {
                           render={({ field, fieldState }) => (
                             <>
                               <input
-                                type="number"
+                                type="text"
                                 {...field}
+                                value={field.value ?? ''}
                                 onChange={(e) => {
-                                  const value = e.target.value === '' ? null : parseInt(e.target.value);
-                                  console.log(`🔧 FRONTEND DEBUG: Applied until days changed for index ${index}:`, value);
+                                  const value = e.target.value;
+                                  console.log(`🔧 FRONTEND DEBUG: Applied until days (raw) changed for index ${index}:`, value);
                                   field.onChange(value);
                                   console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
                                 }}
                                 placeholder="0"
-                                min="0"
                                 className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                inputMode="numeric"
                               />
                               {fieldState.error && (
                                 <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
@@ -619,17 +621,18 @@ export default function SpecialOffers() {
                           render={({ field, fieldState }) => (
                             <>
                               <input
-                                type="number"
+                                type="text"
                                 {...field}
+                                value={field.value ?? ''}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 0;
-                                  console.log(`🔧 FRONTEND DEBUG: Increment value changed for index ${index}:`, value);
+                                  const value = e.target.value;
+                                  console.log(`🔧 FRONTEND DEBUG: Increment value (raw) changed for index ${index}:`, value);
                                   field.onChange(value);
                                   console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
                                 }}
                                 placeholder="0"
-                                min="0"
                                 className="w-full input-padding-base input-height-base text-responsive-xs text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                inputMode="decimal"
                               />
                               {fieldState.error && (
                                 <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
@@ -781,17 +784,18 @@ export default function SpecialOffers() {
                               render={({ field, fieldState }) => (
                                 <>
                                   <input
-                                    type="number"
+                                    type="text"
                                     {...field}
+                                    value={field.value ?? ''}
                                     onChange={(e) => {
-                                      const value = e.target.value === '' ? null : parseInt(e.target.value);
-                                      console.log(`🔧 FRONTEND DEBUG: Mobile applied from days changed for index ${index}:`, value);
+                                      const value = e.target.value;
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile applied from days (raw) changed for index ${index}:`, value);
                                       field.onChange(value);
                                       console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
                                     }}
                                     placeholder="0"
-                                    min="0"
                                     className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    inputMode="numeric"
                                   />
                                   {fieldState.error && (
                                     <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
@@ -821,17 +825,18 @@ export default function SpecialOffers() {
                               render={({ field, fieldState }) => (
                                 <>
                                   <input
-                                    type="number"
+                                    type="text"
                                     {...field}
+                                    value={field.value ?? ''}
                                     onChange={(e) => {
-                                      const value = e.target.value === '' ? null : parseInt(e.target.value);
-                                      console.log(`🔧 FRONTEND DEBUG: Mobile applied until days changed for index ${index}:`, value);
+                                      const value = e.target.value;
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile applied until days (raw) changed for index ${index}:`, value);
                                       field.onChange(value);
                                       console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
                                     }}
                                     placeholder="0"
-                                    min="0"
                                     className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    inputMode="numeric"
                                   />
                                   {fieldState.error && (
                                     <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>
@@ -886,17 +891,18 @@ export default function SpecialOffers() {
                               render={({ field, fieldState }) => (
                                 <>
                                   <input
-                                    type="number"
+                                    type="text"
                                     {...field}
+                                    value={field.value ?? ''}
                                     onChange={(e) => {
-                                      const value = parseInt(e.target.value) || 0;
-                                      console.log(`🔧 FRONTEND DEBUG: Mobile increment value changed for index ${index}:`, value);
+                                      const value = e.target.value;
+                                      console.log(`🔧 FRONTEND DEBUG: Mobile increment value (raw) changed for index ${index}:`, value);
                                       field.onChange(value);
                                       console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
                                     }}
                                     placeholder="0"
-                                    min="0"
                                     className="w-full input-padding-base input-height-base text-responsive-sm text-center border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    inputMode="decimal"
                                   />
                                   {fieldState.error && (
                                     <div className="mt-1 text-xs text-red-600">{fieldState.error.message}</div>

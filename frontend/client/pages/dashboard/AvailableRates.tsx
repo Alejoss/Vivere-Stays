@@ -14,6 +14,8 @@ export default function AvailableRates() {
 
   // Local state for editable fields
   const [editableRates, setEditableRates] = useState<UnifiedRoomRate[]>([]);
+  // Temporary input values to allow '-', '.' during typing without coercion
+  const [tempValues, setTempValues] = useState<Record<string, string>>({});
 
   // Helper function to sort rates with base rate first
   const sortRatesWithBaseFirst = (rates: UnifiedRoomRate[]): UnifiedRoomRate[] => {
@@ -121,15 +123,24 @@ export default function AvailableRates() {
     }
   };
 
-  const updateIncrementValue = (rateId: string, value: string) => {
-    const numericValue = value === '' || value === '-' ? 0 : parseFloat(value) || 0;
-    setEditableRates(prev => 
-      prev.map(rate => 
-        rate.rate_id === rateId 
-          ? { ...rate, increment_value: numericValue }
+  // Update temporary string while typing
+  const handleIncrementValueChange = (rateId: string, value: string) => {
+    setTempValues(prev => ({ ...prev, [rateId]: value }));
+  };
+
+  // Commit string to numeric on blur/enter
+  const commitIncrementValue = (rateId: string) => {
+    const raw = tempValues[rateId];
+    const numericValue = raw === undefined ? undefined : parseFloat(raw);
+    const finalValue = Number.isFinite(numericValue as number) ? (numericValue as number) : 0;
+    setEditableRates(prev =>
+      prev.map(rate =>
+        rate.rate_id === rateId
+          ? { ...rate, increment_value: finalValue }
           : rate
       )
     );
+    setTempValues(({ [rateId]: _omit, ...rest }) => rest);
   };
 
   const updateIncrementType = (rateId: string, type: 'Percentage' | 'Additional') => {
@@ -336,11 +347,17 @@ export default function AvailableRates() {
                       {/* Increment Value */}
                       <div>
                         <input
-                          type="number"
-                          value={rate.increment_value}
-                          onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
+                          type="text"
+                          value={tempValues[rate.rate_id] ?? String(rate.increment_value)}
+                          onChange={(e) => handleIncrementValueChange(rate.rate_id, e.target.value)}
+                          onBlur={() => commitIncrementValue(rate.rate_id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              commitIncrementValue(rate.rate_id);
+                            }
+                          }}
+                          inputMode="decimal"
                           className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
-                          step="0.01"
                         />
                       </div>
 
@@ -422,11 +439,17 @@ export default function AvailableRates() {
                             {t('dashboard:availableRates.incrementValue')}
                           </label>
                           <input
-                            type="number"
-                            value={rate.increment_value}
-                            onChange={(e) => updateIncrementValue(rate.rate_id, e.target.value)}
+                            type="text"
+                            value={tempValues[rate.rate_id] ?? String(rate.increment_value)}
+                            onChange={(e) => handleIncrementValueChange(rate.rate_id, e.target.value)}
+                            onBlur={() => commitIncrementValue(rate.rate_id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                commitIncrementValue(rate.rate_id);
+                              }
+                            }}
+                            inputMode="decimal"
                             className="w-full px-3 py-2 text-sm text-center border border-hotel-divider rounded bg-white text-black focus:outline-none focus:border-[#2B6CEE]"
-                            step="0.01"
                           />
                         </div>
                       </div>
