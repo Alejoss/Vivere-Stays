@@ -7,7 +7,7 @@ docker-compose exec vivere_backend python manage.py migrate
 docker-compose exec vivere_backend python manage.py test --settings=vivere_stays.test_settings
 
 # docker remote db (production db)
-docker-compose -f docker-compose.remote.yml up --build
+docker-compose -f docker-compose.remote.yml up --build -d
 docker-compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
 
 # Startapp

@@ -45,17 +45,30 @@ DEFAULT_FROM_EMAIL=noreply@viverestays.com
 
 ### 3. Postmark Template Setup
 
+**⚠️ CRITICAL**: Templates must be created in Postmark before sending emails. The application will fail with error code 1101 if templates are missing.
+
 In your Postmark server, you need to:
 
 1. **Create the Layout**: 
+   - Go to Postmark Server → Templates → Layouts
+   - Click "Add layout"
    - Use the HTML from `frontend/client/public/email/vivere-stays-email-layout.html`
-   - Name it "Vivere Stays Layout"
+   - Name it exactly: **"Vivere Stays Layout"**
+   - Save the layout
 
 2. **Create Email Verification Template**:
+   - Go to Postmark Server → Templates
+   - Click "Add template"
+   - Choose "With layout" and select your "Vivere Stays Layout"
    - Use the HTML from `frontend/client/public/email/email-verification-template.html`
-   - Associate with the Vivere Stays Layout
-   - Set template alias: `email-verification`
+   - **Set template alias exactly**: `email-verification` (case-sensitive)
    - Set subject: "Verify your email address - Vivere Stays"
+   - Save and activate the template
+
+3. **Verify Template Creation**:
+   - After creating the template, verify it appears in your Postmark Templates list
+   - The alias should show as `email-verification`
+   - Make sure the template is Active (not Draft)
 
 ## API Endpoints
 
@@ -311,19 +324,34 @@ Monitor email delivery through:
 
 ### Common Issues
 
-1. **"Postmark token not configured"**:
+1. **"[1101] The Template's 'Alias' associated with this request is not valid or was not found"**:
+   - **This is the most common error** - it means the template doesn't exist in Postmark
+   - Verify you've created the template in your Postmark server
+   - Check that the template alias is exactly `email-verification` (case-sensitive, no spaces)
+   - Ensure the template is Active (not Draft)
+   - Verify you're using the correct Postmark server (check your POSTMARK_TOKEN matches the server)
+   - See "Postmark Template Setup" section above for detailed instructions
+
+2. **"Postmark token not configured"**:
    - Check your `.env` file has `POSTMARK_TOKEN` set
    - Verify the token is correct in Postmark dashboard
+   - Token should be a Server Token (not Account Token)
 
-2. **"Template not found"**:
-   - Ensure template alias matches: `email-verification`
+3. **"Template not found"** (generic):
+   - Ensure template alias matches exactly: `email-verification`
    - Verify template is associated with the correct layout
+   - Check that template is Active in Postmark
 
-3. **"Verification code expired"**:
+4. **"Verification code expired"**:
    - Codes expire after 10 minutes
    - User should request a new code
 
-4. **Redis connection errors**:
+5. **"POSTMARK_TEST_MODE not working"**:
+   - Check that `POSTMARK_TEST_MODE=True` is set in your `.env` file
+   - In test mode, emails are not sent and verification codes are logged
+   - Default is `True` if not set in environment
+
+6. **Redis connection errors**:
    - Ensure Redis is running
    - Check `REDIS_URL` configuration
 

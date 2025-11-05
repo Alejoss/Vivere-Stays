@@ -282,7 +282,7 @@ SOCIALACCOUNT_PROVIDERS = {
 
 # Postmark Email Configuration
 POSTMARK_TOKEN = config('POSTMARK_TOKEN', default='')
-POSTMARK_TEST_MODE = False
+POSTMARK_TEST_MODE = config('POSTMARK_TEST_MODE', default=False, cast=bool)
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

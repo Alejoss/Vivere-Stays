@@ -63,9 +63,9 @@ class PostmarkEmailService:
         """
         subjects = {
             'verification': {
-                'en': 'Verify Your Email - Vivere Stays',
-                'es': 'Verifica tu Correo Electrónico - Vivere Stays',
-                'de': 'Verifizieren Sie Ihre E-Mail - Vivere Stays',
+                'en': 'Confirm your email',
+                'es': 'Confirma tu correo electrónico',
+                'de': 'Bestätigen Sie Ihre E-Mail',
             },
             'welcome': {
                 'en': 'Welcome to Vivere Stays!',
@@ -237,18 +237,21 @@ class PostmarkEmailService:
                 "email_subtitle": "Please use the verification code below to confirm your email address and complete your account setup.",
                 "user_name": user_name,
                 "verification_code": verification_code,
-                "expiry_time": f"{settings.EMAIL_VERIFICATION_EXPIRY_MINUTES} minutes"
+                "expiry_time": f"{settings.EMAIL_VERIFICATION_EXPIRY_MINUTES} minutes",
+                "logo_url": settings.COMPANY_LOGO_URL
             }
             
             if self.test_mode:
                 logger.info(f"TEST MODE: Would send verification email to {email}")
                 logger.info(f"TEST MODE: Verification code: {verification_code}")
+                logger.info(f"TEST MODE: Template data includes logo_url: {template_data.get('logo_url')}")
                 return True, "test-verification-message-id", verification_code
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",
                 TemplateModel=template_data,
                 To=email,
-                From=settings.DEFAULT_FROM_EMAIL
+                From=settings.DEFAULT_FROM_EMAIL,
+                Subject=self.get_email_subject('verification', language)
             )
             
             logger.info(f"Verification email sent to {email}, MessageID: {response['MessageID']}")

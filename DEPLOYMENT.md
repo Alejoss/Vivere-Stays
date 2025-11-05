@@ -1,6 +1,6 @@
 # Vivere Stays - Production Deployment Guide
 
-**Last Updated**: October 30, 2025  
+**Last Updated**: November 5, 2025  
 **Environment**: Google Cloud Platform - Compute Engine  
 **Status**: ✅ Production Ready with HTTPS
 
@@ -69,7 +69,14 @@ Aiven Cloud PostgreSQL (Remote)
 - Django admin interface at `/admin/`
 - API documentation at `/api/docs/`
 
-The frontend connects to the backend via `https://admin.viverestays.com/api` (HTTPS). Nginx handles SSL termination and routes `/api/*` requests to the backend container on port 8000.
+The frontend connects to the backend via `https://admin.viverestays.com/api` (HTTPS with `/api` prefix). Nginx handles SSL termination and routes `/api/*` requests to the backend container on port 8000.
+
+**Critical Configuration**: The `VITE_API_BASE_URL` must include the `/api` prefix:
+- ✅ Correct: `https://admin.viverestays.com/api`
+- ❌ Wrong: `https://admin.viverestays.com` (missing `/api`)
+- ❌ Wrong: `http://35.226.220.107:8000` (IP address, missing `/api`)
+
+When changing `VITE_API_BASE_URL`, always rebuild the frontend with `--no-cache` to ensure the new value is baked into the build.
 
 ### Staging URLs (Legacy)
 | Service | Domain | Protocol | Status |
@@ -197,8 +204,12 @@ AUTH_COOKIE_SECURE=True
 # Stop current services
 docker compose -f docker-compose.remote.yml down
 
-# Rebuild with latest code
-docker compose -f docker-compose.remote.yml build
+# IMPORTANT: Rebuild frontend with --no-cache to ensure new VITE_API_BASE_URL is used
+# Frontend builds bake environment variables at build time, so cache must be cleared
+docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
+
+# Rebuild backend (can use cache if no changes)
+docker compose -f docker-compose.remote.yml build vivere_backend
 
 # Start services
 docker compose -f docker-compose.remote.yml up -d
@@ -206,10 +217,19 @@ docker compose -f docker-compose.remote.yml up -d
 # Check status
 docker ps
 
+# Verify frontend built with correct API URL
+docker exec vivere_frontend grep -r "admin.viverestays.com/api" /app/dist/ | head -1 || echo "WARNING: New URL not found in build!"
+docker exec vivere_frontend grep -r "35.226.220.107" /app/dist/ && echo "WARNING: Old URL still present!" || echo "OK: Old URL not found"
+
 # View logs
 docker logs -f vivere_backend
 docker logs -f vivere_frontend
 ```
+
+**Important Notes:**
+- Always use `--no-cache` when rebuilding frontend after changing `VITE_API_BASE_URL`
+- Vite bakes environment variables at build time, so cached layers may contain old values
+- After deployment, users may need to clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)
 
 ### 5. Run Database Migrations
 ```bash
@@ -263,6 +283,27 @@ docker compose -f docker-compose.remote.yml restart
 
 # Reload Nginx config
 sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Rebuild Frontend (After API URL Changes)
+```bash
+# IMPORTANT: Use --no-cache when rebuilding frontend after changing VITE_API_BASE_URL
+# This ensures the new environment variable is baked into the build
+
+# Stop frontend
+docker compose -f docker-compose.remote.yml stop vivere_frontend
+
+# Remove old image to force fresh build
+docker rmi vivere-stays-vivere_frontend
+
+# Rebuild without cache
+docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
+
+# Start frontend
+docker compose -f docker-compose.remote.yml up -d vivere_frontend
+
+# Verify the build
+docker exec vivere_frontend grep -r "admin.viverestays.com/api" /app/dist/ | head -1
 ```
 
 ### Check Service Health
@@ -361,12 +402,32 @@ sudo certbot renew --dry-run
 # Check CORS settings
 docker compose -f docker-compose.remote.yml exec vivere_backend env | grep CORS
 
+# Verify frontend built with correct API URL
+docker exec vivere_frontend grep -r "admin.viverestays.com/api" /app/dist/ | head -1 || echo "ERROR: New URL not found!"
+docker exec vivere_frontend grep -r "35.226.220.107" /app/dist/ && echo "ERROR: Old URL still present!" || echo "OK: Old URL not found"
+
+# If frontend is using wrong URL, force rebuild without cache
+docker compose -f docker-compose.remote.yml down
+docker rmi vivere-stays-vivere_frontend
+docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
+docker compose -f docker-compose.remote.yml up -d vivere_frontend
+
 # Test from frontend container
 docker compose -f docker-compose.remote.yml exec vivere_frontend wget -O- http://vivere_backend:8000/api/profiles/check-auth/
 
 # Check network connectivity
 docker network inspect vivere-stays_vivere_network
+
+# Check browser console for actual request URL
+# Open DevTools → Network tab → Check request URL
+# Should be: https://admin.viverestays.com/api/profiles/...
+# NOT: https://35.226.220.107:8000/profiles/...
 ```
+
+**Common Issues:**
+- **Frontend still using old URL**: Frontend container needs rebuild with `--no-cache`
+- **Browser showing old URL**: Clear browser cache (Ctrl+Shift+R) or use Incognito mode
+- **Status 0 network errors**: Usually means wrong URL or CORS blocking
 
 ### High Resource Usage
 ```bash
@@ -529,11 +590,14 @@ After each deployment:
 - [ ] HTTPS working on both domains
 - [ ] Frontend loads correctly
 - [ ] Backend API responds
+- [ ] **Frontend API URL correct** (`docker exec vivere_frontend grep -r "admin.viverestays.com/api" /app/dist/`)
+- [ ] **No old IP URL in build** (`docker exec vivere_frontend grep -r "35.226.220.107" /app/dist/` should return nothing)
 - [ ] Database migrations applied
 - [ ] Environment variables correct
 - [ ] SSL certificates valid
 - [ ] Nginx configuration valid
 - [ ] Firewall rules correct
+- [ ] **Browser cache cleared** (test in Incognito mode or hard refresh)
 
 ---
 
