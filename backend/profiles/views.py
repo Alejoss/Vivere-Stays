@@ -1874,7 +1874,6 @@ class OnboardingContactSalesView(APIView):
         """
         try:
             data = request.data
-            message = data.get('message', '')
             property_id = data.get('property_id')
             
             # Get user information
@@ -1894,7 +1893,6 @@ class OnboardingContactSalesView(APIView):
                     user_name=user_name,
                     user_email=user_email,
                     user_id=user.id,
-                    message=message,
                     property_id=property_id,
                     language=language
                 )

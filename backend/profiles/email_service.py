@@ -656,7 +656,6 @@ class PostmarkEmailService:
         user_name: str,
         user_email: str,
         user_id: int,
-        message: str | None,
         property_id: str | None = None,
         language: str = 'en',
     ) -> Tuple[bool, str]:
@@ -667,7 +666,6 @@ class PostmarkEmailService:
             user_name: User's first name
             user_email: User's email address
             user_id: User ID
-            message: User's sales inquiry message (optional)
             property_id: Property ID (optional)
             language: Language code ('en', 'es', 'de') - defaults to 'en'
             
@@ -676,7 +674,6 @@ class PostmarkEmailService:
         """
         try:
             ticket_id = f"SALES-{user_id}"
-            sales_message = message or "No additional message provided"
             
             # Send confirmation email to user
             try:
@@ -687,7 +684,6 @@ class PostmarkEmailService:
                     "property_id": property_id or "Not available",
                     "support_email": "support@viverestays.com",
                     "portal_url": settings.FRONTEND_URL,
-                    "message": sales_message,  # Include user's message
                 }
                 
                 if self.test_mode:
@@ -709,9 +705,7 @@ class PostmarkEmailService:
             sales_description += f"User ID: {user_id}\n"
             sales_description += f"Property ID: {property_id or 'Not provided'}\n\n"
             sales_description += "This is a sales consultation request from the onboarding flow.\n"
-            sales_description += "The user is interested in speaking with the sales team.\n\n"
-            sales_description += "Message:\n"
-            sales_description += sales_message
+            sales_description += "The user is interested in speaking with the sales team.\n"
 
             # Send notification email to sales team
             return self.send_sales_team_notification_email(
