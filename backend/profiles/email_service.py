@@ -250,8 +250,7 @@ class PostmarkEmailService:
                 TemplateAlias="email-verification",
                 TemplateModel=template_data,
                 To=email,
-                From=settings.DEFAULT_FROM_EMAIL,
-                Subject=self.get_email_subject('verification', language)
+                From=settings.DEFAULT_FROM_EMAIL
             )
             
             logger.info(f"Verification email sent to {email}, MessageID: {response['MessageID']}")
