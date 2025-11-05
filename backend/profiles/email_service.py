@@ -244,14 +244,10 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send verification email to {email}")
                 logger.info(f"TEST MODE: Verification code: {verification_code}")
                 return True, "test-verification-message-id", verification_code
-            
-            # Override recipient email for testing
-            logger.info(f"Overriding recipient email from {email} to {self.TEST_EMAIL}")
-            
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",
                 TemplateModel=template_data,
-                To=self.TEST_EMAIL,  # Always send to test email
+                To=email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
@@ -325,14 +321,10 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send welcome email to {email}")
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-welcome-message-id"
-            
-            # Override recipient email for testing
-            logger.info(f"Overriding recipient email from {email} to {self.TEST_EMAIL}")
-            
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",  # Using existing template
                 TemplateModel=template_data,
-                To=self.TEST_EMAIL,  # Always send to test email
+                To=email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
@@ -387,14 +379,10 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send support confirmation to {to_email}")
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-support-confirmation-message-id"
-
-            # Override recipient email for testing
-            logger.info(f"Overriding recipient email from {to_email} to {self.TEST_EMAIL}")
-
             response = self.client.emails.send_with_template(
                 TemplateAlias="support-confirmation",
                 TemplateModel=template_data,
-                To=self.TEST_EMAIL,  # Always send to test email
+                To=to_email,
                 From=settings.DEFAULT_FROM_EMAIL,
             )
 
@@ -448,14 +436,11 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-onboarding-pms-support-message-id"
 
-            # Override recipient email for testing
-            print(f"🔍 DEBUG: Overriding recipient email from {to_email} to {self.TEST_EMAIL}")
-
             response = self.client.emails.send_with_template(
                 TemplateAlias="support-confirmation",
                 TemplateModel=template_data,
-                To=self.TEST_EMAIL,  # Always send to test email
-                From="analytics@viverestays.com",
+                To=to_email,
+                From=settings.DEFAULT_FROM_EMAIL,
             )
 
             logger.info(f"Onboarding PMS support email sent to {to_email}, MessageID: {response['MessageID']}")
@@ -510,8 +495,8 @@ class PostmarkEmailService:
             response = self.client.emails.send_with_template(
                 TemplateAlias="support-confirmation",
                 TemplateModel=template_data,
-                To=self.TEST_EMAIL,
-                From="analytics@viverestays.com",
+                To=to_email,
+                From=settings.DEFAULT_FROM_EMAIL,
             )
 
             logger.info(f"Onboarding email verification support email sent to {to_email}, MessageID: {response['MessageID']}")
@@ -557,8 +542,8 @@ class PostmarkEmailService:
             response = self.client.emails.send_with_template(
                 TemplateAlias="contact-sales",
                 TemplateModel=template_data,
-                To=self.TEST_EMAIL,
-                From="analytics@viverestays.com",
+                To=to_email,
+                From=settings.DEFAULT_FROM_EMAIL,
             )
 
             logger.info(f"Onboarding contact sales email sent to {to_email}, MessageID: {response['MessageID']}")

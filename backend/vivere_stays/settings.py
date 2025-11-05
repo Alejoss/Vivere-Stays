@@ -20,8 +20,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 # Set to False to use externally managed tables (for production/remote database)
 MANAGE_EXTERNAL_SCHEMA_TABLES = config('MANAGE_EXTERNAL_SCHEMA_TABLES', default=False, cast=bool)
 
-# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -214,7 +213,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:\d+$",
     r"^http://127.0.0.1:\d+$",
 ]
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://vivere-stays.algobeat.com/').split(',')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000').split(',')]
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
