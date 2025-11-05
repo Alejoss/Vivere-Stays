@@ -8,8 +8,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--username',
-            default='admin',
-            help='Username for the superuser (default: admin)'
+            default='admin_vivere',
+            help='Username for the superuser (default: admin_vivere)'
         )
         parser.add_argument(
             '--email',
@@ -18,8 +18,8 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             '--password',
-            default='admin123',
-            help='Password for the superuser (default: admin123)'
+            default='santiago123',
+            help='Password for the superuser (default: santiago123)'
         )
 
     def handle(self, *args, **options):
