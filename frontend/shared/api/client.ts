@@ -2,13 +2,28 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ApiError, ErrorType } from './types';
 import i18n from '../../client/i18n';
 
-// API Configuration
-if (!import.meta.env.VITE_API_BASE_URL) {
-  throw new Error('VITE_API_BASE_URL environment variable is required. Please set it in your .env file.');
-}
+// Helper function to ensure API base URL uses HTTPS when page is loaded over HTTPS
+// This prevents mixed content errors (HTTPS pages cannot make requests to HTTP endpoints)
+const getApiBaseURL = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  if (!envUrl) {
+    throw new Error('VITE_API_BASE_URL environment variable is required. Please set it in your .env file.');
+  }
+  
+  // Check if the page is loaded over HTTPS
+  const isPageHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  
+  // If page is HTTPS and API URL is HTTP, convert to HTTPS
+  if (isPageHttps && envUrl.startsWith('http://')) {
+    return envUrl.replace('http://', 'https://');
+  }
+  
+  return envUrl;
+};
 
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: getApiBaseURL(),
   timeout: 10000,
   retries: 3,
   retryDelay: 1000,
