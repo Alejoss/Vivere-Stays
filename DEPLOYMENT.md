@@ -69,7 +69,7 @@ Aiven Cloud PostgreSQL (Remote)
 - Django admin interface at `/admin/`
 - API documentation at `/api/docs/`
 
-The frontend container connects to the backend via `http://35.226.220.107:8000` (HTTP, not HTTPS, since Nginx handles SSL termination).
+The frontend connects to the backend via `https://admin.viverestays.com` (HTTPS). Nginx handles SSL termination and routes requests to the backend container on port 8000.
 
 ### Staging URLs (Legacy)
 | Service | Domain | Protocol | Status |
@@ -130,7 +130,7 @@ frontend:
   command: node dist/server/node-build.mjs
   environment:
     - NODE_ENV=production
-    - VITE_API_BASE_URL=http://35.226.220.107:8000
+    - VITE_API_BASE_URL=https://admin.viverestays.com
   restart: unless-stopped
   networks: vivere_network
 ```

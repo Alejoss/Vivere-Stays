@@ -80,13 +80,15 @@ touch frontend/.env
 
 Edit `frontend/.env` with your configuration:
 ```env
-# API Configuration
-VITE_API_URL=http://localhost:8000/api/v1
+# API Configuration (REQUIRED)
+# Backend API base URL - no trailing slash
+VITE_API_BASE_URL=http://localhost:8000
 
-# External Services (optional)
-VITE_MAPBOX_TOKEN=your-mapbox-token-here
-VITE_STRIPE_PUBLIC_KEY=your-stripe-public-key-here
-VITE_GOOGLE_MAPS_API_KEY=your-google-maps-api-key-here
+# Google OAuth (optional - for Google sign-in)
+VITE_GOOGLE_CLIENT_ID=your-google-client-id-here
+
+# Stripe (optional - for payment processing)
+VITE_STRIPE_PUBLIC_KEY=pk_test_your-stripe-public-key-here
 ```
 
 #### 3. Install Frontend Dependencies
@@ -403,12 +405,11 @@ Vivere Stays/
 | `CORS_ALLOWED_ORIGINS` | CORS origins | `http://localhost:3000` |
 
 ### Frontend (.env)
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_API_URL` | Backend API URL | `http://localhost:8000/api/v1` |
-| `VITE_MAPBOX_TOKEN` | Mapbox API token | `your-mapbox-token-here` |
-| `VITE_STRIPE_PUBLIC_KEY` | Stripe public key | `your-stripe-public-key-here` |
-| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps API key | `your-google-maps-api-key-here` |
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `VITE_API_BASE_URL` | Backend API base URL (no trailing slash) | `http://localhost:8000` | ✅ Yes |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client ID | - | No |
+| `VITE_STRIPE_PUBLIC_KEY` | Stripe public key (pk_test_ or pk_live_) | - | No |
 
 ## 🚀 Production Deployment
 

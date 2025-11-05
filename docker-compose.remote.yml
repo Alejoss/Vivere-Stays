@@ -27,11 +27,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_BASE_URL: http://35.226.220.107:8000
+        VITE_API_BASE_URL: https://admin.viverestays.com
     container_name: vivere_frontend
     environment:
       - NODE_ENV=production
-      - VITE_API_BASE_URL=http://35.226.220.107:8000
+      - VITE_API_BASE_URL=https://admin.viverestays.com
     ports:
       - "3000:3000"
     networks:
