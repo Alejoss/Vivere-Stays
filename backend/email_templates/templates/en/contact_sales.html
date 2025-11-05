@@ -5,6 +5,7 @@
      - property_id
      - support_email
      - portal_url
+     - message
 -->
 
 <!-- Title -->
@@ -42,6 +43,16 @@
       </tr>
     </table>
   </div>
+  
+  <!-- User Message (if provided) -->
+  {{#if message}}
+  <div style="background-color: #F8FAFC; border: 1px solid #D7DAE0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 12px 0;">Your Message</p>
+    <div style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 6px; padding: 12px; margin: 12px 0;">
+      <p style="font-size: 14px; color: #1E1E1E; line-height: 1.6; margin: 0; white-space: pre-wrap;">{{message}}</p>
+    </div>
+  </div>
+  {{/if}}
   
   <!-- What happens next -->
   <div style="background-color: #EEF9FF; border: 1px solid #D8E9FE; border-radius: 8px; padding: 16px; margin: 20px 0;">

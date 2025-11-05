@@ -1671,7 +1671,7 @@ class SupportTicketView(APIView):
                         ticket_id=support_ticket.id,
                         issue_type=f"Dashboard Support - {issue_type_display}",
                         description=support_description_full,
-                        support_email="analytics@viverestays.com",
+                        support_email="support@viverestays.com",
                         language=language
                     )
                     
@@ -1889,13 +1889,13 @@ class OnboardingContactSalesView(APIView):
                 language = request.META.get('HTTP_X_LANGUAGE', 'en')
                 
                 # Use template-based email to ensure Postmark template renders
+                # This method now sends emails to both user and sales team
                 success, message_id_or_error = email_service.send_onboarding_contact_sales_email(
                     user_name=user_name,
                     user_email=user_email,
                     user_id=user.id,
                     message=message,
                     property_id=property_id,
-                    to_email="sales@viverestays.com",
                     language=language
                 )
                 if success:

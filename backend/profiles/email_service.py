@@ -22,7 +22,7 @@ class PostmarkEmailService:
     """
     
     # Test email for all email sending
-    TEST_EMAIL = "analytics@viverestays.com"
+    TEST_EMAIL = "support@viverestays.com"
     
     def __init__(self):
         """Initialize PostmarkEmailService with proper error handling and logging."""
@@ -403,7 +403,7 @@ class PostmarkEmailService:
         ticket_id: int,
         issue_type: str,
         description: str,
-        support_email: str = "analytics@viverestays.com",
+        support_email: str = "support@viverestays.com",
         language: str = 'en',
     ) -> Tuple[bool, str]:
         """
@@ -416,7 +416,7 @@ class PostmarkEmailService:
             ticket_id: Support ticket ID
             issue_type: Type of issue reported
             description: Full description/message of the support request
-            support_email: Support team email address (default: analytics@viverestays.com)
+            support_email: Support team email address (default: support@viverestays.com)
             language: Language code ('en', 'es', 'de')
             
         Returns:
@@ -493,7 +493,7 @@ class PostmarkEmailService:
                     ticket_id=ticket_id,
                     issue_type=issue_type,
                     description_excerpt=user_description_excerpt,
-                    support_email="analytics@viverestays.com",
+                    support_email="support@viverestays.com",
                     portal_url=settings.FRONTEND_URL,
                     message=support_message,
                     language=language
@@ -519,7 +519,7 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 issue_type=issue_type,
                 description=support_description,
-                support_email="analytics@viverestays.com",
+                support_email="support@viverestays.com",
                 language=language
             )
         except Exception as e:
@@ -563,7 +563,7 @@ class PostmarkEmailService:
                     ticket_id=ticket_id,
                     issue_type=issue_type,
                     description_excerpt=user_description_excerpt,
-                    support_email="analytics@viverestays.com",
+                    support_email="support@viverestays.com",
                     portal_url=settings.FRONTEND_URL,
                     message=support_message,
                     language=language
@@ -588,11 +588,67 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 issue_type=issue_type,
                 description=support_description,
-                support_email="analytics@viverestays.com",
+                support_email="support@viverestays.com",
                 language=language
             )
         except Exception as e:
             logger.error(f"Failed to send onboarding email verification support email: {str(e)}", exc_info=True)
+            return False, str(e)
+
+    def send_sales_team_notification_email(
+        self,
+        user_name: str,
+        user_email: str,
+        ticket_id: str,
+        property_id: str | None,
+        description: str,
+        sales_email: str = "support@viverestays.com",
+        language: str = 'en',
+    ) -> Tuple[bool, str]:
+        """
+        Send sales team notification email using language-specific Django template.
+        This is sent to the sales team when a sales request is created.
+        
+        Args:
+            user_name: User's first name
+            user_email: User's email address
+            ticket_id: Sales request ID
+            property_id: Property ID (optional)
+            description: Full description/message of the sales request
+            sales_email: Sales team email address (default: support@viverestays.com)
+            language: Language code ('en', 'es', 'de')
+            
+        Returns:
+            Tuple[bool, str]: (success, message_id_or_error)
+        """
+        logger.info(f"Starting send_sales_team_notification_email to {sales_email} in language: {language}")
+        
+        try:
+            template_data = {
+                **self.get_base_template_data(),
+                "user_name": user_name,
+                "user_email": user_email,
+                "ticket_id": ticket_id,
+                "property_id": property_id or "Not available",
+                "description": description,
+                "message": description,  # Also include as message for template compatibility
+            }
+
+            if self.test_mode:
+                logger.info(f"TEST MODE: Would send sales team notification to {sales_email}")
+                logger.info(f"TEST MODE: Template data: {template_data}")
+                return True, "test-sales-team-notification-message-id"
+            response = self.client.emails.send_with_template(
+                TemplateAlias="sales-team-notification",
+                TemplateModel=template_data,
+                To=sales_email,
+                From=settings.DEFAULT_FROM_EMAIL,
+            )
+
+            logger.info(f"Sales team notification email sent to {sales_email}, MessageID: {response['MessageID']}")
+            return True, response['MessageID']
+        except Exception as e:
+            logger.error(f"Failed to send sales team notification email to {sales_email}: {str(e)}", exc_info=True)
             return False, str(e)
 
     def send_onboarding_contact_sales_email(
@@ -602,44 +658,73 @@ class PostmarkEmailService:
         user_id: int,
         message: str | None,
         property_id: str | None = None,
-        to_email: str = "sales@viverestays.com",
         language: str = 'en',
     ) -> Tuple[bool, str]:
         """
-        Send onboarding contact sales email to sales team using language-specific Django template.
-        Uses the 'contact-sales' template.
+        Send onboarding contact sales emails - both to user (confirmation) and sales team (notification).
         
         Args:
+            user_name: User's first name
+            user_email: User's email address
+            user_id: User ID
+            message: User's sales inquiry message (optional)
+            property_id: Property ID (optional)
             language: Language code ('en', 'es', 'de') - defaults to 'en'
+            
+        Returns:
+            Tuple[bool, str]: (success, message_id_or_error) - from the sales team notification
         """
         try:
-            template_data = {
-                **self.get_base_template_data(),
-                "user_name": user_name,
-                "user_email": user_email,
-                "user_id": user_id,
-                "property_id": property_id or "Not available",
-                "ticket_id": f"SALES-{user_id}",  # Generate a ticket-like ID
-                "support_email": "sales@viverestays.com",
-                "portal_url": settings.FRONTEND_URL,
-            }
+            ticket_id = f"SALES-{user_id}"
+            sales_message = message or "No additional message provided"
+            
+            # Send confirmation email to user
+            try:
+                user_template_data = {
+                    **self.get_base_template_data(),
+                    "user_name": user_name,
+                    "ticket_id": ticket_id,
+                    "property_id": property_id or "Not available",
+                    "support_email": "support@viverestays.com",
+                    "portal_url": settings.FRONTEND_URL,
+                    "message": sales_message,  # Include user's message
+                }
+                
+                if self.test_mode:
+                    logger.info(f"TEST MODE: Would send contact sales confirmation to user {user_email}")
+                    logger.info(f"TEST MODE: Template data: {user_template_data}")
+                else:
+                    user_response = self.client.emails.send_with_template(
+                        TemplateAlias="contact-sales",
+                        TemplateModel=user_template_data,
+                        To=user_email,
+                        From=settings.DEFAULT_FROM_EMAIL,
+                    )
+                    logger.info(f"Contact sales confirmation email sent to user {user_email}, MessageID: {user_response['MessageID']}")
+            except Exception as user_email_exc:
+                logger.error(f"Failed to send contact sales confirmation email to user {user_email}: {user_email_exc}", exc_info=True)
 
-            if self.test_mode:
-                logger.info(f"TEST MODE: Would send onboarding contact sales to {to_email}")
-                logger.info(f"TEST MODE: Template data: {template_data}")
-                return True, "test-onboarding-contact-sales-message-id"
+            # Build description for sales team
+            sales_description = f"User: {user_name} ({user_email})\n"
+            sales_description += f"User ID: {user_id}\n"
+            sales_description += f"Property ID: {property_id or 'Not provided'}\n\n"
+            sales_description += "This is a sales consultation request from the onboarding flow.\n"
+            sales_description += "The user is interested in speaking with the sales team.\n\n"
+            sales_description += "Message:\n"
+            sales_description += sales_message
 
-            response = self.client.emails.send_with_template(
-                TemplateAlias="contact-sales",
-                TemplateModel=template_data,
-                To=to_email,
-                From=settings.DEFAULT_FROM_EMAIL,
+            # Send notification email to sales team
+            return self.send_sales_team_notification_email(
+                user_name=user_name,
+                user_email=user_email,
+                ticket_id=ticket_id,
+                property_id=property_id,
+                description=sales_description,
+                sales_email="support@viverestays.com",
+                language=language
             )
-
-            logger.info(f"Onboarding contact sales email sent to {to_email}, MessageID: {response['MessageID']}")
-            return True, response['MessageID']
         except Exception as e:
-            logger.error(f"Failed to send onboarding contact sales email to {to_email}: {str(e)}", exc_info=True)
+            logger.error(f"Failed to send onboarding contact sales email: {str(e)}", exc_info=True)
             return False, str(e)
 
 
