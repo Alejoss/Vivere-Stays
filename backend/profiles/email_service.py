@@ -630,8 +630,6 @@ class PostmarkEmailService:
                 "user_email": user_email,
                 "ticket_id": ticket_id,
                 "property_id": property_id or "Not available",
-                "description": description,
-                "message": description,  # Also include as message for template compatibility
             }
 
             if self.test_mode:

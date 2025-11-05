@@ -20,45 +20,16 @@ export default function Notifications() {
   const [currentFilter, setCurrentFilter] = useState<"all" | "unread">("unread");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCheckingBackground, setIsCheckingBackground] = useState(false);
 
-  // Fetch notifications and trigger MSP check on component load
+  // Load existing notifications immediately
   useEffect(() => {
     async function loadNotifications() {
       try {
         setIsLoading(true);
         setError(null);
         
-        // First, trigger MSP check for all user properties
-        // This will create notifications if MSP is missing
-        try {
-          await dynamicPricingService.checkMSPStatusAllProperties();
-          console.log('MSP check completed for all properties');
-        } catch (mspError) {
-          console.warn('MSP check failed (non-critical):', mspError);
-          // Don't fail the whole page if MSP check fails
-        }
-        
-        // Then, trigger booking URL check
-        // This will create notifications if booking URLs are missing
-        try {
-          await profilesService.checkBookingUrlStatus();
-          console.log('Booking URL check completed');
-        } catch (bookingUrlError) {
-          console.warn('Booking URL check failed (non-critical):', bookingUrlError);
-          // Don't fail the whole page if booking URL check fails
-        }
-        
-        // Then, trigger special offers check
-        // This will create notifications if special offers have started or ended
-        try {
-          await profilesService.checkSpecialOffersStatus();
-          console.log('Special offers check completed');
-        } catch (specialOffersError) {
-          console.warn('Special offers check failed (non-critical):', specialOffersError);
-          // Don't fail the whole page if special offers check fails
-        }
-        
-        // Then fetch all notifications (always fetch all, filter on frontend)
+        // Fetch existing notifications first (fast operation)
         const response = await profilesService.getNotifications({ 
           filter: 'all',
           limit: 100 
@@ -85,7 +56,63 @@ export default function Notifications() {
     }
     
     loadNotifications();
-  }, []); // Only load once on component mount
+  }, []);
+
+  // Run background checks after initial load
+  useEffect(() => {
+    // Only run checks after notifications have been loaded
+    if (isLoading) return;
+
+    async function runBackgroundChecks() {
+      setIsCheckingBackground(true);
+      
+      try {
+        // Run all checks in parallel (non-blocking)
+        await Promise.all([
+          dynamicPricingService.checkMSPStatusAllProperties().catch(err => {
+            console.warn('MSP check failed (non-critical):', err);
+          }),
+          profilesService.checkBookingUrlStatus().catch(err => {
+            console.warn('Booking URL check failed (non-critical):', err);
+          }),
+          profilesService.checkSpecialOffersStatus().catch(err => {
+            console.warn('Special offers check failed (non-critical):', err);
+          }),
+        ]);
+
+        // After checks complete, refresh notifications to show any new ones
+        try {
+          const response = await profilesService.getNotifications({ 
+            filter: 'all',
+            limit: 100 
+          });
+          
+          const mappedNotifications: Notification[] = response.notifications.map((n) => ({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            description: n.description,
+            timestamp: n.timestamp,
+            isRead: n.is_read,
+            isNew: n.is_new,
+          }));
+          
+          setNotifications(mappedNotifications);
+        } catch (refreshError) {
+          console.warn('Failed to refresh notifications after checks:', refreshError);
+        }
+      } finally {
+        setIsCheckingBackground(false);
+      }
+    }
+
+    // Small delay to ensure page is fully rendered
+    const timer = setTimeout(() => {
+      runBackgroundChecks();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
   const newCount = notifications.filter((n) => n.isNew).length;
@@ -226,6 +253,12 @@ export default function Notifications() {
           {newCount > 0 && (
             <div className="bg-[#EF4444] text-white px-3 py-1 rounded-xl text-[12px]">
               {newCount} {t('common:messages.new', { defaultValue: 'new' })}
+            </div>
+          )}
+          {isCheckingBackground && (
+            <div className="text-sm text-[#6B7280] flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#294758]"></div>
+              <span>Checking for updates...</span>
             </div>
           )}
         </div>
