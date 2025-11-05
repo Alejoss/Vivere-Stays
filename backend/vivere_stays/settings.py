@@ -20,7 +20,8 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 # Set to False to use externally managed tables (for production/remote database)
 MANAGE_EXTERNAL_SCHEMA_TABLES = config('MANAGE_EXTERNAL_SCHEMA_TABLES', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
+# Normalize and strip hosts to avoid whitespace issues from env
+ALLOWED_HOSTS = [host.strip() for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',') if host.strip()]
 
 # Application definition
 INSTALLED_APPS = [
