@@ -1,0 +1,71 @@
+<!-- Support Team Notification - Spanish (ES) -->
+<!-- Variables:
+     - user_name
+     - user_email
+     - ticket_id
+     - issue_type
+     - description
+     - message
+-->
+
+<!-- Header -->
+<h1 style="font-size: 24px; font-weight: 700; color: #1E1E1E; margin: 0 0 8px 0; text-align: center;">
+  Nueva Solicitud de Soporte
+</h1>
+<p style="font-size: 16px; color: #485567; text-align: center; margin: 0 0 24px 0;">
+  Se ha enviado una nueva solicitud de soporte que requiere atención.
+</p>
+
+<div class="content-section" style="margin: 24px 0;">
+  <!-- User Information -->
+  <div style="background-color: #F8FAFC; border: 1px solid #D7DAE0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 12px 0;">
+      Información del Usuario
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; width: 140px; padding: 4px 0;">Nombre</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">{{user_name}}</td>
+      </tr>
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; padding: 4px 0;">Correo</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">
+          <a href="mailto:{{user_email}}" style="color: #294758; text-decoration: none;">{{user_email}}</a>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; padding: 4px 0;">ID del Ticket</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0; font-weight: 600;">#{{ticket_id}}</td>
+      </tr>
+      <tr>
+        <td style="font-size: 14px; color: #6B7280; padding: 4px 0;">Tipo de Problema</td>
+        <td style="font-size: 14px; color: #1E1E1E; padding: 4px 0;">{{issue_type}}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Support Request Details -->
+  <div style="background-color: #EEF9FF; border: 1px solid #D8E9FE; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #294758; font-weight: 600; margin: 0 0 12px 0;">
+      Detalles de la Solicitud de Soporte
+    </p>
+    <div style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 6px; padding: 12px; margin: 12px 0;">
+      <p style="font-size: 14px; color: #1E1E1E; line-height: 1.6; margin: 0; white-space: pre-wrap;">
+        {{description}}
+      </p>
+    </div>
+  </div>
+
+  <!-- Action Required -->
+  <div style="background-color: #FFF4E6; border: 1px solid #FED7AA; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <p style="font-size: 14px; color: #92400E; font-weight: 600; margin: 0 0 8px 0;">
+      Acción Requerida
+    </p>
+    <ul style="font-size: 14px; color: #92400E; line-height: 1.6; margin: 0; padding-left: 18px;">
+      <li>Revisar los detalles de la solicitud de soporte arriba</li>
+      <li>Contactar al usuario en <a href="mailto:{{user_email}}" style="color: #294758; text-decoration: none;">{{user_email}}</a> si se necesita información adicional</li>
+      <li>Actualizar el estado del ticket una vez resuelto</li>
+    </ul>
+  </div>
+</div>
+

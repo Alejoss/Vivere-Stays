@@ -296,7 +296,6 @@ EMAIL_VERIFICATION_CODE_LENGTH = 5
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:8080')
 
 # Company-wide settings for emails
-COMPANY_LOGO_URL = 'https://viverestays.com/wp-content/uploads/2022/06/VS_sticky.png'
 COMPANY_WEBSITE = FRONTEND_URL
 COMPANY_UNSUBSCRIBE_URL = f'{COMPANY_WEBSITE}/unsubscribe'
 

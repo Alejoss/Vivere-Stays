@@ -30,7 +30,6 @@ class PostmarkEmailService:
         logger.info(f"POSTMARK_TOKEN: {settings.POSTMARK_TOKEN[:10] if settings.POSTMARK_TOKEN else 'NOT SET'}...")
         logger.info(f"POSTMARK_TEST_MODE: {settings.POSTMARK_TEST_MODE}")
         logger.info(f"DEFAULT_FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
-        logger.info(f"COMPANY_LOGO_URL: {settings.COMPANY_LOGO_URL}")
         
         try:
             self.client = PostmarkClient(server_token=settings.POSTMARK_TOKEN)
@@ -45,7 +44,6 @@ class PostmarkEmailService:
     def get_base_template_data(self) -> Dict[str, str]:
         """Get base template data that should be included in all emails"""
         return {
-            "logo_url": settings.COMPANY_LOGO_URL,
             "company_website": settings.COMPANY_WEBSITE,
             "unsubscribe_url": settings.COMPANY_UNSUBSCRIBE_URL
         }
@@ -237,14 +235,12 @@ class PostmarkEmailService:
                 "email_subtitle": "Please use the verification code below to confirm your email address and complete your account setup.",
                 "user_name": user_name,
                 "verification_code": verification_code,
-                "expiry_time": f"{settings.EMAIL_VERIFICATION_EXPIRY_MINUTES} minutes",
-                "logo_url": settings.COMPANY_LOGO_URL
+                "expiry_time": f"{settings.EMAIL_VERIFICATION_EXPIRY_MINUTES} minutes"
             }
             
             if self.test_mode:
                 logger.info(f"TEST MODE: Would send verification email to {email}")
                 logger.info(f"TEST MODE: Verification code: {verification_code}")
-                logger.info(f"TEST MODE: Template data includes logo_url: {template_data.get('logo_url')}")
                 return True, "test-verification-message-id", verification_code
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",
@@ -346,19 +342,21 @@ class PostmarkEmailService:
         description_excerpt: str,
         support_email: str,
         portal_url: str,
+        message: str = None,
         language: str = 'en',
     ) -> Tuple[bool, str]:
         """
         Send support confirmation email to the user using language-specific Django template.
         
         Args:
-            to_email: Recipient email address
+            to_email: Recipient email address (user's email)
             user_name: User's first name
             ticket_id: Support ticket ID
             issue_type: Type of issue reported
             description_excerpt: Brief description of the issue
             support_email: Support team email address
             portal_url: URL to the support portal
+            message: Full support message (optional, will be included if provided)
             language: Language code ('en', 'es', 'de')
             
         Returns:
@@ -376,6 +374,10 @@ class PostmarkEmailService:
                 "support_email": support_email,
                 "portal_url": portal_url,
             }
+            
+            # Add message if provided
+            if message:
+                template_data["message"] = message
 
             if self.test_mode:
                 logger.info(f"TEST MODE: Would send support confirmation to {to_email}")
@@ -394,6 +396,62 @@ class PostmarkEmailService:
             logger.error(f"Failed to send support confirmation email to {to_email}: {str(e)}", exc_info=True)
             return False, str(e)
 
+    def send_support_team_notification_email(
+        self,
+        user_name: str,
+        user_email: str,
+        ticket_id: int,
+        issue_type: str,
+        description: str,
+        support_email: str = "analytics@viverestays.com",
+        language: str = 'en',
+    ) -> Tuple[bool, str]:
+        """
+        Send support team notification email using language-specific Django template.
+        This is sent to the support team when a support request is created.
+        
+        Args:
+            user_name: User's first name
+            user_email: User's email address
+            ticket_id: Support ticket ID
+            issue_type: Type of issue reported
+            description: Full description/message of the support request
+            support_email: Support team email address (default: analytics@viverestays.com)
+            language: Language code ('en', 'es', 'de')
+            
+        Returns:
+            Tuple[bool, str]: (success, message_id_or_error)
+        """
+        logger.info(f"Starting send_support_team_notification_email to {support_email} in language: {language}")
+        
+        try:
+            template_data = {
+                **self.get_base_template_data(),
+                "user_name": user_name,
+                "user_email": user_email,
+                "ticket_id": ticket_id,
+                "issue_type": issue_type,
+                "description": description,
+                "message": description,  # Also include as message for template compatibility
+            }
+
+            if self.test_mode:
+                logger.info(f"TEST MODE: Would send support team notification to {support_email}")
+                logger.info(f"TEST MODE: Template data: {template_data}")
+                return True, "test-support-team-notification-message-id"
+            response = self.client.emails.send_with_template(
+                TemplateAlias="support-team-notification",
+                TemplateModel=template_data,
+                To=support_email,
+                From=settings.DEFAULT_FROM_EMAIL,
+            )
+
+            logger.info(f"Support team notification email sent to {support_email}, MessageID: {response['MessageID']}")
+            return True, response['MessageID']
+        except Exception as e:
+            logger.error(f"Failed to send support team notification email to {support_email}: {str(e)}", exc_info=True)
+            return False, str(e)
+
     def send_onboarding_pms_support_email(
         self,
         user_name: str,
@@ -401,54 +459,71 @@ class PostmarkEmailService:
         user_id: int,
         property_id: str | None,
         message: str | None,
-        to_email: str = "analytics@viverestays.com",
         language: str = 'en',
     ) -> Tuple[bool, str]:
         """
-        Send onboarding PMS support email to analytics using language-specific Django template.
-        Uses the existing 'support-confirmation' template.
+        Send onboarding PMS support emails - both to user (confirmation) and support team (notification).
         
         Args:
+            user_name: User's first name
+            user_email: User's email address
+            user_id: User ID
+            property_id: Property ID (optional)
+            message: User's support message (optional)
             language: Language code ('en', 'es', 'de') - defaults to 'en'
+            
+        Returns:
+            Tuple[bool, str]: (success, message_id_or_error) - from the support team notification
         """
         try:
-            # Build description excerpt for the template (summary without message)
-            description_lines = [
-                f"User: {user_name} ({user_email})",
-                f"Property ID: {property_id or 'Not provided'}",
-                "",
-                "This is a PMS support request from the onboarding flow.",
-                "The user needs help choosing a compatible PMS system.",
-            ]
-            description_excerpt = "\n".join(description_lines)
+            ticket_id = f"PMS-{user_id}"
+            issue_type = "PMS Support Request"
+            support_message = message or "No additional message provided"
+            
+            # Build description for user confirmation
+            user_description_excerpt = f"This is a PMS support request from the onboarding flow. The user needs help choosing a compatible PMS system."
+            if property_id:
+                user_description_excerpt += f"\nProperty ID: {property_id}"
+            
+            # Send confirmation email to user
+            try:
+                user_success, _ = self.send_support_confirmation_email(
+                    to_email=user_email,
+                    user_name=user_name,
+                    ticket_id=ticket_id,
+                    issue_type=issue_type,
+                    description_excerpt=user_description_excerpt,
+                    support_email="analytics@viverestays.com",
+                    portal_url=settings.FRONTEND_URL,
+                    message=support_message,
+                    language=language
+                )
+                if user_success:
+                    logger.info(f"Onboarding PMS support confirmation email sent to user {user_email}")
+            except Exception as user_email_exc:
+                logger.error(f"Failed to send PMS support confirmation email to user {user_email}: {user_email_exc}", exc_info=True)
 
-            template_data = {
-                **self.get_base_template_data(),
-                "user_name": user_name,
-                "ticket_id": f"PMS-{user_id}",  # Generate a ticket-like ID
-                "issue_type": "PMS Support Request",
-                "description_excerpt": description_excerpt,
-                "message": message or "No additional message provided",
-                "support_email": "analytics@viverestays.com",
-                "portal_url": settings.FRONTEND_URL,
-            }
+            # Build description for support team
+            support_description = f"User: {user_name} ({user_email})\n"
+            support_description += f"User ID: {user_id}\n"
+            support_description += f"Property ID: {property_id or 'Not provided'}\n\n"
+            support_description += "This is a PMS support request from the onboarding flow.\n"
+            support_description += "The user needs help choosing a compatible PMS system.\n\n"
+            support_description += "Message:\n"
+            support_description += support_message
 
-            if self.test_mode:
-                logger.info(f"TEST MODE: Would send onboarding PMS support to {to_email}")
-                logger.info(f"TEST MODE: Template data: {template_data}")
-                return True, "test-onboarding-pms-support-message-id"
-
-            response = self.client.emails.send_with_template(
-                TemplateAlias="support-confirmation",
-                TemplateModel=template_data,
-                To=to_email,
-                From=settings.DEFAULT_FROM_EMAIL,
+            # Send notification email to support team
+            return self.send_support_team_notification_email(
+                user_name=user_name,
+                user_email=user_email,
+                ticket_id=ticket_id,
+                issue_type=issue_type,
+                description=support_description,
+                support_email="analytics@viverestays.com",
+                language=language
             )
-
-            logger.info(f"Onboarding PMS support email sent to {to_email}, MessageID: {response['MessageID']}")
-            return True, response['MessageID']
         except Exception as e:
-            logger.error(f"Failed to send onboarding PMS support email to {to_email}: {str(e)}", exc_info=True)
+            logger.error(f"Failed to send onboarding PMS support email: {str(e)}", exc_info=True)
             return False, str(e)
 
     def send_onboarding_email_verification_support_email(
@@ -457,54 +532,67 @@ class PostmarkEmailService:
         user_email: str,
         user_id: int,
         message: str | None,
-        to_email: str = "analytics@viverestays.com",
         language: str = 'en',
     ) -> Tuple[bool, str]:
         """
-        Send onboarding email verification support email to analytics using language-specific Django template.
-        Uses the existing 'support-confirmation' template.
+        Send onboarding email verification support emails - both to user (confirmation) and support team (notification).
         
         Args:
+            user_name: User's first name
+            user_email: User's email address
+            user_id: User ID
+            message: User's support message (optional)
             language: Language code ('en', 'es', 'de') - defaults to 'en'
+            
+        Returns:
+            Tuple[bool, str]: (success, message_id_or_error) - from the support team notification
         """
         try:
-            # Build description excerpt for the template (summary without message)
-            description_lines = [
-                f"User: {user_name} ({user_email})",
-                f"User ID: {user_id}",
-                "",
-                "This is an email verification support request from the onboarding flow.",
-                "The user is having trouble verifying their email address.",
-            ]
-            description_excerpt = "\n".join(description_lines)
+            ticket_id = f"EMAIL-VERIFY-{user_id}"
+            issue_type = "Email Verification Support Request"
+            support_message = message or "No additional message provided"
+            
+            # Build description for user confirmation
+            user_description_excerpt = "This is an email verification support request from the onboarding flow. The user is having trouble verifying their email address."
+            
+            # Send confirmation email to user
+            try:
+                user_success, _ = self.send_support_confirmation_email(
+                    to_email=user_email,
+                    user_name=user_name,
+                    ticket_id=ticket_id,
+                    issue_type=issue_type,
+                    description_excerpt=user_description_excerpt,
+                    support_email="analytics@viverestays.com",
+                    portal_url=settings.FRONTEND_URL,
+                    message=support_message,
+                    language=language
+                )
+                if user_success:
+                    logger.info(f"Onboarding email verification support confirmation email sent to user {user_email}")
+            except Exception as user_email_exc:
+                logger.error(f"Failed to send email verification support confirmation email to user {user_email}: {user_email_exc}", exc_info=True)
 
-            template_data = {
-                **self.get_base_template_data(),
-                "user_name": user_name,
-                "ticket_id": f"EMAIL-VERIFY-{user_id}",  # Generate a ticket-like ID
-                "issue_type": "Email Verification Support Request",
-                "description_excerpt": description_excerpt,
-                "message": message or "No additional message provided",
-                "support_email": "analytics@viverestays.com",
-                "portal_url": settings.FRONTEND_URL,
-            }
+            # Build description for support team
+            support_description = f"User: {user_name} ({user_email})\n"
+            support_description += f"User ID: {user_id}\n\n"
+            support_description += "This is an email verification support request from the onboarding flow.\n"
+            support_description += "The user is having trouble verifying their email address.\n\n"
+            support_description += "Message:\n"
+            support_description += support_message
 
-            if self.test_mode:
-                logger.info(f"TEST MODE: Would send onboarding email verification support to {to_email}")
-                logger.info(f"TEST MODE: Template data: {template_data}")
-                return True, "test-onboarding-email-verification-support-message-id"
-
-            response = self.client.emails.send_with_template(
-                TemplateAlias="support-confirmation",
-                TemplateModel=template_data,
-                To=to_email,
-                From=settings.DEFAULT_FROM_EMAIL,
+            # Send notification email to support team
+            return self.send_support_team_notification_email(
+                user_name=user_name,
+                user_email=user_email,
+                ticket_id=ticket_id,
+                issue_type=issue_type,
+                description=support_description,
+                support_email="analytics@viverestays.com",
+                language=language
             )
-
-            logger.info(f"Onboarding email verification support email sent to {to_email}, MessageID: {response['MessageID']}")
-            return True, response['MessageID']
         except Exception as e:
-            logger.error(f"Failed to send onboarding email verification support email to {to_email}: {str(e)}", exc_info=True)
+            logger.error(f"Failed to send onboarding email verification support email: {str(e)}", exc_info=True)
             return False, str(e)
 
     def send_onboarding_contact_sales_email(

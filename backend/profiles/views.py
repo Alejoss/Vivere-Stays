@@ -1646,36 +1646,32 @@ class SupportTicketView(APIView):
                 support_ticket = serializer.save()
                 
                 logger.info(f"Support ticket created: {support_ticket.id} by user {request.user.username}")
-                # Send notification email to analytics mailbox using template (non-blocking)
+                
+                # Get language from request header for email localization
+                language = request.META.get('HTTP_X_LANGUAGE', 'en')
+                user_email = request.user.email
+                user_name = request.user.first_name or request.user.username
+                issue_type_display = support_ticket.get_issue_type_display() if hasattr(support_ticket, 'get_issue_type_display') else data.get('issue_type')
+                support_description = data.get('description', 'No description provided')
+                
+                # Send notification email to support team (non-blocking)
                 try:
                     from .email_service import email_service
-                    # Get language from request header for email localization
-                    language = request.META.get('HTTP_X_LANGUAGE', 'en')
-                    issue_type_display = support_ticket.get_issue_type_display() if hasattr(support_ticket, 'get_issue_type_display') else data.get('issue_type')
-                    
-                    # Build description excerpt for the template
-                    description_lines = [
-                        f"User: {request.user.first_name or request.user.username} ({request.user.email})",
-                        f"User ID: {request.user.id}",
-                        f"Ticket ID: {support_ticket.id}",
-                        "",
-                        "This is a support ticket from the main dashboard support center.",
-                        "The user has submitted a detailed support request.",
-                        "",
-                        "Description:",
-                        data.get('description', 'No description provided'),
-                    ]
-                    description_excerpt = "\n".join(description_lines)
+                    support_description_full = f"User: {user_name} ({user_email})\n"
+                    support_description_full += f"User ID: {request.user.id}\n"
+                    support_description_full += f"Ticket ID: {support_ticket.id}\n\n"
+                    support_description_full += "This is a support ticket from the main dashboard support center.\n"
+                    support_description_full += "The user has submitted a detailed support request.\n\n"
+                    support_description_full += "Description:\n"
+                    support_description_full += support_description
 
-                    # Use template-based email for consistency with onboarding support
-                    success, message_id_or_error = email_service.send_support_confirmation_email(
-                        to_email="analytics@viverestays.com",
-                        user_name="Support Team",
+                    success, message_id_or_error = email_service.send_support_team_notification_email(
+                        user_name=user_name,
+                        user_email=user_email,
                         ticket_id=support_ticket.id,
                         issue_type=f"Dashboard Support - {issue_type_display}",
-                        description_excerpt=description_excerpt,
+                        description=support_description_full,
                         support_email="analytics@viverestays.com",
-                        portal_url=getattr(settings, 'FRONTEND_URL', '').rstrip('/') + '/support',
                         language=language
                     )
                     
@@ -1689,12 +1685,7 @@ class SupportTicketView(APIView):
                 # Send confirmation email to the user (non-blocking)
                 try:
                     from .email_service import email_service
-                    # Get language from request header for email localization
-                    language = request.META.get('HTTP_X_LANGUAGE', 'en')
-                    user_email = request.user.email
-                    user_name = request.user.first_name or request.user.username
-                    issue_type_display = support_ticket.get_issue_type_display() if hasattr(support_ticket, 'get_issue_type_display') else data.get('issue_type')
-                    description_excerpt = (data.get('description', '') or '')
+                    description_excerpt = support_description
                     if len(description_excerpt) > 200:
                         description_excerpt = description_excerpt[:197] + '...'
 
@@ -1706,6 +1697,7 @@ class SupportTicketView(APIView):
                         description_excerpt=description_excerpt,
                         support_email=getattr(settings, 'SUPPORT_EMAIL', 'support@viverestays.com'),
                         portal_url=getattr(settings, 'FRONTEND_URL', '').rstrip('/') + '/support',
+                        message=support_description,
                         language=language
                     )
                 except Exception as user_email_exc:
@@ -1791,13 +1783,13 @@ class OnboardingPMSSupportView(APIView):
                 language = request.META.get('HTTP_X_LANGUAGE', 'en')
                 
                 # Use template-based email to ensure Postmark template renders
+                # This method now sends emails to both user and support team
                 success, message_id_or_error = email_service.send_onboarding_pms_support_email(
                     user_name=user_name,
                     user_email=user_email,
                     user_id=user.id,
                     property_id=property_id,
                     message=message,
-                    to_email="analytics@viverestays.com",
                     language=language
                 )
                 if success:
@@ -1844,12 +1836,12 @@ class OnboardingEmailVerificationSupportView(APIView):
                 language = request.META.get('HTTP_X_LANGUAGE', 'en')
                 
                 # Use template-based email to ensure Postmark template renders
+                # This method now sends emails to both user and support team
                 success, message_id_or_error = email_service.send_onboarding_email_verification_support_email(
                     user_name=user_name,
                     user_email=user_email,
                     user_id=user.id,
                     message=message,
-                    to_email="analytics@viverestays.com",
                     language=language
                 )
                 if success:
