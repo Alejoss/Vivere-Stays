@@ -16,8 +16,8 @@ COPY . .
 
 # Build client and server
 # VITE_API_BASE_URL needs to be set at build time for client-side code
-# Default to production backend URL (can be overridden via build args)
-ARG VITE_API_BASE_URL=https://admin.viverestays.com
+# Default to production backend URL with /api prefix (can be overridden via build args)
+ARG VITE_API_BASE_URL=https://admin.viverestays.com/api
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
