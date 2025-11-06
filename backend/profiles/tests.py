@@ -1,5 +1,5 @@
 import logging
-from django.test import TestCase, Client
+from django.test import TestCase
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -8,7 +8,6 @@ from rest_framework import status
 from profiles.models import Profile
 
 logger = logging.getLogger(__name__)
-
 
 class ProfileModelTests(TestCase):
     """Test cases for the Profile model"""
@@ -165,6 +164,40 @@ class AuthenticationViewsTests(APITestCase):
         self.assertIn('access', response.data)
         self.assertIn('user', response.data)
         self.assertEqual(response.data['user']['username'], 'testuser')
+        self.assertIn('has_profile', response.data)
+        self.assertTrue(response.data['has_profile'])
+        self.assertIn('had_profile', response.data)
+        self.assertTrue(response.data['had_profile'])
+        self.assertIn('properties_count', response.data)
+        self.assertEqual(response.data['properties_count'], 0)
+
+    def test_login_view_creates_profile_if_missing(self):
+        """Test login creates profile metadata when profile missing"""
+        user = User.objects.create_user(
+            username='noprofile',
+            email='noprofile@example.com',
+            password='pass12345'
+        )
+        # Ensure profile does not exist for this user
+        Profile.objects.filter(user=user).delete()
+
+        url = reverse('login')
+        data = {
+            'username': 'noprofile',
+            'password': 'pass12345'
+        }
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Profile.objects.filter(user=user).exists())
+
+        profile = Profile.objects.get(user=user)
+        self.assertIn('has_profile', response.data)
+        self.assertTrue(response.data['has_profile'])
+        self.assertIn('had_profile', response.data)
+        self.assertFalse(response.data['had_profile'])
+        self.assertIn('properties_count', response.data)
+        self.assertEqual(response.data['properties_count'], profile.properties_count)
 
     def test_login_view_invalid_credentials(self):
         """Test login with invalid credentials"""

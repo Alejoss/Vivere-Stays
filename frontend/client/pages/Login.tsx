@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { useTranslation } from "react-i18next";
 import { useLogin, useGoogleLogin } from "../../shared/api/hooks";
-import { OnboardingStep } from "../../shared/api/onboarding";
 import { profilesService } from "../../shared/api/profiles";
 import { LoginRequest } from "../../shared/api/types";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -18,6 +17,44 @@ export default function Login() {
   
   const loginMutation = useLogin();
   const googleLoginMutation = useGoogleLogin();
+
+  const handlePostAuthRedirect = useCallback(async (options?: { hadProfile?: boolean; propertiesCount?: number }) => {
+    if (options?.hadProfile === false) {
+      navigate("/register");
+      return;
+    }
+
+    if (typeof options?.propertiesCount === "number") {
+      if (options.propertiesCount > 0) {
+        navigate("/dashboard");
+      } else {
+        navigate("/hotel-information");
+      }
+      return;
+    }
+
+    try {
+      const profile = await profilesService.getProfile();
+      const propertyCount = typeof profile?.properties_count === "number" ? profile.properties_count : 0;
+
+      if (propertyCount > 0) {
+        navigate("/dashboard");
+      } else {
+        navigate("/hotel-information");
+      }
+    } catch (profileError: any) {
+      console.error("Post-login redirect error:", profileError);
+      const status =
+        (profileError && typeof profileError === "object" && "status" in profileError && profileError.status) ||
+        profileError?.response?.status;
+
+      if (status === 404) {
+        navigate("/register");
+      } else {
+        navigate("/hotel-information");
+      }
+    }
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,72 +80,10 @@ export default function Login() {
     try {
       const response = await loginMutation.mutateAsync(loginData);
       console.log("Login successful:", response);
-      
-      // Get user's onboarding progress and redirect to appropriate step
-      try {
-        console.log('🔍 Login: Fetching onboarding progress...');
-        console.log('🔍 Login: Access token available:', !!response.access);
-        
-        const progressData = await profilesService.getOnboardingProgress();
-        console.log('📊 Login: Onboarding progress data:', progressData);
-        console.log('📊 Login: Progress data type:', typeof progressData);
-        console.log('📊 Login: Progress data keys:', Object.keys(progressData));
-        
-        // Check if onboarding is completed
-        if (progressData.completed) {
-          console.log('✅ Login: Onboarding completed, redirecting to dashboard');
-          navigate("/dashboard");
-          return;
-        }
-        
-        const currentStep = progressData.current_step;
-        console.log('📍 Login: Current onboarding step:', currentStep);
-        console.log('📍 Login: Current step type:', typeof currentStep);
-        
-        // For users at register step, redirect to dashboard (same as completed users)
-        if (currentStep === 'register' && !progressData.completed) {
-          console.log('📝 Login: User at register step, redirecting to dashboard');
-          navigate("/dashboard");
-          return;
-        }
-        
-        // Validate that the current step is a valid OnboardingStep
-        const validSteps = ['register', 'verify_email', 'hotel_information', 'pms_integration', 'select_plan', 'payment', 'add_competitor', 'msp', 'complete'] as const;
-        console.log('🔍 Login: Valid steps:', validSteps);
-        console.log('🔍 Login: Is current step valid?', validSteps.includes(currentStep as any));
-        
-        if (validSteps.includes(currentStep as any)) {
-          // Navigate directly to the step route
-          const stepRoutes = {
-            register: '/register',
-            verify_email: '/verify-email',
-            hotel_information: '/hotel-information',
-            pms_integration: '/pms-integration',
-            select_plan: '/select-plan',
-            payment: '/payment',
-            add_competitor: '/add-competitor',
-            msp: '/msp',
-            complete: '/welcome-complete',
-          };
-          
-          const route = stepRoutes[currentStep as keyof typeof stepRoutes];
-          console.log('🚀 Login: Navigating to route:', route);
-          navigate(route);
-          console.log(`✅ Login: Redirecting to onboarding step: ${currentStep}`);
-        } else {
-          console.warn(`⚠️ Login: Invalid onboarding step: ${currentStep}, defaulting to hotel-information`);
-          navigate("/hotel-information");
-        }
-      } catch (progressError) {
-        console.error('❌ Login: Error getting onboarding progress:', progressError);
-        console.error('❌ Login: Error details:', {
-          message: progressError.message,
-          stack: progressError.stack,
-          name: progressError.name
-        });
-        // Fallback to hotel-information if progress check fails
-        navigate("/hotel-information");
-      }
+      await handlePostAuthRedirect({
+        hadProfile: typeof response?.had_profile === "boolean" ? response.had_profile : response?.has_profile,
+        propertiesCount: typeof response?.properties_count === "number" ? response.properties_count : undefined,
+      });
     } catch (error: any) {
       console.error("Login failed:", error);
       
@@ -136,62 +111,11 @@ export default function Login() {
         console.error('Invalid user data structure:', data);
         throw new Error('Invalid user data received from server');
       }
-      
-      // Get user's onboarding progress and redirect to appropriate step
-      try {
-        console.log('🔍 Google Login: Fetching onboarding progress...');
-        console.log('🔍 Google Login: Access token available:', !!data.access);
-        
-        const progressData = await profilesService.getOnboardingProgress();
-        console.log('📊 Google Login: Onboarding progress data:', progressData);
-        
-        // Check if onboarding is completed
-        if (progressData.completed) {
-          console.log('✅ Google Login: Onboarding completed, redirecting to dashboard');
-          navigate("/dashboard");
-          return;
-        }
-        
-        const currentStep = progressData.current_step;
-        console.log('📍 Google Login: Current onboarding step:', currentStep);
-        
-        // For new Google users, redirect to dashboard (same as completed users)
-        if (currentStep === 'register' && !progressData.completed) {
-          console.log('📝 Google Login: User at register step, redirecting to dashboard');
-          navigate("/dashboard");
-          return;
-        }
-        
-        // Validate that the current step is a valid OnboardingStep
-        const validSteps = ['register', 'verify_email', 'hotel_information', 'pms_integration', 'select_plan', 'payment', 'add_competitor', 'msp', 'complete'] as const;
-        
-        if (validSteps.includes(currentStep as any)) {
-          // Navigate directly to the step route
-          const stepRoutes = {
-            register: '/register',
-            verify_email: '/verify-email',
-            hotel_information: '/hotel-information',
-            pms_integration: '/pms-integration',
-            select_plan: '/select-plan',
-            payment: '/payment',
-            add_competitor: '/add-competitor',
-            msp: '/msp',
-            complete: '/welcome-complete',
-          };
-          
-          const route = stepRoutes[currentStep as keyof typeof stepRoutes];
-          console.log('🚀 Google Login: Navigating to route:', route);
-          navigate(route);
-          console.log(`✅ Google Login: Redirecting to onboarding step: ${currentStep}`);
-        } else {
-          console.warn(`⚠️ Google Login: Invalid onboarding step: ${currentStep}, defaulting to hotel-information`);
-          navigate("/hotel-information");
-        }
-      } catch (progressError) {
-        console.error('❌ Google Login: Error getting onboarding progress:', progressError);
-        // Fallback to hotel-information if progress check fails
-        navigate("/hotel-information");
-      }
+
+      await handlePostAuthRedirect({
+        hadProfile: typeof data?.had_profile === "boolean" ? data.had_profile : data?.has_profile,
+        propertiesCount: typeof data?.properties_count === "number" ? data.properties_count : undefined,
+      });
     } catch (error: any) {
       console.error('Google login failed:', error);
       
@@ -206,7 +130,7 @@ export default function Login() {
         setError(t('errors:SERVER_ERROR'));
       }
     }
-  }, [googleLoginMutation, navigate]);
+  }, [googleLoginMutation, handlePostAuthRedirect, t]);
 
   const handleCreateAccount = () => {
     console.log("Create account clicked");

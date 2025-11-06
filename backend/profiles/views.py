@@ -574,8 +574,21 @@ class LoginView(APIView):
                 # Prepare response data
                 response_data = {
                     'access': access_token,
-                    'user': UserSerializer(user).data
+                    'user': UserSerializer(user).data,
                 }
+
+                try:
+                    profile = user.profile
+                except Profile.DoesNotExist:
+                    profile = None
+                if profile:
+                    response_data['has_profile'] = True
+                    response_data['properties_count'] = profile.properties_count
+                    response_data['had_profile'] = True
+                else:
+                    response_data['has_profile'] = False
+                    response_data['properties_count'] = 0
+                    response_data['had_profile'] = False
 
                 response = Response(response_data)
 
@@ -1071,6 +1084,9 @@ class GoogleLoginView(SocialLoginView):
             )
             logger.info(f"Created social account for user: {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
 
+        # Ensure profile exists for the user before proceeding
+        profile, profile_created = Profile.objects.get_or_create(user=user)
+
         # Handle profile picture
         try:
             # Get profile picture URL from Google token
@@ -1083,8 +1099,10 @@ class GoogleLoginView(SocialLoginView):
                 picture_response = requests.get(picture_url)
                 if picture_response.status_code == 200:
                     # Get or create profile
-                    profile, created = Profile.objects.get_or_create(user=user)
-                    logger.info(f"{'Created' if created else 'Found'} profile for user: {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
+                    if profile_created:
+                        logger.info(f"Created profile for user: {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
+                    else:
+                        logger.info(f"Found profile for user: {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
                     
                     # Save the profile picture
                     filename = f"{user.username}_{datetime.today().strftime('%h-%d-%y')}.jpeg"
@@ -1113,7 +1131,10 @@ class GoogleLoginView(SocialLoginView):
             # Prepare response
             response_data = {
                 **UserSerializer(user).data,
-                'access': access_token
+                'access': access_token,
+                'has_profile': True,
+                'had_profile': not profile_created,
+                'properties_count': profile.properties_count,
             }
 
             response = Response(response_data)

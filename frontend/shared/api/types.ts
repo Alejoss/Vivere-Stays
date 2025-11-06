@@ -6,11 +6,15 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access: string;
-  id: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
+  id?: number;
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  user?: UserData;
+  has_profile?: boolean;
+  had_profile?: boolean;
+  properties_count?: number;
 }
 
 export interface RegisterRequest {
