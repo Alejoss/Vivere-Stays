@@ -18,7 +18,9 @@ COPY . .
 # VITE_API_BASE_URL needs to be set at build time for client-side code
 # Default to production backend URL with /api prefix (can be overridden via build args)
 ARG VITE_API_BASE_URL=https://admin.viverestays.com/api
+ARG VITE_GOOGLE_CLIENT_ID=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build
 
 # Stage 2: Production runtime
@@ -40,8 +42,10 @@ COPY --from=builder /app/public ./public
 EXPOSE 3000
 
 # Set environment variables
+ARG VITE_GOOGLE_CLIENT_ID=
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 
 # Start the server
 CMD ["node", "dist/server/node-build.mjs"]
