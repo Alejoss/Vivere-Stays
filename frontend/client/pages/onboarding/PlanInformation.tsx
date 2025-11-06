@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 
 export default function PlanInformation() {
   const navigate = useNavigate();
@@ -108,9 +108,7 @@ export default function PlanInformation() {
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       {/* Header */}
       <div className="mb-8 text-center">

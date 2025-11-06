@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { getLocalStorageItem } from "../../../shared/localStorage";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 
 export default function WelcomeComplete() {
   const navigate = useNavigate();
@@ -112,9 +112,7 @@ export default function WelcomeComplete() {
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       {/* Logo */}
       <div className="mb-8">

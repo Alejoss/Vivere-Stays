@@ -12,7 +12,7 @@ import { usePropertyMSPEntries } from "../../../shared/api/hooks";
 import { removeLocalStorageItem, HOTEL_INFO_KEY, setLocalStorageItem } from "../../../shared/localStorage";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
 import { profilesService } from "../../../shared/api/profiles";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 import "../../styles/responsive-utilities.css";
 
 interface MSPPeriod {
@@ -371,9 +371,7 @@ export default function MSP() {
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       {/* Logo */}
       <div className="text-center container-margin-base">

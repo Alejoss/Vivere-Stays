@@ -5,7 +5,7 @@ import { useProfile } from "../../../shared/api/hooks";
 import { getLocalStorageItem } from "../../../shared/localStorage";
 import { profilesService } from "../../../shared/api/profiles";
 import { toast } from "../../hooks/use-toast";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 
 export default function ContactSalesOnboarding() {
   const navigate = useNavigate();
@@ -105,9 +105,7 @@ export default function ContactSalesOnboarding() {
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       
       {/* Logo */}

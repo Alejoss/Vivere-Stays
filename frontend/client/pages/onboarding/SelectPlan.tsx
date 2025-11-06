@@ -8,7 +8,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { paymentService } from "@shared/api/payments";
 import { getLocalStorageItem, setLocalStorageItem } from "../../../shared/localStorage";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 import "../../styles/responsive-utilities.css";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
@@ -239,9 +239,7 @@ export default function SelectPlan() {
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       {/* Logo */}
       <div className="container-margin-sm">

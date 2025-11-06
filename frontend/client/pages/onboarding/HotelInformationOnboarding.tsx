@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getHotelInformationData, setHotelInformationData, HotelInformationData } from '../../../shared/localStorage';
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 import "../../styles/responsive-utilities.css";
 
 interface FormData {
@@ -376,9 +376,7 @@ export default function HotelInformationOnboarding() {
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4 w-full">
       {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       <div className="w-full max-w-6xl mx-auto px-4">
         {/* Logo */}

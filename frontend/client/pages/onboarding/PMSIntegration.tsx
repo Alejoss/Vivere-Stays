@@ -6,7 +6,7 @@ import ContactSupportModal from "../../components/onboarding/ContactSupportModal
 import { getHotelDataForAPI, setLocalStorageItem, getLocalStorageItem } from "../../../shared/localStorage";
 import { profilesService } from "../../../shared/api/profiles";
 import { toast } from "../../hooks/use-toast";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 
 type PMSOption = "mews" | "cloudbeds" | "opera" | "other" | "none" | null;
 
@@ -243,9 +243,7 @@ export default function PMSIntegration() {
   return (
     <div className="min-h-screen bg-[#F6F9FD] flex flex-col items-center px-4 py-8 w-full">
       {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       {/* Logo */}
       <div className="text-center mb-10">

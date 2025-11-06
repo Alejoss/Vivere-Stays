@@ -7,7 +7,7 @@ import { useRegister, useGoogleLogin } from "../../../shared/api/hooks";
 import { RegisterRequest } from "../../../shared/api/types";
 import { profilesService } from "../../../shared/api/profiles";
 import { FormFieldError } from "../../components/ErrorMessage";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 import "../../styles/responsive-utilities.css";
 
 // Password Strength Indicator Component
@@ -357,10 +357,7 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[#F6F9FD] py-8 px-4 w-full">
-      {/* Language Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <LanguageSwitcher variant="header" />
-      </div>
+      <OnboardingHeaderControls />
       
       <div className="w-full max-w-6xl mx-auto px-4">
         {/* Logo */}

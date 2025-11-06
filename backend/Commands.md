@@ -8,9 +8,9 @@ docker-compose exec vivere_backend python manage.py test --settings=vivere_stays
 
 # docker remote db (production db)
 docker compose -f docker-compose.remote.yml restart vivere_backend
-docker-compose -f docker-compose.remote.yml up --build -d
-docker-compose -f docker-compose.remote.yml up --build vivere_backend -d 
-docker-compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
+docker compose -f docker-compose.remote.yml up --build -d
+docker compose -f docker-compose.remote.yml up --build vivere_backend -d 
+docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
 
 # Startapp
 docker-compose exec vivere_backend python manage.py startapp booking
@@ -26,6 +26,8 @@ https://vivere-stays.algobeat.com/
 ssh root@46.62.171.162
 docker-compose down
 ./deploy-all.sh
+./deploy-frontend.sh
+./deploy-backend.sh
 docker-compose logs -f vivere_backend
 19391
 
