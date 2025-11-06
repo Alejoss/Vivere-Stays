@@ -31,4 +31,3 @@ docker-compose logs -f vivere_backend
 
 # Production IP
 http://35.226.220.107:8000/api/profiles/check-auth/
-
