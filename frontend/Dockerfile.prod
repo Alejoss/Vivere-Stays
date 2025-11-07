@@ -1,9 +1,17 @@
 # Multi-stage build for production React app with SSR
 
+# Global build arguments reused in multiple stages
+ARG VITE_API_BASE_URL=https://admin.viverestays.com/api
+ARG VITE_GOOGLE_CLIENT_ID
+
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+# Re-declare build arguments for this stage
+ARG VITE_API_BASE_URL
+ARG VITE_GOOGLE_CLIENT_ID
 
 # Copy package files
 COPY package*.json ./
@@ -17,8 +25,6 @@ COPY . .
 # Build client and server
 # VITE_API_BASE_URL needs to be set at build time for client-side code
 # Default to production backend URL with /api prefix (can be overridden via build args)
-ARG VITE_API_BASE_URL=https://admin.viverestays.com/api
-ARG VITE_GOOGLE_CLIENT_ID=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build
@@ -27,6 +33,9 @@ RUN npm run build
 FROM node:20-alpine
 
 WORKDIR /app
+
+# Re-declare build arguments for this stage
+ARG VITE_GOOGLE_CLIENT_ID
 
 # Install only production dependencies
 COPY package*.json ./
@@ -42,7 +51,6 @@ COPY --from=builder /app/public ./public
 EXPOSE 3000
 
 # Set environment variables
-ARG VITE_GOOGLE_CLIENT_ID=
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
