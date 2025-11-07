@@ -25,7 +25,6 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.core.cache import cache
 from datetime import timedelta
-from django.core.files.base import ContentFile
 import requests
 from datetime import datetime
 import jwt
@@ -1086,40 +1085,6 @@ class GoogleLoginView(SocialLoginView):
 
         # Ensure profile exists for the user before proceeding
         profile, profile_created = Profile.objects.get_or_create(user=user)
-
-        # Handle profile picture
-        try:
-            # Get profile picture URL from Google token
-            picture_url = decoded_token.get('picture')
-            logger.debug(f"Profile picture URL from token for user {request.user.username if request.user.is_authenticated else 'anonymous'}: {picture_url}")
-            
-            if picture_url:
-                # Download the image
-                logger.info(f"Downloading profile picture for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
-                picture_response = requests.get(picture_url)
-                if picture_response.status_code == 200:
-                    # Get or create profile
-                    if profile_created:
-                        logger.info(f"Created profile for user: {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
-                    else:
-                        logger.info(f"Found profile for user: {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
-                    
-                    # Save the profile picture
-                    filename = f"{user.username}_{datetime.today().strftime('%h-%d-%y')}.jpeg"
-                    logger.info(f"Saving profile picture as: {filename} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
-                    profile.profile_picture.save(
-                        filename,
-                        ContentFile(picture_response.content),
-                        save=True
-                    )
-                    logger.info(f"Successfully saved profile picture for user {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
-                else:
-                    logger.error(f"Failed to download profile picture. Status code: {picture_response.status_code} for user {request.user.username if request.user.is_authenticated else 'anonymous'}")
-        except requests.RequestException as e:
-            logger.error(f"Request error while downloading profile picture for user {request.user.username if request.user.is_authenticated else 'anonymous'}: {str(e)}", exc_info=True)
-        except Exception as e:
-            logger.error(f"Error processing profile picture for user {user.username} for user {request.user.username if request.user.is_authenticated else 'anonymous'}: {str(e)}", exc_info=True)
-            # Continue with login process even if picture fails
 
         try:
             # Generate JWT tokens

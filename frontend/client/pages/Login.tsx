@@ -18,8 +18,8 @@ export default function Login() {
   const loginMutation = useLogin();
   const googleLoginMutation = useGoogleLogin();
 
-  const handlePostAuthRedirect = useCallback(async (options?: { hadProfile?: boolean; propertiesCount?: number }) => {
-    if (options?.hadProfile === false) {
+  const handlePostAuthRedirect = useCallback(async (options?: { hasProfile?: boolean; hadProfile?: boolean; propertiesCount?: number }) => {
+    if (options?.hasProfile === false) {
       navigate("/register");
       return;
     }
@@ -30,6 +30,11 @@ export default function Login() {
       } else {
         navigate("/hotel-information");
       }
+      return;
+    }
+
+    if (options?.hadProfile === false) {
+      navigate("/hotel-information");
       return;
     }
 
@@ -81,7 +86,8 @@ export default function Login() {
       const response = await loginMutation.mutateAsync(loginData);
       console.log("Login successful:", response);
       await handlePostAuthRedirect({
-        hadProfile: typeof response?.had_profile === "boolean" ? response.had_profile : response?.has_profile,
+        hasProfile: typeof response?.has_profile === "boolean" ? response.has_profile : undefined,
+        hadProfile: typeof response?.had_profile === "boolean" ? response.had_profile : undefined,
         propertiesCount: typeof response?.properties_count === "number" ? response.properties_count : undefined,
       });
     } catch (error: any) {
@@ -113,7 +119,8 @@ export default function Login() {
       }
 
       await handlePostAuthRedirect({
-        hadProfile: typeof data?.had_profile === "boolean" ? data.had_profile : data?.has_profile,
+        hasProfile: typeof data?.has_profile === "boolean" ? data.has_profile : undefined,
+        hadProfile: typeof data?.had_profile === "boolean" ? data.had_profile : undefined,
         propertiesCount: typeof data?.properties_count === "number" ? data.properties_count : undefined,
       });
     } catch (error: any) {

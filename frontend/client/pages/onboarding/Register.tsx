@@ -89,8 +89,8 @@ export default function Register() {
   const registerMutation = useRegister();
   const googleLoginMutation = useGoogleLogin();
 
-  const handlePostAuthRedirect = useCallback(async (options?: { hadProfile?: boolean; propertiesCount?: number }) => {
-    if (options?.hadProfile === false) {
+  const handlePostAuthRedirect = useCallback(async (options?: { hasProfile?: boolean; hadProfile?: boolean; propertiesCount?: number }) => {
+    if (options?.hasProfile === false) {
       navigate("/register");
       return;
     }
@@ -101,6 +101,11 @@ export default function Register() {
       } else {
         navigate("/hotel-information");
       }
+      return;
+    }
+
+    if (options?.hadProfile === false) {
+      navigate("/hotel-information");
       return;
     }
 
@@ -336,7 +341,8 @@ export default function Register() {
       }
 
       await handlePostAuthRedirect({
-        hadProfile: typeof data?.had_profile === "boolean" ? data.had_profile : data?.has_profile,
+        hasProfile: typeof data?.has_profile === "boolean" ? data.has_profile : undefined,
+        hadProfile: typeof data?.had_profile === "boolean" ? data.had_profile : undefined,
         propertiesCount: typeof data?.properties_count === "number" ? data.properties_count : undefined,
       });
     } catch (error: any) {
