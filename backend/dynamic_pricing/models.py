@@ -332,8 +332,20 @@ class DpPriceChangeHistory(models.Model):
     
     The overwrite_price field has been moved to OverwritePriceHistory model.
     """
-    property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='price_change_history', help_text="User who owns this property")    
+    # External history table is read-only; prevent cascaded deletes that require DB write access
+    property_id = models.ForeignKey(
+        Property,
+        on_delete=models.DO_NOTHING,
+        db_column='property_id',
+        db_constraint=False,
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.DO_NOTHING,
+        related_name='price_change_history',
+        help_text="User who owns this property",
+        db_constraint=False,
+    )
     checkin_date = models.DateField()  # Date for which the price change was calculated    
     # overwrite_price field moved to OverwritePriceHistory model
     # Key pricing data (managed externally)
