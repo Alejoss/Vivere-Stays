@@ -4,6 +4,7 @@ from typing import Dict, Iterable, Optional, Sequence, Tuple
 
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError, connection, transaction
+from django.utils import timezone
 
 from dynamic_pricing.models import Property, PropertyManagementSystem
 
@@ -207,8 +208,8 @@ class Command(BaseCommand):
         }
 
         timestamps = {
-            "created_at": row.get("created_at"),
-            "updated_at": row.get("updated_at"),
+            "created_at": self._aware(row.get("created_at")),
+            "updated_at": self._aware(row.get("updated_at")),
         }
 
         update_fields = base_fields.copy()
@@ -268,6 +269,12 @@ class Command(BaseCommand):
                 return pms
 
         return None
+
+    @staticmethod
+    def _aware(dt):
+        if dt is None:
+            return None
+        return dt if timezone.is_aware(dt) else timezone.make_aware(dt, timezone.utc)
 
     def _print_summary(
         self,
