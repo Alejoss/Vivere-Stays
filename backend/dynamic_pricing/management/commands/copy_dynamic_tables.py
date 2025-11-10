@@ -184,7 +184,9 @@ class Command(BaseCommand):
     def _aware(dt):
         if dt is None:
             return None
-        return dt if timezone.is_aware(dt) else timezone.make_aware(dt, timezone.utc)
+        if timezone.is_aware(dt):
+            return dt
+        return timezone.make_aware(dt, timezone.get_default_timezone())
 
     # ---- Per-table migrations -------------------------------------------
 
