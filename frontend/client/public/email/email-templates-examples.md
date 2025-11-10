@@ -47,7 +47,7 @@ The layout accepts these variables:
     </div>
     
     <p style="font-size: 14px; color: #9CAABD; line-height: 1.5; margin: 24px 0 0 0;">
-        If you have any questions, our support team is here to help. Simply reply to this email or contact us at support@viverestays.com.
+        If you have any questions, our support team is here to help. Simply reply to this email or contact us at info@viverestays.es.
     </p>
 </div>
 ```

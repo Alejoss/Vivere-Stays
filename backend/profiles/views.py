@@ -1658,7 +1658,7 @@ class SupportTicketView(APIView):
                         ticket_id=support_ticket.id,
                         issue_type=f"Dashboard Support - {issue_type_display}",
                         description=support_description_full,
-                        support_email="support@viverestays.com",
+                        support_email="info@viverestays.es",
                         language=language
                     )
                     
@@ -1682,7 +1682,7 @@ class SupportTicketView(APIView):
                         ticket_id=support_ticket.id,
                         issue_type=issue_type_display,
                         description_excerpt=description_excerpt,
-                        support_email=getattr(settings, 'SUPPORT_EMAIL', 'support@viverestays.com'),
+                        support_email=getattr(settings, 'SUPPORT_EMAIL', 'info@viverestays.es'),
                         portal_url=getattr(settings, 'FRONTEND_URL', '').rstrip('/') + '/support',
                         message=support_description,
                         language=language

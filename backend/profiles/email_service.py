@@ -22,7 +22,7 @@ class PostmarkEmailService:
     """
     
     # Test email for all email sending
-    TEST_EMAIL = "support@viverestays.com"
+    TEST_EMAIL = "info@viverestays.es"
     
     def __init__(self):
         """Initialize PostmarkEmailService with proper error handling and logging."""
@@ -403,7 +403,7 @@ class PostmarkEmailService:
         ticket_id: int,
         issue_type: str,
         description: str,
-        support_email: str = "support@viverestays.com",
+        support_email: str = "info@viverestays.es",
         language: str = 'en',
     ) -> Tuple[bool, str]:
         """
@@ -416,7 +416,7 @@ class PostmarkEmailService:
             ticket_id: Support ticket ID
             issue_type: Type of issue reported
             description: Full description/message of the support request
-            support_email: Support team email address (default: support@viverestays.com)
+            support_email: Support team email address (default: info@viverestays.es)
             language: Language code ('en', 'es', 'de')
             
         Returns:
@@ -493,7 +493,7 @@ class PostmarkEmailService:
                     ticket_id=ticket_id,
                     issue_type=issue_type,
                     description_excerpt=user_description_excerpt,
-                    support_email="support@viverestays.com",
+                    support_email="info@viverestays.es",
                     portal_url=settings.FRONTEND_URL,
                     message=support_message,
                     language=language
@@ -519,7 +519,7 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 issue_type=issue_type,
                 description=support_description,
-                support_email="support@viverestays.com",
+                support_email="info@viverestays.es",
                 language=language
             )
         except Exception as e:
@@ -563,7 +563,7 @@ class PostmarkEmailService:
                     ticket_id=ticket_id,
                     issue_type=issue_type,
                     description_excerpt=user_description_excerpt,
-                    support_email="support@viverestays.com",
+                    support_email="info@viverestays.es",
                     portal_url=settings.FRONTEND_URL,
                     message=support_message,
                     language=language
@@ -588,7 +588,7 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 issue_type=issue_type,
                 description=support_description,
-                support_email="support@viverestays.com",
+                support_email="info@viverestays.es",
                 language=language
             )
         except Exception as e:
@@ -602,7 +602,7 @@ class PostmarkEmailService:
         ticket_id: str,
         property_id: str | None,
         description: str,
-        sales_email: str = "support@viverestays.com",
+        sales_email: str = "info@viverestays.es",
         language: str = 'en',
     ) -> Tuple[bool, str]:
         """
@@ -615,7 +615,7 @@ class PostmarkEmailService:
             ticket_id: Sales request ID
             property_id: Property ID (optional)
             description: Full description/message of the sales request
-            sales_email: Sales team email address (default: support@viverestays.com)
+            sales_email: Sales team email address (default: info@viverestays.es)
             language: Language code ('en', 'es', 'de')
             
         Returns:
@@ -680,7 +680,7 @@ class PostmarkEmailService:
                     "user_name": user_name,
                     "ticket_id": ticket_id,
                     "property_id": property_id or "Not available",
-                    "support_email": "support@viverestays.com",
+                    "support_email": "info@viverestays.es",
                     "portal_url": settings.FRONTEND_URL,
                 }
                 
@@ -712,7 +712,7 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 property_id=property_id,
                 description=sales_description,
-                sales_email="support@viverestays.com",
+                sales_email="info@viverestays.es",
                 language=language
             )
         except Exception as e:
