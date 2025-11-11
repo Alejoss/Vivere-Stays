@@ -377,7 +377,7 @@ class Command(BaseCommand):
                 user_obj = User.objects.filter(pk=row["user_id"]).first() if row["user_id"] else None
 
                 defaults = {
-                    "property": property_obj,
+                    "property_id": property_obj,
                     "user": user_obj,
                     "occupancy_category": row["occupancy_category"],
                     "lead_time_category": row["lead_time_category"],
@@ -457,7 +457,7 @@ class Command(BaseCommand):
                     continue
 
                 defaults = {
-                    "property": property_obj,
+                    "property_id": property_obj,
                     "user": user_obj,
                     "offer_name": row["offer_name"],
                     "valid_from": row["valid_from"],
@@ -537,7 +537,7 @@ class Command(BaseCommand):
                     continue
 
                 defaults = {
-                    "property": property_obj,
+                    "property_id": property_obj,
                     "user": user_obj,
                     "valid_from": row["valid_from"],
                     "valid_until": row["valid_until"],
@@ -608,7 +608,7 @@ class Command(BaseCommand):
                 user_obj = User.objects.filter(pk=row["user_id"]).first() if row["user_id"] else None
 
                 defaults = {
-                    "property": property_obj,
+                    "property_id": property_obj,
                     "user": user_obj,
                     "occupancy_category": row["occupancy_category"],
                     "lead_time_category": row["lead_time_category"],
@@ -684,7 +684,7 @@ class Command(BaseCommand):
                     continue
 
                 defaults = {
-                    "property": property_obj,
+                    "property_id": property_obj,
                     "user": user_obj,
                     "valid_from": row["valid_from"],
                     "valid_until": row["valid_until"],
@@ -761,7 +761,7 @@ class Command(BaseCommand):
                     continue
 
                 defaults = {
-                    "property": property_obj,
+                    "property_id": property_obj,
                     "user": user_obj,
                     "rate_id": row["rate_id"],
                     "is_base_rate": row["is_base_rate"],
