@@ -14,9 +14,9 @@ docker compose -f docker-compose.remote.yml up --build vivere_backend -d
 docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
 docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate_legacy_properties --dry-run
 docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate_legacy_properties
-docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py copy_dynamic_tables --dry-run
-docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py copy_dynamic_tables
-
+docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py copy_dynamic_tables 
+docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate_property_competitors --dry-run
+docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate_property_competitors
 
 # Startapp
 docker-compose exec vivere_backend python manage.py startapp booking
