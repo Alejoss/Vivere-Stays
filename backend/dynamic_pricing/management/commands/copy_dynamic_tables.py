@@ -68,11 +68,18 @@ class Command(BaseCommand):
             default=500,
             help="Rows to fetch per batch from the legacy tables.",
         )
+        parser.add_argument(
+            "--progress-every",
+            type=int,
+            default=25,
+            help="Print a progress log every N processed rows (real run only). Dry-run always logs every row.",
+        )
 
     def handle(self, *args, **options):
         dry_run: bool = options["dry_run"]
         limit: Optional[int] = options["limit"]
         batch_size: int = options["batch_size"]
+        self.progress_every = max(1, options["progress_every"])
         self.verbosity = options.get("verbosity", 1)
 
         if dry_run:
@@ -121,12 +128,19 @@ class Command(BaseCommand):
 
     # ---- General helpers -------------------------------------------------
 
-    def _log_create(self, label: str, identifier: str):
-        self.stdout.write(self.style.SUCCESS(f"[CREATED] {label}: {identifier}"))
-
-    def _log_update(self, label: str, identifier: str):
-        if self.verbosity and self.verbosity > 1:
-            self.stdout.write(self.style.SUCCESS(f"[UPDATED] {label}: {identifier}"))
+    def _record_progress(self, stats: MigrationStats, label: str, identifier: str, action: str, dry_run: bool):
+        should_log = dry_run or action in {"skipped", "error"}
+        if not should_log:
+            if self.progress_every <= 1:
+                should_log = True
+            elif stats.processed % self.progress_every == 0:
+                should_log = True
+        if should_log:
+            if dry_run:
+                prefix = f"[DRY-RUN][{action.upper()}]"
+            else:
+                prefix = f"[{action.upper()}]"
+            self.stdout.write(f"{prefix} {label}: {identifier}")
 
     def _log_skip(self, label: str, identifier: str, reason: str):
         self.stdout.write(self.style.WARNING(f"[SKIPPED] {label}: {identifier} ({reason})"))
@@ -246,8 +260,11 @@ class Command(BaseCommand):
                         exists = DpGeneralSettings.objects.filter(property_id=property_obj).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "general_settings", row["property_id"], action, dry_run)
                         continue
 
                     obj, created = DpGeneralSettings.objects.update_or_create(
@@ -256,10 +273,11 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("general_settings", obj.property_id_id)
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("general_settings", obj.property_id_id)
+                        action = "updated"
+                    self._record_progress(stats, "general_settings", obj.property_id_id, action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("general_settings", row["property_id"], exc)
@@ -301,8 +319,11 @@ class Command(BaseCommand):
                         exists = Competitor.objects.filter(pk=competitor_id).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "competitor", str(row["competitor_id"]), action, dry_run)
                         continue
 
                     obj, created = Competitor.objects.update_or_create(
@@ -311,10 +332,12 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("competitor", f"{competitor_id} ({obj.competitor_name})")
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("competitor", f"{competitor_id} ({obj.competitor_name})")
+                        action = "updated"
+                    identifier = f"{competitor_id} ({obj.competitor_name})"
+                    self._record_progress(stats, "competitor", identifier, action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("competitor", str(row["competitor_id"]), exc)
@@ -369,8 +392,11 @@ class Command(BaseCommand):
                         exists = DpDynamicIncrementsV2.objects.filter(pk=row["id"]).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "dynamic_increment", str(row["id"]), action, dry_run)
                         continue
 
                     obj, created = DpDynamicIncrementsV2.objects.update_or_create(
@@ -379,10 +405,11 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("dynamic_increment", str(obj.id))
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("dynamic_increment", str(obj.id))
+                        action = "updated"
+                    self._record_progress(stats, "dynamic_increment", str(obj.id), action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("dynamic_increment", str(row["id"]), exc)
@@ -448,8 +475,11 @@ class Command(BaseCommand):
                         exists = DpOfferIncrements.objects.filter(pk=row["id"]).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "offer_increment", str(row["id"]), action, dry_run)
                         continue
 
                     obj, created = DpOfferIncrements.objects.update_or_create(
@@ -458,10 +488,11 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("offer_increment", str(obj.id))
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("offer_increment", str(obj.id))
+                        action = "updated"
+                    self._record_progress(stats, "offer_increment", str(obj.id), action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("offer_increment", str(row["id"]), exc)
@@ -521,8 +552,11 @@ class Command(BaseCommand):
                         exists = DpLosSetup.objects.filter(pk=row["id"]).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "los_setup", str(row["id"]), action, dry_run)
                         continue
 
                     obj, created = DpLosSetup.objects.update_or_create(
@@ -531,10 +565,11 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("los_setup", str(obj.id))
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("los_setup", str(obj.id))
+                        action = "updated"
+                    self._record_progress(stats, "los_setup", str(obj.id), action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("los_setup", str(row["id"]), exc)
@@ -587,8 +622,11 @@ class Command(BaseCommand):
                         exists = DpLosReduction.objects.filter(pk=row["id"]).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "los_reduction", str(row["id"]), action, dry_run)
                         continue
 
                     obj, created = DpLosReduction.objects.update_or_create(
@@ -597,10 +635,11 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("los_reduction", str(obj.id))
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("los_reduction", str(obj.id))
+                        action = "updated"
+                    self._record_progress(stats, "los_reduction", str(obj.id), action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("los_reduction", str(row["id"]), exc)
@@ -660,8 +699,11 @@ class Command(BaseCommand):
                         exists = DpMinimumSellingPrice.objects.filter(pk=row["id"]).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "minimum_selling_price", str(row["id"]), action, dry_run)
                         continue
 
                     obj, created = DpMinimumSellingPrice.objects.update_or_create(
@@ -670,10 +712,11 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("minimum_selling_price", str(obj.id))
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("minimum_selling_price", str(obj.id))
+                        action = "updated"
+                    self._record_progress(stats, "minimum_selling_price", str(obj.id), action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("minimum_selling_price", str(row["id"]), exc)
@@ -733,8 +776,11 @@ class Command(BaseCommand):
                         exists = DpRoomRates.objects.filter(pk=row["id"]).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        self._record_progress(stats, "room_rate", str(row["id"]), action, dry_run)
                         continue
 
                     obj, created = DpRoomRates.objects.update_or_create(
@@ -743,10 +789,11 @@ class Command(BaseCommand):
                     )
                     if created:
                         stats.created += 1
-                        self._log_create("room_rate", str(obj.id))
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("room_rate", str(obj.id))
+                        action = "updated"
+                    self._record_progress(stats, "room_rate", str(obj.id), action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     self._log_error("room_rate", str(row["id"]), exc)
@@ -800,8 +847,12 @@ class Command(BaseCommand):
                         ).exists()
                         if exists:
                             stats.updated += 1
+                            action = "updated"
                         else:
                             stats.created += 1
+                            action = "created"
+                        identifier = f"{row['property_id']} / {row['checkin_date']}"
+                        self._record_progress(stats, "overwrite_price", identifier, action, dry_run)
                         continue
 
                     obj, created = OverwritePriceHistory.objects.update_or_create(
@@ -809,13 +860,14 @@ class Command(BaseCommand):
                         checkin_date=row["checkin_date"],
                         defaults=defaults,
                     )
-                    identifier = f"{obj.property_id_id} / {obj.checkin_date}"
+                    identifier = f"{row['property_id']} / {obj.checkin_date}"
                     if created:
                         stats.created += 1
-                        self._log_create("overwrite_price", identifier)
+                        action = "created"
                     else:
                         stats.updated += 1
-                        self._log_update("overwrite_price", identifier)
+                        action = "updated"
+                    self._record_progress(stats, "overwrite_price", identifier, action, dry_run)
                 except IntegrityError as exc:
                     stats.errors += 1
                     identifier = f"{row['property_id']} / {row['checkin_date']}"

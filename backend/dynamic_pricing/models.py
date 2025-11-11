@@ -620,7 +620,7 @@ class OverwritePriceHistory(models.Model):
     Model for storing price overwrites separately from the main price history data.
     This handles only the overwrite_price field that was previously part of DpPriceChangeHistory.
     """
-    property_id = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='overwrite_price_history', help_text="User who owns this property")    
     checkin_date = models.DateField()  # Date for which the price change was calculated    
     overwrite_price = models.IntegerField(null=True, blank=True)  # Overwrite price (from RM)
@@ -630,8 +630,8 @@ class OverwritePriceHistory(models.Model):
         db_table = 'dynamic_pricing_overwritepricehistory'
         verbose_name = 'Overwrite Price History'
         verbose_name_plural = 'Overwrite Price Histories'
-        unique_together = ('property_id', 'checkin_date')
+        unique_together = ('property', 'checkin_date')
 
     def __str__(self):
-        return f"{self.property_id.name} - {self.checkin_date} - Overwrite: {self.overwrite_price}"
+        return f"{self.property.name} - {self.checkin_date} - Overwrite: {self.overwrite_price}"
 
