@@ -81,7 +81,7 @@ class Command(BaseCommand):
                     continue
 
                 defaults = {
-                    "property": property_obj,
+                    "property_id": property_obj,
                     "competitor": competitor_obj,
                     "user": user_obj,
                     "only_follow": row["only_follow"],
