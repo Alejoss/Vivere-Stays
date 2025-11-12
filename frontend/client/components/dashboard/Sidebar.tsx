@@ -98,15 +98,11 @@ export default function Sidebar() {
           {/* Logo */}
           <button
             onClick={() => {
-              if (property?.id) {
-                navigate(`/dashboard/property/${property.id}`);
-              } else {
-                navigate("/dashboard/property");
-              }
+              navigate("/dashboard/properties");
               closeMobileMenu();
             }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            title="Go to Price Calendar"
+            title="View Property List"
           >
             <div className="w-8 h-8 bg-hotel-brand-dark rounded flex items-center justify-center">
               <span className="text-white font-bold text-sm">V</span>
@@ -336,14 +332,10 @@ export default function Sidebar() {
       <div className="flex justify-center items-center px-[10px] pt-[34px] pb-[24px]">
         <button
           onClick={() => {
-            if (property?.id) {
-              navigate(`/dashboard/property/${property.id}`);
-            } else {
-              navigate("/dashboard/property");
-            }
+            navigate("/dashboard/properties");
           }}
           className="hover:opacity-80 transition-opacity"
-          title="Go to Price Calendar"
+          title="View Property List"
         >
           {!isMinimized ? (
             <img

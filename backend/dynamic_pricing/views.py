@@ -1111,12 +1111,13 @@ class MSPPriceHistoryView(APIView):
                     latest_by_date[row.checkin_date] = row
             msp_price_history = []
             for row in latest_by_date.values():
+                normalized_occupancy = self._normalize_occupancy(row.occupancy)
                 msp_price_history.append({
                     'checkin_date': row.checkin_date.strftime('%Y-%m-%d'),
                     'price': row.msp,
                     'occupancy_level': self._get_occupancy_level(row.occupancy),
                     'overwrite': False,
-                    'occupancy': row.occupancy,
+                    'occupancy': normalized_occupancy,
                 })
             msp_price_history.sort(key=lambda x: x['checkin_date'])
             print(f"[MSPPriceHistoryView] Returning {len(msp_price_history)} MSP price history entries")
@@ -1147,15 +1148,22 @@ class MSPPriceHistoryView(APIView):
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    @staticmethod
+    def _normalize_occupancy(occupancy):
+        if occupancy is None:
+            return None
+        return occupancy * 100 if occupancy <= 1 else occupancy
+
     def _get_occupancy_level(self, occupancy):
         """
         Return occupancy level as string (low, medium, high) - same logic as PriceHistorySerializer
         """
-        if occupancy is None:
+        occupancy_value = self._normalize_occupancy(occupancy)
+        if occupancy_value is None:
             return "medium"
-        if occupancy <= 35:
+        if occupancy_value <= 35:
             return "low"
-        elif occupancy <= 69:
+        elif occupancy_value <= 69:
             return "medium"
         else:
             return "high"
@@ -1238,12 +1246,13 @@ class CompetitorAveragePriceHistoryView(APIView):
             competitor_avg_price_history = []
             for row in latest_by_date.values():
                 if row.competitor_average is not None:
+                    normalized_occupancy = self._normalize_occupancy(row.occupancy)
                     competitor_avg_price_history.append({
                         'checkin_date': row.checkin_date.strftime('%Y-%m-%d'),
                         'price': row.competitor_average,
                         'occupancy_level': self._get_occupancy_level(row.occupancy),
                         'overwrite': False,
-                        'occupancy': row.occupancy,
+                        'occupancy': normalized_occupancy,
                     })
             competitor_avg_price_history.sort(key=lambda x: x['checkin_date'])
             print(f"[CompetitorAveragePriceHistoryView] Returning {len(competitor_avg_price_history)} competitor average price history entries")
@@ -1274,15 +1283,22 @@ class CompetitorAveragePriceHistoryView(APIView):
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    @staticmethod
+    def _normalize_occupancy(occupancy):
+        if occupancy is None:
+            return None
+        return occupancy * 100 if occupancy <= 1 else occupancy
+
     def _get_occupancy_level(self, occupancy):
         """
         Return occupancy level as string (low, medium, high) - same logic as PriceHistorySerializer
         """
-        if occupancy is None:
+        occupancy_value = self._normalize_occupancy(occupancy)
+        if occupancy_value is None:
             return "medium"
-        if occupancy <= 35:
+        if occupancy_value <= 35:
             return "low"
-        elif occupancy <= 69:
+        elif occupancy_value <= 69:
             return "medium"
         else:
             return "high"

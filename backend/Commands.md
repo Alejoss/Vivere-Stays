@@ -10,7 +10,7 @@ docker-compose exec vivere_backend python manage.py test --settings=vivere_stays
 docker compose -f docker-compose.remote.yml restart vivere_backend
 docker compose -f docker-compose.remote.yml up -d
 docker compose -f docker-compose.remote.yml build --no-cache
-docker compose -f docker-compose.remote.yml up --build vivere_backend -d 
+docker compose -f docker-compose.remote.yml up --build -d 
 docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
 docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate_legacy_properties --dry-run
 docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate_legacy_properties

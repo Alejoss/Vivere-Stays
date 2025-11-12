@@ -256,6 +256,21 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         model = DpPriceChangeHistory
         fields = ['checkin_date', 'price', 'occupancy_level', 'overwrite', 'occupancy']
     
+    @staticmethod
+    def _normalize_occupancy(value: float | None) -> float | None:
+        """
+        Ensure occupancy values are expressed on a 0-100 scale instead of 0-1.
+        """
+        if value is None:
+            return None
+        return value * 100 if value <= 1 else value
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        normalized = self._normalize_occupancy(instance.occupancy)
+        data['occupancy'] = None if normalized is None else round(normalized, 2)
+        return data
+
     def get_price(self, obj):
         """
         Return the price to display (overwrite_price if exists, otherwise recom_price)
@@ -279,11 +294,12 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         """
         Return occupancy level as string (low, medium, high)
         """
-        if obj.occupancy is None:
+        occupancy = self._normalize_occupancy(obj.occupancy)
+        if occupancy is None:
             return "medium"
-        if obj.occupancy <= 35:
+        if occupancy <= 35:
             return "low"
-        elif obj.occupancy <= 69:
+        elif occupancy <= 69:
             return "medium"
         else:
             return "high"
