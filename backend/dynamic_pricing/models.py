@@ -418,7 +418,7 @@ class CompetitorPriceMV(models.Model):
     Materialized view for competitor prices - read-only model
     Maps to booking.comp_prices_mv materialized view
     """
-    competitor_id = models.CharField(max_length=255)  # e.g. 'adarve'
+    competitor_id = models.IntegerField()
     hotel_name = models.CharField(max_length=255)
     room_name = models.CharField(max_length=255, null=True, blank=True)
 

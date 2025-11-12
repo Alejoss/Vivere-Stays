@@ -54,6 +54,11 @@ const createAxiosInstance = (): AxiosInstance => {
       const language = i18n.language || 'en';
       config.headers['X-Language'] = language;
       config.headers['Accept-Language'] = language;
+
+      if (config.data instanceof FormData) {
+        // Let the browser/axios set the correct multipart boundary
+        delete config.headers['Content-Type'];
+      }
       
       return config;
     },

@@ -1676,30 +1676,29 @@ def competitor_prices_weekly_chart(request, property_id):
         deleted_at__isnull=True
     )
     competitors = list(competitor_links.values_list('competitor', flat=True))
-    competitors = Competitor.objects.filter(id__in=competitors)
-    # Normalize competitor names to MV competitor_id slugs (lowercase, spaces -> dashes)
-    def _to_slug(name: str) -> str:
-        return name.lower().replace(' ', '-') if name else name
+    competitors = list(Competitor.objects.filter(id__in=competitors))
+    competitor_ids = [comp.id for comp in competitors]
 
-    competitor_slug_by_id = {comp.id: _to_slug(comp.competitor_name) for comp in competitors}
-    mv_competitor_ids = list(competitor_slug_by_id.values())
-
-    # Fetch all MV rows for the competitor slugs across the week dates
+    # Fetch all MV rows for the competitors across the week dates
     mv_rows_qs = (
         CompetitorPriceMV.objects
-        .filter(competitor_id__in=mv_competitor_ids, checkin_date__in=week_dates)
+        .filter(competitor_id__in=competitor_ids, checkin_date__in=week_dates)
         .order_by('competitor_id', 'checkin_date', 'price', 'room_name')
     )
 
-    # Build lookup: slug -> date -> {best_price: number|None, sold_out: bool}
+    # Build lookup: competitor_id -> date -> {best_price: number|None, sold_out: bool}
     price_map = {}
     for row in mv_rows_qs.values('competitor_id', 'checkin_date', 'price', 'sold_out_message'):
-        slug = row['competitor_id']
+        competitor_key = row['competitor_id']
+        try:
+            competitor_key = int(competitor_key)
+        except (TypeError, ValueError):
+            pass
         checkin_date = row['checkin_date']
         price = row['price']
         sold_out_message = row.get('sold_out_message')
 
-        comp_map = price_map.setdefault(slug, {})
+        comp_map = price_map.setdefault(competitor_key, {})
         day_entry = comp_map.setdefault(checkin_date, {'best_price': None, 'sold_out': False})
 
         # Determine if this row indicates sold out
@@ -1726,8 +1725,7 @@ def competitor_prices_weekly_chart(request, property_id):
     # Build response with the same shape used by the frontend, plus sold_out flags per day
     competitors_data = []
     for comp in competitors:
-        slug = competitor_slug_by_id.get(comp.id)
-        comp_map = price_map.get(slug, {})
+        comp_map = price_map.get(comp.id, {})
         prices_for_week = []
         sold_out_for_week = []
         for d in week_dates:
@@ -1796,12 +1794,12 @@ def competitor_prices_for_date(request, property_id):
         return Response([], status=status.HTTP_200_OK)
     
     competitors = list(competitor_links.values_list('competitor', flat=True))
-    competitors = Competitor.objects.filter(id__in=competitors)
+    competitors = list(Competitor.objects.filter(id__in=competitors))
     # (removed verbose diagnostics against MV)
     
     # Fetch prices from materialized view using Django ORM (no raw SQL)
     # Convert competitor names to slug format for matching with MV
-    mv_competitor_ids = [c.competitor_name.lower().replace(' ', '-') for c in competitors]
+    mv_competitor_ids = [comp.id for comp in competitors]
     
     mv_rows_qs = (
         CompetitorPriceMV.objects
@@ -1814,17 +1812,20 @@ def competitor_prices_for_date(request, property_id):
     results = mv_rows
     
     # Build a lookup by competitor_id (scraped_hotel_id)
-    price_lookup = {row['competitor_id']: row for row in results}
-    
-    # Create a mapping from competitor names to competitor IDs for lookup
-    competitor_name_to_id = {comp.competitor_name.lower().replace(' ', '-'): comp.id for comp in competitors}
+    price_lookup = {}
+    for row in results:
+        comp_key = row['competitor_id']
+        try:
+            comp_key = int(comp_key)
+        except (TypeError, ValueError):
+            pass
+        price_lookup[comp_key] = row
     
     # Build response - match competitors with their prices
     competitors_data = []
     for comp in competitors:
         # Try to find a matching row by competitor name (converted to slug format)
-        comp_slug = comp.competitor_name.lower().replace(' ', '-')
-        row = price_lookup.get(comp_slug)
+        row = price_lookup.get(comp.id)
         
         if row:
             # Determine sold-out state: price equals 0 and sold_out_message present

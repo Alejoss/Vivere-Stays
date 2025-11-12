@@ -111,7 +111,9 @@ export default function CompetitorPrices({
 
   // Format date as "August 23rd"
   const formattedDate = `${selectedDate.month} ${selectedDate.day}${getOrdinal(selectedDate.day)}`;
-  const occupancyValue = selectedDayPriceHistory ? Math.round(selectedDayPriceHistory.occupancy * 100) : null;
+  const occupancyValue = selectedDayPriceHistory && selectedDayPriceHistory.occupancy !== undefined && selectedDayPriceHistory.occupancy !== null
+    ? Math.round(selectedDayPriceHistory.occupancy)
+    : null;
 
   return (
     <div className="flex flex-col p-[23px] border border-hotel-border-light rounded-lg bg-white gap-6">
