@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FileText, ChevronDown, Lightbulb, Check, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "../../hooks/use-toast";
@@ -6,27 +6,39 @@ import { profilesService, SupportTicketCreateRequest } from "../../../shared/api
 
 export default function Support() {
   const { t } = useTranslation(['dashboard', 'common', 'errors']);
-  const [selectedIssue, setSelectedIssue] = useState("General Question");
+  const [selectedIssue, setSelectedIssue] = useState<SupportTicketCreateRequest["issue_type"]>("general_question");
   const [description, setDescription] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const issueTypes = [
-    t('dashboard:support.issueTypeGeneral', { defaultValue: 'General Question' }),
-    t('dashboard:support.issueTypeTechnical', { defaultValue: 'Technical Issue' }),
-    t('dashboard:support.issueTypeBilling', { defaultValue: 'Billing Question' }),
-    t('dashboard:support.issueTypeFeature', { defaultValue: 'Feature Request' }),
-    t('dashboard:support.issueTypeBug', { defaultValue: 'Bug Report' }),
-  ];
+  const issueOptions = useMemo(
+    () => [
+      {
+        value: "general_question" as SupportTicketCreateRequest["issue_type"],
+        label: t('dashboard:support.issueTypeGeneral', { defaultValue: 'General Question' }),
+      },
+      {
+        value: "technical_issue" as SupportTicketCreateRequest["issue_type"],
+        label: t('dashboard:support.issueTypeTechnical', { defaultValue: 'Technical Issue' }),
+      },
+      {
+        value: "billing_question" as SupportTicketCreateRequest["issue_type"],
+        label: t('dashboard:support.issueTypeBilling', { defaultValue: 'Billing Question' }),
+      },
+      {
+        value: "feature_request" as SupportTicketCreateRequest["issue_type"],
+        label: t('dashboard:support.issueTypeFeature', { defaultValue: 'Feature Request' }),
+      },
+      {
+        value: "bug_report" as SupportTicketCreateRequest["issue_type"],
+        label: t('dashboard:support.issueTypeBug', { defaultValue: 'Bug Report' }),
+      },
+    ],
+    [t]
+  );
 
-  const issueTypeMapping: { [key: string]: string } = {
-    "General Question": "general_question",
-    "Technical Issue": "technical_issue",
-    "Billing Question": "billing_question",
-    "Feature Request": "feature_request",
-    "Bug Report": "bug_report",
-  };
+  const selectedIssueLabel = issueOptions.find(option => option.value === selectedIssue)?.label ?? issueOptions[0]?.label ?? "";
 
   const tips = [
     t('dashboard:support.tip1', { defaultValue: "Be specific about the issue you're experiencing" }),
@@ -59,7 +71,7 @@ export default function Support() {
 
     try {
       const supportData: SupportTicketCreateRequest = {
-        issue_type: issueTypeMapping[selectedIssue] as any,
+        issue_type: selectedIssue,
         description: description.trim(),
         screenshot: screenshot || undefined,
       };
@@ -72,7 +84,7 @@ export default function Support() {
       });
       
       // Reset form
-      setSelectedIssue("General Question");
+      setSelectedIssue("general_question");
       setDescription("");
       setScreenshot(null);
       
@@ -200,7 +212,7 @@ export default function Support() {
                       />
                     </svg>
                     <span className="text-sm text-[#1E1E1E]">
-                      {selectedIssue}
+                      {selectedIssueLabel}
                     </span>
                   </div>
                   <ChevronDown
@@ -213,17 +225,17 @@ export default function Support() {
 
                 {isDropdownOpen && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-[#D7DAE0] rounded-md shadow-lg">
-                    {issueTypes.map((type) => (
+                    {issueOptions.map((option) => (
                       <button
-                        key={type}
+                        key={option.value}
                         type="button"
                         onClick={() => {
-                          setSelectedIssue(type);
+                          setSelectedIssue(option.value);
                           setIsDropdownOpen(false);
                         }}
                         className="w-full px-4 py-3 text-left text-sm text-[#1E1E1E] hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
                       >
-                        {type}
+                        {option.label}
                       </button>
                     ))}
                   </div>
