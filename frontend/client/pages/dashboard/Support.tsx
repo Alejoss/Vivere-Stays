@@ -12,6 +12,9 @@ export default function Support() {
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const MAX_SCREENSHOT_SIZE_MB = 2;
+  const MAX_SCREENSHOT_SIZE_BYTES = MAX_SCREENSHOT_SIZE_MB * 1024 * 1024;
+
   const issueOptions = useMemo(
     () => [
       {
@@ -143,10 +146,10 @@ export default function Support() {
       }
       
       // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > MAX_SCREENSHOT_SIZE_BYTES) {
         toast({
           title: t('common:messages.error'),
-          description: t('dashboard:support.fileTooLarge', { defaultValue: 'Screenshot must be smaller than 5MB.' }),
+          description: t('dashboard:support.fileTooLarge', { defaultValue: `Screenshot must be smaller than ${MAX_SCREENSHOT_SIZE_MB}MB.`, size: MAX_SCREENSHOT_SIZE_MB }),
           variant: "destructive",
         });
         return;
@@ -292,7 +295,7 @@ export default function Support() {
                 </div>
               )}
               <div className="mt-1 text-[12px] text-[#71717A]">
-                Supported formats: JPG, PNG, GIF (max 5MB)
+                {t('dashboard:support.supportedFormats', { defaultValue: `Supported formats: JPG, PNG, GIF (max ${MAX_SCREENSHOT_SIZE_MB}MB)` })}
               </div>
             </div>
 

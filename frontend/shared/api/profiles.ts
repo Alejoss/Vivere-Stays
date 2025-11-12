@@ -412,9 +412,6 @@ export const profilesService = {
       method: 'POST',
       url: '/profiles/support-tickets/',
       data: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
     });
   },
 
