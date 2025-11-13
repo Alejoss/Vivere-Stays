@@ -4117,7 +4117,6 @@ class PropertyAvailableRatesView(APIView):
             rate_ids = list(available_rates.values_list('rate_id', flat=True))
             config_qs = DpRoomRates.objects.filter(
                 property_id=property_instance,
-                user=request.user,
                 rate_id__in=rate_ids
             ).values('rate_id', 'increment_type', 'increment_value', 'is_base_rate')
             rate_config_by_rate_id = {c['rate_id']: c for c in config_qs}
@@ -4190,14 +4189,12 @@ class PropertyAvailableRatesUpdateView(APIView):
                 # If any item is set as base rate, unset all others ONCE
                 if any(r.get('is_base_rate') for r in rates_data):
                     DpRoomRates.objects.filter(
-                        property_id=property_instance,
-                        user=request.user
+                        property_id=property_instance
                     ).update(is_base_rate=False)
 
                 rate_ids = [r['rate_id'] for r in rates_data]
                 existing_qs = DpRoomRates.objects.filter(
                     property_id=property_instance,
-                    user=request.user,
                     rate_id__in=rate_ids
                 )
                 existing_by_rate_id = {rr.rate_id: rr for rr in existing_qs}
