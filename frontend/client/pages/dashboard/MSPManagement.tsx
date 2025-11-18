@@ -147,19 +147,29 @@ export default function MSPManagement() {
       }
       
       // Call the MSP API with only dirty/new periods
+      console.log(`[MSP Save] Sending ${periodsToSave.length} periods to backend (${periodsToSave.filter(p => p.id.startsWith('existing-')).length} updates, ${periodsToSave.filter(p => !p.id.startsWith('existing-')).length} new)`);
       const result = await dynamicPricingService.createPropertyMSP(property.id, { periods: periodsToSave });
       
+      // Log full response
+      console.log("[MSP Save] Response received:", {
+        message: result.message,
+        created: result.created_entries?.length || 0,
+        updated: result.updated_entries?.length || 0,
+        errors: result.errors?.length || 0,
+        fullResponse: result
+      });
+      
       if (result.errors && result.errors.length > 0) {
+        console.error("[MSP Save] Errors in response:", result.errors);
         toast({
-          title: t('common:messages.success'),
+          title: t('common:messages.error'),
           description: `Some periods could not be saved: ${result.errors.join(', ')}`,
           variant: "destructive",
         });
         return;
       }
       
-      console.log("MSP periods saved successfully:", result);
-      console.log(`Created: ${result.created_entries?.length || 0} entries`);
+      console.log(`[MSP Save] Success - Created: ${result.created_entries?.length || 0}, Updated: ${result.updated_entries?.length || 0}`);
       
       toast({
         title: t('common:messages.success'),

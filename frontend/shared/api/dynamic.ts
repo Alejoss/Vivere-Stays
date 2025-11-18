@@ -719,12 +719,14 @@ export const dynamicPricingService = {
   async createPropertyMSP(propertyId: string, data: { periods: Array<{ fromDate: string; toDate: string; price: string; periodTitle: string }> }): Promise<{
     message: string;
     created_entries: MSPEntry[];
-    errors?: string[];
+    updated_entries: MSPEntry[];
+    errors?: string[] | null;
   }> {
     return apiRequest<{
       message: string;
       created_entries: MSPEntry[];
-      errors?: string[];
+      updated_entries: MSPEntry[];
+      errors?: string[] | null;
     }>({
       method: 'POST',
       url: `/dynamic-pricing/properties/${propertyId}/msp/`,
