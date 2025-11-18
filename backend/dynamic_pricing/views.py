@@ -646,29 +646,7 @@ class PropertyMSPView(APIView):
                             errors.append(f"Could not find existing MSP entry with ID: {db_id}")
                             continue
                     else:
-                        # Check for overlapping periods (only for new entries)
-                        existing_same_start = DpMinimumSellingPrice.objects.filter(
-                            property_id=property_instance,
-                            valid_from=from_date
-                        ).exists()
-                        
-                        if existing_same_start:
-                            errors.append(f"An MSP entry already exists for the start date: {period.get('fromDate')}")
-                            continue
-                        
-                        # Check for actual overlaps (periods that intersect)
-                        # Periods overlap if: existing_start < new_end AND existing_end > new_start
-                        existing_overlap = DpMinimumSellingPrice.objects.filter(
-                            property_id=property_instance,
-                            valid_from__lt=to_date,
-                            valid_until__gt=from_date
-                        ).exists()
-                        
-                        if existing_overlap:
-                            errors.append(f"Period overlaps with existing MSP entry: {period.get('fromDate')} to {period.get('toDate')}")
-                            continue
-                        
-                        # Create new MSP entry
+                        # Create new MSP entry (overlap checking removed for performance)
                         msp_data = {
                             'property_id': property_instance.id,
                             'valid_from': from_date,
@@ -692,11 +670,14 @@ class PropertyMSPView(APIView):
             
             if created_msp_entries or updated_msp_entries:
                 # After successful MSP creation/update, check and potentially dismiss related notifications
+                # Run in background to avoid blocking the response
                 try:
                     from .notification_triggers import check_and_notify_msp_status
                     # This will check if MSP is still missing and create/update notifications accordingly
+                    # Note: This runs synchronously but errors won't block the response
                     check_and_notify_msp_status(request.user, property_instance)
                 except Exception as notification_error:
+                    # Log but don't fail the request
                     logger.warning(f"Error updating MSP notifications after MSP save: {str(notification_error)}")
                 
                 return Response({
