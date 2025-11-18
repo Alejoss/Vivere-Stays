@@ -610,11 +610,29 @@ class PropertyMSPView(APIView):
             new_entries_to_create = []  # Collect new entries for bulk_create
             entries_to_update = []  # Collect existing entries for bulk_update
             
+            # Pre-fetch all existing entries in one query (optimization)
+            time_before_prefetch = time.time()
+            existing_entry_ids = []
+            for period in periods:
+                period_id = period.get('id', '')
+                if period_id.startswith('existing-'):
+                    db_id = period_id.replace('existing-', '')
+                    existing_entry_ids.append(db_id)
+            
+            existing_entries_dict = {}
+            if existing_entry_ids:
+                existing_entries = DpMinimumSellingPrice.objects.filter(
+                    id__in=existing_entry_ids,
+                    property_id=property_instance
+                )
+                existing_entries_dict = {str(entry.id): entry for entry in existing_entries}
+                time_after_prefetch = time.time()
+                logger.info(f"[MSP POST] Pre-fetched {len(existing_entries_dict)} existing entries in {(time_after_prefetch - time_before_prefetch)*1000:.2f}ms")
+            
             time_before_loop = time.time()
             logger.info(f"[MSP POST] Starting period processing loop at {(time_before_loop - start_time)*1000:.2f}ms")
             
-            for idx, period in enumerate(periods):
-                period_start_time = time.time()
+            for period in periods:
                 try:
                     # Parse dates from dd/mm/yyyy format
                     from_date = self._parse_date(period.get('fromDate'))
@@ -634,28 +652,19 @@ class PropertyMSPView(APIView):
                         # Extract the actual database ID
                         db_id = period_id.replace('existing-', '')
                         
-                        # Collect entry for bulk_update
-                        time_before_db_get = time.time()
-                        try:
-                            existing_entry = DpMinimumSellingPrice.objects.get(
-                                id=db_id,
-                                property_id=property_instance
-                            )
-                            time_after_db_get = time.time()
-                            if idx < 5 or (time_after_db_get - time_before_db_get) > 0.1:  # Log first 5 or slow queries
-                                logger.info(f"[MSP POST] Period {idx+1}/{len(periods)}: DB get took {(time_after_db_get - time_before_db_get)*1000:.2f}ms")
-                            
-                            # Update the fields
-                            existing_entry.valid_from = from_date
-                            existing_entry.valid_until = to_date
-                            existing_entry.msp = price
-                            existing_entry.period_title = period_title
-                            
-                            entries_to_update.append(existing_entry)
-                            
-                        except DpMinimumSellingPrice.DoesNotExist:
+                        # Get entry from pre-fetched dictionary
+                        existing_entry = existing_entries_dict.get(db_id)
+                        if not existing_entry:
                             errors.append(f"Could not find existing MSP entry with ID: {db_id}")
                             continue
+                        
+                        # Update the fields
+                        existing_entry.valid_from = from_date
+                        existing_entry.valid_until = to_date
+                        existing_entry.msp = price
+                        existing_entry.period_title = period_title
+                        
+                        entries_to_update.append(existing_entry)
                     else:
                         # Collect new entries for bulk_create (fast manual validation)
                         # Validate date range
@@ -675,18 +684,13 @@ class PropertyMSPView(APIView):
                             valid_from=from_date,
                             valid_until=to_date,
                             msp=price,
-                            period_title=period_title,
-                            manual_alternative_price=None
+                            period_title=period_title
                         ))
                         
                 except ValueError as e:
                     errors.append(f"Invalid price value for period {period}: {str(e)}")
                 except Exception as e:
                     errors.append(f"Error processing period {period}: {str(e)}")
-                finally:
-                    period_time = time.time() - period_start_time
-                    if period_time > 0.1 or idx < 3:  # Log slow periods or first 3
-                        logger.info(f"[MSP POST] Period {idx+1}/{len(periods)} processed in {period_time*1000:.2f}ms")
             
             time_after_loop = time.time()
             logger.info(f"[MSP POST] Loop completed in {(time_after_loop - time_before_loop)*1000:.2f}ms - {len(entries_to_update)} to update, {len(new_entries_to_create)} to create")
@@ -849,8 +853,7 @@ class PropertyMSPView(APIView):
                 'property_id': property_instance.id,
                 'valid_from': date(2025, 1, 1),
                 'valid_until': date(2025, 1, 31),
-                'msp': 100,
-                'manual_alternative_price': None
+                'msp': 100
             }
             
             logger.info(f"Test data: {test_data}")
