@@ -575,9 +575,14 @@ class PropertyMSPView(APIView):
         """
         Create or update MSP entries for a property
         """
+        start_time = time.time()
+        logger.info(f"[MSP POST] Starting request for property {property_id}, user: {request.user.username}")
+        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
+            time_after_property_get = time.time()
+            logger.info(f"[MSP POST] Property retrieved in {(time_after_property_get - start_time)*1000:.2f}ms")
             
             # Check if user has access to this property
             user_profile = request.user.profile
@@ -587,8 +592,12 @@ class PropertyMSPView(APIView):
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
+            time_after_access_check = time.time()
+            logger.info(f"[MSP POST] Access check completed in {(time_after_access_check - time_after_property_get)*1000:.2f}ms")
+            
             # Get the periods data from request
             periods = request.data.get('periods', [])
+            logger.info(f"[MSP POST] Received {len(periods)} periods to process")
             
             if not periods:
                 return Response({
@@ -599,8 +608,13 @@ class PropertyMSPView(APIView):
             updated_msp_entries = []
             errors = []
             new_entries_to_create = []  # Collect new entries for bulk_create
+            entries_to_update = []  # Collect existing entries for bulk_update
             
-            for period in periods:
+            time_before_loop = time.time()
+            logger.info(f"[MSP POST] Starting period processing loop at {(time_before_loop - start_time)*1000:.2f}ms")
+            
+            for idx, period in enumerate(periods):
+                period_start_time = time.time()
                 try:
                     # Parse dates from dd/mm/yyyy format
                     from_date = self._parse_date(period.get('fromDate'))
@@ -620,67 +634,95 @@ class PropertyMSPView(APIView):
                         # Extract the actual database ID
                         db_id = period_id.replace('existing-', '')
                         
-                        # Try to find and update the existing entry
+                        # Collect entry for bulk_update
+                        time_before_db_get = time.time()
                         try:
                             existing_entry = DpMinimumSellingPrice.objects.get(
                                 id=db_id,
                                 property_id=property_instance
                             )
+                            time_after_db_get = time.time()
+                            if idx < 5 or (time_after_db_get - time_before_db_get) > 0.1:  # Log first 5 or slow queries
+                                logger.info(f"[MSP POST] Period {idx+1}/{len(periods)}: DB get took {(time_after_db_get - time_before_db_get)*1000:.2f}ms")
                             
-                            # Update the existing entry
+                            # Update the fields
                             existing_entry.valid_from = from_date
                             existing_entry.valid_until = to_date
                             existing_entry.msp = price
                             existing_entry.period_title = period_title
-                            existing_entry.save()
                             
-                            updated_msp_entries.append({
-                                'id': existing_entry.id,
-                                'valid_from': existing_entry.valid_from,
-                                'valid_until': existing_entry.valid_until,
-                                'msp': existing_entry.msp,
-                                'period_title': existing_entry.period_title
-                            })
+                            entries_to_update.append(existing_entry)
                             
                         except DpMinimumSellingPrice.DoesNotExist:
                             errors.append(f"Could not find existing MSP entry with ID: {db_id}")
                             continue
                     else:
-                        # Collect new entries for bulk_create (validation happens before bulk_create)
-                        msp_data = {
-                            'property_id': property_instance.id,
-                            'valid_from': from_date,
-                            'valid_until': to_date,
-                            'msp': price,
-                            'period_title': period_title,
-                            'manual_alternative_price': None  # Can be set later if needed
-                        }
+                        # Collect new entries for bulk_create (fast manual validation)
+                        # Validate date range
+                        if from_date >= to_date:
+                            errors.append(f"Invalid date range for period: {period.get('fromDate')} to {period.get('toDate')}")
+                            continue
                         
-                        # Validate the data using serializer
-                        serializer = MinimumSellingPriceSerializer(data=msp_data, context={'request': request})
-                        if serializer.is_valid():
-                            # Store validated data for bulk_create (use Property object for model instance)
-                            new_entries_to_create.append(DpMinimumSellingPrice(
-                                property_id=property_instance,
-                                user=request.user,
-                                valid_from=from_date,
-                                valid_until=to_date,
-                                msp=price,
-                                period_title=period_title,
-                                manual_alternative_price=None
-                            ))
-                        else:
-                            errors.append(f"Validation error for period {period}: {serializer.errors}")
+                        # Validate MSP value
+                        if price < 0:
+                            errors.append(f"Invalid price value for period {period}: MSP cannot be negative")
+                            continue
+                        
+                        # Store validated data for bulk_create (use Property object for model instance)
+                        new_entries_to_create.append(DpMinimumSellingPrice(
+                            property_id=property_instance,
+                            user=request.user,
+                            valid_from=from_date,
+                            valid_until=to_date,
+                            msp=price,
+                            period_title=period_title,
+                            manual_alternative_price=None
+                        ))
                         
                 except ValueError as e:
                     errors.append(f"Invalid price value for period {period}: {str(e)}")
                 except Exception as e:
                     errors.append(f"Error processing period {period}: {str(e)}")
+                finally:
+                    period_time = time.time() - period_start_time
+                    if period_time > 0.1 or idx < 3:  # Log slow periods or first 3
+                        logger.info(f"[MSP POST] Period {idx+1}/{len(periods)} processed in {period_time*1000:.2f}ms")
+            
+            time_after_loop = time.time()
+            logger.info(f"[MSP POST] Loop completed in {(time_after_loop - time_before_loop)*1000:.2f}ms - {len(entries_to_update)} to update, {len(new_entries_to_create)} to create")
+            
+            # Bulk update existing entries
+            if entries_to_update:
+                time_before_bulk_update = time.time()
+                DpMinimumSellingPrice.objects.bulk_update(
+                    entries_to_update,
+                    ['valid_from', 'valid_until', 'msp', 'period_title']
+                )
+                time_after_bulk_update = time.time()
+                logger.info(f"[MSP POST] Bulk update completed in {(time_after_bulk_update - time_before_bulk_update)*1000:.2f}ms for {len(entries_to_update)} entries")
+                
+                # Serialize the updated entries for response
+                time_before_serialize_update = time.time()
+                for entry in entries_to_update:
+                    updated_msp_entries.append({
+                        'id': str(entry.id),
+                        'valid_from': entry.valid_from,
+                        'valid_until': entry.valid_until,
+                        'msp': entry.msp,
+                        'period_title': entry.period_title
+                    })
+                time_after_serialize_update = time.time()
+                logger.info(f"[MSP POST] Serialize updated entries took {(time_after_serialize_update - time_before_serialize_update)*1000:.2f}ms")
             
             # Bulk create all new entries at once
             if new_entries_to_create:
+                time_before_bulk_create = time.time()
                 created_objects = DpMinimumSellingPrice.objects.bulk_create(new_entries_to_create)
+                time_after_bulk_create = time.time()
+                logger.info(f"[MSP POST] Bulk create completed in {(time_after_bulk_create - time_before_bulk_create)*1000:.2f}ms for {len(new_entries_to_create)} entries")
+                
                 # Serialize the created entries for response
+                time_before_serialize_create = time.time()
                 for entry in created_objects:
                     created_msp_entries.append({
                         'id': str(entry.id),
@@ -689,6 +731,11 @@ class PropertyMSPView(APIView):
                         'msp': entry.msp,
                         'period_title': entry.period_title
                     })
+                time_after_serialize_create = time.time()
+                logger.info(f"[MSP POST] Serialize created entries took {(time_after_serialize_create - time_before_serialize_create)*1000:.2f}ms")
+            
+            total_time = time.time() - start_time
+            logger.info(f"[MSP POST] Total request time: {total_time*1000:.2f}ms - Created: {len(created_msp_entries)}, Updated: {len(updated_msp_entries)}")
             
             if created_msp_entries or updated_msp_entries:
                 return Response({
