@@ -581,9 +581,8 @@ class PropertyMSPView(APIView):
             
             # Check if user has access to this property
             user_profile = request.user.profile
-            user_properties = user_profile.get_properties()
             
-            if not user_properties.filter(id=property_id).exists():
+            if not user_profile.properties.filter(id=property_id).exists():
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
@@ -599,6 +598,7 @@ class PropertyMSPView(APIView):
             created_msp_entries = []
             updated_msp_entries = []
             errors = []
+            new_entries_to_create = []  # Collect new entries for bulk_create
             
             for period in periods:
                 try:
@@ -646,7 +646,7 @@ class PropertyMSPView(APIView):
                             errors.append(f"Could not find existing MSP entry with ID: {db_id}")
                             continue
                     else:
-                        # Create new MSP entry (overlap checking removed for performance)
+                        # Collect new entries for bulk_create (validation happens before bulk_create)
                         msp_data = {
                             'property_id': property_instance.id,
                             'valid_from': from_date,
@@ -656,10 +656,19 @@ class PropertyMSPView(APIView):
                             'manual_alternative_price': None  # Can be set later if needed
                         }
                         
+                        # Validate the data using serializer
                         serializer = MinimumSellingPriceSerializer(data=msp_data, context={'request': request})
                         if serializer.is_valid():
-                            msp_entry = serializer.save()
-                            created_msp_entries.append(serializer.data)
+                            # Store validated data for bulk_create (use Property object for model instance)
+                            new_entries_to_create.append(DpMinimumSellingPrice(
+                                property_id=property_instance,
+                                user=request.user,
+                                valid_from=from_date,
+                                valid_until=to_date,
+                                msp=price,
+                                period_title=period_title,
+                                manual_alternative_price=None
+                            ))
                         else:
                             errors.append(f"Validation error for period {period}: {serializer.errors}")
                         
@@ -668,18 +677,20 @@ class PropertyMSPView(APIView):
                 except Exception as e:
                     errors.append(f"Error processing period {period}: {str(e)}")
             
+            # Bulk create all new entries at once
+            if new_entries_to_create:
+                created_objects = DpMinimumSellingPrice.objects.bulk_create(new_entries_to_create)
+                # Serialize the created entries for response
+                for entry in created_objects:
+                    created_msp_entries.append({
+                        'id': str(entry.id),
+                        'valid_from': entry.valid_from,
+                        'valid_until': entry.valid_until,
+                        'msp': entry.msp,
+                        'period_title': entry.period_title
+                    })
+            
             if created_msp_entries or updated_msp_entries:
-                # After successful MSP creation/update, check and potentially dismiss related notifications
-                # Run in background to avoid blocking the response
-                try:
-                    from .notification_triggers import check_and_notify_msp_status
-                    # This will check if MSP is still missing and create/update notifications accordingly
-                    # Note: This runs synchronously but errors won't block the response
-                    check_and_notify_msp_status(request.user, property_instance)
-                except Exception as notification_error:
-                    # Log but don't fail the request
-                    logger.warning(f"Error updating MSP notifications after MSP save: {str(notification_error)}")
-                
                 return Response({
                     'message': f'Successfully processed MSP entries (Created: {len(created_msp_entries)}, Updated: {len(updated_msp_entries)})',
                     'created_entries': created_msp_entries,

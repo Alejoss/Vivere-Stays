@@ -18,6 +18,7 @@ export default function MSPManagement() {
   const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext) ?? {};
   const [periods, setPeriods] = useState<MSPPeriod[]>([]);
+  const [originalPeriods, setOriginalPeriods] = useState<MSPPeriod[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -55,6 +56,8 @@ export default function MSPManagement() {
       }));
       
       setPeriods(existingPeriods);
+      // Store deep copy of original periods for dirty tracking
+      setOriginalPeriods(JSON.parse(JSON.stringify(existingPeriods)));
     } catch (err: any) {
       console.error("Error loading MSP entries:", err);
       toast({
@@ -65,6 +68,28 @@ export default function MSPManagement() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to check if a period has been modified (is dirty)
+  const isPeriodDirty = (period: MSPPeriod): boolean => {
+    // New entries (without 'existing-' prefix) are always considered dirty/new
+    if (!period.id.startsWith('existing-')) {
+      return true;
+    }
+    
+    // Find the original period
+    const originalPeriod = originalPeriods.find(p => p.id === period.id);
+    if (!originalPeriod) {
+      return true; // Period not found in original, consider it dirty
+    }
+    
+    // Compare all fields
+    return (
+      originalPeriod.fromDate !== period.fromDate ||
+      originalPeriod.toDate !== period.toDate ||
+      originalPeriod.price !== period.price ||
+      originalPeriod.periodTitle !== period.periodTitle
+    );
   };
 
   const handleSave = async () => {
@@ -109,8 +134,20 @@ export default function MSPManagement() {
     
     setIsSaving(true);
     try {
-      // Call the MSP API
-      const result = await dynamicPricingService.createPropertyMSP(property.id, { periods });
+      // Filter to only include dirty/new periods (those that have been modified or are new)
+      const periodsToSave = periods.filter(isPeriodDirty);
+      
+      if (periodsToSave.length === 0) {
+        toast({
+          title: t('common:messages.success'),
+          description: "No changes to save",
+        });
+        setIsSaving(false);
+        return;
+      }
+      
+      // Call the MSP API with only dirty/new periods
+      const result = await dynamicPricingService.createPropertyMSP(property.id, { periods: periodsToSave });
       
       if (result.errors && result.errors.length > 0) {
         toast({

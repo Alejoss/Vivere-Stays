@@ -30,11 +30,11 @@ docker-compose exec vivere_backend python manage.py populate_daily_performance
 https://vivere-fe.algobeat.com/
 https://vivere-stays.algobeat.com/
 ssh root@46.62.171.162
-docker-compose down
+docker compose down
 ./deploy-all.sh
 ./deploy-frontend.sh
 ./deploy-backend.sh
-docker-compose logs -f vivere_backend
+docker compose logs -f vivere_backend
 19391
 
 # Production IP
