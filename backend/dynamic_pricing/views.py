@@ -657,28 +657,12 @@ class PropertyMSPView(APIView):
                             continue
                         
                         # Check for actual overlaps (periods that intersect)
+                        # Periods overlap if: existing_start < new_end AND existing_end > new_start
                         existing_overlap = DpMinimumSellingPrice.objects.filter(
-                            property_id=property_instance
-                        ).filter(
-                            # Periods overlap if: existing_start < new_end AND existing_end > new_start
+                            property_id=property_instance,
                             valid_from__lt=to_date,
                             valid_until__gt=from_date
                         ).exists()
-                        
-                        # Debug: Let's see what existing entries we have
-                        existing_entries = DpMinimumSellingPrice.objects.filter(
-                            property_id=property_instance
-                        ).values('valid_from', 'valid_until')
-                        print(f"Debug - New period: {from_date} to {to_date}")
-                        print(f"Debug - Existing entries: {list(existing_entries)}")
-                        print(f"Debug - Overlap detected: {existing_overlap}")
-                        
-                        # More detailed debug: Check each existing entry individually
-                        for entry in existing_entries:
-                            existing_start = entry['valid_from']
-                            existing_end = entry['valid_until']
-                            overlaps = (existing_start < to_date) and (existing_end > from_date)
-                            print(f"Debug - Checking overlap: existing({existing_start} to {existing_end}) vs new({from_date} to {to_date}) = {overlaps}")
                         
                         if existing_overlap:
                             errors.append(f"Period overlaps with existing MSP entry: {period.get('fromDate')} to {period.get('toDate')}")
