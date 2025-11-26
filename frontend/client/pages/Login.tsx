@@ -150,9 +150,9 @@ export default function Login() {
       {/* Logo */}
       <div className="text-center mb-10">
         <img
-          src="/images/logo.png"
+          src="/images/logo_transparent.png"
           alt="Vivere Stays Logo"
-          className="w-60 h-auto mx-auto"
+          className="w-[480px] h-auto mx-auto"
         />
       </div>
 
