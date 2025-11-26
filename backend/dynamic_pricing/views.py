@@ -575,14 +575,9 @@ class PropertyMSPView(APIView):
         """
         Create or update MSP entries for a property
         """
-        start_time = time.time()
-        logger.info(f"[MSP POST] Starting request for property {property_id}, user: {request.user.username}")
-        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
-            time_after_property_get = time.time()
-            logger.info(f"[MSP POST] Property retrieved in {(time_after_property_get - start_time)*1000:.2f}ms")
             
             # Check if user has access to this property
             user_profile = request.user.profile
@@ -592,12 +587,8 @@ class PropertyMSPView(APIView):
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            time_after_access_check = time.time()
-            logger.info(f"[MSP POST] Access check completed in {(time_after_access_check - time_after_property_get)*1000:.2f}ms")
-            
             # Get the periods data from request
             periods = request.data.get('periods', [])
-            logger.info(f"[MSP POST] Received {len(periods)} periods to process")
             
             if not periods:
                 return Response({
@@ -611,7 +602,6 @@ class PropertyMSPView(APIView):
             entries_to_update = []  # Collect existing entries for bulk_update
             
             # Pre-fetch all existing entries in one query (optimization)
-            time_before_prefetch = time.time()
             existing_entry_ids = []
             for period in periods:
                 period_id = period.get('id', '')
@@ -626,11 +616,6 @@ class PropertyMSPView(APIView):
                     property_id=property_instance
                 )
                 existing_entries_dict = {str(entry.id): entry for entry in existing_entries}
-                time_after_prefetch = time.time()
-                logger.info(f"[MSP POST] Pre-fetched {len(existing_entries_dict)} existing entries in {(time_after_prefetch - time_before_prefetch)*1000:.2f}ms")
-            
-            time_before_loop = time.time()
-            logger.info(f"[MSP POST] Starting period processing loop at {(time_before_loop - start_time)*1000:.2f}ms")
             
             for period in periods:
                 try:
@@ -692,21 +677,14 @@ class PropertyMSPView(APIView):
                 except Exception as e:
                     errors.append(f"Error processing period {period}: {str(e)}")
             
-            time_after_loop = time.time()
-            logger.info(f"[MSP POST] Loop completed in {(time_after_loop - time_before_loop)*1000:.2f}ms - {len(entries_to_update)} to update, {len(new_entries_to_create)} to create")
-            
             # Bulk update existing entries
             if entries_to_update:
-                time_before_bulk_update = time.time()
                 DpMinimumSellingPrice.objects.bulk_update(
                     entries_to_update,
                     ['valid_from', 'valid_until', 'msp', 'period_title']
                 )
-                time_after_bulk_update = time.time()
-                logger.info(f"[MSP POST] Bulk update completed in {(time_after_bulk_update - time_before_bulk_update)*1000:.2f}ms for {len(entries_to_update)} entries")
                 
                 # Serialize the updated entries for response
-                time_before_serialize_update = time.time()
                 for entry in entries_to_update:
                     updated_msp_entries.append({
                         'id': str(entry.id),
@@ -715,18 +693,12 @@ class PropertyMSPView(APIView):
                         'msp': entry.msp,
                         'period_title': entry.period_title
                     })
-                time_after_serialize_update = time.time()
-                logger.info(f"[MSP POST] Serialize updated entries took {(time_after_serialize_update - time_before_serialize_update)*1000:.2f}ms")
             
             # Bulk create all new entries at once
             if new_entries_to_create:
-                time_before_bulk_create = time.time()
                 created_objects = DpMinimumSellingPrice.objects.bulk_create(new_entries_to_create)
-                time_after_bulk_create = time.time()
-                logger.info(f"[MSP POST] Bulk create completed in {(time_after_bulk_create - time_before_bulk_create)*1000:.2f}ms for {len(new_entries_to_create)} entries")
                 
                 # Serialize the created entries for response
-                time_before_serialize_create = time.time()
                 for entry in created_objects:
                     created_msp_entries.append({
                         'id': str(entry.id),
@@ -735,11 +707,6 @@ class PropertyMSPView(APIView):
                         'msp': entry.msp,
                         'period_title': entry.period_title
                     })
-                time_after_serialize_create = time.time()
-                logger.info(f"[MSP POST] Serialize created entries took {(time_after_serialize_create - time_before_serialize_create)*1000:.2f}ms")
-            
-            total_time = time.time() - start_time
-            logger.info(f"[MSP POST] Total request time: {total_time*1000:.2f}ms - Created: {len(created_msp_entries)}, Updated: {len(updated_msp_entries)}")
             
             if created_msp_entries or updated_msp_entries:
                 return Response({
@@ -2569,6 +2536,22 @@ class DpGeneralSettingsUpdateView(APIView):
                 settings.otas_price_diff = new_otas_price_diff
                 updated_fields.append(f'otas_price_diff: {old_otas_price_diff} -> {new_otas_price_diff}')
             
+            # Update pricing_status if provided
+            if 'pricing_status' in request.data:
+                new_pricing_status = request.data.get('pricing_status')
+                print(f"🔧 DEBUG: Updating pricing_status to: {new_pricing_status}")
+                allowed_values = ['offline', 'online']
+                if new_pricing_status not in allowed_values:
+                    print(f"🔧 DEBUG: Invalid pricing_status value: {new_pricing_status}")
+                    return Response({
+                        'message': f'pricing_status must be one of: {", ".join(allowed_values)}'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                old_pricing_status = settings.pricing_status
+                print(f"🔧 DEBUG: Changing pricing_status from '{old_pricing_status}' to '{new_pricing_status}'")
+                settings.pricing_status = new_pricing_status
+                updated_fields.append(f'pricing_status: {old_pricing_status} -> {new_pricing_status}')
+            
             # Save if any fields were updated
             if updated_fields:
                 print(f"🔧 DEBUG: Saving settings with updated fields: {updated_fields}")
@@ -2583,6 +2566,7 @@ class DpGeneralSettingsUpdateView(APIView):
                     'los_num_competitors': settings.los_num_competitors,
                     'los_aggregation': settings.los_aggregation,
                     'otas_price_diff': settings.otas_price_diff,
+                    'pricing_status': settings.pricing_status,
                     'updated_at': settings.updated_at
                 }, status=status.HTTP_200_OK)
             else:

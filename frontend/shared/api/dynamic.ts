@@ -929,8 +929,8 @@ export const dynamicPricingService = {
 
   async updateGeneralSettings(
     propertyId: string, 
-    data: { comp_price_calculation?: string; min_competitors?: number; los_num_competitors?: number; los_aggregation?: string; otas_price_diff?: number }
-  ): Promise<{ message: string; property_id: string; updated_fields: string[]; comp_price_calculation: string; min_competitors: number; los_num_competitors: number; los_aggregation: string; otas_price_diff: number; updated_at: string }> {
+    data: { comp_price_calculation?: string; min_competitors?: number; los_num_competitors?: number; los_aggregation?: string; otas_price_diff?: number; pricing_status?: string }
+  ): Promise<{ message: string; property_id: string; updated_fields: string[]; comp_price_calculation: string; min_competitors: number; los_num_competitors: number; los_aggregation: string; otas_price_diff: number; pricing_status: string; updated_at: string }> {
     return apiRequest({
       method: 'PATCH',
       url: `/dynamic-pricing/properties/${propertyId}/general-settings/`,
