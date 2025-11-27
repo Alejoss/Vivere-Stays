@@ -10,6 +10,82 @@ import { FormFieldError } from "../../components/ErrorMessage";
 import OnboardingHeaderControls from "../../components/onboarding/OnboardingHeaderControls";
 import "../../styles/responsive-utilities.css";
 
+// Helper function to render terms agreement text with links
+const renderTermsAgreement = (text: string) => {
+  // Define patterns for different languages
+  const termsPatterns = [
+    /(Terms of Service)/,
+    /(Términos de Servicio)/,
+    /(Nutzungsbedingungen)/
+  ];
+  const privacyPatterns = [
+    /(Privacy Policy)/,
+    /(Política de Privacidad)/,
+    /(Datenschutzerklärung)/
+  ];
+
+  // Find which pattern matches
+  let termsMatch: RegExpMatchArray | null = null;
+  let privacyMatch: RegExpMatchArray | null = null;
+  
+  for (const pattern of termsPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      termsMatch = match;
+      break;
+    }
+  }
+  
+  for (const pattern of privacyPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      privacyMatch = match;
+      break;
+    }
+  }
+
+  if (!termsMatch || !privacyMatch) {
+    // Fallback: return text as-is if patterns don't match
+    return <span>{text}</span>;
+  }
+
+  // Split text into parts
+  const termsIndex = text.indexOf(termsMatch[1]);
+  const privacyIndex = text.indexOf(privacyMatch[1]);
+  
+  const beforeTerms = text.substring(0, termsIndex);
+  const termsText = termsMatch[1];
+  const betweenTerms = text.substring(termsIndex + termsText.length, privacyIndex);
+  const privacyText = privacyMatch[1];
+  const afterPrivacy = text.substring(privacyIndex + privacyText.length);
+
+  return (
+    <span>
+      {beforeTerms}
+      <a
+        href="https://viverestays.com/en/terms-conditions/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[#294859] font-bold hover:underline"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {termsText}
+      </a>
+      {betweenTerms}
+      <a
+        href="https://viverestays.com/en/privacy-policy/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[#294859] font-bold hover:underline"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {privacyText}
+      </a>
+      {afterPrivacy}
+    </span>
+  );
+};
+
 // Password Strength Indicator Component
 const PasswordStrengthIndicator = ({ password }: { password: string }) => {
   const { t } = useTranslation('auth');
@@ -729,7 +805,7 @@ export default function Register() {
                   htmlFor="agreeToTerms"
                   className="text-[16px] text-[#485567] cursor-pointer"
                 >
-                  {t('auth:register.termsAgreement')}
+                  {renderTermsAgreement(t('auth:register.termsAgreement'))}
                 </label>
               </div>
 

@@ -301,7 +301,7 @@ export default function Login() {
                   </svg>
                 </button>
               </div>
-              <div className="text-right">
+              <div className="text-left">
                 <button
                   type="button"
                   className="text-[16px] font-bold text-[#294859] hover:underline"
