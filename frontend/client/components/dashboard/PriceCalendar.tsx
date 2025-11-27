@@ -26,9 +26,11 @@ const getDaysInMonth = (year: number, month: number) => {
 };
 
 // Shared responsive sizing so headers and cells stay aligned across breakpoints
-const columnWidthClasses = "w-[50px] sm:w-[70px] md:w-[100px] lg:w-[125px] xl:w-[150px] 2xl:w-[175px]";
-const cellHeightClasses = "h-[45px] sm:h-[55px] md:h-[75px] lg:h-[95px] xl:h-[110px] 2xl:h-[125px]";
-const containerMinWidthClasses = "min-w-[350px] sm:min-w-[490px] md:min-w-[700px] lg:min-w-[875px] xl:min-w-[1050px] 2xl:min-w-[1225px]";
+// Mobile: ~42px per column × 7 = 294px + gaps (~12px) = ~306px (fits in ~320-375px screens)
+// Desktop: Reduced widths for narrower screens to prevent horizontal scrolling
+const columnWidthClasses = "w-[42px] sm:w-[70px] md:w-[85px] lg:w-[110px] xl:w-[130px] 2xl:w-[150px]";
+const cellHeightClasses = "h-[40px] sm:h-[55px] md:h-[75px] lg:h-[95px] xl:h-[110px] 2xl:h-[125px]";
+const containerMinWidthClasses = "min-w-[294px] sm:min-w-[490px] md:min-w-[595px] lg:min-w-[770px] xl:min-w-[910px] 2xl:min-w-[1050px]";
 
 // Function to generate calendar data for any month/year
 const generateCalendarData = (
@@ -168,7 +170,7 @@ function CalendarCell({
   return (
     <button
       onClick={onClick}
-      className={`flex ${columnWidthClasses} ${cellHeightClasses} rounded-lg ${getOccupancyColor(occupancy)} p-[4px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-4 border-yellow-400 z-10' : ''}`}
+      className={`flex ${columnWidthClasses} ${cellHeightClasses} rounded-lg ${getOccupancyColor(occupancy)} p-[2px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-2 sm:border-4 border-yellow-400 z-10' : ''}`}
     >
       {/* Lock icon at top right if overwrite is true (but not in MSP mode) */}
       {overwrite && !isNoMSP && (
@@ -177,14 +179,14 @@ function CalendarCell({
         </span>
       )}
       <div className="flex flex-col items-center gap-[2px] sm:gap-[3px] md:gap-[4px] text-white">
-        <span className="text-responsive-xs font-normal leading-tight flex items-center gap-1">
+        <span className="text-xs md:text-2xl font-normal leading-tight">
+          {day}
+        </span>
+        <span className="text-xs md:text-2xl font-bold leading-tight flex items-center gap-1">
           {isNoMSP && (
-            <AlertTriangle size={8} className="sm:w-2 sm:h-2 md:w-3 md:h-3" />
+            <AlertTriangle size={8} className="sm:w-2 sm:h-2 md:w-5 md:h-5 lg:w-6 lg:h-6" />
           )}
           {price}
-        </span>
-        <span className="text-responsive-xs font-normal leading-tight">
-          {day}
         </span>
       </div>
     </button>
@@ -412,8 +414,9 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   return (
     <div className="w-full max-w-none bg-white border border-hotel-border-light rounded-[9px] p-4 lg:p-[26px]">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-[57px]">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 lg:items-center gap-4 mb-[57px]">
+        {/* Left side: Title, Dropdown, Property Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:justify-start">
           <h2 className="text-responsive-xl font-bold text-[#294758]">{t('dashboard:calendar.title')}</h2>
           
           {/* Price Type Dropdown */}
@@ -466,8 +469,8 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 ml-auto">
-          {/* Navigation controls */}
+        {/* Center: Month Picker Navigation */}
+        <div className="flex justify-center lg:justify-center">
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Navigation buttons */}
             <button
@@ -494,7 +497,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
 
               {/* Month/Year Picker Dropdown */}
               {showMonthPicker && (
-                <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
                   {/* Year Selector */}
                   <div className="flex items-center justify-between mb-4">
                     <button
@@ -550,13 +553,10 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
             </button>
           </div>
         </div>
+
+        {/* Right side: Empty spacer to balance the layout */}
+        <div className="hidden lg:block"></div>
       </div>
-      {/* Dynamic PMS warning */}
-      {!isConnected && !hasPMS && (
-        <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
-          {t('dashboard:calendar.pmsWarning')}
-        </div>
-      )}
 
       {/* Error/Loading for price history */}
       {priceHistoryLoading && (
@@ -571,9 +571,9 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       )}
 
       {/* Calendar */}
-      <div className={`flex flex-col gap-[8px] sm:gap-[12px] md:gap-[14px] overflow-x-auto`}>
+      <div className={`flex flex-col gap-[8px] sm:gap-[12px] md:gap-[14px] overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0`}>
         {/* Day Headers */}
-        <div className={`flex items-center gap-[2px] sm:gap-1 ${containerMinWidthClasses}`}>
+        <div className={`flex items-center gap-[1px] sm:gap-1 ${containerMinWidthClasses}`}>
           {dayHeaders.map((day) => (
             <div
               key={day}
@@ -587,9 +587,9 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
         </div>
 
         {/* Calendar Grid */}
-        <div className={`flex flex-col gap-[2px] sm:gap-1 ${containerMinWidthClasses}`}>
+        <div className={`flex flex-col gap-[1px] sm:gap-1 ${containerMinWidthClasses}`}>
           {calendarData.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex items-center gap-[2px] sm:gap-1">
+            <div key={weekIndex} className="flex items-center gap-[1px] sm:gap-1">
               {week.map((cell, cellIndex) =>
                 cell ? (
                   <CalendarCell

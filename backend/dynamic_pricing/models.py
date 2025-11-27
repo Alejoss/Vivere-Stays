@@ -112,7 +112,7 @@ class DpGeneralSettings(models.Model):
     min_competitors = models.IntegerField(default=2)
     comp_price_calculation = models.CharField(max_length=255, default='min')  # Minimum, etc.
     future_days_to_price = models.IntegerField(default=365)
-    pricing_status = models.CharField(max_length=255, default='offline')
+    pricing_status = models.CharField(max_length=255, default='online')
     los_status = models.CharField(max_length=255, default='offline')
     otas_price_diff = models.FloatField(default=0)
     # LOS-specific settings

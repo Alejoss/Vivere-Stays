@@ -26,7 +26,6 @@
     "title": "Calendario de Precios",
     "loadingProperties": "Cargando propiedades...",
     "noPropertiesFound": "No se encontraron propiedades. Por favor agregue una propiedad primero.",
-    "pmsWarning": "Si el PMS no está conectado (modo en vivo), los cambios no se reflejarán en el PMS.",
     "noPmsConfigured": "No hay PMS configurado",
     "noMspConfigured": "No hay MSP configurado para esta fecha",
     "months": {

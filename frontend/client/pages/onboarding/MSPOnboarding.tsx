@@ -132,7 +132,7 @@ export default function MSP() {
       return;
     }
     
-    // Validate date ranges before submitting
+    // Validate date ranges before submitting (allow equal dates for one-day periods)
     const invalidPeriods = periods.filter(period => {
       if (!period.fromDate || !period.toDate) return false; // Skip validation for incomplete periods
       
@@ -141,12 +141,12 @@ export default function MSP() {
       
       if (!fromDate || !toDate) return true; // Invalid date format
       
-      return toDate <= fromDate; // End date should be after start date
+      return toDate < fromDate; // End date should be after or equal to start date
     });
     
     if (invalidPeriods.length > 0) {
       const invalidPeriod = invalidPeriods[0]; // Show first invalid period
-      setError(`Invalid date range: The end date (${invalidPeriod.toDate}) must be after the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`);
+      setError(`Invalid date range: The end date (${invalidPeriod.toDate}) must be after or equal to the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`);
       return;
     }
     // Debug: Log property prior to guard
@@ -210,8 +210,8 @@ export default function MSP() {
                 const toDate = periodMatch[2];
                 
                 // Check for specific validation errors
-                if (errorDetails.includes('valid_until must be after valid_from')) {
-                  errorMessage = `Invalid date range: The end date (${toDate}) must be after the start date (${fromDate}). Please correct the dates and try again.`;
+                if (errorDetails.includes('valid_until must be after valid_from') || errorDetails.includes('valid_until must be after or equal to valid_from')) {
+                  errorMessage = `Invalid date range: The end date (${toDate}) must be after or equal to the start date (${fromDate}). Please correct the dates and try again.`;
                 } else if (errorDetails.includes('non_field_errors')) {
                   errorMessage = `Invalid period data: Please check that all dates and prices are valid.`;
                 } else {

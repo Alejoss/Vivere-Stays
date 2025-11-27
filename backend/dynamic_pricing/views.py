@@ -652,8 +652,8 @@ class PropertyMSPView(APIView):
                         entries_to_update.append(existing_entry)
                     else:
                         # Collect new entries for bulk_create (fast manual validation)
-                        # Validate date range
-                        if from_date >= to_date:
+                        # Validate date range (allow equal dates for one-day periods)
+                        if from_date > to_date:
                             errors.append(f"Invalid date range for period: {period.get('fromDate')} to {period.get('toDate')}")
                             continue
                         
@@ -2384,7 +2384,7 @@ class DpGeneralSettingsUpdateView(APIView):
                     comp_price_calculation='min',
                     min_competitors=2,
                     future_days_to_price=365,
-                    pricing_status='offline',
+                    pricing_status='online',
                     los_status='offline',
                     los_num_competitors=2,
                     los_aggregation='min'
@@ -2452,7 +2452,7 @@ class DpGeneralSettingsUpdateView(APIView):
                     comp_price_calculation='min',
                     min_competitors=2,
                     future_days_to_price=365,
-                    pricing_status='offline',
+                    pricing_status='online',
                     los_status='offline',
                     los_num_competitors=2,
                     los_aggregation='min'

@@ -129,18 +129,6 @@ export default function DateDetailsContent({
           </div>
         )}
         
-        {/* Dynamic PMS warning */}
-        {!isConnected && (
-          <div className="flex items-center gap-[7px] px-[25px] py-[12px] border border-hotel-warning-red-border rounded-lg bg-hotel-warning-red-bg mb-2">
-            <AlertTriangle
-              size={25}
-              className="text-hotel-warning-orange flex-shrink-0"
-            />
-            <span className="text-responsive-sm font-medium text-hotel-warning-orange">
-              {t('dashboard:calendar.pmsWarning')}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

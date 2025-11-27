@@ -203,10 +203,10 @@ class MinimumSellingPriceSerializer(serializers.ModelSerializer):
         valid_until = data.get('valid_until')
         msp = data.get('msp')
 
-        # Validate date range
-        if valid_from and valid_until and valid_from >= valid_until:
+        # Validate date range (allow equal dates for one-day periods)
+        if valid_from and valid_until and valid_from > valid_until:
             raise serializers.ValidationError(
-                "valid_until must be after valid_from",
+                "valid_until must be after or equal to valid_from",
                 code=ErrorCode.DATE_RANGE_INVALID
             )
 

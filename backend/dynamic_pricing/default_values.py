@@ -75,7 +75,7 @@ DEFAULT_GENERAL_SETTINGS = {
     "min_competitors": 2,
     "comp_price_calculation": "min",
     "future_days_to_price": 365,
-    "pricing_status": "offline",
+    "pricing_status": "online",
     "los_status": "offline",
     "otas_price_diff": 0.0,
     "los_num_competitors": 2,

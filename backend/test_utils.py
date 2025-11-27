@@ -111,7 +111,7 @@ def create_test_general_settings(property, user=None, **kwargs):
         'min_competitors': 2,
         'comp_price_calculation': 'min',
         'future_days_to_price': 365,
-        'pricing_status': 'offline',
+        'pricing_status': 'online',
         'los_status': 'offline'
     }
     defaults.update(kwargs)

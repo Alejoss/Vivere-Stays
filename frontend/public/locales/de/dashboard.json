@@ -26,7 +26,6 @@
     "title": "Preiskalender",
     "loadingProperties": "Unterkünfte werden geladen...",
     "noPropertiesFound": "Keine Unterkünfte gefunden. Bitte fügen Sie zuerst eine Unterkunft hinzu.",
-    "pmsWarning": "Wenn das PMS nicht verbunden ist (Live-Modus), werden Änderungen nicht im PMS angezeigt.",
     "noPmsConfigured": "Kein PMS konfiguriert",
     "noMspConfigured": "Kein MSP für dieses Datum konfiguriert",
     "months": {
@@ -225,7 +224,7 @@
     "algorithmStep6": "Endgültige Verfügbare Tarife → Erzeugt die Liste der aktiven Tarife, die Benutzern angezeigt werden."
   },
   "dynamicSetup": {
-    "title": "Dynamische Preiskonfiguration",
+    "title": "Occ/Lead-time Preisoptimierung",
     "subtitle": "Konfigurieren Sie dynamische Preisregeln basierend auf Auslastung und Vorlaufzeit",
     "occupancy": "Auslastung",
     "leadTime": "Vorlaufzeit",
