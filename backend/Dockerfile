@@ -9,15 +9,13 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get clean \
+RUN rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
         build-essential \
         libpq-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apt/archives/*
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 # Install Python dependencies
 COPY requirements.txt .
