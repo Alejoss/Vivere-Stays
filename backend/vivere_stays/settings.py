@@ -292,9 +292,9 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='analytics@viverestays
 EMAIL_VERIFICATION_EXPIRY_MINUTES = 10
 EMAIL_VERIFICATION_CODE_LENGTH = 5
 
-# Redirect all emails to a single address for testing/debugging
-# Set to None or empty string to send emails to actual recipients
-EMAIL_REDIRECT_TO = config('EMAIL_REDIRECT_TO', default='info@viverestays.es')
+# System notification emails (support, sales) are sent to this address
+# User-facing emails (verification, password reset, welcome) go to the user's email
+SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='info@viverestays.es')
 
 # Frontend URL for Stripe redirects and company settings
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:8080')

@@ -42,9 +42,6 @@ class PostmarkEmailService:
             raise e
             
         self.test_mode = settings.POSTMARK_TEST_MODE
-        self.email_redirect_to = getattr(settings, 'EMAIL_REDIRECT_TO', None)
-        if self.email_redirect_to:
-            logger.info(f"EMAIL REDIRECT ENABLED: All emails will be sent to {self.email_redirect_to}")
         logger.info("PostmarkEmailService initialization complete")
         
     def get_base_template_data(self) -> Dict[str, str]:
@@ -254,15 +251,11 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Verification code: {verification_code}")
                 return True, "test-verification-message-id", verification_code
             
-            # Redirect email if configured
-            recipient_email = self.email_redirect_to if self.email_redirect_to else email
-            if self.email_redirect_to and recipient_email != email:
-                logger.info(f"EMAIL REDIRECT: Verification email for {email} redirected to {recipient_email}")
-            
+            # User-facing email - always send to user's email
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",
                 TemplateModel=template_data,
-                To=recipient_email,
+                To=email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
@@ -337,15 +330,11 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-welcome-message-id"
             
-            # Redirect email if configured
-            recipient_email = self.email_redirect_to if self.email_redirect_to else email
-            if self.email_redirect_to and recipient_email != email:
-                logger.info(f"EMAIL REDIRECT: Welcome email for {email} redirected to {recipient_email}")
-            
+            # User-facing email - always send to user's email
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",  # Using existing template
                 TemplateModel=template_data,
-                To=recipient_email,
+                To=email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
@@ -407,15 +396,11 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-support-confirmation-message-id"
             
-            # Redirect email if configured
-            recipient_email = self.email_redirect_to if self.email_redirect_to else to_email
-            if self.email_redirect_to and recipient_email != to_email:
-                logger.info(f"EMAIL REDIRECT: Support confirmation for {to_email} redirected to {recipient_email}")
-            
+            # User-facing email (confirmation to user) - always send to user's email
             response = self.client.emails.send_with_template(
                 TemplateAlias="support-confirmation",
                 TemplateModel=template_data,
-                To=recipient_email,
+                To=to_email,
                 From=settings.DEFAULT_FROM_EMAIL,
             )
 
@@ -469,15 +454,13 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-support-team-notification-message-id"
             
-            # Redirect email if configured
-            recipient_email = self.email_redirect_to if self.email_redirect_to else support_email
-            if self.email_redirect_to and recipient_email != support_email:
-                logger.info(f"EMAIL REDIRECT: Support team notification for {support_email} redirected to {recipient_email}")
-            
+            # System notification email - ensure it goes to info@viverestays.es
+            # support_email already defaults to info@viverestays.es, but ensure it's used
+            final_recipient = support_email if support_email else "info@viverestays.es"
             response = self.client.emails.send_with_template(
                 TemplateAlias="support-team-notification",
                 TemplateModel=template_data,
-                To=recipient_email,
+                To=final_recipient,
                 From=settings.DEFAULT_FROM_EMAIL,
             )
 
@@ -528,7 +511,7 @@ class PostmarkEmailService:
                     ticket_id=ticket_id,
                     issue_type=issue_type,
                     description_excerpt=user_description_excerpt,
-                    support_email="info@viverestays.es",
+                    support_email=getattr(settings, 'SUPPORT_EMAIL', 'info@viverestays.es'),
                     portal_url=settings.FRONTEND_URL,
                     message=support_message,
                     language=language
@@ -554,7 +537,7 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 issue_type=issue_type,
                 description=support_description,
-                support_email="info@viverestays.es",
+                support_email=getattr(settings, 'SUPPORT_EMAIL', 'info@viverestays.es'),
                 language=language
             )
         except Exception as e:
@@ -598,7 +581,7 @@ class PostmarkEmailService:
                     ticket_id=ticket_id,
                     issue_type=issue_type,
                     description_excerpt=user_description_excerpt,
-                    support_email="info@viverestays.es",
+                    support_email=getattr(settings, 'SUPPORT_EMAIL', 'info@viverestays.es'),
                     portal_url=settings.FRONTEND_URL,
                     message=support_message,
                     language=language
@@ -623,7 +606,7 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 issue_type=issue_type,
                 description=support_description,
-                support_email="info@viverestays.es",
+                support_email=getattr(settings, 'SUPPORT_EMAIL', 'info@viverestays.es'),
                 language=language
             )
         except Exception as e:
@@ -672,15 +655,13 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-sales-team-notification-message-id"
             
-            # Redirect email if configured
-            recipient_email = self.email_redirect_to if self.email_redirect_to else sales_email
-            if self.email_redirect_to and recipient_email != sales_email:
-                logger.info(f"EMAIL REDIRECT: Sales team notification for {sales_email} redirected to {recipient_email}")
-            
+            # System notification email - ensure it goes to info@viverestays.es
+            # sales_email already defaults to info@viverestays.es, but ensure it's used
+            final_recipient = sales_email if sales_email else "info@viverestays.es"
             response = self.client.emails.send_with_template(
                 TemplateAlias="sales-team-notification",
                 TemplateModel=template_data,
-                To=recipient_email,
+                To=final_recipient,
                 From=settings.DEFAULT_FROM_EMAIL,
             )
 
@@ -721,7 +702,7 @@ class PostmarkEmailService:
                     "user_name": user_name,
                     "ticket_id": ticket_id,
                     "property_id": property_id or "Not available",
-                    "support_email": "info@viverestays.es",
+                    "support_email": getattr(settings, 'SUPPORT_EMAIL', 'info@viverestays.es'),
                     "portal_url": settings.FRONTEND_URL,
                 }
                 
@@ -729,15 +710,11 @@ class PostmarkEmailService:
                     logger.info(f"TEST MODE: Would send contact sales confirmation to user {user_email}")
                     logger.info(f"TEST MODE: Template data: {user_template_data}")
                 else:
-                    # Redirect email if configured
-                    recipient_email = self.email_redirect_to if self.email_redirect_to else user_email
-                    if self.email_redirect_to and recipient_email != user_email:
-                        logger.info(f"EMAIL REDIRECT: Contact sales confirmation for {user_email} redirected to {recipient_email}")
-                    
+                    # User-facing email (confirmation to user) - always send to user's email
                     user_response = self.client.emails.send_with_template(
                         TemplateAlias="contact-sales",
                         TemplateModel=user_template_data,
-                        To=recipient_email,
+                        To=user_email,
                         From=settings.DEFAULT_FROM_EMAIL,
                     )
                     logger.info(f"Contact sales confirmation email sent to user {user_email}, MessageID: {user_response['MessageID']}")
@@ -758,7 +735,7 @@ class PostmarkEmailService:
                 ticket_id=ticket_id,
                 property_id=property_id,
                 description=sales_description,
-                sales_email="info@viverestays.es",
+                sales_email=getattr(settings, 'SUPPORT_EMAIL', 'info@viverestays.es'),
                 language=language
             )
         except Exception as e:
@@ -806,15 +783,11 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Reset URL: {reset_url}")
                 return True, "test-password-reset-message-id"
             
-            # Redirect email if configured
-            recipient_email = self.email_redirect_to if self.email_redirect_to else user.email
-            if self.email_redirect_to and recipient_email != user.email:
-                logger.info(f"EMAIL REDIRECT: Password reset email for {user.email} redirected to {recipient_email}")
-            
+            # User-facing email - always send to user's email
             response = self.client.emails.send_with_template(
                 TemplateAlias="password-reset",
                 TemplateModel=template_data,
-                To=recipient_email,
+                To=user.email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
