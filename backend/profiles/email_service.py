@@ -7,6 +7,9 @@ import string
 from typing import Dict, Optional, Tuple
 from django.conf import settings
 from django.utils import timezone
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from datetime import timedelta
 from postmarker.core import PostmarkClient
 from .models import EmailVerificationCode
@@ -79,6 +82,11 @@ class PostmarkEmailService:
                 'en': 'Sales Request Received - Vivere Stays',
                 'es': 'Solicitud de Ventas Recibida - Vivere Stays',
                 'de': 'Vertriebsanfrage Erhalten - Vivere Stays',
+            },
+            'password_reset': {
+                'en': 'Reset Your Password - Vivere Stays',
+                'es': 'Restablecer tu Contraseña - Vivere Stays',
+                'de': 'Passwort Zurücksetzen - Vivere Stays',
             },
         }
         
@@ -717,6 +725,61 @@ class PostmarkEmailService:
             )
         except Exception as e:
             logger.error(f"Failed to send onboarding contact sales email: {str(e)}", exc_info=True)
+            return False, str(e)
+
+    def send_password_reset_email(
+        self,
+        user: User,
+        language: str = 'en',
+    ) -> Tuple[bool, str]:
+        """
+        Send password reset email using language-specific Postmark template.
+        
+        Args:
+            user: User object requesting password reset
+            language: Language code ('en', 'es', 'de')
+            
+        Returns:
+            Tuple[bool, str]: (success, message_id_or_error)
+        """
+        logger.info(f"Starting send_password_reset_email for {user.email} in language: {language}")
+        
+        try:
+            # Generate password reset token
+            token_generator = PasswordResetTokenGenerator()
+            token = token_generator.make_token(user)
+            
+            # Encode user ID for URL
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            
+            # Create reset URL
+            reset_url = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
+            
+            # Prepare template data
+            template_data = {
+                **self.get_base_template_data(),
+                "user_name": user.first_name or user.username,
+                "reset_url": reset_url,
+                "expiry_time": "24 hours",  # Django's PasswordResetTokenGenerator default expiry
+            }
+            
+            if self.test_mode:
+                logger.info(f"TEST MODE: Would send password reset email to {user.email}")
+                logger.info(f"TEST MODE: Reset URL: {reset_url}")
+                return True, "test-password-reset-message-id"
+            
+            response = self.client.emails.send_with_template(
+                TemplateAlias="password-reset",
+                TemplateModel=template_data,
+                To=user.email,
+                From=settings.DEFAULT_FROM_EMAIL
+            )
+            
+            logger.info(f"Password reset email sent to {user.email}, MessageID: {response['MessageID']}")
+            return True, response['MessageID']
+            
+        except Exception as e:
+            logger.error(f"Failed to send password reset email to {user.email}: {str(e)}", exc_info=True)
             return False, str(e)
 
 

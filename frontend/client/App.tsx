@@ -11,6 +11,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Register from "./pages/onboarding/Register";
 import VerifyEmail from "./pages/onboarding/VerifyEmail";
 import HotelInformationOnboarding from "./pages/onboarding/HotelInformationOnboarding";
@@ -72,6 +74,8 @@ const App = () => (
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/register" element={<OnboardingLayout><Register /></OnboardingLayout>} />
             <Route path="/verify-email" element={<OnboardingLayout><VerifyEmail /></OnboardingLayout>} />
             <Route path="/hotel-information" element={<OnboardingLayout><HotelInformationOnboarding /></OnboardingLayout>} />

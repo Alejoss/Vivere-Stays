@@ -158,4 +158,26 @@ export const authService = {
     
     return response;
   },
+
+  /**
+   * Request password reset email
+   */
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>({
+      method: 'POST',
+      url: '/profiles/request-password-reset/',
+      data: { email },
+    });
+  },
+
+  /**
+   * Reset password using token
+   */
+  async resetPassword(uid: string, token: string, newPassword: string): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>({
+      method: 'POST',
+      url: '/profiles/reset-password/',
+      data: { uid, token, new_password: newPassword },
+    });
+  },
 }; 

@@ -4,7 +4,8 @@ from .views import (
     GetCsrfToken, ProfileView, LogoutView, CheckUserExistsView, RegisterView, 
     RefreshTokenView, GoogleLoginView, PMSIntegrationRequirementView,
     SendVerificationEmailView, VerifyEmailCodeView,
-    OnboardingProgressView, TestEmailView, ChangePasswordView, stripe_webhook, CreateCheckoutSession,
+    OnboardingProgressView, TestEmailView, ChangePasswordView, RequestPasswordResetView, ResetPasswordView,
+    stripe_webhook, CreateCheckoutSession,
     SupportTicketView, OnboardingPMSSupportView, OnboardingEmailVerificationSupportView, OnboardingContactSalesView,
     NotificationListView, NotificationDetailView, NotificationMarkAllReadView, NotificationUnreadCountView,
     CheckBookingUrlStatusView, CheckSpecialOffersStatusView, InvoiceListView
@@ -33,8 +34,10 @@ urlpatterns = [
     # Onboarding progress endpoints
     path('onboarding-progress/', OnboardingProgressView.as_view(), name='onboarding-progress'),
     
-    # Password change endpoint
+    # Password change and reset endpoints
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+    path('request-password-reset/', RequestPasswordResetView.as_view(), name='request-password-reset'),
+    path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
     
     # Support ticket endpoints
     path('support-tickets/', SupportTicketView.as_view(), name='support-tickets'),

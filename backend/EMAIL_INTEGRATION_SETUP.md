@@ -65,10 +65,20 @@ In your Postmark server, you need to:
    - Set subject: "Verify your email address - Vivere Stays"
    - Save and activate the template
 
-3. **Verify Template Creation**:
-   - After creating the template, verify it appears in your Postmark Templates list
-   - The alias should show as `email-verification`
-   - Make sure the template is Active (not Draft)
+3. **Create Password Reset Template**:
+   - Go to Postmark Server → Templates
+   - Click "Add template"
+   - Choose "With layout" and select your "Vivere Stays Layout"
+   - Use the HTML from `frontend/client/public/email/password-reset-template.html` (create this file if needed)
+   - **Set template alias exactly**: `password-reset` (case-sensitive)
+   - Set subject: "Reset Your Password - Vivere Stays"
+   - Required template variables: `user_name`, `reset_url`, `expiry_time`
+   - Save and activate the template
+
+4. **Verify Template Creation**:
+   - After creating the templates, verify they appear in your Postmark Templates list
+   - The aliases should show as `email-verification` and `password-reset`
+   - Make sure both templates are Active (not Draft)
 
 ## API Endpoints
 
@@ -133,6 +143,61 @@ In your Postmark server, you need to:
 **Endpoint**: `POST /api/profiles/resend-verification-email/`
 
 Same as send verification email endpoint.
+
+### 4. Request Password Reset
+
+**Endpoint**: `POST /api/profiles/request-password-reset/`
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (Success)**:
+```json
+{
+  "message": "If an account with that email exists, a password reset link has been sent."
+}
+```
+
+**Response (Error)**:
+```json
+{
+  "error": "Email address is required"
+}
+```
+
+**Note**: For security reasons, the endpoint always returns success even if the email doesn't exist in the system.
+
+### 5. Reset Password
+
+**Endpoint**: `POST /api/profiles/reset-password/`
+
+**Request Body**:
+```json
+{
+  "uid": "base64_encoded_user_id",
+  "token": "password_reset_token",
+  "new_password": "new_password"
+}
+```
+
+**Response (Success)**:
+```json
+{
+  "message": "Password has been reset successfully"
+}
+```
+
+**Response (Error)**:
+```json
+{
+  "error": "Invalid or expired password reset link",
+  "details": ["Password validation errors if applicable"]
+}
+```
 
 ## Frontend Integration
 

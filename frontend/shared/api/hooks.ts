@@ -96,6 +96,19 @@ export const useCheckAuth = () => {
   });
 };
 
+export const useRequestPasswordReset = () => {
+  return useMutation({
+    mutationFn: (email: string) => authService.requestPasswordReset(email),
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: ({ uid, token, newPassword }: { uid: string; token: string; newPassword: string }) =>
+      authService.resetPassword(uid, token, newPassword),
+  });
+};
+
 // Profile hooks
 export const useProfile = () => {
   return useQuery({

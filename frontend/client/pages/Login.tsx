@@ -304,6 +304,7 @@ export default function Login() {
               <div className="text-left">
                 <button
                   type="button"
+                  onClick={() => navigate('/forgot-password')}
                   className="text-[16px] font-bold text-[#294859] hover:underline"
                 >
                   {t('auth:login.forgotPassword')}

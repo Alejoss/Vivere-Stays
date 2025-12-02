@@ -1605,6 +1605,168 @@ class ChangePasswordView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class RequestPasswordResetView(APIView):
+    """
+    View to request password reset email
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get_client_ip(self, request):
+        """Extracts client IP for rate limiting purposes."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+    def post(self, request):
+        """
+        Request password reset email
+        
+        Expected payload:
+        {
+            "email": "user@example.com"
+        }
+        """
+        email = request.data.get('email', '').strip().lower()
+        client_ip = self.get_client_ip(request)
+
+        if not email:
+            return Response(
+                {'error': 'Email address is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Rate limiting check
+        cache_key = f'password_reset_attempts_{client_ip}'
+        attempts = cache.get(cache_key, 0)
+        
+        if attempts >= 5:
+            logger.warning(f"Too many password reset attempts from IP {client_ip}")
+            return Response(
+                {'error': 'Too many password reset attempts. Please try again later.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        try:
+            # Try to find user by email
+            user = User.objects.get(email=email)
+            
+            # Import email service
+            from .email_service import email_service
+            
+            # Get language from request header
+            language = request.META.get('HTTP_X_LANGUAGE', 'en')
+            
+            # Send password reset email
+            success, message_id_or_error = email_service.send_password_reset_email(
+                user=user,
+                language=language
+            )
+            
+            if success:
+                logger.info(f"Password reset email sent to {email} from IP {client_ip}")
+                # Reset rate limiting on success
+                cache.delete(cache_key)
+            else:
+                logger.error(f"Failed to send password reset email to {email}: {message_id_or_error}")
+                # Increment failed attempts
+                cache.set(cache_key, attempts + 1, timeout=300)  # 5 minutes timeout
+        except User.DoesNotExist:
+            # Don't reveal if user exists for security
+            logger.info(f"Password reset requested for non-existent email: {email} from IP {client_ip}")
+            # Increment failed attempts
+            cache.set(cache_key, attempts + 1, timeout=300)  # 5 minutes timeout
+        except Exception as e:
+            logger.error(f"Error processing password reset request for {email}: {str(e)}", exc_info=True)
+            # Increment failed attempts
+            cache.set(cache_key, attempts + 1, timeout=300)  # 5 minutes timeout
+
+        # Always return success message (don't reveal if email exists)
+        return Response({
+            'message': 'If an account with that email exists, a password reset link has been sent.'
+        }, status=status.HTTP_200_OK)
+
+
+class ResetPasswordView(APIView):
+    """
+    View to reset password using token
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        """
+        Reset password using token
+        
+        Expected payload:
+        {
+            "uid": "base64_encoded_user_id",
+            "token": "password_reset_token",
+            "new_password": "new_password"
+        }
+        """
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+        new_password = request.data.get('new_password')
+
+        if not uid or not token or not new_password:
+            return Response(
+                {'error': 'UID, token, and new password are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Decode the user ID
+            uid = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            logger.warning(f"Invalid UID for password reset: {uid}")
+            return Response(
+                {'error': 'Invalid or expired password reset link'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate token
+        token_generator = PasswordResetTokenGenerator()
+        if not token_generator.check_token(user, token):
+            logger.warning(f"Invalid password reset token for user {user.username}")
+            return Response(
+                {'error': 'Invalid or expired password reset link'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate new password
+        try:
+            validate_password(new_password, user)
+        except ValidationError as e:
+            return Response(
+                {
+                    'error': 'New password does not meet requirements',
+                    'details': list(e.messages)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Set new password
+        try:
+            user.set_password(new_password)
+            user.save()
+            logger.info(f"Password reset successfully for user {user.username}")
+            
+            return Response({
+                'message': 'Password has been reset successfully'
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error resetting password for user {user.username}: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'Failed to reset password'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class SupportTicketView(APIView):
     """
     API view for creating and retrieving support tickets
