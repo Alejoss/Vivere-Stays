@@ -81,6 +81,13 @@ export default function MSP() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Helper function to parse ISO date string without timezone conversion
+  const parseISODate = (isoDateString: string): Date => {
+    // Parse YYYY-MM-DD format directly without timezone conversion
+    const [year, month, day] = isoDateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   // Load existing MSP entries when component mounts
   useEffect(() => {
     if (mspEntriesData?.msp_entries && mspEntriesData.msp_entries.length > 0) {
@@ -89,8 +96,8 @@ export default function MSP() {
       // Convert existing entries to the format expected by the form
       const existingPeriods: MSPPeriod[] = mspEntriesData.msp_entries.map((entry, index) => ({
         id: `existing-${entry.id}`,
-        fromDate: format(new Date(entry.valid_from), "dd/MM/yyyy"),
-        toDate: format(new Date(entry.valid_until), "dd/MM/yyyy"),
+        fromDate: format(parseISODate(entry.valid_from), "dd/MM/yyyy"),
+        toDate: format(parseISODate(entry.valid_until), "dd/MM/yyyy"),
         price: entry.msp.toString(),
         periodTitle: entry.period_title || "",
       }));
