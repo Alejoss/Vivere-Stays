@@ -42,6 +42,9 @@ class PostmarkEmailService:
             raise e
             
         self.test_mode = settings.POSTMARK_TEST_MODE
+        self.email_redirect_to = getattr(settings, 'EMAIL_REDIRECT_TO', None)
+        if self.email_redirect_to:
+            logger.info(f"EMAIL REDIRECT ENABLED: All emails will be sent to {self.email_redirect_to}")
         logger.info("PostmarkEmailService initialization complete")
         
     def get_base_template_data(self) -> Dict[str, str]:
@@ -250,10 +253,16 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send verification email to {email}")
                 logger.info(f"TEST MODE: Verification code: {verification_code}")
                 return True, "test-verification-message-id", verification_code
+            
+            # Redirect email if configured
+            recipient_email = self.email_redirect_to if self.email_redirect_to else email
+            if self.email_redirect_to and recipient_email != email:
+                logger.info(f"EMAIL REDIRECT: Verification email for {email} redirected to {recipient_email}")
+            
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",
                 TemplateModel=template_data,
-                To=email,
+                To=recipient_email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
@@ -327,10 +336,16 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send welcome email to {email}")
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-welcome-message-id"
+            
+            # Redirect email if configured
+            recipient_email = self.email_redirect_to if self.email_redirect_to else email
+            if self.email_redirect_to and recipient_email != email:
+                logger.info(f"EMAIL REDIRECT: Welcome email for {email} redirected to {recipient_email}")
+            
             response = self.client.emails.send_with_template(
                 TemplateAlias="email-verification",  # Using existing template
                 TemplateModel=template_data,
-                To=email,
+                To=recipient_email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
@@ -391,10 +406,16 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send support confirmation to {to_email}")
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-support-confirmation-message-id"
+            
+            # Redirect email if configured
+            recipient_email = self.email_redirect_to if self.email_redirect_to else to_email
+            if self.email_redirect_to and recipient_email != to_email:
+                logger.info(f"EMAIL REDIRECT: Support confirmation for {to_email} redirected to {recipient_email}")
+            
             response = self.client.emails.send_with_template(
                 TemplateAlias="support-confirmation",
                 TemplateModel=template_data,
-                To=to_email,
+                To=recipient_email,
                 From=settings.DEFAULT_FROM_EMAIL,
             )
 
@@ -447,10 +468,16 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send support team notification to {support_email}")
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-support-team-notification-message-id"
+            
+            # Redirect email if configured
+            recipient_email = self.email_redirect_to if self.email_redirect_to else support_email
+            if self.email_redirect_to and recipient_email != support_email:
+                logger.info(f"EMAIL REDIRECT: Support team notification for {support_email} redirected to {recipient_email}")
+            
             response = self.client.emails.send_with_template(
                 TemplateAlias="support-team-notification",
                 TemplateModel=template_data,
-                To=support_email,
+                To=recipient_email,
                 From=settings.DEFAULT_FROM_EMAIL,
             )
 
@@ -644,10 +671,16 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Would send sales team notification to {sales_email}")
                 logger.info(f"TEST MODE: Template data: {template_data}")
                 return True, "test-sales-team-notification-message-id"
+            
+            # Redirect email if configured
+            recipient_email = self.email_redirect_to if self.email_redirect_to else sales_email
+            if self.email_redirect_to and recipient_email != sales_email:
+                logger.info(f"EMAIL REDIRECT: Sales team notification for {sales_email} redirected to {recipient_email}")
+            
             response = self.client.emails.send_with_template(
                 TemplateAlias="sales-team-notification",
                 TemplateModel=template_data,
-                To=sales_email,
+                To=recipient_email,
                 From=settings.DEFAULT_FROM_EMAIL,
             )
 
@@ -696,10 +729,15 @@ class PostmarkEmailService:
                     logger.info(f"TEST MODE: Would send contact sales confirmation to user {user_email}")
                     logger.info(f"TEST MODE: Template data: {user_template_data}")
                 else:
+                    # Redirect email if configured
+                    recipient_email = self.email_redirect_to if self.email_redirect_to else user_email
+                    if self.email_redirect_to and recipient_email != user_email:
+                        logger.info(f"EMAIL REDIRECT: Contact sales confirmation for {user_email} redirected to {recipient_email}")
+                    
                     user_response = self.client.emails.send_with_template(
                         TemplateAlias="contact-sales",
                         TemplateModel=user_template_data,
-                        To=user_email,
+                        To=recipient_email,
                         From=settings.DEFAULT_FROM_EMAIL,
                     )
                     logger.info(f"Contact sales confirmation email sent to user {user_email}, MessageID: {user_response['MessageID']}")
@@ -768,10 +806,15 @@ class PostmarkEmailService:
                 logger.info(f"TEST MODE: Reset URL: {reset_url}")
                 return True, "test-password-reset-message-id"
             
+            # Redirect email if configured
+            recipient_email = self.email_redirect_to if self.email_redirect_to else user.email
+            if self.email_redirect_to and recipient_email != user.email:
+                logger.info(f"EMAIL REDIRECT: Password reset email for {user.email} redirected to {recipient_email}")
+            
             response = self.client.emails.send_with_template(
                 TemplateAlias="password-reset",
                 TemplateModel=template_data,
-                To=user.email,
+                To=recipient_email,
                 From=settings.DEFAULT_FROM_EMAIL
             )
             
