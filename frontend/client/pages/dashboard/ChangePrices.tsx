@@ -69,8 +69,8 @@ const getWeekStartDate = (year: number, week: number) => {
   return weekStart;
 };
 
-const generateWeekDates = (week: number) => {
-  const weekStart = getWeekStartDate(2025, week);
+const generateWeekDates = (week: number, year: number) => {
+  const weekStart = getWeekStartDate(year, week);
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
     const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -85,12 +85,16 @@ const generateWeekDates = (week: number) => {
 function WeeklyPriceOverview({
   currentWeek,
   setCurrentWeek,
+  currentYear,
+  setCurrentYear,
   propertyId,
   refreshKey,
   onPriceChange,
 }: {
   currentWeek: number;
   setCurrentWeek: (week: number) => void;
+  currentYear: number;
+  setCurrentYear: (year: number) => void;
   propertyId?: string;
   refreshKey?: number;
   onPriceChange?: () => void;
@@ -110,8 +114,8 @@ function WeeklyPriceOverview({
   const [isSwiping, setIsSwiping] = useState(false);
 
   // Calculate week dates
-  const weekDates = generateWeekDates(currentWeek);
-  const weekYear = 2025; // Hardcoded for now
+  const weekDates = generateWeekDates(currentWeek, currentYear);
+  const weekYear = currentYear;
   const weekMonth = weekDates[0]?.fullDate.getMonth() + 1; // 1-indexed
 
   // Compute the Monday of the week for the backend
@@ -144,6 +148,17 @@ function WeeklyPriceOverview({
 
   // Debug: Log success message state
   console.log('[WeeklyPriceOverview] Current successMsg state:', successMsg);
+
+  // Sync year when week changes (handle year boundaries)
+  useEffect(() => {
+    const weekDates = generateWeekDates(currentWeek, currentYear);
+    const midWeekDate = weekDates[3]?.fullDate;
+    
+    // Use the year of Wednesday (mid-week) as the canonical year for the week
+    if (midWeekDate && midWeekDate.getFullYear() !== currentYear) {
+      setCurrentYear(midWeekDate.getFullYear());
+    }
+  }, [currentWeek]); // Only depend on currentWeek to avoid infinite loops
 
   // Reset local prices when data refreshes
   useEffect(() => {
@@ -280,11 +295,37 @@ function WeeklyPriceOverview({
   }
 
   const goToPreviousWeek = () => {
-    setCurrentWeek(Math.max(1, currentWeek - 1));
+    if (currentWeek > 1) {
+      setCurrentWeek(currentWeek - 1);
+    } else {
+      // If we're at week 1, go to last week of previous year
+      setCurrentYear(currentYear - 1);
+      setCurrentWeek(53);
+    }
   };
 
   const goToNextWeek = () => {
-    setCurrentWeek(Math.min(53, currentWeek + 1));
+    if (currentWeek < 53) {
+      // Check if next week would span into next year
+      const nextWeekStart = getWeekStartDate(currentYear, currentWeek + 1);
+      if (nextWeekStart.getFullYear() > currentYear) {
+        // Next week is in next year
+        setCurrentYear(currentYear + 1);
+        setCurrentWeek(1);
+      } else {
+        setCurrentWeek(currentWeek + 1);
+      }
+    } else {
+      // At week 53, check if there's a week 1 in next year
+      const nextYearWeek1Start = getWeekStartDate(currentYear + 1, 1);
+      const currentWeekEnd = new Date(getWeekStartDate(currentYear, 53).getTime() + 6 * 24 * 60 * 60 * 1000);
+      
+      if (nextYearWeek1Start <= currentWeekEnd) {
+        // There's overlap, move to next year
+        setCurrentYear(currentYear + 1);
+        setCurrentWeek(1);
+      }
+    }
   };
 
   // Mobile navigation functions
@@ -371,8 +412,8 @@ function WeeklyPriceOverview({
   };
 
   // Get the month name for the current week
-  const getCurrentMonthYear = (week: number) => {
-    const weekStart = getWeekStartDate(2025, week);
+  const getCurrentMonthYear = (week: number, year: number) => {
+    const weekStart = getWeekStartDate(year, week);
     const midWeek = new Date(weekStart.getTime() + 3 * 24 * 60 * 60 * 1000); // Wednesday
 
     const monthNames = [
@@ -393,14 +434,14 @@ function WeeklyPriceOverview({
     return `${monthNames[midWeek.getMonth()]} ${midWeek.getFullYear()}`;
   };
 
-  // Get the first week of a specific month in 2025
-  const getFirstWeekOfMonth = (monthIndex: number) => {
+  // Get the first week of a specific month in a given year
+  const getFirstWeekOfMonth = (monthIndex: number, year: number) => {
     // Find the first day of the month
-    const firstDay = new Date(2025, monthIndex, 1);
+    const firstDay = new Date(year, monthIndex, 1);
 
     // Find which ISO week this falls into
     for (let week = 1; week <= 53; week++) {
-      const weekStart = getWeekStartDate(2025, week);
+      const weekStart = getWeekStartDate(year, week);
       const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
 
       if (firstDay >= weekStart && firstDay <= weekEnd) {
@@ -410,9 +451,15 @@ function WeeklyPriceOverview({
     return 1; // fallback
   };
 
+  // Handle year selection
+  const handleYearSelect = (year: number) => {
+    setCurrentYear(year);
+    // Keep dropdown open for month selection
+  };
+
   // Handle month selection
   const handleMonthSelect = (monthIndex: number) => {
-    const firstWeek = getFirstWeekOfMonth(monthIndex);
+    const firstWeek = getFirstWeekOfMonth(monthIndex, currentYear);
     setCurrentWeek(firstWeek);
     setShowMonthDropdown(false);
   };
@@ -446,7 +493,6 @@ function WeeklyPriceOverview({
           <button
             onClick={goToPreviousWeek}
             className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-            disabled={currentWeek <= 1}
           >
             <ChevronLeft size={20} />
           </button>
@@ -458,7 +504,6 @@ function WeeklyPriceOverview({
           <button
             onClick={goToNextWeek}
             className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-            disabled={currentWeek >= 53}
           >
             <ChevronRight size={20} />
           </button>
@@ -471,7 +516,7 @@ function WeeklyPriceOverview({
           onClick={() => setShowMonthDropdown(!showMonthDropdown)}
           className="flex items-center gap-2 px-6 py-3 bg-white/90 rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm text-hotel-brand text-xl font-bold hover:bg-white transition-colors"
         >
-          <span>{getCurrentMonthYear(currentWeek)}</span>
+          <span>{getCurrentMonthYear(currentWeek, currentYear)}</span>
           <div
             className={`w-5 h-5 transition-transform ${showMonthDropdown ? 'rotate-180' : ''}`}
           >
@@ -483,18 +528,58 @@ function WeeklyPriceOverview({
 
         {/* Month/Year Dropdown content */}
         {showMonthDropdown && (
-          <div className="absolute top-full left-6 right-6 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-60 overflow-y-auto">
+          <div className="absolute top-full left-6 right-6 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-80 overflow-y-auto">
             <div className="p-4">
-              <div className="grid grid-cols-3 gap-2">
-                {monthNames.map((month, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleMonthSelect(index)}
-                    className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
-                  >
-                    {month}
-                  </button>
-                ))}
+              {/* Year Selector */}
+              <div className="mb-4 pb-4 border-b border-gray-200">
+                <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                  Year
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const year = currentYear - 2 + i;
+                    return (
+                      <button
+                        key={year}
+                        onClick={() => handleYearSelect(year)}
+                        className={`px-4 py-2 text-sm font-semibold rounded transition-colors ${
+                          year === currentYear
+                            ? 'bg-hotel-brand text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {year}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Month Selector */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">
+                  Month
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {monthNames.map((month, index) => {
+                    const isCurrentMonth = 
+                      weekDates[0]?.fullDate.getMonth() === index &&
+                      weekDates[0]?.fullDate.getFullYear() === currentYear;
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleMonthSelect(index)}
+                        className={`px-3 py-2 text-sm rounded transition-colors ${
+                          isCurrentMonth
+                            ? 'bg-blue-100 text-blue-700 font-semibold'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'
+                        }`}
+                      >
+                        {month}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -1042,31 +1127,54 @@ export default function ChangePrices() {
   const today = new Date();
   const defaultWeek = getISOWeekNumber(today);
   const [currentWeek, setCurrentWeek] = useState(defaultWeek);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [refreshKey, setRefreshKey] = useState(0);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Calculate which ISO week a given date falls into
-  const getWeekNumberFromDate = (dateString: string) => {
+  // Calculate which ISO week a given date falls into, returns {week, year}
+  const getWeekNumberFromDate = (dateString: string): { week: number; year: number } => {
     const date = new Date(dateString);
-    const year = date.getFullYear();
+    const dateYear = date.getFullYear();
 
-    // Find which week this date falls into
+    // Check current year first
     for (let week = 1; week <= 53; week++) {
-      const weekStart = getWeekStartDate(year, week);
+      const weekStart = getWeekStartDate(dateYear, week);
       const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
 
       if (date >= weekStart && date <= weekEnd) {
-        return week;
+        return { week, year: dateYear };
       }
     }
-    return 1; // fallback
+
+    // Check previous year (week 1 might include dates from previous year)
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(dateYear - 1, week);
+      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+      if (date >= weekStart && date <= weekEnd) {
+        return { week, year: dateYear - 1 };
+      }
+    }
+
+    // Check next year (week 53 might include dates from next year)
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(dateYear + 1, week);
+      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+      if (date >= weekStart && date <= weekEnd) {
+        return { week, year: dateYear + 1 };
+      }
+    }
+
+    return { week: 1, year: dateYear }; // fallback
   };
 
   // Handle start date change from StayPeriodSelector
   const handleStartDateChange = (dateString: string) => {
     if (dateString) {
-      const weekNumber = getWeekNumberFromDate(dateString);
-      setCurrentWeek(weekNumber);
+      const { week, year } = getWeekNumberFromDate(dateString);
+      setCurrentYear(year);
+      setCurrentWeek(week);
     }
   };
 
@@ -1108,6 +1216,8 @@ export default function ChangePrices() {
           <WeeklyPriceOverview
             currentWeek={currentWeek}
             setCurrentWeek={setCurrentWeek}
+            currentYear={currentYear}
+            setCurrentYear={setCurrentYear}
             propertyId={propertyId}
             refreshKey={refreshKey}
             onPriceChange={() => setRefreshKey((k) => k + 1)}
