@@ -259,6 +259,54 @@ sudo certbot certificates
 
 ---
 
+## 🎨 Frontend-Only Deployment (Faster Workflow)
+
+When you've only changed frontend code (React components, styles, etc.) and haven't modified backend code or environment variables, you can deploy just the frontend without stopping the backend:
+
+### Quick Frontend Deployment
+```bash
+# 1. Connect to server
+ssh alejoveintimilla@35.226.220.107
+cd ~/Vivere-Stays
+
+# 2. Pull latest code
+git pull origin main
+
+# 3. Rebuild frontend image (with --no-cache to ensure fresh build)
+docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
+
+# 4. Force recreate frontend container to use new image
+# IMPORTANT: Use --force-recreate, NOT restart (restart doesn't use new images)
+docker compose -f docker-compose.remote.yml up -d --force-recreate --no-deps vivere_frontend
+
+# 5. Verify deployment
+docker logs -f vivere_frontend
+curl http://localhost:3000/
+```
+
+### Alternative: Stop, Remove, Start (More Explicit)
+```bash
+# If you prefer explicit steps:
+docker compose -f docker-compose.remote.yml stop vivere_frontend
+docker compose -f docker-compose.remote.yml rm -f vivere_frontend
+docker compose -f docker-compose.remote.yml up -d vivere_frontend
+```
+
+**Why `--force-recreate` instead of `restart`?**
+- `restart` only restarts the existing container with the same image it was already using
+- `--force-recreate` stops the old container, removes it, and creates a new one using the latest built image
+- After rebuilding an image, you must recreate the container to use the new image
+
+**When to use this workflow:**
+- ✅ Frontend component changes
+- ✅ Frontend styling changes
+- ✅ Frontend bug fixes
+- ❌ Backend code changes (use full deployment)
+- ❌ Environment variable changes (use full deployment)
+- ❌ Database migrations needed (use full deployment)
+
+---
+
 ## 🔧 Maintenance Operations
 
 ### View Logs
@@ -273,38 +321,53 @@ docker logs --tail 100 vivere_backend
 ```
 
 ### Restart Services
+
+**Important:** `restart` only restarts containers with their existing images. If you've rebuilt an image, use `--force-recreate` instead.
+
 ```bash
-# Restart specific service
+# Restart specific service (uses existing image - good for crashes or config changes)
 docker compose -f docker-compose.remote.yml restart vivere_backend
 docker compose -f docker-compose.remote.yml restart vivere_frontend
 
 # Restart all services
 docker compose -f docker-compose.remote.yml restart
 
+# Force recreate after rebuilding image (use this after building new images)
+docker compose -f docker-compose.remote.yml up -d --force-recreate vivere_frontend
+
 # Reload Nginx config
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+**When to use `restart`:**
+- Service crashed and you want to restart it
+- Changed runtime environment variables (if container reads them at runtime)
+- No code changes, just need to restart
+
+**When to use `--force-recreate`:**
+- After rebuilding an image with `docker compose build`
+- After code changes that require a new build
+- When you want to ensure the latest image is used
 
 ### Rebuild Frontend (After API URL Changes)
 ```bash
 # IMPORTANT: Use --no-cache when rebuilding frontend after changing VITE_API_BASE_URL
 # This ensures the new environment variable is baked into the build
 
-# Stop frontend
-docker compose -f docker-compose.remote.yml stop vivere_frontend
-
-# Remove old image to force fresh build
-docker rmi vivere-stays-vivere_frontend
-
 # Rebuild without cache
 docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
 
-# Start frontend
-docker compose -f docker-compose.remote.yml up -d vivere_frontend
+# Force recreate container to use new image (IMPORTANT: use --force-recreate, not restart)
+docker compose -f docker-compose.remote.yml up -d --force-recreate --no-deps vivere_frontend
 
 # Verify the build
 docker exec vivere_frontend grep -r "admin.viverestays.com/api" /app/dist/ | head -1
+
+# Check logs
+docker logs vivere_frontend
 ```
+
+**Note:** The `--no-deps` flag ensures only the frontend service is recreated, not its dependencies (backend).
 
 ### Check Service Health
 ```bash
@@ -397,6 +460,30 @@ sudo tail -f /var/log/nginx/error.log
 sudo certbot renew --dry-run
 ```
 
+### Changes Not Appearing After Deployment
+```bash
+# Problem: You rebuilt the image but changes aren't showing up
+# Solution: You likely used 'restart' instead of '--force-recreate'
+
+# Check which image the container is using
+docker inspect vivere_frontend | grep Image
+
+# Check if a new image was built
+docker images | grep vivere_frontend
+
+# If new image exists but container is using old one, force recreate:
+docker compose -f docker-compose.remote.yml up -d --force-recreate --no-deps vivere_frontend
+
+# Verify the container is using the new image
+docker inspect vivere_frontend | grep Image
+docker logs vivere_frontend --tail 20
+```
+
+**Common Causes:**
+- **Used `restart` instead of `--force-recreate`**: `restart` doesn't use newly built images
+- **Browser cache**: Clear browser cache (Ctrl+Shift+R) or use Incognito mode
+- **Build failed silently**: Check build output for errors
+
 ### Frontend Can't Reach Backend
 ```bash
 # Check CORS settings
@@ -406,11 +493,9 @@ docker compose -f docker-compose.remote.yml exec vivere_backend env | grep CORS
 docker exec vivere_frontend grep -r "admin.viverestays.com/api" /app/dist/ | head -1 || echo "ERROR: New URL not found!"
 docker exec vivere_frontend grep -r "35.226.220.107" /app/dist/ && echo "ERROR: Old URL still present!" || echo "OK: Old URL not found"
 
-# If frontend is using wrong URL, force rebuild without cache
-docker compose -f docker-compose.remote.yml down
-docker rmi vivere-stays-vivere_frontend
+# If frontend is using wrong URL, force rebuild without cache and recreate
 docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
-docker compose -f docker-compose.remote.yml up -d vivere_frontend
+docker compose -f docker-compose.remote.yml up -d --force-recreate --no-deps vivere_frontend
 
 # Test from frontend container
 docker compose -f docker-compose.remote.yml exec vivere_frontend wget -O- http://vivere_backend:8000/api/profiles/check-auth/
@@ -425,7 +510,7 @@ docker network inspect vivere-stays_vivere_network
 ```
 
 **Common Issues:**
-- **Frontend still using old URL**: Frontend container needs rebuild with `--no-cache`
+- **Frontend still using old URL**: Frontend container needs rebuild with `--no-cache` and `--force-recreate`
 - **Browser showing old URL**: Clear browser cache (Ctrl+Shift+R) or use Incognito mode
 - **Status 0 network errors**: Usually means wrong URL or CORS blocking
 

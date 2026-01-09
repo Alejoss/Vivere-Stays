@@ -969,9 +969,22 @@ class PriceHistoryView(APIView):
             for row in qs:
                 if row.checkin_date not in latest_by_date:
                     latest_by_date[row.checkin_date] = row
-            price_history = [PriceHistorySerializer(obj).data for obj in latest_by_date.values()]
-            price_history.sort(key=lambda x: x['checkin_date'])
-
+            
+            # Prefetch all overwrites in one query to avoid N+1 in serializer
+            overwrites = {
+                (o.checkin_date, str(o.property.id)): o.overwrite_price
+                for o in OverwritePriceHistory.objects.filter(
+                    property=property_obj,
+                    checkin_date__gte=start_date,
+                    checkin_date__lte=end_date
+                )
+            }
+            
+            # Serialize with prefetched overwrite data
+            price_history = [
+                PriceHistorySerializer(obj, context={'overwrites': overwrites}).data 
+                for obj in latest_by_date.values()
+            ]
             price_history.sort(key=lambda x: x['checkin_date'])
             
             log_operation(
@@ -1404,32 +1417,50 @@ def price_history_for_date_range(request, property_id):
 
         property_obj = get_object_or_404(Property, id=property_id)
 
-        # Get price history for each day in the range
+        # Single bulk query for all dates in range (optimized to avoid N+1)
+        qs = (
+            DpPriceChangeHistory.objects
+            .filter(
+                property_id=property_id,
+                checkin_date__gte=start_date,
+                checkin_date__lte=end_date,
+            )
+            .order_by('checkin_date', '-as_of')
+        )
+        
+        # Get latest record per date
+        latest_by_date = {}
+        for row in qs:
+            if row.checkin_date not in latest_by_date:
+                latest_by_date[row.checkin_date] = row
+        
+        # Prefetch all overwrites in one query to avoid N+1 in serializer
+        overwrites = {
+            (o.checkin_date, str(o.property.id)): o.overwrite_price
+            for o in OverwritePriceHistory.objects.filter(
+                property=property_obj,
+                checkin_date__gte=start_date,
+                checkin_date__lte=end_date
+            )
+        }
+        
+        # Serialize with prefetched overwrite data
         price_history = []
         total_price = 0
         valid_days = 0
         
-        current_date = start_date
-        while current_date <= end_date:
-            latest_record = DpPriceChangeHistory.objects.filter(
-                property_id=property_id,
-                checkin_date=current_date
-            ).order_by('-as_of').first()
+        for checkin_date, record in sorted(latest_by_date.items()):
+            serializer = PriceHistorySerializer(record, context={'overwrites': overwrites})
+            price_data = serializer.data
+            price_history.append(price_data)
             
-            if latest_record:
-                serializer = PriceHistorySerializer(latest_record)
-                price_data = serializer.data
-                price_history.append(price_data)
-                
-                # Debug logging for occupancy
-                print(f"[price_history_for_date_range] Date: {current_date}, Raw occupancy: {latest_record.occupancy}, Serialized occupancy: {price_data.get('occupancy')}, Occupancy level: {price_data.get('occupancy_level')}")
-                
-                # Add to total for average calculation
-                if price_data['price'] is not None:
-                    total_price += price_data['price']
-                    valid_days += 1
+            # Debug logging for occupancy
+            print(f"[price_history_for_date_range] Date: {checkin_date}, Raw occupancy: {record.occupancy}, Serialized occupancy: {price_data.get('occupancy')}, Occupancy level: {price_data.get('occupancy_level')}")
             
-            current_date += timedelta(days=1)
+            # Add to total for average calculation
+            if price_data['price'] is not None:
+                total_price += price_data['price']
+                valid_days += 1
 
         # Calculate average price
         average_price = round(total_price / valid_days, 2) if valid_days > 0 else 0
@@ -1482,40 +1513,80 @@ class OverwritePriceRangeView(APIView):
                 return Response({'error': 'end_date must be after or equal to start_date.'}, status=status.HTTP_400_BAD_REQUEST)
             
             property_obj = get_object_or_404(Property, id=property_id)
-            created_records = []
-            updated_records = []
+            
+            # Generate all dates in range
+            dates_to_process = [
+                start_date + timedelta(days=i) 
+                for i in range((end_date - start_date).days + 1)
+            ]
+            
+            # Fetch existing records in one query (optimized to avoid N+1)
+            existing_records = {
+                r.checkin_date: r 
+                for r in OverwritePriceHistory.objects.filter(
+                    property=property_obj,
+                    checkin_date__gte=start_date,
+                    checkin_date__lte=end_date
+                )
+            }
+            
+            # Prepare bulk create/update lists
+            to_create = []
+            to_update = []
+            
+            for checkin_date in dates_to_process:
+                if checkin_date in existing_records:
+                    record = existing_records[checkin_date]
+                    record.overwrite_price = overwrite_price
+                    record.user = request.user
+                    to_update.append(record)
+                else:
+                    to_create.append(OverwritePriceHistory(
+                        property=property_obj,
+                        checkin_date=checkin_date,
+                        overwrite_price=overwrite_price,
+                        user=request.user
+                    ))
+            
+            # Bulk operations
+            created_objects = []
+            updated_count = 0
             errors = []
             
-            for i in range((end_date - start_date).days + 1):
-                checkin_date = start_date + timedelta(days=i)
-                try:
-                    overwrite_record, created = OverwritePriceHistory.objects.update_or_create(
-                        property_id=property_id,
-                        checkin_date=checkin_date,
-                        defaults={
-                            'user': request.user,
-                            'overwrite_price': overwrite_price
-                        }
-                    )
-                    
-                    serializer_data = OverwritePriceHistorySerializer(overwrite_record).data
-                    if created:
-                        created_records.append(serializer_data)
-                    else:
-                        updated_records.append(serializer_data)
-                        
-                except Exception as e:
-                    errors.append(f"{checkin_date}: {str(e)}")
+            try:
+                if to_create:
+                    created_objects = OverwritePriceHistory.objects.bulk_create(to_create)
+                
+                if to_update:
+                    OverwritePriceHistory.objects.bulk_update(to_update, ['overwrite_price', 'user'])
+                    updated_count = len(to_update)
+            except Exception as e:
+                errors.append(f"Bulk operation error: {str(e)}")
             
+            # Serialize results for response
+            created_records = []
+            updated_records = []
+            
+            # Serialize created records
+            for record in created_objects:
+                serializer_data = OverwritePriceHistorySerializer(record).data
+                created_records.append(serializer_data)
+            
+            # Serialize updated records
+            for record in to_update:
+                serializer_data = OverwritePriceHistorySerializer(record).data
+                updated_records.append(serializer_data)
+            
+            created_count = len(created_objects)
             return Response({
-                'message': f'Processed {len(created_records)} new overwrites, {len(updated_records)} updates. {len(errors)} errors.',
+                'message': f'Processed {created_count} new overwrites, {updated_count} updates. {len(errors)} errors.',
                 'created': created_records,
                 'updated': updated_records,
                 'errors': errors,
                 'start_date': start_date_str,
                 'end_date': end_date_str,
                 'overwrite_price': overwrite_price,
-            }, status=status.HTTP_201_CREATED if created_records or updated_records else status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_201_CREATED if created_count > 0 or updated_count > 0 else status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

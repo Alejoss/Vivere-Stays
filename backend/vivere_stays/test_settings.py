@@ -44,7 +44,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 # This allows them to work with SQLite test database
 DEBUG = True
 
-# Note: External schema models (PriceHistory, UnifiedReservations, etc.) 
-# are handled by using @skipIf decorators in tests since they use PostgreSQL schemas
-# that don't work with SQLite test database. The tests will be skipped in production
-# and run in development where the models are managed=True.
+# Enable management of external schema tables for tests
+# This allows DpPriceChangeHistory and other external schema models to be created in test database
+MANAGE_EXTERNAL_SCHEMA_TABLES = True

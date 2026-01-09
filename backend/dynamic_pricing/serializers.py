@@ -274,18 +274,15 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     def get_price(self, obj):
         """
         Return the price to display (overwrite_price if exists, otherwise recom_price)
-        Checks the new OverwritePriceHistory model for overwrites
+        Uses prefetched overwrite data from context to avoid N+1 queries
         """
-        # Check if there's an overwrite in the new OverwritePriceHistory model
-        try:
-            overwrite_record = OverwritePriceHistory.objects.get(
-                property_id=obj.property_id,
-                checkin_date=obj.checkin_date
-            )
-            if overwrite_record and overwrite_record.overwrite_price is not None:
-                return overwrite_record.overwrite_price
-        except OverwritePriceHistory.DoesNotExist:
-            pass
+        # Get overwrites from context (required - must be prefetched by view)
+        overwrites = self.context.get('overwrites', {})
+        # obj.property_id is a ForeignKey, so we need obj.property_id.id to get the ID string
+        property_id_str = str(obj.property_id.id) if hasattr(obj.property_id, 'id') else str(obj.property_id)
+        key = (obj.checkin_date, property_id_str)
+        if key in overwrites and overwrites[key] is not None:
+            return overwrites[key]
         
         # Return the recommended price from the external schema
         return obj.recom_price
@@ -307,17 +304,14 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     def get_overwrite(self, obj):
         """
         Check if there's an overwrite price set
-        Checks the new OverwritePriceHistory model
+        Uses prefetched overwrite data from context to avoid N+1 queries
         """
-        # Check the new OverwritePriceHistory model
-        try:
-            overwrite_record = OverwritePriceHistory.objects.get(
-                property_id=obj.property_id,
-                checkin_date=obj.checkin_date
-            )
-            return overwrite_record and overwrite_record.overwrite_price is not None
-        except OverwritePriceHistory.DoesNotExist:
-            return False 
+        # Get overwrites from context (required - must be prefetched by view)
+        overwrites = self.context.get('overwrites', {})
+        # obj.property_id is a ForeignKey, so we need obj.property_id.id to get the ID string
+        property_id_str = str(obj.property_id.id) if hasattr(obj.property_id, 'id') else str(obj.property_id)
+        key = (obj.checkin_date, property_id_str)
+        return key in overwrites and overwrites[key] is not None 
 
 
 class HistoricalCompetitorPriceSerializer(serializers.ModelSerializer):
