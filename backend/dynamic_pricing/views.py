@@ -972,7 +972,7 @@ class PriceHistoryView(APIView):
             
             # Prefetch all overwrites in one query to avoid N+1 in serializer
             overwrites = {
-                (o.checkin_date, str(o.property.id)): o.overwrite_price
+                (o.checkin_date, str(o.property_id)): o.overwrite_price
                 for o in OverwritePriceHistory.objects.filter(
                     property=property_obj,
                     checkin_date__gte=start_date,
@@ -1436,7 +1436,7 @@ def price_history_for_date_range(request, property_id):
         
         # Prefetch all overwrites in one query to avoid N+1 in serializer
         overwrites = {
-            (o.checkin_date, str(o.property.id)): o.overwrite_price
+            (o.checkin_date, str(o.property_id)): o.overwrite_price
             for o in OverwritePriceHistory.objects.filter(
                 property=property_obj,
                 checkin_date__gte=start_date,

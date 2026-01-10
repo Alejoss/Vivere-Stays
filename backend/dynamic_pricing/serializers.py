@@ -278,8 +278,8 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         """
         # Get overwrites from context (required - must be prefetched by view)
         overwrites = self.context.get('overwrites', {})
-        # obj.property_id is a ForeignKey, so we need obj.property_id.id to get the ID string
-        property_id_str = str(obj.property_id.id) if hasattr(obj.property_id, 'id') else str(obj.property_id)
+        # Use property_id_id (Django's raw FK attribute) for consistent property ID lookup
+        property_id_str = str(obj.property_id_id)
         key = (obj.checkin_date, property_id_str)
         if key in overwrites and overwrites[key] is not None:
             return overwrites[key]
@@ -308,8 +308,8 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         """
         # Get overwrites from context (required - must be prefetched by view)
         overwrites = self.context.get('overwrites', {})
-        # obj.property_id is a ForeignKey, so we need obj.property_id.id to get the ID string
-        property_id_str = str(obj.property_id.id) if hasattr(obj.property_id, 'id') else str(obj.property_id)
+        # Use property_id_id (Django's raw FK attribute) for consistent property ID lookup
+        property_id_str = str(obj.property_id_id)
         key = (obj.checkin_date, property_id_str)
         return key in overwrites and overwrites[key] is not None 
 

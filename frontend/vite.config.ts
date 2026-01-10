@@ -29,12 +29,29 @@ export default defineConfig(({ mode }) => {
 function expressPlugin(): Plugin {
   return {
     name: "express-plugin",
-    apply: "serve", // Only apply during development (serve mode)
+    apply: "serve", // Only applies in development
     configureServer(server) {
       const app = createServer();
-
-      // Add Express app as middleware to Vite dev server
-      server.middlewares.use(app);
+      
+      // Wrap Express to ensure next() is called for unmatched routes
+      server.middlewares.use((req, res, next) => {
+        // Track if Express handled the request
+        let handled = false;
+        const originalEnd = res.end;
+        
+        res.end = function(...args: any[]) {
+          handled = true;
+          return originalEnd.apply(this, args);
+        };
+        
+        // Call Express app
+        app(req, res, () => {
+          // If Express didn't handle it, pass to Vite for SPA routing
+          if (!handled && !res.headersSent) {
+            next();
+          }
+        });
+      });
     },
   };
 }
