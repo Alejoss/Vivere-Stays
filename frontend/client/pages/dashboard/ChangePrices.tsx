@@ -436,10 +436,25 @@ function WeeklyPriceOverview({
 
   // Get the first week of a specific month in a given year
   const getFirstWeekOfMonth = (monthIndex: number, year: number) => {
-    // Find the first day of the month
-    const firstDay = new Date(year, monthIndex, 1);
+    // We want the first week whose "mid-week" (Wednesday) lies inside the target month,
+    // to be consistent with getCurrentMonthYear which also uses the mid-week.
 
-    // Find which ISO week this falls into
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(year, week);
+      const midWeek = new Date(
+        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
+      );
+
+      if (
+        midWeek.getFullYear() === year &&
+        midWeek.getMonth() === monthIndex
+      ) {
+        return week;
+      }
+    }
+
+    // Fallback: if nothing found (very rare), fall back to the original behaviour
+    const firstDay = new Date(year, monthIndex, 1);
     for (let week = 1; week <= 53; week++) {
       const weekStart = getWeekStartDate(year, week);
       const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
@@ -448,7 +463,8 @@ function WeeklyPriceOverview({
         return week;
       }
     }
-    return 1; // fallback
+
+    return 1; // final fallback
   };
 
   // Handle year selection

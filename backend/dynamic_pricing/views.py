@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
+from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 import logging
 import time
@@ -3443,7 +3444,17 @@ class DynamicIncrementsV2CreateView(APIView):
                 )
                 
                 if serializer.is_valid():
-                    result = serializer.save()
+                    try:
+                        result = serializer.save()
+                    except ValidationError as e:
+                        # Convert serializer/DB validation errors into a proper 400
+                        logger.warning(f"Validation error while creating dynamic increments (bulk): {str(e)}")
+                        error_detail = getattr(e, 'detail', None)
+                        return Response({
+                            'message': 'Validation error while creating dynamic increments',
+                            'error': error_detail if error_detail is not None else str(e),
+                            'errors': error_detail if isinstance(error_detail, dict) else None,
+                        }, status=status.HTTP_400_BAD_REQUEST)
                     
                     # Serialize the created rules for response
                     created_rules_data = DynamicIncrementsV2Serializer(
@@ -3486,6 +3497,15 @@ class DynamicIncrementsV2CreateView(APIView):
             return Response({
                 'message': 'Property not found'
             }, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as e:
+            # Catch any uncaught ValidationError and convert to 400 instead of generic 500
+            logger.warning(f"Validation error while creating dynamic increment: {str(e)}")
+            error_detail = getattr(e, 'detail', None)
+            return Response({
+                'message': 'Validation error while creating the dynamic increment',
+                'error': error_detail if error_detail is not None else str(e),
+                'errors': error_detail if isinstance(error_detail, dict) else None,
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Error creating dynamic increment: {str(e)}")
             return Response({
