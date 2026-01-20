@@ -22,11 +22,27 @@ const PROPERTY_DATA_KEY = "property_data";
 export const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
 
 export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps) => {
-  const [property, setProperty] = useState<PropertyDetailResponse | null>(null);
+  const [propertyState, setPropertyState] = useState<PropertyDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // Track the propertyId we're currently loading to prevent race conditions
+  const loadingPropertyIdRef = React.useRef<string | null>(null);
+
+  // Wrapper function to update both state and localStorage when property changes
+  const setProperty = React.useCallback((newProperty: PropertyDetailResponse | null) => {
+    setPropertyState(newProperty);
+    if (newProperty) {
+      // Always keep localStorage in sync when property is set
+      setLocalStorageItem(PROPERTY_DATA_KEY, newProperty);
+      setLocalStorageItem("selectedPropertyId", newProperty.id);
+    } else {
+      // If property is cleared, also clear localStorage
+      setLocalStorageItem(PROPERTY_DATA_KEY, null);
+      setLocalStorageItem("selectedPropertyId", null);
+    }
+  }, []);
 
   // Function to load property from localStorage or backend
-  const loadProperty = async (selectedPropertyId: string) => {
+  const loadProperty = React.useCallback(async (selectedPropertyId: string) => {
     if (!selectedPropertyId) {
       return;
     }
@@ -36,21 +52,32 @@ export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps
       return;
     }
 
-    if (property && property.id === selectedPropertyId) {
+    if (propertyState && propertyState.id === selectedPropertyId) {
+      // Property already loaded and matches - ensure localStorage is in sync
+      const currentStoredId = getLocalStorageItem<string>("selectedPropertyId");
+      if (currentStoredId !== selectedPropertyId) {
+        setLocalStorageItem("selectedPropertyId", selectedPropertyId);
+        setLocalStorageItem(PROPERTY_DATA_KEY, propertyState);
+      }
       return;
     }
       
     // Always fetch from backend to ensure we have the correct property for the current user
     setIsLoading(true);
+    loadingPropertyIdRef.current = selectedPropertyId;
     try {
         const backendData = await dynamicPricingService.getProperty(selectedPropertyId);
         
         // Flatten if wrapped in 'property' key
         const flatProperty = backendData.property ? backendData.property : backendData;
         
-        setProperty(flatProperty);
-        setLocalStorageItem(PROPERTY_DATA_KEY, flatProperty);
+        // Only update if this is still the property we're loading (prevent race conditions)
+        if (loadingPropertyIdRef.current === selectedPropertyId) {
+          // Update both state and localStorage - use setProperty to ensure sync
+          setProperty(flatProperty);
+        }
         setIsLoading(false);
+        loadingPropertyIdRef.current = null;
       } catch (err) {
         // Check if it's a 404 error (property not found or access denied)
         const is404Error = (
@@ -81,44 +108,66 @@ export const PropertyProvider = ({ children, propertyId }: PropertyProviderProps
               const fullPropertyData = await dynamicPricingService.getProperty(fallbackProperty.id);
               const flatProperty = fullPropertyData.property ? fullPropertyData.property : fullPropertyData;
               
-              // Update context and localStorage with the correct property
-              setProperty(flatProperty);
-              setLocalStorageItem(PROPERTY_DATA_KEY, flatProperty);
-              setLocalStorageItem("selectedPropertyId", flatProperty.id);
+              // Only update if this is still the property we're loading (prevent race conditions)
+              if (loadingPropertyIdRef.current === selectedPropertyId || loadingPropertyIdRef.current === fallbackProperty.id) {
+                // Update context and localStorage with the correct property - use setProperty to ensure sync
+                setProperty(flatProperty);
+              }
               
               setIsLoading(false);
+              loadingPropertyIdRef.current = null;
              } else {
                setIsLoading(false);
+               loadingPropertyIdRef.current = null;
              }
            } catch (fallbackErr) {
              setIsLoading(false);
+             loadingPropertyIdRef.current = null;
            }
          } else {
            setIsLoading(false);
+           loadingPropertyIdRef.current = null;
        }
     }
-  };
+  }, [isLoading, propertyState, setProperty]);
 
   useEffect(() => {
-    // Prioritize propertyId from URL over localStorage
-    let selectedPropertyId = propertyId;
-    if (!selectedPropertyId) {
-      // Use standardized JSON storage method
-      selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
-    } else {
-      setLocalStorageItem("selectedPropertyId", selectedPropertyId);
+    // If propertyId is provided from URL, use it (this happens on routes like /dashboard/property/:propertyId)
+    if (propertyId) {
+      // loadProperty will update localStorage via setProperty, so no need to set it here
+      loadProperty(propertyId);
+      return;
     }
     
-    loadProperty(selectedPropertyId);
+    // If no propertyId in URL (e.g., /dashboard/dynamic-setup), preserve current property if it exists
+    // Only fall back to localStorage if we don't have a property in context
+    if (propertyState) {
+      // We already have a property in context, keep it - don't reload from localStorage
+      // This ensures that when navigating to routes without propertyId, we keep the current property
+      // Also sync localStorage to match the current property in context
+      const currentStoredId = getLocalStorageItem<string>("selectedPropertyId");
+      if (currentStoredId !== propertyState.id) {
+        setLocalStorageItem("selectedPropertyId", propertyState.id);
+        setLocalStorageItem(PROPERTY_DATA_KEY, propertyState);
+      }
+      return;
+    }
+    
+    // Only load from localStorage if we don't have a property in context
+    const selectedPropertyId = getLocalStorageItem<string>("selectedPropertyId");
+    if (selectedPropertyId) {
+      loadProperty(selectedPropertyId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
-  // Removed localStorage event listeners to prevent infinite loops
-
-  // Removed automatic localStorage updates to prevent infinite loops
-  // localStorage is now only updated explicitly in loadProperty function
+  // localStorage is kept in sync via:
+  // 1. setProperty() - updates both state and localStorage whenever property is set
+  // 2. loadProperty() - uses setProperty() to ensure sync when loading from backend
+  // 3. useEffect - syncs localStorage when propertyId changes or when preserving current property
 
   return (
-    <PropertyContext.Provider value={{ property, setProperty }}>
+    <PropertyContext.Provider value={{ property: propertyState, setProperty }}>
       {children}
     </PropertyContext.Provider>
   );
