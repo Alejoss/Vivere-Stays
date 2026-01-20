@@ -422,44 +422,37 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
             if not request or not request.user.is_authenticated:
                 raise serializers.ValidationError("User must be authenticated.")
             
-            # Get property instance - either from context or user's last created property
+            # Get property instance from context - REQUIRED
             property_id = self.context.get('property_id')
             print(f"🔍 BulkCompetitorCandidateSerializer: property_id from context: {property_id}")
             print(f"🔍 BulkCompetitorCandidateSerializer: request.user: {request.user.username}")
             
-            if property_id:
-                # Use provided property_id
+            if not property_id:
+                raise serializers.ValidationError(
+                    "property_id is required. This endpoint must be called with a property_id in the URL.",
+                    code=ErrorCode.PROPERTY_NOT_FOUND
+                )
+            
+            # Use provided property_id
+            try:
+                print(f"🔍 BulkCompetitorCandidateSerializer: Looking for property {property_id} for user {request.user.username}")
+                property_instance = Property.objects.get(
+                    id=property_id,
+                    profiles__user=request.user
+                )
+                print(f"🔍 BulkCompetitorCandidateSerializer: Found property: {property_instance.name}")
+            except Property.DoesNotExist:
+                print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} not found for user {request.user.username}")
+                # Let's also check if the property exists at all
                 try:
-                    print(f"🔍 BulkCompetitorCandidateSerializer: Looking for property {property_id} for user {request.user.username}")
-                    property_instance = Property.objects.get(
-                        id=property_id,
-                        profiles__user=request.user
-                    )
-                    print(f"🔍 BulkCompetitorCandidateSerializer: Found property: {property_instance.name}")
+                    property_exists = Property.objects.get(id=property_id)
+                    print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} exists but not associated with user")
                 except Property.DoesNotExist:
-                    print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} not found for user {request.user.username}")
-                    # Let's also check if the property exists at all
-                    try:
-                        property_exists = Property.objects.get(id=property_id)
-                        print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} exists but not associated with user")
-                    except Property.DoesNotExist:
-                        print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} does not exist at all")
-                    raise serializers.ValidationError(
-                        "Property not found or you don't have access to it.",
-                        code=ErrorCode.PROPERTY_NOT_FOUND
-                    )
-            else:
-                # Fallback to user's last created property (backward compatibility)
-                try:
-                    property_instance = Property.objects.filter(
-                        profiles__user=request.user
-                    ).order_by('-created_at').first()
-                    
-                    if not property_instance:
-                        raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
-                        
-                except Property.DoesNotExist:
-                    raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+                    print(f"🔍 BulkCompetitorCandidateSerializer: Property {property_id} does not exist at all")
+                raise serializers.ValidationError(
+                    "Property not found or you don't have access to it.",
+                    code=ErrorCode.PROPERTY_NOT_FOUND
+                )
             
             return {
                 'created_candidates': [],
@@ -475,32 +468,26 @@ class BulkCompetitorCandidateSerializer(serializers.Serializer):
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError("User must be authenticated.")
         
-        # Get property instance - either from context or user's last created property
+        # Get property instance from context - REQUIRED
         property_id = self.context.get('property_id')
-        if property_id:
-            # Use provided property_id
-            try:
-                property_instance = Property.objects.get(
-                    id=property_id,
-                    profiles__user=request.user
-                )
-            except Property.DoesNotExist:
-                raise serializers.ValidationError(
-                    "Property not found or you don't have access to it.",
-                    code=ErrorCode.PROPERTY_NOT_FOUND
-                )
-        else:
-            # Fallback to user's last created property (backward compatibility)
-            try:
-                property_instance = Property.objects.filter(
-                    profiles__user=request.user
-                ).order_by('-created_at').first()
-                
-                if not property_instance:
-                    raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
-                    
-            except Property.DoesNotExist:
-                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+        
+        if not property_id:
+            raise serializers.ValidationError(
+                "property_id is required. This endpoint must be called with a property_id in the URL.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
+        
+        # Use provided property_id
+        try:
+            property_instance = Property.objects.get(
+                id=property_id,
+                profiles__user=request.user
+            )
+        except Property.DoesNotExist:
+            raise serializers.ValidationError(
+                "Property not found or you don't have access to it.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
         
         for competitor_name in competitor_names:
             try:
@@ -781,22 +768,35 @@ class BulkOfferIncrementsSerializer(serializers.Serializer):
         created_offers = []
         errors = []
         
-        # Get the current user's last created property
+        # Get the current user
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError("User must be authenticated.")
         
-        # Get the user's last created property
+        # CRITICAL: Get property_id from context (passed from view) - REQUIRED
+        # This ensures we use the property_id from the URL, not the user's last created property
+        property_id = self.context.get('property_id')
+        
+        # Log for debugging
+        print(f"🔧 BACKEND DEBUG: BulkOfferIncrementsSerializer.create() called")
+        print(f"🔧 BACKEND DEBUG: property_id from context: {property_id}")
+        print(f"🔧 BACKEND DEBUG: user: {request.user.username} (id: {request.user.id})")
+        
+        if not property_id:
+            raise serializers.ValidationError(
+                "property_id is required. This endpoint must be called with a property_id in the URL.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
+        
+        # Use the property_id from the URL (passed via context)
         try:
-            property_instance = Property.objects.filter(
-                profiles__user=request.user
-            ).order_by('-created_at').first()
-            
-            if not property_instance:
-                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
-                
+            property_instance = Property.objects.get(id=property_id)
+            print(f"✅ BACKEND DEBUG: Using property from URL: {property_instance.id} ({property_instance.name})")
         except Property.DoesNotExist:
-            raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+            raise serializers.ValidationError(
+                f"Property with id '{property_id}' not found.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
         
         for i, offer_data in enumerate(offers):
             try:
@@ -973,22 +973,35 @@ class BulkDynamicIncrementsV2Serializer(serializers.Serializer):
         created_rules = []
         errors = []
         
-        # Get the current user's last created property
+        # Get the current user
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError("User must be authenticated.")
         
-        # Get the user's last created property
+        # CRITICAL: Get property_id from context (passed from view) - REQUIRED
+        # This ensures we use the property_id from the URL, not the user's last created property
+        property_id = self.context.get('property_id')
+        
+        # Log for debugging
+        print(f"🔧 BACKEND DEBUG: BulkDynamicIncrementsV2Serializer.create() called")
+        print(f"🔧 BACKEND DEBUG: property_id from context: {property_id}")
+        print(f"🔧 BACKEND DEBUG: user: {request.user.username} (id: {request.user.id})")
+        
+        if not property_id:
+            raise serializers.ValidationError(
+                "property_id is required. This endpoint must be called with a property_id in the URL.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
+        
+        # Use the property_id from the URL (passed via context)
         try:
-            property_instance = Property.objects.filter(
-                profiles__user=request.user
-            ).order_by('-created_at').first()
-            
-            if not property_instance:
-                raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
-                
+            property_instance = Property.objects.get(id=property_id)
+            print(f"✅ BACKEND DEBUG: Using property from URL: {property_instance.id} ({property_instance.name})")
         except Property.DoesNotExist:
-            raise serializers.ValidationError("No property found for this user. Please complete the hotel setup first.")
+            raise serializers.ValidationError(
+                f"Property with id '{property_id}' not found.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
         
         for i, rule_data in enumerate(rules):
             try:
@@ -1459,6 +1472,7 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
         max_length=10,  # Limit to 10 competitors at once
         help_text='List of competitor hotel names'
     )
+    property_id = serializers.CharField(required=True)
     
     def validate_competitor_names(self, value):
         """
@@ -1494,29 +1508,31 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
         
         # If no competitors provided, return success with empty results
         if not competitor_names:
-            # Get the current user's last created property for consistency
+            # Get property_id from request data - REQUIRED
+            property_id = validated_data.get('property_id')
             request = self.context.get('request')
+            
             if not request or not request.user.is_authenticated:
                 raise serializers.ValidationError(
                     "User must be authenticated.",
                     code=ErrorCode.UNAUTHORIZED
                 )
             
+            if not property_id:
+                raise serializers.ValidationError(
+                    "property_id is required in the request body.",
+                    code=ErrorCode.PROPERTY_NOT_FOUND
+                )
+            
             try:
-                property_instance = Property.objects.filter(
+                property_instance = Property.objects.get(
+                    id=property_id,
                     profiles__user=request.user
-                ).order_by('-created_at').first()
-                
-                if not property_instance:
-                    raise serializers.ValidationError(
-                        "No property found for this user. Please complete the hotel setup first.",
-                        code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
-                    )
-                    
+                )
             except Property.DoesNotExist:
                 raise serializers.ValidationError(
-                    "No property found for this user. Please complete the hotel setup first.",
-                    code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+                    "Property not found or you don't have access to it.",
+                    code=ErrorCode.PROPERTY_NOT_FOUND
                 )
             
             return {
@@ -1528,7 +1544,7 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
         created_competitors = []
         errors = []
         
-        # Get the current user's last created property
+        # Get the current user
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError(
@@ -1536,22 +1552,31 @@ class BulkCompetitorCreateSerializer(serializers.Serializer):
                 code=ErrorCode.UNAUTHORIZED
             )
         
-        # Get the user's last created property
+        # CRITICAL: Get property_id from request data - REQUIRED
+        # This ensures we use the property_id from the request, not the user's last created property
+        property_id = validated_data.get('property_id')
+        
+        print(f"🔧 BACKEND DEBUG: BulkCompetitorCreateSerializer.create() called")
+        print(f"🔧 BACKEND DEBUG: property_id from request: {property_id}")
+        print(f"🔧 BACKEND DEBUG: user: {request.user.username} (id: {request.user.id})")
+        
+        if not property_id:
+            raise serializers.ValidationError(
+                "property_id is required in the request body.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
+            )
+        
+        # Use the property_id from the request
         try:
-            property_instance = Property.objects.filter(
+            property_instance = Property.objects.get(
+                id=property_id,
                 profiles__user=request.user
-            ).order_by('-created_at').first()
-            
-            if not property_instance:
-                raise serializers.ValidationError(
-                    "No property found for this user. Please complete the hotel setup first.",
-                    code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
-                )
-                
+            )
+            print(f"✅ BACKEND DEBUG: Using property from request: {property_instance.id} ({property_instance.name})")
         except Property.DoesNotExist:
             raise serializers.ValidationError(
-                "No property found for this user. Please complete the hotel setup first.",
-                code=ErrorCode.PROPERTY_SETUP_INCOMPLETE
+                "Property not found or you don't have access to it.",
+                code=ErrorCode.PROPERTY_NOT_FOUND
             )
         
         for competitor_name in competitor_names:

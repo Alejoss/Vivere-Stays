@@ -262,7 +262,7 @@ export const profilesService = {
     });
   },
 
-  async createBulkCompetitors(data: { competitor_names: string[] }): Promise<{
+  async createBulkCompetitors(data: { competitor_names: string[]; property_id?: string }): Promise<{
     message: string;
     property_id: string;
     created_competitors: Array<{

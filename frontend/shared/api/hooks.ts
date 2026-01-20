@@ -180,7 +180,7 @@ export const useUpdateOnboardingProgress = () => {
 
 export const useCreateBulkCompetitors = () => {
   return useMutation({
-    mutationFn: (data: { competitor_names: string[] }) =>
+    mutationFn: (data: { competitor_names: string[]; property_id?: string }) =>
       profilesService.createBulkCompetitors(data),
   });
 };
@@ -189,7 +189,7 @@ export const useCreateCompetitorCandidates = () => {
   return useMutation({
     mutationFn: (data: { 
       competitor_names: string[];
-      property_id?: string;
+      property_id: string;  // REQUIRED - no longer optional
       suggested_by_user?: boolean;
     }) =>
       dynamicPricingService.createCompetitorCandidates(data),

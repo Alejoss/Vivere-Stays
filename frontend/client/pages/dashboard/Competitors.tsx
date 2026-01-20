@@ -290,8 +290,18 @@ export default function Competitors() {
 
         if (cleanedHotels.length > 0) {
           // Create competitor candidates from AI suggestions
+          if (!property?.id) {
+            toast({
+              title: t('common:messages.error'),
+              description: 'No property selected. Please select a property first.',
+              variant: 'destructive'
+            });
+            return;
+          }
+          
           const response = await dynamicPricingService.createCompetitorCandidates({
             competitor_names: cleanedHotels,
+            property_id: property.id,
             suggested_by_user: false  // Mark as AI-suggested
           });
 
@@ -503,9 +513,19 @@ export default function Competitors() {
 
     setIsCreatingCompetitor(true);
     
+    if (!property?.id) {
+      toast({
+        title: t('common:messages.error'),
+        description: 'No property selected. Please select a property first.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     try {
       const response = await dynamicPricingService.createCompetitorCandidates({
         competitor_names: [newCompetitorName.trim()],
+        property_id: property.id,
         suggested_by_user: true  // Mark as user-suggested
       });
 

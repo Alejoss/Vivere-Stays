@@ -435,10 +435,12 @@ function WeeklyPriceOverview({
   };
 
   // Get the first week of a specific month in a given year
-  const getFirstWeekOfMonth = (monthIndex: number, year: number) => {
+  // Returns { week, year } to handle ISO week year boundaries
+  const getFirstWeekOfMonth = (monthIndex: number, year: number): { week: number; year: number } => {
     // We want the first week whose "mid-week" (Wednesday) lies inside the target month,
     // to be consistent with getCurrentMonthYear which also uses the mid-week.
-
+    
+    // Check the given year first
     for (let week = 1; week <= 53; week++) {
       const weekStart = getWeekStartDate(year, week);
       const midWeek = new Date(
@@ -449,7 +451,37 @@ function WeeklyPriceOverview({
         midWeek.getFullYear() === year &&
         midWeek.getMonth() === monthIndex
       ) {
-        return week;
+        return { week, year };
+      }
+    }
+
+    // Check previous year (in case the first week of the month belongs to previous year's ISO week)
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(year - 1, week);
+      const midWeek = new Date(
+        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
+      );
+
+      if (
+        midWeek.getFullYear() === year &&
+        midWeek.getMonth() === monthIndex
+      ) {
+        return { week, year: year - 1 };
+      }
+    }
+
+    // Check next year (in case the first week of the month belongs to next year's ISO week)
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(year + 1, week);
+      const midWeek = new Date(
+        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
+      );
+
+      if (
+        midWeek.getFullYear() === year &&
+        midWeek.getMonth() === monthIndex
+      ) {
+        return { week, year: year + 1 };
       }
     }
 
@@ -460,11 +492,11 @@ function WeeklyPriceOverview({
       const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
 
       if (firstDay >= weekStart && firstDay <= weekEnd) {
-        return week;
+        return { week, year };
       }
     }
 
-    return 1; // final fallback
+    return { week: 1, year }; // final fallback
   };
 
   // Handle year selection
@@ -475,8 +507,9 @@ function WeeklyPriceOverview({
 
   // Handle month selection
   const handleMonthSelect = (monthIndex: number) => {
-    const firstWeek = getFirstWeekOfMonth(monthIndex, currentYear);
-    setCurrentWeek(firstWeek);
+    const { week, year } = getFirstWeekOfMonth(monthIndex, currentYear);
+    setCurrentYear(year);
+    setCurrentWeek(week);
     setShowMonthDropdown(false);
   };
 

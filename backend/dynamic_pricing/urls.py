@@ -53,7 +53,7 @@ from .views import (
     CompetitorDetailView,
     CompetitorListView,
     PropertyCompetitorsView,
-    BulkCompetitorCreateView,
+    BulkCompetitorCreateView,  # Used by booking/urls.py
 )
 
 app_name = 'dynamic_pricing'
@@ -90,7 +90,7 @@ urlpatterns = [
     # Competitor endpoints moved from booking app
     path('competitors/', CompetitorListView.as_view(), name='competitor-list'),
     path('competitors/create/', CompetitorCreateView.as_view(), name='competitor-create'),
-    path('competitors/bulk-create/', BulkCompetitorCreateView.as_view(), name='competitor-bulk-create'),
+    # Note: bulk-create endpoint is in booking/urls.py for backward compatibility with frontend
     path('competitors/<str:competitor_id>/', CompetitorDetailView.as_view(), name='competitor-detail'),
     path('properties/<str:property_id>/competitors-list/', PropertyCompetitorsView.as_view(), name='property-competitors-list'),
     

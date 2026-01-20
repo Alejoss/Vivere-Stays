@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -57,11 +57,30 @@ export default function DynamicSetup() {
   const [saving, setSaving] = useState(false);
   // Temporary input values to allow '-', '.' during typing without coercion
   const [tempValues, setTempValues] = useState<Record<string, string>>({});
+  
+  // CRITICAL: Store the property ID that was used to load rules - use this for saving to prevent wrong property
+  const propertyIdRef = useRef<string | null>(null);
+
+  // Debug: Log property changes
+  useEffect(() => {
+    console.log('🔧 DynamicSetup: Property context changed:', {
+      propertyId: property?.id,
+      propertyName: property?.name,
+      fullProperty: property,
+      storedPropertyIdRef: propertyIdRef.current
+    });
+  }, [property?.id, property?.name]);
 
   // Load existing rules on component mount
   useEffect(() => {
     if (property?.id) {
+      console.log('🔧 DynamicSetup: Loading rules for property:', property.id, property.name);
+      // Store the property ID we're loading rules for
+      propertyIdRef.current = property.id;
       loadRules();
+    } else {
+      console.warn('🔧 DynamicSetup: No property in context!');
+      propertyIdRef.current = null;
     }
   }, [property?.id]);
 
@@ -117,7 +136,7 @@ export default function DynamicSetup() {
     const rule = updatedRules[index];
     
     // Update the field
-    rule[field] = value;
+    (rule as any)[field] = value;
     
     // Check if this rule is dirty by comparing with original data
     if (!rule.isNew && rule.originalData) {
@@ -190,7 +209,41 @@ export default function DynamicSetup() {
   };
 
   const saveRules = async () => {
-    if (!property?.id) return;
+    // CRITICAL: Use the property ID that was used to load rules, not the current context
+    // This prevents saving to wrong property if context changes
+    const savePropertyId = propertyIdRef.current || property?.id;
+    
+    // CRITICAL DEBUG: Log property ID being used for save
+    console.log('🔧 DynamicSetup SAVE: Property IDs comparison:', {
+      propertyIdFromContext: property?.id,
+      propertyNameFromContext: property?.name,
+      propertyIdFromRef: propertyIdRef.current,
+      propertyIdBeingUsed: savePropertyId,
+      match: propertyIdRef.current === property?.id ? '✅ MATCH' : '❌ MISMATCH!'
+    });
+    
+    // Also check localStorage for comparison
+    const storedPropertyId = localStorage.getItem('selectedPropertyId');
+    console.log('🔧 DynamicSetup SAVE: localStorage selectedPropertyId:', storedPropertyId);
+    
+    if (!savePropertyId) {
+      console.error('🔧 DynamicSetup SAVE: NO PROPERTY ID AVAILABLE! Cannot save.');
+      toast({
+        title: t('common:messages.error'),
+        description: 'No property selected. Please select a property first.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Safety check: Warn if property ID changed
+    if (propertyIdRef.current && property?.id && propertyIdRef.current !== property?.id) {
+      console.error('🔧 DynamicSetup SAVE: ⚠️ WARNING - Property ID changed!', {
+        original: propertyIdRef.current,
+        current: property?.id,
+        using: savePropertyId
+      });
+    }
     
     setSaving(true);
     
@@ -207,12 +260,12 @@ export default function DynamicSetup() {
         );
         
         if (validModifiedRules.length > 0) {
-          console.log(`🔧 FRONTEND DEBUG: Updating ${validModifiedRules.length} modified rules`);
-          await dynamicPricingService.bulkUpdateDynamicRules(property.id, {
+          console.log(`🔧 FRONTEND DEBUG: Updating ${validModifiedRules.length} modified rules for property: ${savePropertyId}`);
+          await dynamicPricingService.bulkUpdateDynamicRules(savePropertyId, {
             rules: validModifiedRules.map(rule => ({
               id: rule.id!,
-              occupancy_category: rule.occupancy_category,
-              lead_time_category: rule.lead_time_category,
+              occupancy_category: rule.occupancy_category as '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+',
+              lead_time_category: rule.lead_time_category as '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+',
               increment_type: rule.increment_type,
               increment_value: rule.increment_value
             }))
@@ -227,11 +280,11 @@ export default function DynamicSetup() {
         );
         
         if (validNewRules.length > 0) {
-          console.log(`🔧 FRONTEND DEBUG: Creating ${validNewRules.length} new rules`);
-          await dynamicPricingService.bulkCreateDynamicRules(property.id, {
+          console.log(`🔧 FRONTEND DEBUG: Creating ${validNewRules.length} new rules for property: ${savePropertyId}`);
+          await dynamicPricingService.bulkCreateDynamicRules(savePropertyId, {
             rules: validNewRules.map(rule => ({
-              occupancy_category: rule.occupancy_category,
-              lead_time_category: rule.lead_time_category,
+              occupancy_category: rule.occupancy_category as '0-30' | '30-50' | '50-70' | '70-80' | '80-90' | '90-100' | '100+',
+              lead_time_category: rule.lead_time_category as '0-1' | '1-3' | '3-7' | '7-14' | '14-30' | '30-45' | '45-60' | '60+',
               increment_type: rule.increment_type,
               increment_value: rule.increment_value
             }))

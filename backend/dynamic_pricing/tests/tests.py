@@ -105,7 +105,7 @@ class DpPropertyCompetitorModelTest(TestCase):
 
     def test_competitor_str_representation(self):
         """Test the string representation of DpPropertyCompetitor"""
-        expected = 'Test Hotel - Competitor Test Competitor (ID: 1)'
+        expected = 'Test Hotel - Competitor Test Competitor'
         self.assertEqual(str(self.competitor), expected)
 
 

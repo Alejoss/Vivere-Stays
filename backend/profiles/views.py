@@ -578,16 +578,15 @@ class LoginView(APIView):
 
                 try:
                     profile = user.profile
+                    had_profile = True
                 except Profile.DoesNotExist:
-                    profile = None
-                if profile:
-                    response_data['has_profile'] = True
-                    response_data['properties_count'] = profile.properties_count
-                    response_data['had_profile'] = True
-                else:
-                    response_data['has_profile'] = False
-                    response_data['properties_count'] = 0
-                    response_data['had_profile'] = False
+                    # Create profile if it doesn't exist
+                    profile = Profile.objects.create(user=user)
+                    had_profile = False
+                
+                response_data['has_profile'] = True
+                response_data['properties_count'] = profile.properties_count
+                response_data['had_profile'] = had_profile
 
                 response = Response(response_data)
 

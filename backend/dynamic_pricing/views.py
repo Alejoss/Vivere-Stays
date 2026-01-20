@@ -2369,11 +2369,20 @@ class BulkCompetitorCandidateCreateView(APIView):
             except Exception as e:
                 print(f"🔍 BulkCompetitorCandidateCreateView: Error getting user profile: {e}")
             
-            # Pass property_id to serializer context if provided
+            # CRITICAL: property_id is REQUIRED - either from URL or request body
             context = {'request': request}
-            if property_id:
-                context['property_id'] = property_id
-                print(f"🔍 BulkCompetitorCandidateCreateView: Added property_id to context: {property_id}")
+            
+            # Get property_id from URL parameter or request body
+            property_id = property_id or request.data.get('property_id')
+            
+            if not property_id:
+                return Response({
+                    'message': 'property_id is required. Provide it in the URL path or request body.',
+                    'error': 'PROPERTY_ID_REQUIRED'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            context['property_id'] = property_id
+            print(f"🔍 BulkCompetitorCandidateCreateView: Using property_id: {property_id}")
                 
             serializer = BulkCompetitorCandidateSerializer(data=request.data, context=context)
             
@@ -3163,9 +3172,10 @@ class OfferIncrementsCreateView(APIView):
             # Check if this is a bulk create request
             if 'offers' in request.data:
                 # Bulk create multiple offers
+                # CRITICAL: Pass property_id from URL to serializer context
                 serializer = BulkOfferIncrementsSerializer(
                     data=request.data, 
-                    context={'request': request}
+                    context={'request': request, 'property_id': property_id}
                 )
                 
                 if serializer.is_valid():
@@ -3422,25 +3432,37 @@ class DynamicIncrementsV2CreateView(APIView):
         """
         Create new dynamic increments for a specific property
         """
+        # CRITICAL DEBUG: Log property_id from URL
+        print(f"🔧 BACKEND DEBUG: DynamicIncrementsV2CreateView.post() called")
+        print(f"🔧 BACKEND DEBUG: property_id from URL: {property_id}")
+        print(f"🔧 BACKEND DEBUG: user: {request.user.username} (id: {request.user.id})")
+        print(f"🔧 BACKEND DEBUG: request.data: {request.data}")
+        
         try:
             # Get the property and ensure it exists
             property_instance = get_object_or_404(Property, id=property_id)
+            print(f"🔧 BACKEND DEBUG: Property found: {property_instance.id} ({property_instance.name})")
             
             # Check if user has access to this property
             user_profile = request.user.profile
             user_properties = user_profile.get_properties()
             
             if not user_properties.filter(id=property_id).exists():
+                print(f"🔧 BACKEND DEBUG: User does not have access to property {property_id}")
                 return Response({
                     'message': 'You do not have access to this property'
                 }, status=status.HTTP_403_FORBIDDEN)
             
+            print(f"🔧 BACKEND DEBUG: User has access to property {property_id}")
+            
             # Check if this is a bulk create request
             if 'rules' in request.data:
+                print(f"🔧 BACKEND DEBUG: Bulk create request detected. Number of rules: {len(request.data.get('rules', []))}")
                 # Bulk create multiple rules
+                # CRITICAL: Pass property_id from URL to serializer context
                 serializer = BulkDynamicIncrementsV2Serializer(
                     data=request.data, 
-                    context={'request': request}
+                    context={'request': request, 'property_id': property_id}
                 )
                 
                 if serializer.is_valid():
@@ -4564,8 +4586,17 @@ class BulkCompetitorCreateView(APIView):
         """
         Create multiple competitors for a property with booking URLs
         """
+        # CRITICAL: Pass property_id from request data to serializer context if provided
+        property_id = request.data.get('property_id')
+        print(f"🔧 BACKEND DEBUG: BulkCompetitorCreateView.post() called")
+        print(f"🔧 BACKEND DEBUG: property_id from request data: {property_id}")
+        print(f"🔧 BACKEND DEBUG: user: {request.user.username} (id: {request.user.id})")
+        
         try:
-            serializer = BulkCompetitorCreateSerializer(data=request.data, context={'request': request})
+            serializer = BulkCompetitorCreateSerializer(
+                data=request.data, 
+                context={'request': request, 'property_id': property_id}
+            )
             
             if serializer.is_valid():
                 # Create the competitors

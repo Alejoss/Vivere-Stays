@@ -1,9 +1,12 @@
-# All competitor URLs have been moved to dynamic_pricing app
+# Competitor bulk-create endpoint - uses dynamic_pricing view
+# This endpoint is still used by the frontend, so we route it here
 
 from django.urls import path
+from dynamic_pricing.views import BulkCompetitorCreateView
 
 app_name = 'booking'
 
 urlpatterns = [
-    # No URLs left in booking app - all competitor functionality moved to dynamic_pricing
+    # Bulk competitor creation endpoint (uses dynamic_pricing view)
+    path('competitors/bulk-create/', BulkCompetitorCreateView.as_view(), name='competitor-bulk-create'),
 ]

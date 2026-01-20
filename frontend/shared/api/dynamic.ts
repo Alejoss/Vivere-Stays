@@ -867,7 +867,7 @@ export const dynamicPricingService = {
   async createCompetitorCandidates(data: { 
     competitor_names: string[];
     suggested_by_user?: boolean;
-    property_id?: string;
+    property_id: string;  // REQUIRED - no longer optional
   }): Promise<{
     message: string;
     property_id: string;
@@ -881,10 +881,12 @@ export const dynamicPricingService = {
     total_errors: number;
     errors?: Array<{ name: string; error: string }>;
   }> {
-    // Use property-specific endpoint if property_id is provided
-    const url = data.property_id 
-      ? `/dynamic-pricing/properties/${data.property_id}/competitors/candidates/bulk-create/`
-      : '/dynamic-pricing/competitors/candidates/bulk-create/';
+    // property_id is now required - always use property-specific endpoint
+    if (!data.property_id) {
+      throw new Error('property_id is required');
+    }
+    
+    const url = `/dynamic-pricing/properties/${data.property_id}/competitors/candidates/bulk-create/`;
     
     // Remove property_id from data since it's in the URL
     const { property_id, ...requestData } = data;
@@ -1015,13 +1017,15 @@ export const dynamicPricingService = {
     });
   },
 
-  async bulkCreateCompetitors(data: CompetitorBulkCreateRequest): Promise<CompetitorBulkCreateResponse> {
-    return apiRequest<CompetitorBulkCreateResponse>({
-      method: 'POST',
-      url: '/dynamic-pricing/competitors/bulk-create/',
-      data,
-    });
-  },
+  // NOTE: bulkCreateCompetitors is not used - use profilesService.createBulkCompetitors instead
+  // This method is kept for backward compatibility but should not be used
+  // async bulkCreateCompetitors(data: CompetitorBulkCreateRequest): Promise<CompetitorBulkCreateResponse> {
+  //   return apiRequest<CompetitorBulkCreateResponse>({
+  //     method: 'POST',
+  //     url: '/dynamic-pricing/competitors/bulk-create/',
+  //     data,
+  //   });
+  // },
 
   async getCompetitor(competitorId: string): Promise<Competitor> {
     return apiRequest<Competitor>({
