@@ -263,20 +263,38 @@ export default function DynamicSetup() {
       });
       
       // Extract detailed error message from backend response
-      let errorMessage = err?.response?.data?.message || 'Failed to save dynamic rules';
-      
-      // Try to get error code and translate it
-      if (err?.response?.data?.error_code) {
-        const errorCode = err.response.data.error_code;
+      const data = err?.response?.data;
+      let errorMessage = data?.message || 'Failed to save dynamic rules';
+
+      // Handle simple error/detail shapes from DRF or custom handlers
+      if (data?.error) {
+        if (Array.isArray(data.error)) {
+          // e.g. ["Failed to create any dynamic ... already exists."]
+          errorMessage = data.error.join(' ');
+        } else if (typeof data.error === 'string') {
+          errorMessage = data.error;
+        }
+      } else if (data?.detail) {
+        // e.g. {detail: "Some error"} or {detail: ["Some error"]}
+        if (Array.isArray(data.detail)) {
+          errorMessage = data.detail.join(' ');
+        } else if (typeof data.detail === 'string') {
+          errorMessage = data.detail;
+        }
+      }
+
+      // Try to get error code and translate it (this can override previous message)
+      if (data?.error_code) {
+        const errorCode = data.error_code;
         const translatedError = t(`errors:${errorCode}`, { defaultValue: null });
         if (translatedError) {
           errorMessage = translatedError;
         }
       }
-      
-      // Handle validation errors
-      if (err?.response?.data?.errors) {
-        const errors = err.response.data.errors;
+
+      // Handle validation errors object (field or non-field errors)
+      if (data?.errors) {
+        const errors = data.errors;
         if (errors.non_field_errors && errors.non_field_errors.length > 0) {
           errorMessage = errors.non_field_errors[0];
         } else {
