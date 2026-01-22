@@ -1,5 +1,5 @@
 import { Plus, Save, Trash2, Calendar, Info } from "lucide-react";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { useForm, FormProvider, useFieldArray, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
@@ -126,7 +126,14 @@ export default function LosSetupRules() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [property?.id, t, reset]);
+
+  // Load existing data on component mount
+  useEffect(() => {
+    if (property?.id) {
+      loadExistingData();
+    }
+  }, [property?.id, loadExistingData]);
 
   const addSetupRule = () => {
     append({
@@ -603,7 +610,8 @@ export default function LosSetupRules() {
                             type="number"
                             {...field}
                             onChange={(e) => {
-                              const value = parseInt(e.target.value) || 1;
+                              const parsed = parseInt(e.target.value, 10);
+                              const value = isNaN(parsed) ? 1 : (parsed < 1 ? 1 : parsed);
                               console.log(`🔧 FRONTEND DEBUG: LOS value changed for index ${index}:`, value);
                               field.onChange(value);
                               console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());
@@ -763,7 +771,8 @@ export default function LosSetupRules() {
                                 type="number"
                                 {...field}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 1;
+                                  const parsed = parseInt(e.target.value, 10);
+                                  const value = isNaN(parsed) ? 1 : (parsed < 1 ? 1 : parsed);
                                   console.log(`🔧 FRONTEND DEBUG: Mobile LOS value changed for index ${index}:`, value);
                                   field.onChange(value);
                                   console.log(`🔧 FRONTEND DEBUG: Current form values after change:`, getValues());

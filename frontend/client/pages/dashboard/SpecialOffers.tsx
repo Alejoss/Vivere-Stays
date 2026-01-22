@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { useForm, FormProvider, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslation } from "react-i18next";
@@ -142,7 +142,20 @@ export default function SpecialOffers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [property?.id, t, reset]);
+
+  // Load existing offers on component mount
+  useEffect(() => {
+    if (property?.id) {
+      loadOffers();
+    }
+  }, [property?.id, loadOffers]);
+
+  // Debug effect to track fields changes
+  useEffect(() => {
+    console.log('🔧 FRONTEND DEBUG: Fields array changed:', fields);
+    console.log('🔧 FRONTEND DEBUG: Fields length:', fields.length);
+  }, [fields]);
 
   // Helper functions
   const addNewOffer = () => {

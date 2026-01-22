@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from "react";
+import { useState, useEffect, useContext, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Plus,
@@ -71,20 +71,8 @@ export default function DynamicSetup() {
     });
   }, [property?.id, property?.name]);
 
-  // Load existing rules on component mount
-  useEffect(() => {
-    if (property?.id) {
-      console.log('🔧 DynamicSetup: Loading rules for property:', property.id, property.name);
-      // Store the property ID we're loading rules for
-      propertyIdRef.current = property.id;
-      loadRules();
-    } else {
-      console.warn('🔧 DynamicSetup: No property in context!');
-      propertyIdRef.current = null;
-    }
-  }, [property?.id]);
-
-  const loadRules = async () => {
+  // Memoize loadRules to prevent recreation on every render
+  const loadRules = useCallback(async () => {
     if (!property?.id) return;
     
     setLoading(true);
@@ -115,7 +103,20 @@ export default function DynamicSetup() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [property?.id, t]);
+
+  // Load existing rules on component mount
+  useEffect(() => {
+    if (property?.id) {
+      console.log('🔧 DynamicSetup: Loading rules for property:', property.id, property.name);
+      // Store the property ID we're loading rules for
+      propertyIdRef.current = property.id;
+      loadRules();
+    } else {
+      console.warn('🔧 DynamicSetup: No property in context!');
+      propertyIdRef.current = null;
+    }
+  }, [property?.id, loadRules]);
 
   // Helper functions
   const addNewRule = () => {

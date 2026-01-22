@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import CompetitorPrices from "./CompetitorPrices";
 import { usePriceForDate } from "../../../shared/api/hooks";
@@ -23,13 +23,51 @@ export default function DateDetailsContent({
   hasPMS, 
   selectedPriceOption 
 }: DateDetailsContentProps) {
-  const { t } = useTranslation(['dashboard', 'common']);
+  const { t, i18n } = useTranslation(['dashboard', 'common']);
   console.log('[DateDetailsContent] hasPMS:', hasPMS);
+  
+  // Memoize month names - only recalculate when language changes
+  const monthNames = useMemo(() => [
+    t('dashboard:calendar.months.january'),
+    t('dashboard:calendar.months.february'),
+    t('dashboard:calendar.months.march'),
+    t('dashboard:calendar.months.april'),
+    t('dashboard:calendar.months.may'),
+    t('dashboard:calendar.months.june'),
+    t('dashboard:calendar.months.july'),
+    t('dashboard:calendar.months.august'),
+    t('dashboard:calendar.months.september'),
+    t('dashboard:calendar.months.october'),
+    t('dashboard:calendar.months.november'),
+    t('dashboard:calendar.months.december'),
+  ], [t, i18n.language]);
+
+  // Convert translated month name to month number (1-12)
+  // This works regardless of language by finding the index in the translated array
+  // Memoize this function to avoid recreating it on every render
+  const getMonthNumber = useMemo(() => {
+    return (monthName: string): number => {
+      const index = monthNames.findIndex(name => name.toLowerCase() === monthName.toLowerCase());
+      if (index === -1) {
+        // Fallback: try English month names if translation doesn't match
+        const englishMonths = ['january', 'february', 'march', 'april', 'may', 'june', 
+                              'july', 'august', 'september', 'october', 'november', 'december'];
+        const englishIndex = englishMonths.findIndex(name => name.toLowerCase() === monthName.toLowerCase());
+        if (englishIndex !== -1) {
+          return englishIndex + 1;
+        }
+        // Last resort: try Date parsing (only works for English)
+        const parsed = new Date(`${monthName} 1, 2000`).getMonth() + 1;
+        return isNaN(parsed) ? 1 : parsed; // Default to January if all fails
+      }
+      return index + 1; // +1 because months are 1-indexed
+    };
+  }, [monthNames]);
   
   // Compute ISO date for selected date (or today fallback)
   const computeISODate = (d: { day: number; month: string; year: string } | null) => {
     if (!d) return undefined;
-    const monthNum = new Date(`${d.month} 1, 2000`).getMonth() + 1;
+    const monthNum = getMonthNumber(d.month);
     if (isNaN(monthNum)) return undefined;
     const iso = `${d.year}-${monthNum.toString().padStart(2, '0')}-${d.day.toString().padStart(2, '0')}`;
     console.log('[DateDetailsContent] computeISODate', { input: d, monthNum, iso });
@@ -51,7 +89,8 @@ export default function DateDetailsContent({
   console.log('[DateDetailsContent] Render. isConnected:', isConnected);
 
   // Compute effectiveDate: use selectedDate if set, otherwise today
-  const getEffectiveDate = () => {
+  // Memoize to avoid recalculating on every render
+  const effectiveDate = useMemo(() => {
     if (selectedDate) return selectedDate;
     const today = new Date();
     return {
@@ -59,12 +98,11 @@ export default function DateDetailsContent({
       month: today.toLocaleString('en-US', { month: 'long' }), // Force English month name
       year: today.getFullYear().toString(),
     };
-  };
-  const effectiveDate = getEffectiveDate();
+  }, [selectedDate]);
 
   useEffect(() => {
     if (propertyId && effectiveDate) {
-      const monthNum = new Date(`${effectiveDate.month} 1, 2000`).getMonth() + 1;
+      const monthNum = getMonthNumber(effectiveDate.month);
       if (isNaN(monthNum)) {
         console.warn('[DateDetailsContent] Invalid month name for effectiveDate:', effectiveDate.month);
         setMspForDay({ loading: false, msp: null });
@@ -78,7 +116,7 @@ export default function DateDetailsContent({
     } else {
       setMspForDay({ loading: false, msp: null });
     }
-  }, [propertyId, selectedDate]);
+  }, [propertyId, effectiveDate, getMonthNumber]);
 
   return (
     <div className="flex flex-col gap-6">

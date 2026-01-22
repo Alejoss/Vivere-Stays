@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -48,7 +48,11 @@ const weeklyData = {
 };
 
 const getOccupancyColor = (value: string) => {
-  const percent = parseInt(value);
+  const percent = parseInt(value, 10);
+  // Validate parsed value is a valid number
+  if (isNaN(percent) || percent < 0) {
+    return "bg-gray-200 text-gray-600"; // Default for invalid values
+  }
   if (percent <= 35) return "bg-blue-200 text-blue-800";
   if (percent <= 69) return "bg-yellow-200 text-yellow-800";
   return "bg-green-200 text-green-600";
@@ -113,18 +117,19 @@ function WeeklyPriceOverview({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
 
-  // Calculate week dates
-  const weekDates = generateWeekDates(currentWeek, currentYear);
+  // Calculate week dates - memoize to prevent recalculation on every render
+  const weekDates = useMemo(() => generateWeekDates(currentWeek, currentYear), [currentWeek, currentYear]);
   const weekYear = currentYear;
-  const weekMonth = weekDates[0]?.fullDate.getMonth() + 1; // 1-indexed
+  const weekMonth = useMemo(() => weekDates[0]?.fullDate.getMonth() + 1 || 1, [weekDates]); // 1-indexed
 
-  // Compute the Monday of the week for the backend
-  const weekStartDate = weekDates[0]?.fullDate;
-  const weekStartDateStr = weekStartDate
-    ? `${weekStartDate.getFullYear()}-${(weekStartDate.getMonth() + 1)
-        .toString()
-        .padStart(2, '0')}-${weekStartDate.getDate().toString().padStart(2, '0')}`
-    : '';
+  // Compute the Monday of the week for the backend - memoize to prevent string recreation
+  const weekStartDate = useMemo(() => weekDates[0]?.fullDate, [weekDates]);
+  const weekStartDateStr = useMemo(() => {
+    if (!weekStartDate) return '';
+    return `${weekStartDate.getFullYear()}-${(weekStartDate.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${weekStartDate.getDate().toString().padStart(2, '0')}`;
+  }, [weekStartDate]);
 
   // Get price history for the property (similar to PriceCalendar)
   const { data: priceHistoryData, isLoading: priceHistoryLoading } = usePriceHistory(
@@ -150,15 +155,20 @@ function WeeklyPriceOverview({
   console.log('[WeeklyPriceOverview] Current successMsg state:', successMsg);
 
   // Sync year when week changes (handle year boundaries)
+  // Use functional update to avoid dependency on currentYear
   useEffect(() => {
     const weekDates = generateWeekDates(currentWeek, currentYear);
     const midWeekDate = weekDates[3]?.fullDate;
     
     // Use the year of Wednesday (mid-week) as the canonical year for the week
-    if (midWeekDate && midWeekDate.getFullYear() !== currentYear) {
-      setCurrentYear(midWeekDate.getFullYear());
+    if (midWeekDate) {
+      const weekYear = midWeekDate.getFullYear();
+      setCurrentYear(prevYear => {
+        // Only update if year actually changed to avoid unnecessary re-renders
+        return prevYear !== weekYear ? weekYear : prevYear;
+      });
     }
-  }, [currentWeek]); // Only depend on currentWeek to avoid infinite loops
+  }, [currentWeek, currentYear]); // Include currentYear but use functional update to prevent loops
 
   // Reset local prices when data refreshes
   useEffect(() => {
@@ -181,7 +191,7 @@ function WeeklyPriceOverview({
         setCompetitorError(t('dashboard:changePrices.loadError', { defaultValue: 'Failed to load competitor data' }));
       })
       .finally(() => setCompetitorLoading(false));
-  }, [propertyId, weekStartDateStr, refreshKey]);
+  }, [propertyId, weekStartDateStr, refreshKey, t]);
 
   // Handle clicking outside dropdown to close it
   useEffect(() => {
@@ -254,13 +264,41 @@ function WeeklyPriceOverview({
       console.log("Price changed successfully for", dateStr, "to", newValue);
       
       // Create success message with day name and date
-      const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      // Use translations for day and month names to support multiple languages
+      const dayNames = [
+        t('dashboard:calendar.days.mon'),
+        t('dashboard:calendar.days.tue'),
+        t('dashboard:calendar.days.wed'),
+        t('dashboard:calendar.days.thu'),
+        t('dashboard:calendar.days.fri'),
+        t('dashboard:calendar.days.sat'),
+        t('dashboard:calendar.days.sun'),
+      ];
       const dayName = dayNames[dateObj.getDay() === 0 ? 6 : dateObj.getDay() - 1]; // Convert to Monday=0 format
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const monthNames = [
+        t('dashboard:calendar.months.january'),
+        t('dashboard:calendar.months.february'),
+        t('dashboard:calendar.months.march'),
+        t('dashboard:calendar.months.april'),
+        t('dashboard:calendar.months.may'),
+        t('dashboard:calendar.months.june'),
+        t('dashboard:calendar.months.july'),
+        t('dashboard:calendar.months.august'),
+        t('dashboard:calendar.months.september'),
+        t('dashboard:calendar.months.october'),
+        t('dashboard:calendar.months.november'),
+        t('dashboard:calendar.months.december'),
+      ];
       const monthName = monthNames[dateObj.getMonth()];
       const dayOfMonth = dateObj.getDate();
       
-      const successMessage = `The price for ${dayName} ${dayOfMonth} of ${monthName} was changed to $${newValue}`;
+      const successMessage = t('dashboard:changePrices.priceUpdated', {
+        defaultValue: `The price for ${dayName} ${dayOfMonth} of ${monthName} was changed to $${newValue}`,
+        dayName,
+        dayOfMonth,
+        monthName,
+        newValue
+      });
       console.log('[WeeklyPriceOverview] Setting success message:', successMessage);
       setSuccessMsg(successMessage);
       
@@ -411,26 +449,26 @@ function WeeklyPriceOverview({
     }
   };
 
+  // Memoize month names to support multiple languages and avoid recreating on every render
+  const monthNames = useMemo(() => [
+    t('dashboard:calendar.months.january'),
+    t('dashboard:calendar.months.february'),
+    t('dashboard:calendar.months.march'),
+    t('dashboard:calendar.months.april'),
+    t('dashboard:calendar.months.may'),
+    t('dashboard:calendar.months.june'),
+    t('dashboard:calendar.months.july'),
+    t('dashboard:calendar.months.august'),
+    t('dashboard:calendar.months.september'),
+    t('dashboard:calendar.months.october'),
+    t('dashboard:calendar.months.november'),
+    t('dashboard:calendar.months.december'),
+  ], [t]);
+
   // Get the month name for the current week
   const getCurrentMonthYear = (week: number, year: number) => {
     const weekStart = getWeekStartDate(year, week);
     const midWeek = new Date(weekStart.getTime() + 3 * 24 * 60 * 60 * 1000); // Wednesday
-
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
     return `${monthNames[midWeek.getMonth()]} ${midWeek.getFullYear()}`;
   };
 

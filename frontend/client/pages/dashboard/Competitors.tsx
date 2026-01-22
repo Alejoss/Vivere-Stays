@@ -13,7 +13,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { PropertyContext } from "../../../shared/PropertyContext";
 import { dynamicPricingService, CompetitorCandidate, PropertyCompetitor } from "../../../shared/api/dynamic";
@@ -190,9 +190,9 @@ export default function Competitors() {
     }
   };
 
-  // Fetch competitor candidates
-  const fetchCompetitorCandidates = async () => {
-    if (!property) return;
+  // Memoize fetch functions to prevent recreation on every render
+  const fetchCompetitorCandidates = useCallback(async () => {
+    if (!property?.id) return;
     
     setIsLoadingCandidates(true);
     
@@ -206,11 +206,11 @@ export default function Competitors() {
     } finally {
       setIsLoadingCandidates(false);
     }
-  };
+  }, [property?.id, t]);
 
   // Fetch processed competitors
-  const fetchProcessedCompetitors = async () => {
-    if (!property) return;
+  const fetchProcessedCompetitors = useCallback(async () => {
+    if (!property?.id) return;
     
     setIsLoadingProcessed(true);
     
@@ -224,7 +224,7 @@ export default function Competitors() {
     } finally {
       setIsLoadingProcessed(false);
     }
-  };
+  }, [property?.id, t]);
 
   // AI suggestion function
   const handleAISuggestions = async () => {
@@ -363,8 +363,8 @@ export default function Competitors() {
   };
 
   // Fetch general settings to load current comp_price_calculation
-  const fetchGeneralSettings = async () => {
-    if (!property) return;
+  const fetchGeneralSettings = useCallback(async () => {
+    if (!property?.id) return;
     
     try {
       console.log('🔧 FRONTEND DEBUG: Fetching general settings for property:', property.id);
@@ -383,16 +383,17 @@ export default function Competitors() {
       console.error("Error loading general settings:", error);
       // Don't show error to user since it's not critical
     }
-  };
+  }, [property?.id]);
 
   // Fetch all competitors when property changes
+  // Use property?.id instead of property object to avoid unnecessary re-renders
   useEffect(() => {
-    if (property) {
+    if (property?.id) {
       fetchGeneralSettings();
       fetchProcessedCompetitors();
       fetchCompetitorCandidates();
     }
-  }, [property]);
+  }, [property?.id, fetchGeneralSettings, fetchProcessedCompetitors, fetchCompetitorCandidates]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

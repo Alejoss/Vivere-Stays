@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { Save, ChevronDown, Percent } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { dynamicPricingService, UnifiedRoomRate } from "../../../shared/api/dynamic";
@@ -17,8 +17,8 @@ export default function AvailableRates() {
   // Temporary input values to allow '-', '.' during typing without coercion
   const [tempValues, setTempValues] = useState<Record<string, string>>({});
 
-  // Helper function to sort rates with base rate first
-  const sortRatesWithBaseFirst = (rates: UnifiedRoomRate[]): UnifiedRoomRate[] => {
+  // Helper function to sort rates with base rate first - memoize to prevent recreation
+  const sortRatesWithBaseFirst = useCallback((rates: UnifiedRoomRate[]): UnifiedRoomRate[] => {
     return [...rates].sort((a, b) => {
       // Base rate comes first
       if (a.is_base_rate && !b.is_base_rate) return -1;
@@ -30,7 +30,7 @@ export default function AvailableRates() {
       }
       return a.rate_id.localeCompare(b.rate_id);
     });
-  };
+  }, []);
 
   useEffect(() => {
     const fetchAvailableRates = async () => {
@@ -56,7 +56,7 @@ export default function AvailableRates() {
     };
 
     fetchAvailableRates();
-  }, [property?.id]);
+  }, [property?.id, t, sortRatesWithBaseFirst]);
 
   const handleSave = async () => {
     if (!property?.id) {

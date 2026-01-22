@@ -1,10 +1,9 @@
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Lock, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
-import { usePriceHistory, useMSPPriceHistory, useCompetitorAveragePriceHistory, useUserProperties } from "../../../shared/api/hooks";
-import { getLocalStorageItem, setLocalStorageItem, getVivereConnection } from "../../../shared/localStorage";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePriceHistory, useMSPPriceHistory, useCompetitorAveragePriceHistory, useUserProperties, useProperty } from "../../../shared/api/hooks";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
-import { hasPMSConfigured } from "../../../shared/utils/pmsUtils";
 
 type CalendarCell = {
   day: number;
@@ -32,7 +31,22 @@ const columnWidthClasses = "w-[42px] sm:w-[70px] md:w-[85px] lg:w-[110px] xl:w-[
 const cellHeightClasses = "h-[40px] sm:h-[55px] md:h-[75px] lg:h-[95px] xl:h-[110px] 2xl:h-[125px]";
 const containerMinWidthClasses = "min-w-[294px] sm:min-w-[490px] md:min-w-[595px] lg:min-w-[770px] xl:min-w-[910px] 2xl:min-w-[1050px]";
 
-// Function to generate calendar data for any month/year
+// Optimized: Create price history maps for O(1) lookups instead of O(n) find operations
+const createPriceHistoryMap = (
+  priceHistory: Array<{ checkin_date: string; price: number; occupancy_level: string; overwrite: boolean }>
+): Map<string, { price: number; occupancy_level: string; overwrite: boolean }> => {
+  const map = new Map();
+  for (const item of priceHistory) {
+    map.set(item.checkin_date, {
+      price: item.price,
+      occupancy_level: item.occupancy_level,
+      overwrite: item.overwrite,
+    });
+  }
+  return map;
+};
+
+// Function to generate calendar data for any month/year (optimized with Map lookups)
 const generateCalendarData = (
   year: number,
   month: number,
@@ -46,6 +60,11 @@ const generateCalendarData = (
   const daysInMonth = getDaysInMonth(year, month);
   const weeks: CalendarCell[][] = [];
 
+  // Create maps for O(1) lookups instead of O(n) find operations
+  const priceHistoryMap = createPriceHistoryMap(priceHistory);
+  const mspPriceHistoryMap = createPriceHistoryMap(mspPriceHistory);
+  const competitorAveragePriceHistoryMap = createPriceHistoryMap(competitorAveragePriceHistory);
+
   let currentWeek: CalendarCell[] = [];
 
   // Add empty cells for days before the first day of the month
@@ -53,14 +72,18 @@ const generateCalendarData = (
     currentWeek.push(null);
   }
 
-      // Add all days of the month
+  // Pre-calculate month string for date formatting
+  const monthStr = (month + 1).toString().padStart(2, '0');
+
+  // Add all days of the month
   for (let day = 1; day <= daysInMonth; day++) {
-    // Find price data for this day
-    const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    // Generate date string once per day
+    const dayStr = day.toString().padStart(2, '0');
+    const dateStr = `${year}-${monthStr}-${dayStr}`;
     
     if (isMSPMode) {
       // MSP mode: look for MSP data
-      const mspData = mspPriceHistory.find(item => item.checkin_date === dateStr);
+      const mspData = mspPriceHistoryMap.get(dateStr);
       if (mspData) {
         currentWeek.push({
           day,
@@ -81,9 +104,9 @@ const generateCalendarData = (
       }
     } else if (isCompetitorAverageMode) {
       // Competitor Average mode: look for competitor average data
-      const competitorAvgData = competitorAveragePriceHistory.find(item => item.checkin_date === dateStr);
+      const competitorAvgData = competitorAveragePriceHistoryMap.get(dateStr);
       // Always get occupancy from price history for consistent coloring
-      const priceData = priceHistory.find(item => item.checkin_date === dateStr);
+      const priceData = priceHistoryMap.get(dateStr);
       const occupancyLevel = priceData ? priceData.occupancy_level : "medium";
       
       if (competitorAvgData) {
@@ -106,7 +129,7 @@ const generateCalendarData = (
       }
     } else {
       // Regular price mode: look for price history data
-      const priceData = priceHistory.find(item => item.checkin_date === dateStr);
+      const priceData = priceHistoryMap.get(dateStr);
       currentWeek.push({
         day,
         price: priceData ? `$${priceData.price}` : "$0", // Default price if no data
@@ -150,7 +173,8 @@ const getOccupancyColor = (occupancy: string) => {
   }
 };
 
-function CalendarCell({
+// Memoized CalendarCell component to prevent unnecessary re-renders
+const CalendarCell = memo(function CalendarCell({
   day,
   price,
   occupancy,
@@ -167,10 +191,12 @@ function CalendarCell({
   highlight?: boolean;
   isNoMSP?: boolean;
 }) {
+  const occupancyColor = useMemo(() => getOccupancyColor(occupancy), [occupancy]);
+  
   return (
     <button
       onClick={onClick}
-      className={`flex ${columnWidthClasses} ${cellHeightClasses} rounded-lg ${getOccupancyColor(occupancy)} p-[2px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-2 sm:border-4 border-yellow-400 z-10' : ''}`}
+      className={`flex ${columnWidthClasses} ${cellHeightClasses} rounded-lg ${occupancyColor} p-[2px] sm:p-[6px] md:p-[8px] lg:p-[10px] xl:p-[12px] justify-center items-center hover:scale-105 transition-transform cursor-pointer relative ${highlight ? 'border-2 sm:border-4 border-yellow-400 z-10' : ''}`}
     >
       {/* Lock icon at top right if overwrite is true (but not in MSP mode) */}
       {overwrite && !isNoMSP && (
@@ -191,7 +217,7 @@ function CalendarCell({
       </div>
     </button>
   );
-}
+});
 
 interface PriceCalendarProps {
   onDateClick: (day: number, month?: string, year?: string) => void;
@@ -201,10 +227,11 @@ interface PriceCalendarProps {
 }
 
 export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onPriceOptionChange }: PriceCalendarProps) {
-  const { t } = useTranslation(['dashboard', 'common']);
+  const { t, i18n } = useTranslation(['dashboard', 'common']);
+  const queryClient = useQueryClient();
   
-  // Month names array from translations
-  const monthNames = [
+  // Memoize translation arrays - only recalculate when language changes
+  const monthNames = useMemo(() => [
     t('dashboard:calendar.months.january'),
     t('dashboard:calendar.months.february'),
     t('dashboard:calendar.months.march'),
@@ -217,10 +244,10 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     t('dashboard:calendar.months.october'),
     t('dashboard:calendar.months.november'),
     t('dashboard:calendar.months.december'),
-  ];
+  ], [t, i18n.language]);
 
-  // Day headers from translations
-  const dayHeaders = [
+  // Memoize day headers
+  const dayHeaders = useMemo(() => [
     t('dashboard:calendar.days.sun'),
     t('dashboard:calendar.days.mon'),
     t('dashboard:calendar.days.tue'),
@@ -228,36 +255,48 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     t('dashboard:calendar.days.thu'),
     t('dashboard:calendar.days.fri'),
     t('dashboard:calendar.days.sat'),
-  ];
+  ], [t, i18n.language]);
 
-  // Price options from translations
-  const priceOptions = [
+  // Memoize price options
+  const priceOptions = useMemo(() => [
     t('dashboard:calendar.priceTypes.averageDailyRate'),
     t('dashboard:calendar.priceTypes.competitorAverage'),
     t('dashboard:calendar.priceTypes.msp'),
-  ];
+  ], [t, i18n.language]);
+
+  // Memoize default price option
+  const defaultPriceOption = useMemo(() => t('dashboard:calendar.priceTypes.averageDailyRate'), [t, i18n.language]);
   
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(propertyId || null);
-  const [propertyData, setPropertyData] = useState<any>(null);
-  const [selectedPrice, setSelectedPrice] = useState(t('dashboard:calendar.priceTypes.averageDailyRate'));
+  const [selectedPrice, setSelectedPrice] = useState(defaultPriceOption);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Use React Query hook for property data instead of manual useEffect + localStorage
+  const { data: propertyData } = useProperty(selectedPropertyId || '');
 
   // Get user properties (only if no propertyId is provided)
   const { data: userPropertiesData, isLoading: propertiesLoading } = useUserProperties();
   
-  // Determine current mode from selectedPrice
-  const isMSPMode = selectedPrice === t('dashboard:calendar.priceTypes.msp');
-  const isCompetitorAverageMode = selectedPrice === t('dashboard:calendar.priceTypes.competitorAverage');
+  // Memoize mode detection to avoid recalculation
+  const mspPriceOption = useMemo(() => t('dashboard:calendar.priceTypes.msp'), [t, i18n.language]);
+  const competitorAveragePriceOption = useMemo(() => t('dashboard:calendar.priceTypes.competitorAverage'), [t, i18n.language]);
+  
+  // Determine current mode from selectedPrice (memoized)
+  const isMSPMode = useMemo(() => selectedPrice === mspPriceOption, [selectedPrice, mspPriceOption]);
+  const isCompetitorAverageMode = useMemo(() => selectedPrice === competitorAveragePriceOption, [selectedPrice, competitorAveragePriceOption]);
+  
+  // Memoize API month parameter (1-indexed)
+  const apiMonth = useMemo(() => currentMonth + 1, [currentMonth]);
   
   // Get price history for the selected property and month (always fetched for occupancy coloring)
-  const { data: priceHistoryData, isLoading: priceHistoryLoading, isError: priceHistoryError, error: priceHistoryErr } = usePriceHistory(
+  const { data: priceHistoryData, isLoading: priceHistoryLoading, isError: priceHistoryError } = usePriceHistory(
     selectedPropertyId || '',
     currentYear,
-    currentMonth + 1, // Convert to 1-indexed for API
+    apiMonth,
     refreshKey // Pass refreshKey as a dependency
   );
 
@@ -265,7 +304,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   const { data: mspPriceHistoryData, isLoading: mspPriceHistoryLoading } = useMSPPriceHistory(
     selectedPropertyId || '',
     currentYear,
-    currentMonth + 1, // Convert to 1-indexed for API
+    apiMonth,
     refreshKey, // Pass refreshKey as a dependency
     isMSPMode // Only fetch when MSP mode is selected
   );
@@ -274,31 +313,10 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
   const { data: competitorAveragePriceHistoryData, isLoading: competitorAveragePriceHistoryLoading } = useCompetitorAveragePriceHistory(
     selectedPropertyId || '',
     currentYear,
-    currentMonth + 1, // Convert to 1-indexed for API
+    apiMonth,
     refreshKey, // Pass refreshKey as a dependency
     isCompetitorAverageMode // Only fetch when Competitor Average mode is selected
   );
-
-  // Fetch property data if not in localStorage
-  useEffect(() => {
-    async function fetchAndStorePropertyData(id: string) {
-      try {
-        const localKey = `property_${id}_info`;
-        let data = getLocalStorageItem<any>(localKey);
-        if (!data) {
-          const response = await dynamicPricingService.getProperty(id);
-          data = response;
-          setLocalStorageItem(localKey, data);
-        }
-        setPropertyData(data);
-      } catch (e) {
-        console.error("Error fetching property data:", e);
-      }
-    }
-    if (selectedPropertyId) {
-      fetchAndStorePropertyData(selectedPropertyId);
-    }
-  }, [selectedPropertyId]);
 
 
   // Set the first property as selected when properties are loaded (only if no propertyId is provided)
@@ -315,70 +333,125 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
     }
   }, [propertyId, selectedPropertyId]);
 
+  // Update selectedPrice when defaultPriceOption changes (language change)
+  useEffect(() => {
+    if (selectedPrice === mspPriceOption || selectedPrice === competitorAveragePriceOption) {
+      // Keep current selection if it's a valid option
+      return;
+    }
+    // Reset to default if current selection doesn't match any option (e.g., after language change)
+    setSelectedPrice(defaultPriceOption);
+  }, [defaultPriceOption, mspPriceOption, competitorAveragePriceOption, selectedPrice]);
 
-  
-  const calendarData = generateCalendarData(
-    currentYear, 
-    currentMonth, 
-    priceHistoryData?.price_history || [],
-    mspPriceHistoryData?.price_history || [],
-    competitorAveragePriceHistoryData?.price_history || [],
+  // Prefetch adjacent months in the background for smoother navigation
+  useEffect(() => {
+    if (!selectedPropertyId) return;
+
+    // Calculate previous and next month/year
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+
+    // Prefetch previous month price history
+    queryClient.prefetchQuery({
+      queryKey: ['dynamic-pricing', 'price-history', selectedPropertyId, prevYear, prevMonth + 1, refreshKey],
+      queryFn: () => dynamicPricingService.getPriceHistory(selectedPropertyId, prevYear, prevMonth + 1),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+
+    // Prefetch next month price history
+    queryClient.prefetchQuery({
+      queryKey: ['dynamic-pricing', 'price-history', selectedPropertyId, nextYear, nextMonth + 1, refreshKey],
+      queryFn: () => dynamicPricingService.getPriceHistory(selectedPropertyId, nextYear, nextMonth + 1),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+  }, [selectedPropertyId, currentYear, currentMonth, refreshKey, queryClient]);
+
+  // Memoize calendar data generation - only recalculate when dependencies change
+  const calendarData = useMemo(() => {
+    return generateCalendarData(
+      currentYear, 
+      currentMonth, 
+      priceHistoryData?.price_history || [],
+      mspPriceHistoryData?.price_history || [],
+      competitorAveragePriceHistoryData?.price_history || [],
+      isMSPMode,
+      isCompetitorAverageMode
+    );
+  }, [
+    currentYear,
+    currentMonth,
+    priceHistoryData?.price_history,
+    mspPriceHistoryData?.price_history,
+    competitorAveragePriceHistoryData?.price_history,
     isMSPMode,
     isCompetitorAverageMode
-  );
+  ]);
 
-  const goToPreviousMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-  };
+  // Memoize navigation handlers with useCallback
+  const goToPreviousMonth = useCallback(() => {
+    setCurrentMonth(prevMonth => {
+      if (prevMonth === 0) {
+        setCurrentYear(prevYear => prevYear - 1);
+        return 11;
+      }
+      return prevMonth - 1;
+    });
+  }, []);
 
-  const goToNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
-  };
+  const goToNextMonth = useCallback(() => {
+    setCurrentMonth(prevMonth => {
+      if (prevMonth === 11) {
+        setCurrentYear(prevYear => prevYear + 1);
+        return 0;
+      }
+      return prevMonth + 1;
+    });
+  }, []);
 
-  const handleDateClick = (day: number) => {
+  // Memoize date click handler
+  const handleDateClick = useCallback((day: number) => {
     onDateClick(day, monthNames[currentMonth], currentYear.toString());
-  };
+  }, [onDateClick, monthNames, currentMonth, currentYear]);
 
-  const handleMonthSelect = (monthIndex: number) => {
+  // Memoize month select handler
+  const handleMonthSelect = useCallback((monthIndex: number) => {
     setCurrentMonth(monthIndex);
     setCurrentYear(tempYear);
     setShowMonthPicker(false);
-  };
+  }, [tempYear]);
 
-  const handlePriceOptionSelect = (option: string) => {
+  // Memoize price option select handler
+  const handlePriceOptionSelect = useCallback((option: string) => {
     setSelectedPrice(option);
     setIsDropdownOpen(false);
     if (onPriceOptionChange) {
       onPriceOptionChange(option);
     }
-  };
+  }, [onPriceOptionChange]);
 
-  const toggleMonthPicker = () => {
-    if (!showMonthPicker) {
-      setTempYear(currentYear);
-    }
-    setShowMonthPicker(!showMonthPicker);
-  };
+  // Memoize month picker toggle
+  const toggleMonthPicker = useCallback(() => {
+    setShowMonthPicker(prev => {
+      if (!prev) {
+        setTempYear(currentYear);
+      }
+      return !prev;
+    });
+  }, [currentYear]);
 
-  // Get today's date for highlighting
-  const today = new Date();
-  const isToday = (day: number) => {
+  // Memoize today's date to avoid recreating on every render
+  const today = useMemo(() => new Date(), []);
+  
+  // Memoize isToday function
+  const isToday = useCallback((day: number) => {
     return (
       day === today.getDate() &&
       currentMonth === today.getMonth() &&
       currentYear === today.getFullYear()
     );
-  };
+  }, [today, currentMonth, currentYear]);
 
   // Show loading state while fetching properties (only if no propertyId is provided)
   if (!propertyId && propertiesLoading) {
@@ -406,10 +479,6 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
       </div>
     );
   }
-
-  // Determine if PMS is missing
-  const hasPMS = hasPMSConfigured(propertyData);
-  const isConnected = getVivereConnection();
 
   return (
     <div className="w-full max-w-none bg-white border border-hotel-border-light rounded-[9px] p-4 lg:p-[26px]">
@@ -593,7 +662,7 @@ export default function PriceCalendar({ onDateClick, propertyId, refreshKey, onP
               {week.map((cell, cellIndex) =>
                 cell ? (
                   <CalendarCell
-                    key={cell.day}
+                    key={`${currentYear}-${currentMonth}-${cell.day}`}
                     day={cell.day}
                     price={cell.price}
                     occupancy={cell.occupancy}

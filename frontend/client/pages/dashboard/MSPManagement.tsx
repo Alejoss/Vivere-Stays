@@ -173,7 +173,7 @@ export default function MSPManagement() {
       console.error("Error saving MSP periods:", err);
       
       // Parse and format error messages for better user experience
-      let errorMessage = "Failed to save MSP periods. Please try again.";
+      let errorMessage = t('dashboard:mspManagement.saveError', { defaultValue: 'Failed to save MSP periods. Please try again.' });
       
       if (err?.error) {
         // Handle the specific validation error format from the backend
@@ -193,14 +193,21 @@ export default function MSPManagement() {
                 
                 // Check for specific validation errors
                 if (errorDetails.includes('valid_until must be after valid_from') || errorDetails.includes('valid_until must be after or equal to valid_from')) {
-                  errorMessage = `Invalid date range: The end date (${toDate}) must be after or equal to the start date (${fromDate}). Please correct the dates and try again.`;
+                  errorMessage = t('dashboard:mspManagement.invalidDateRange', { 
+                    toDate, 
+                    fromDate,
+                    defaultValue: `Invalid date range: The end date (${toDate}) must be after or equal to the start date (${fromDate}). Please correct the dates and try again.`
+                  });
                 } else if (errorDetails.includes('non_field_errors')) {
-                  errorMessage = `Invalid period data: Please check that all dates and prices are valid.`;
+                  errorMessage = t('dashboard:mspManagement.invalidPeriodData', { defaultValue: 'Invalid period data: Please check that all dates and prices are valid.' });
                 } else {
-                  errorMessage = `Period validation error: ${errorDetails.replace(/'/g, '')}`;
+                  errorMessage = t('dashboard:mspManagement.periodValidationError', { 
+                    details: errorDetails.replace(/'/g, ''),
+                    defaultValue: `Period validation error: ${errorDetails.replace(/'/g, '')}`
+                  });
                 }
               } else {
-                errorMessage = `Invalid period data: Please check that all required fields are filled correctly.`;
+                errorMessage = t('dashboard:mspManagement.invalidPeriodFields', { defaultValue: 'Invalid period data: Please check that all required fields are filled correctly.' });
               }
             } else {
               errorMessage = err.error;
@@ -360,9 +367,34 @@ export default function MSPManagement() {
       // Handle dd/mm/yyyy format
       if (dateStr.includes("/")) {
         const [day, month, year] = dateStr.split("/");
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const dayNum = parseInt(day, 10);
+        const monthNum = parseInt(month, 10);
+        const yearNum = parseInt(year, 10);
+        
+        // Validate parsed values are valid numbers
+        if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) {
+          return undefined;
+        }
+        
+        // Validate reasonable date ranges
+        if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31 || yearNum < 1900 || yearNum > 2100) {
+          return undefined;
+        }
+        
+        const date = new Date(yearNum, monthNum - 1, dayNum);
+        // Verify the date is valid (handles cases like Feb 30)
+        if (date.getFullYear() !== yearNum || date.getMonth() !== monthNum - 1 || date.getDate() !== dayNum) {
+          return undefined;
+        }
+        
+        return date;
       }
-      return new Date(dateStr);
+      const date = new Date(dateStr);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return undefined;
+      }
+      return date;
     } catch {
       return undefined;
     }

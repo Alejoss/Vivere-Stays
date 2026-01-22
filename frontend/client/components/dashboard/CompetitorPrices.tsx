@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { dynamicPricingService } from "../../../shared/api/dynamic";
-import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { CompetitorPriceForDate } from "../../../shared/api/dynamic";
 
 interface Competitor {
@@ -48,10 +48,49 @@ export default function CompetitorPrices({
   onModalClose,
   selectedDayPriceHistory,
 }: CompetitorPricesProps) {
+  const { t, i18n } = useTranslation(['dashboard', 'common']);
   const [suggestedPrice, setSuggestedPrice] = useState("");
   const [competitorData, setCompetitorData] = useState<CompetitorPriceForDate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Memoize month names - only recalculate when language changes
+  const monthNames = useMemo(() => [
+    t('dashboard:calendar.months.january'),
+    t('dashboard:calendar.months.february'),
+    t('dashboard:calendar.months.march'),
+    t('dashboard:calendar.months.april'),
+    t('dashboard:calendar.months.may'),
+    t('dashboard:calendar.months.june'),
+    t('dashboard:calendar.months.july'),
+    t('dashboard:calendar.months.august'),
+    t('dashboard:calendar.months.september'),
+    t('dashboard:calendar.months.october'),
+    t('dashboard:calendar.months.november'),
+    t('dashboard:calendar.months.december'),
+  ], [t, i18n.language]);
+
+  // Convert translated month name to month number (1-12)
+  // This works regardless of language by finding the index in the translated array
+  // Memoize this function to avoid recreating it on every render
+  const getMonthNumber = useMemo(() => {
+    return (monthName: string): number => {
+      const index = monthNames.findIndex(name => name.toLowerCase() === monthName.toLowerCase());
+      if (index === -1) {
+        // Fallback: try English month names if translation doesn't match
+        const englishMonths = ['january', 'february', 'march', 'april', 'may', 'june', 
+                              'july', 'august', 'september', 'october', 'november', 'december'];
+        const englishIndex = englishMonths.findIndex(name => name.toLowerCase() === monthName.toLowerCase());
+        if (englishIndex !== -1) {
+          return englishIndex + 1;
+        }
+        // Last resort: try Date parsing (only works for English)
+        const parsed = new Date(`${monthName} 1, 2000`).getMonth() + 1;
+        return isNaN(parsed) ? 1 : parsed; // Default to January if all fails
+      }
+      return index + 1; // +1 because months are 1-indexed
+    };
+  }, [monthNames]);
 
   useEffect(() => {
     console.log('[CompetitorPrices] useEffect triggered with:', { propertyId, selectedDate });
@@ -62,13 +101,13 @@ export default function CompetitorPrices({
     setLoading(true);
     setError(null);
     setCompetitorData([]);
-    // Convert month name to number
-    const monthIndex = new Date(`${selectedDate.month} 1, 2000`).getMonth() + 1;
+    // Convert month name to number using locale-aware function
+    const monthIndex = getMonthNumber(selectedDate.month);
     const checkinDate = `${selectedDate.year}-${monthIndex
       .toString()
       .padStart(2, "0")}-${selectedDate.day.toString().padStart(2, "0")}`;
     
-    console.log('[CompetitorPrices] Making API call with:', { propertyId, checkinDate, monthIndex });
+    console.log('[CompetitorPrices] Making API call with:', { propertyId, checkinDate, monthIndex, monthName: selectedDate.month });
     
     dynamicPricingService
       .getCompetitorPricesForDate(propertyId, checkinDate)
@@ -78,18 +117,19 @@ export default function CompetitorPrices({
       })
       .catch((error) => {
         console.error('[CompetitorPrices] API call failed:', error);
-        setError("Failed to load competitor prices");
+        const errorMsg = error?.response?.data?.message || error?.message || t('dashboard:competitorPrices.loadError', { defaultValue: 'Failed to load competitor prices' });
+        setError(errorMsg);
       })
       .finally(() => {
         console.log('[CompetitorPrices] API call completed');
         setLoading(false);
       });
-  }, [propertyId, selectedDate]);
+  }, [propertyId, selectedDate, getMonthNumber]);
 
   const handleUpdatePrice = async () => {
     if (!propertyId || !selectedDate) return;
-    // Convert month name to number
-    const monthIndex = new Date(`${selectedDate.month} 1, 2000`).getMonth() + 1;
+    // Convert month name to number using locale-aware function
+    const monthIndex = getMonthNumber(selectedDate.month);
     const checkinDate = `${selectedDate.year}-${monthIndex
       .toString()
       .padStart(2, "0")}-${selectedDate.day.toString().padStart(2, "0")}`;
@@ -104,8 +144,10 @@ export default function CompetitorPrices({
       if (onPriceUpdate) onPriceUpdate();
       // Close modal after successful update
       if (onModalClose) onModalClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('[handleUpdatePrice] API error:', error);
+      const errorMsg = error?.response?.data?.message || error?.message || t('dashboard:competitorPrices.updateError', { defaultValue: 'Failed to update price' });
+      setError(errorMsg);
     }
   };
 

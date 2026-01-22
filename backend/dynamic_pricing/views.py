@@ -1929,7 +1929,7 @@ class FetchCompetitorsView(APIView):
     """
     API endpoint to fetch competitors from an external API using a Booking.com URL.
     """
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """

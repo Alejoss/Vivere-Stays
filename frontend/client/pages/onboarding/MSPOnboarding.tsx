@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "@/components/ui/calendar";
@@ -59,19 +59,22 @@ export default function MSP() {
     fetchUserProperty();
   }, []);
   
-  // Helper function to get current date in dd/MM/yyyy format
-  const getCurrentDate = () => {
+  // Helper function to get current date in dd/MM/yyyy format - memoize to prevent recreation
+  const getCurrentDate = useCallback(() => {
     const today = new Date();
     const day = today.getDate().toString().padStart(2, '0');
     const month = (today.getMonth() + 1).toString().padStart(2, '0');
     const year = today.getFullYear();
     return `${day}/${month}/${year}`;
-  };
+  }, []);
+
+  // Memoize initial date to prevent recreation on every render
+  const initialDate = useMemo(() => getCurrentDate(), [getCurrentDate]);
 
   const [periods, setPeriods] = useState<MSPPeriod[]>([
     {
       id: "1",
-      fromDate: getCurrentDate(),
+      fromDate: initialDate,
       toDate: "",
       price: "0",
       periodTitle: "",
@@ -119,7 +122,7 @@ export default function MSP() {
       }
       return currentPeriods;
     });
-  }, []); // Run only once when component mounts
+  }, [getCurrentDate]); // Run only once when component mounts
 
   const handleBack = () => {
     navigate("/add-competitor");
@@ -153,7 +156,11 @@ export default function MSP() {
     
     if (invalidPeriods.length > 0) {
       const invalidPeriod = invalidPeriods[0]; // Show first invalid period
-      setError(`Invalid date range: The end date (${invalidPeriod.toDate}) must be after or equal to the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`);
+      setError(t('onboarding:msp.invalidDateRange', { 
+        toDate: invalidPeriod.toDate, 
+        fromDate: invalidPeriod.fromDate,
+        defaultValue: `Invalid date range: The end date (${invalidPeriod.toDate}) must be after or equal to the start date (${invalidPeriod.fromDate}). Please correct the dates and try again.`
+      }));
       return;
     }
     // Debug: Log property prior to guard
@@ -162,7 +169,7 @@ export default function MSP() {
 
     // Ensure we have a property id
     if (!property?.id) {
-      setError("No property found. Please complete the hotel setup first.");
+      setError(t('onboarding:msp.noProperty', { defaultValue: 'No property found. Please complete the hotel setup first.' }));
       return;
     }
 
@@ -173,7 +180,10 @@ export default function MSP() {
       const result = await dynamicPricingService.createPropertyMSP(property.id, { periods });
       
       if (result.errors && result.errors.length > 0) {
-        setError(`Some periods could not be saved: ${result.errors.join(', ')}`);
+        setError(t('onboarding:msp.partialSaveError', { 
+          errors: result.errors.join(', '),
+          defaultValue: `Some periods could not be saved: ${result.errors.join(', ')}`
+        }));
         return;
       }
       
@@ -198,7 +208,7 @@ export default function MSP() {
       console.error("Error saving MSP periods:", err);
       
       // Parse and format error messages for better user experience
-      let errorMessage = "Failed to save MSP periods. Please try again.";
+      let errorMessage = t('onboarding:msp.saveError', { defaultValue: 'Failed to save MSP periods. Please try again.' });
       
       if (err?.error) {
         // Handle the specific validation error format from the backend
@@ -218,14 +228,21 @@ export default function MSP() {
                 
                 // Check for specific validation errors
                 if (errorDetails.includes('valid_until must be after valid_from') || errorDetails.includes('valid_until must be after or equal to valid_from')) {
-                  errorMessage = `Invalid date range: The end date (${toDate}) must be after or equal to the start date (${fromDate}). Please correct the dates and try again.`;
+                  errorMessage = t('onboarding:msp.invalidDateRange', { 
+                    toDate, 
+                    fromDate,
+                    defaultValue: `Invalid date range: The end date (${toDate}) must be after or equal to the start date (${fromDate}). Please correct the dates and try again.`
+                  });
                 } else if (errorDetails.includes('non_field_errors')) {
-                  errorMessage = `Invalid period data: Please check that all dates and prices are valid.`;
+                  errorMessage = t('onboarding:msp.invalidPeriodData', { defaultValue: 'Invalid period data: Please check that all dates and prices are valid.' });
                 } else {
-                  errorMessage = `Period validation error: ${errorDetails.replace(/'/g, '')}`;
+                  errorMessage = t('onboarding:msp.periodValidationError', { 
+                    details: errorDetails.replace(/'/g, ''),
+                    defaultValue: `Period validation error: ${errorDetails.replace(/'/g, '')}`
+                  });
                 }
               } else {
-                errorMessage = `Invalid period data: Please check that all required fields are filled correctly.`;
+                errorMessage = t('onboarding:msp.invalidPeriodFields', { defaultValue: 'Invalid period data: Please check that all required fields are filled correctly.' });
               }
             } else {
               errorMessage = err.error;
@@ -325,9 +342,34 @@ export default function MSP() {
       // Handle dd/mm/yyyy format
       if (dateStr.includes("/")) {
         const [day, month, year] = dateStr.split("/");
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        const dayNum = parseInt(day, 10);
+        const monthNum = parseInt(month, 10);
+        const yearNum = parseInt(year, 10);
+        
+        // Validate parsed values are valid numbers
+        if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) {
+          return undefined;
+        }
+        
+        // Validate reasonable date ranges
+        if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31 || yearNum < 1900 || yearNum > 2100) {
+          return undefined;
+        }
+        
+        const date = new Date(yearNum, monthNum - 1, dayNum);
+        // Verify the date is valid (handles cases like Feb 30)
+        if (date.getFullYear() !== yearNum || date.getMonth() !== monthNum - 1 || date.getDate() !== dayNum) {
+          return undefined;
+        }
+        
+        return date;
       }
-      return new Date(dateStr);
+      const date = new Date(dateStr);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return undefined;
+      }
+      return date;
     } catch {
       return undefined;
     }
