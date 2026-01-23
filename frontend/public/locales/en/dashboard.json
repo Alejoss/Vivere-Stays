@@ -61,7 +61,16 @@
       "low": "0-35% (Low)",
       "medium": "36-69% (Medium)",
       "high": "70%+ (High)"
-    }
+    },
+    "occupancy": "Occupancy",
+    "occupancyWithValue": "Occupancy {{value}}%",
+    "occupancyNoData": "Occupancy --",
+    "setPriceForThisDay": "Set price for this day",
+    "updatePrice": "Update price",
+    "mspForThisDay": "MSP for this day: ${{msp}}",
+    "loadingCompetitorPrices": "Loading competitor prices...",
+    "noCompetitorData": "No competitor data",
+    "soldOut": "Sold Out"
   },
   "changePrices": {
     "title": "Change Prices",

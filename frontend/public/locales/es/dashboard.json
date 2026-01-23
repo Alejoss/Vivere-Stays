@@ -61,7 +61,16 @@
       "low": "0-35% (Baja)",
       "medium": "36-69% (Media)",
       "high": "70%+ (Alta)"
-    }
+    },
+    "occupancy": "Ocupación",
+    "occupancyWithValue": "Ocupación {{value}}%",
+    "occupancyNoData": "Ocupación --",
+    "setPriceForThisDay": "Establecer precio para este día",
+    "updatePrice": "Actualizar precio",
+    "mspForThisDay": "MSP para este día: ${{msp}}",
+    "loadingCompetitorPrices": "Cargando precios de competidores...",
+    "noCompetitorData": "No hay datos de competidores",
+    "soldOut": "Agotado"
   },
   "changePrices": {
     "title": "Cambiar Precios",

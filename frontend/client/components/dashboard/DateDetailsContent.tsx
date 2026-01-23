@@ -134,7 +134,7 @@ export default function DateDetailsContent({
       {/* MSP Information */}
       {propertyId && selectedDate && !mspForDay.loading && mspForDay.msp && (
         <div className="text-center text-responsive-base font-medium text-[#294758] py-2">
-          MSP for this day: ${mspForDay.msp.msp}
+          {t('dashboard:calendar.mspForThisDay', { msp: mspForDay.msp.msp })}
         </div>
       )}
 

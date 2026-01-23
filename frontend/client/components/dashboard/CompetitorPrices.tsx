@@ -31,7 +31,10 @@ interface CompetitorPricesProps {
   selectedDayPriceHistory?: PriceHistoryEntry | null;
 }
 
-function getOrdinal(n: number) {
+function getOrdinal(n: number, locale: string = 'en') {
+  // Spanish doesn't use ordinals
+  if (locale === 'es') return '';
+  
   if (n > 3 && n < 21) return "th";
   switch (n % 10) {
     case 1: return "st";
@@ -151,8 +154,10 @@ export default function CompetitorPrices({
     }
   };
 
-  // Format date as "August 23rd"
-  const formattedDate = `${selectedDate.month} ${selectedDate.day}${getOrdinal(selectedDate.day)}`;
+  // Format date - use ordinal for English, plain number for Spanish
+  const formattedDate = i18n.language === 'es' 
+    ? `${selectedDate.day} de ${selectedDate.month}`
+    : `${selectedDate.month} ${selectedDate.day}${getOrdinal(selectedDate.day, i18n.language)}`;
   const occupancyValue = selectedDayPriceHistory && selectedDayPriceHistory.occupancy !== undefined && selectedDayPriceHistory.occupancy !== null
     ? Math.round(selectedDayPriceHistory.occupancy)
     : null;
@@ -165,7 +170,9 @@ export default function CompetitorPrices({
       </div>
       {/* Occupancy */}
       <div className="text-responsive-base font-semibold text-[#294758] mb-1 text-center">
-        {occupancyValue !== null ? `Occupancy ${occupancyValue}%` : "Occupancy --"}
+        {occupancyValue !== null 
+          ? t('dashboard:calendar.occupancyWithValue', { value: occupancyValue })
+          : t('dashboard:calendar.occupancyNoData')}
       </div>
       {/* Competitor List */}
       <div className="flex flex-col mb-[20px]">
@@ -192,7 +199,7 @@ export default function CompetitorPrices({
               </span>
               <span className="text-responsive-sm font-semibold text-[#8A8E94]">
                 {competitor.sold_out
-                  ? "Sold Out"
+                  ? t('dashboard:calendar.soldOut')
                   : (competitor.price !== null && competitor.price !== undefined
                       ? `$${competitor.price}`
                       : "--")}
@@ -204,7 +211,7 @@ export default function CompetitorPrices({
       {/* Suggested Price Section */}
       <div className="border border-blue-300 rounded-[9px] bg-blue-50 p-[15px] flex flex-col items-center gap-2">
         <div className="text-responsive-base font-semibold text-[#287CAC] mb-[11px] text-center">
-          Set price for this day
+          {t('dashboard:calendar.setPriceForThisDay')}
         </div>
         {/* Price Input */}
         <div className="relative w-full mb-[10px]">
@@ -224,7 +231,7 @@ export default function CompetitorPrices({
           onClick={handleUpdatePrice}
           className="w-full py-[11px] bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-responsive-sm font-medium transition-colors mt-2"
         >
-          Update price
+          {t('dashboard:calendar.updatePrice')}
         </button>
         
         {/* Cancel Button */}
@@ -233,7 +240,7 @@ export default function CompetitorPrices({
             onClick={onModalClose}
             className="w-full py-[11px] bg-gray-500 hover:bg-gray-600 rounded-lg text-white text-responsive-sm font-medium transition-colors mt-2"
           >
-            Cancel
+            {t('common:buttons.cancel')}
           </button>
         )}
       </div>
