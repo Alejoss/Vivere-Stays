@@ -551,21 +551,6 @@ function WeeklyPriceOverview({
     setShowMonthDropdown(false);
   };
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
   return (
     <div className="w-full bg-white rounded-lg shadow-lg">
       {/* Header */}

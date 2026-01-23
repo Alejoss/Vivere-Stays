@@ -6,6 +6,123 @@
 
 ---
 
+## ⚡ Quick Deployment Reference
+
+### Full Deployment (Backend + Frontend Changes)
+
+**Use this when you've made changes to both backend and frontend code.**
+
+```bash
+# 1. Connect to server
+ssh alejoveintimilla@35.226.220.107
+cd ~/Vivere-Stays
+
+# 2. Pull latest code
+git pull origin main
+
+# 3. Stop current services
+docker compose -f docker-compose.remote.yml down
+
+# 4. Rebuild images
+# Frontend: Use --no-cache if VITE_API_BASE_URL changed
+docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
+docker compose -f docker-compose.remote.yml build vivere_backend
+
+# 5. Start services
+docker compose -f docker-compose.remote.yml up -d
+
+# 6. Run database migrations (if needed)
+docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
+
+# 7. Verify deployment
+docker ps
+docker logs vivere_backend --tail 50
+docker logs vivere_frontend --tail 50
+
+# 8. Test endpoints
+curl http://localhost:8000/api/profiles/check-auth/
+curl http://localhost:3000/
+```
+
+### Frontend-Only Deployment (Faster)
+
+**Use this when you've only changed frontend code (React components, styles, etc.).**
+
+```bash
+# 1. Connect to server
+ssh alejoveintimilla@35.226.220.107
+cd ~/Vivere-Stays
+
+# 2. Pull latest code
+git pull origin main
+
+# 3. Rebuild frontend image (use --no-cache if VITE_API_BASE_URL changed)
+docker compose -f docker-compose.remote.yml build --no-cache vivere_frontend
+
+# 4. Force recreate frontend container (IMPORTANT: use --force-recreate, not restart)
+docker compose -f docker-compose.remote.yml up -d --force-recreate --no-deps vivere_frontend
+
+# 5. Verify deployment
+docker logs vivere_frontend --tail 50
+curl http://localhost:3000/
+```
+
+### Backend-Only Deployment
+
+**Use this when you've only changed backend code.**
+
+```bash
+# 1. Connect to server
+ssh alejoveintimilla@35.226.220.107
+cd ~/Vivere-Stays
+
+# 2. Pull latest code
+git pull origin main
+
+# 3. Rebuild backend image
+docker compose -f docker-compose.remote.yml build vivere_backend
+
+# 4. Force recreate backend container
+docker compose -f docker-compose.remote.yml up -d --force-recreate --no-deps vivere_backend
+
+# 5. Run migrations (if needed)
+docker compose -f docker-compose.remote.yml exec vivere_backend python manage.py migrate
+
+# 6. Verify deployment
+docker logs vivere_backend --tail 50
+curl http://localhost:8000/api/profiles/check-auth/
+```
+
+### Key Commands Cheat Sheet
+
+```bash
+# View logs
+docker logs -f vivere_backend
+docker logs -f vivere_frontend
+
+# Check container status
+docker ps
+
+# Restart a service (uses existing image - only for crashes)
+docker compose -f docker-compose.remote.yml restart vivere_backend
+
+# Force recreate after rebuild (uses new image)
+docker compose -f docker-compose.remote.yml up -d --force-recreate --no-deps vivere_frontend
+
+# Stop all services
+docker compose -f docker-compose.remote.yml down
+
+# Start all services
+docker compose -f docker-compose.remote.yml up -d
+```
+
+**Important Notes:**
+- Always use `--no-cache` when rebuilding frontend after changing `VITE_API_BASE_URL`
+- Use `--force-recreate` (not `restart`) after rebuilding images to use the new image
+- After deployment, users may need to clear browser cache (Ctrl+Shift+R)
+
+---
+
 ## 🏗️ Production Architecture
 
 ```
