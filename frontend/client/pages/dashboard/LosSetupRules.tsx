@@ -81,21 +81,17 @@ export default function LosSetupRules() {
   const { control, handleSubmit, reset, formState, getValues, setError: setFormError, watch } = form;
   const { fields, append, remove, update } = useFieldArray({ control, name: 'rules' });
 
-  // Load existing data on component mount
-  useEffect(() => {
-    if (property?.id) {
-      loadExistingData();
-    }
-  }, [property?.id]);
+  // Extract property ID to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
 
-  const loadExistingData = async () => {
-    if (!property?.id) return;
+  const loadExistingData = useCallback(async () => {
+    if (!propertyId) return;
     
-    console.log('🔧 DEBUG: loadExistingData called for property:', property.id);
+    console.log('🔧 DEBUG: loadExistingData called for property:', propertyId);
     setIsLoading(true);
     
     try {
-      const response = await dynamicPricingService.getLosSetupRules(property.id);
+      const response = await dynamicPricingService.getLosSetupRules(propertyId);
       console.log('🔧 DEBUG: Load response:', JSON.stringify(response, null, 2));
       
       const mappedRules = (response.setups || []).map((r: LosSetupRule) => ({
@@ -126,14 +122,14 @@ export default function LosSetupRules() {
     } finally {
       setIsLoading(false);
     }
-  }, [property?.id, t, reset]);
+  }, [propertyId, t, reset]);
 
   // Load existing data on component mount
   useEffect(() => {
-    if (property?.id) {
+    if (propertyId) {
       loadExistingData();
     }
-  }, [property?.id, loadExistingData]);
+  }, [propertyId, loadExistingData]);
 
   const addSetupRule = () => {
     append({

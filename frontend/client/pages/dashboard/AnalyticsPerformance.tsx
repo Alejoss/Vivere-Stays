@@ -64,17 +64,21 @@ export default function AnalyticsPerformance() {
     fetchAnalytics();
   }, []);
 
+  // Extract range values to avoid optional chaining in dependency arrays
+  const rangeFrom = range?.from;
+  const rangeTo = range?.to;
+
   // Debounced fetch on range change
   React.useEffect(() => {
-    if (!range?.from || !range?.to) return;
+    if (!rangeFrom || !rangeTo) return;
     const id = setTimeout(() => {
       fetchAnalytics({
-        from: format(range.from!, "yyyy-MM-dd"),
-        to: format(range.to!, "yyyy-MM-dd"),
+        from: format(rangeFrom, "yyyy-MM-dd"),
+        to: format(rangeTo, "yyyy-MM-dd"),
       });
     }, 250);
     return () => clearTimeout(id);
-  }, [range?.from, range?.to]);
+  }, [rangeFrom, rangeTo]);
 
   return (
     <div className="p-6 pt-12">

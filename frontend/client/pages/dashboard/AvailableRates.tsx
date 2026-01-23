@@ -17,6 +17,9 @@ export default function AvailableRates() {
   // Temporary input values to allow '-', '.' during typing without coercion
   const [tempValues, setTempValues] = useState<Record<string, string>>({});
 
+  // Extract property ID to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
+
   // Helper function to sort rates with base rate first - memoize to prevent recreation
   const sortRatesWithBaseFirst = useCallback((rates: UnifiedRoomRate[]): UnifiedRoomRate[] => {
     return [...rates].sort((a, b) => {
@@ -34,14 +37,14 @@ export default function AvailableRates() {
 
   useEffect(() => {
     const fetchAvailableRates = async () => {
-      if (!property?.id) {
+      if (!propertyId) {
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        const response = await dynamicPricingService.getAvailableRates(property.id);
+        const response = await dynamicPricingService.getAvailableRates(propertyId);
         setRates(response.rates);
         // Sort rates so base rate appears first
         const sortedRates = sortRatesWithBaseFirst(response.rates);
@@ -56,7 +59,7 @@ export default function AvailableRates() {
     };
 
     fetchAvailableRates();
-  }, [property?.id, t, sortRatesWithBaseFirst]);
+  }, [propertyId, t, sortRatesWithBaseFirst]);
 
   const handleSave = async () => {
     if (!property?.id) {

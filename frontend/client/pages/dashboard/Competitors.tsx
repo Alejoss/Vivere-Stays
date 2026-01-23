@@ -23,6 +23,8 @@ import "../../styles/responsive-utilities.css";
 export default function Competitors() {
   const { t } = useTranslation(['dashboard', 'common', 'errors']);
   const { property } = useContext(PropertyContext)!;
+  // Extract property ID to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
   const [selectedAggregation, setSelectedAggregation] = useState("Minimum");
   const [showDropdown, setShowDropdown] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -192,12 +194,12 @@ export default function Competitors() {
 
   // Memoize fetch functions to prevent recreation on every render
   const fetchCompetitorCandidates = useCallback(async () => {
-    if (!property?.id) return;
+    if (!propertyId) return;
     
     setIsLoadingCandidates(true);
     
     try {
-      const response = await dynamicPricingService.getCompetitorCandidates(property.id);
+      const response = await dynamicPricingService.getCompetitorCandidates(propertyId);
       setCompetitorCandidates(response.candidates);
     } catch (error: any) {
       console.error("Error fetching competitor candidates:", error);
@@ -206,16 +208,16 @@ export default function Competitors() {
     } finally {
       setIsLoadingCandidates(false);
     }
-  }, [property?.id, t]);
+  }, [propertyId, t]);
 
   // Fetch processed competitors
   const fetchProcessedCompetitors = useCallback(async () => {
-    if (!property?.id) return;
+    if (!propertyId) return;
     
     setIsLoadingProcessed(true);
     
     try {
-      const response = await dynamicPricingService.getPropertyCompetitors(property.id);
+      const response = await dynamicPricingService.getPropertyCompetitors(propertyId);
       setProcessedCompetitors(response.competitors);
     } catch (error: any) {
       console.error("Error fetching processed competitors:", error);
@@ -224,7 +226,7 @@ export default function Competitors() {
     } finally {
       setIsLoadingProcessed(false);
     }
-  }, [property?.id, t]);
+  }, [propertyId, t]);
 
   // AI suggestion function
   const handleAISuggestions = async () => {
@@ -383,17 +385,17 @@ export default function Competitors() {
       console.error("Error loading general settings:", error);
       // Don't show error to user since it's not critical
     }
-  }, [property?.id]);
+  }, [propertyId]);
 
   // Fetch all competitors when property changes
-  // Use property?.id instead of property object to avoid unnecessary re-renders
+  // Use propertyId instead of property object to avoid unnecessary re-renders
   useEffect(() => {
-    if (property?.id) {
+    if (propertyId) {
       fetchGeneralSettings();
       fetchProcessedCompetitors();
       fetchCompetitorCandidates();
     }
-  }, [property?.id, fetchGeneralSettings, fetchProcessedCompetitors, fetchCompetitorCandidates]);
+  }, [propertyId, fetchGeneralSettings, fetchProcessedCompetitors, fetchCompetitorCandidates]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

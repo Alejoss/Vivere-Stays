@@ -18,20 +18,16 @@ export default function LosGeneralSettings() {
   const [competitorCount, setCompetitorCount] = useState("2");
   const [aggregationMethod, setAggregationMethod] = useState("min");
 
-  // Load existing data on component mount
-  useEffect(() => {
-    if (property?.id) {
-      loadGeneralSettings();
-    }
-  }, [property?.id]);
+  // Extract property ID to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
 
   const loadGeneralSettings = async () => {
-    if (!property?.id) return;
+    if (!propertyId) return;
     
     setIsLoading(true);
     
     try {
-      const generalSettings = await dynamicPricingService.getGeneralSettings(property.id);
+      const generalSettings = await dynamicPricingService.getGeneralSettings(propertyId);
       setCompetitorCount(generalSettings.los_num_competitors?.toString() || "2");
       setAggregationMethod(generalSettings.los_aggregation || "min");
     } catch (error) {
@@ -46,8 +42,15 @@ export default function LosGeneralSettings() {
     }
   };
 
+  // Load existing data on component mount
+  useEffect(() => {
+    if (propertyId) {
+      loadGeneralSettings();
+    }
+  }, [propertyId]);
+
   const handleSave = async () => {
-    if (!property?.id) {
+    if (!propertyId) {
       toast({
         title: t('common:messages.error'),
         description: t('common:messages.noPropertySelected'),
@@ -59,7 +62,7 @@ export default function LosGeneralSettings() {
     setIsSaving(true);
 
     try {
-      await dynamicPricingService.updateGeneralSettings(property.id, {
+      await dynamicPricingService.updateGeneralSettings(propertyId, {
         los_num_competitors: parseInt(competitorCount),
         los_aggregation: aggregationMethod
       });

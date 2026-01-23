@@ -61,23 +61,27 @@ export default function DynamicSetup() {
   // CRITICAL: Store the property ID that was used to load rules - use this for saving to prevent wrong property
   const propertyIdRef = useRef<string | null>(null);
 
+  // Extract property values to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
+  const propertyName = property?.name;
+
   // Debug: Log property changes
   useEffect(() => {
     console.log('🔧 DynamicSetup: Property context changed:', {
-      propertyId: property?.id,
-      propertyName: property?.name,
+      propertyId: propertyId,
+      propertyName: propertyName,
       fullProperty: property,
       storedPropertyIdRef: propertyIdRef.current
     });
-  }, [property?.id, property?.name]);
+  }, [propertyId, propertyName]);
 
   // Memoize loadRules to prevent recreation on every render
   const loadRules = useCallback(async () => {
-    if (!property?.id) return;
+    if (!propertyId) return;
     
     setLoading(true);
     try {
-      const response = await dynamicPricingService.getDynamicRules(property.id);
+      const response = await dynamicPricingService.getDynamicRules(propertyId);
       setRules(response.rules.map(rule => ({ 
         ...rule, 
         isNew: false,
@@ -103,20 +107,20 @@ export default function DynamicSetup() {
     } finally {
       setLoading(false);
     }
-  }, [property?.id, t]);
+  }, [propertyId, t]);
 
   // Load existing rules on component mount
   useEffect(() => {
-    if (property?.id) {
-      console.log('🔧 DynamicSetup: Loading rules for property:', property.id, property.name);
+    if (propertyId) {
+      console.log('🔧 DynamicSetup: Loading rules for property:', propertyId, propertyName);
       // Store the property ID we're loading rules for
-      propertyIdRef.current = property.id;
+      propertyIdRef.current = propertyId;
       loadRules();
     } else {
       console.warn('🔧 DynamicSetup: No property in context!');
       propertyIdRef.current = null;
     }
-  }, [property?.id, loadRules]);
+  }, [propertyId, propertyName, loadRules]);
 
   // Helper functions
   const addNewRule = () => {

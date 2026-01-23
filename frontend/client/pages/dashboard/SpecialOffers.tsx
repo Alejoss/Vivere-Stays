@@ -95,26 +95,16 @@ export default function SpecialOffers() {
   console.log('🔧 FRONTEND DEBUG: Current watched form values:', watchedValues);
   console.log('🔧 FRONTEND DEBUG: Current fields array:', fields);
 
-  // Load existing offers on component mount
-  useEffect(() => {
-    if (property?.id) {
-      loadOffers();
-    }
-  }, [property?.id]);
+  // Extract property ID to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
 
-  // Debug effect to track fields changes
-  useEffect(() => {
-    console.log('🔧 FRONTEND DEBUG: Fields array changed:', fields);
-    console.log('🔧 FRONTEND DEBUG: Fields length:', fields.length);
-  }, [fields]);
-
-  const loadOffers = async () => {
-    if (!property?.id) return;
+  const loadOffers = useCallback(async () => {
+    if (!propertyId) return;
     
-    console.log('🔧 FRONTEND DEBUG: Loading offers for property:', property.id);
+    console.log('🔧 FRONTEND DEBUG: Loading offers for property:', propertyId);
     setLoading(true);
     try {
-      const response = await dynamicPricingService.getSpecialOffers(property.id);
+      const response = await dynamicPricingService.getSpecialOffers(propertyId);
       console.log('🔧 FRONTEND DEBUG: Raw response from API:', response);
       
       const mappedOffers = (response.offers || []).map((offer: any) => ({
@@ -142,14 +132,14 @@ export default function SpecialOffers() {
     } finally {
       setLoading(false);
     }
-  }, [property?.id, t, reset]);
+  }, [propertyId, t, reset]);
 
   // Load existing offers on component mount
   useEffect(() => {
-    if (property?.id) {
+    if (propertyId) {
       loadOffers();
     }
-  }, [property?.id, loadOffers]);
+  }, [propertyId, loadOffers]);
 
   // Debug effect to track fields changes
   useEffect(() => {

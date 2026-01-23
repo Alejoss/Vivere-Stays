@@ -44,20 +44,16 @@ export default function LosReductionRules() {
   // State management
   const [reductionRules, setReductionRules] = useState<LosReductionRule[]>([]);
 
-  // Load existing data on component mount
-  useEffect(() => {
-    if (property?.id) {
-      loadExistingData();
-    }
-  }, [property?.id]);
+  // Extract property ID to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
 
   const loadExistingData = async () => {
-    if (!property?.id) return;
+    if (!propertyId) return;
     
     setIsLoading(true);
     
     try {
-      const response = await dynamicPricingService.getLosReductionRules(property.id);
+      const response = await dynamicPricingService.getLosReductionRules(propertyId);
       setReductionRules(response.reductions);
     } catch (error) {
       console.error("Error loading LOS reduction data:", error);
@@ -90,7 +86,7 @@ export default function LosReductionRules() {
     try {
       if (typeof id === 'number') {
         // This is an existing rule - delete it from the backend
-        await dynamicPricingService.deleteLosReductionRule(property.id, id);
+        await dynamicPricingService.deleteLosReductionRule(propertyId, id);
       }
       
       // Remove from local state regardless of whether it was a new or existing rule
@@ -169,13 +165,13 @@ export default function LosReductionRules() {
       if (typeof rule.id === 'string') {
         // This is a new rule - create it
         const createData: CreateLosReductionRuleRequest = {
-          property_id: property.id,
+          property_id: propertyId,
           lead_time_category: rule.lead_time_category,
           occupancy_category: rule.occupancy_category,
           los_value: rule.los_value,
         };
 
-        const response = await dynamicPricingService.createLosReductionRule(property.id, createData);
+        const response = await dynamicPricingService.createLosReductionRule(propertyId, createData);
         
         // Update the rule in state with the new ID from the response
         setReductionRules(reductionRules.map(r => 
@@ -189,7 +185,7 @@ export default function LosReductionRules() {
           los_value: rule.los_value,
         };
 
-        await dynamicPricingService.updateLosReductionRule(property.id, rule.id, updateData);
+        await dynamicPricingService.updateLosReductionRule(propertyId, rule.id, updateData);
       }
     } catch (error: any) {
       console.error("Error saving rule:", error);

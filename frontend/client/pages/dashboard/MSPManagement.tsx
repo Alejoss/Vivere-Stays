@@ -38,19 +38,15 @@ export default function MSPManagement() {
     return new Date(year, month - 1, day);
   };
 
-  // Load existing MSP entries when component mounts
-  useEffect(() => {
-    if (property?.id) {
-      loadMSPEntries();
-    }
-  }, [property?.id]);
+  // Extract property ID to avoid optional chaining in dependency arrays
+  const propertyId = property?.id;
 
   const loadMSPEntries = async () => {
-    if (!property?.id) return;
+    if (!propertyId) return;
     
     setIsLoading(true);
     try {
-      const response = await dynamicPricingService.getPropertyMSPEntries(property.id);
+      const response = await dynamicPricingService.getPropertyMSPEntries(propertyId);
       
       // Convert existing entries to the format expected by the form
       const existingPeriods: MSPPeriod[] = response.msp_entries.map((entry, index) => ({
@@ -75,6 +71,13 @@ export default function MSPManagement() {
       setIsLoading(false);
     }
   };
+
+  // Load existing MSP entries when component mounts
+  useEffect(() => {
+    if (propertyId) {
+      loadMSPEntries();
+    }
+  }, [propertyId]);
 
   // Helper function to check if a period has been modified (is dirty)
   const isPeriodDirty = (period: MSPPeriod): boolean => {
