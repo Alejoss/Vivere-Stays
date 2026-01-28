@@ -220,6 +220,108 @@ function WeeklyPriceOverview({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Memoize month names to support multiple languages and avoid recreating on every render
+  const monthNames = useMemo(() => [
+    t('dashboard:calendar.months.january'),
+    t('dashboard:calendar.months.february'),
+    t('dashboard:calendar.months.march'),
+    t('dashboard:calendar.months.april'),
+    t('dashboard:calendar.months.may'),
+    t('dashboard:calendar.months.june'),
+    t('dashboard:calendar.months.july'),
+    t('dashboard:calendar.months.august'),
+    t('dashboard:calendar.months.september'),
+    t('dashboard:calendar.months.october'),
+    t('dashboard:calendar.months.november'),
+    t('dashboard:calendar.months.december'),
+  ], [t]);
+
+  // Get the month name for the current week
+  const getCurrentMonthYear = (week: number, year: number) => {
+    const weekStart = getWeekStartDate(year, week);
+    const midWeek = new Date(weekStart.getTime() + 3 * 24 * 60 * 60 * 1000); // Wednesday
+    return `${monthNames[midWeek.getMonth()]} ${midWeek.getFullYear()}`;
+  };
+
+  // Get the first week of a specific month in a given year
+  // Returns { week, year } to handle ISO week year boundaries
+  const getFirstWeekOfMonth = (monthIndex: number, year: number): { week: number; year: number } => {
+    // We want the first week whose "mid-week" (Wednesday) lies inside the target month,
+    // to be consistent with getCurrentMonthYear which also uses the mid-week.
+    
+    // Check the given year first
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(year, week);
+      const midWeek = new Date(
+        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
+      );
+
+      if (
+        midWeek.getFullYear() === year &&
+        midWeek.getMonth() === monthIndex
+      ) {
+        return { week, year };
+      }
+    }
+
+    // Check previous year (in case the first week of the month belongs to previous year's ISO week)
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(year - 1, week);
+      const midWeek = new Date(
+        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
+      );
+
+      if (
+        midWeek.getFullYear() === year &&
+        midWeek.getMonth() === monthIndex
+      ) {
+        return { week, year: year - 1 };
+      }
+    }
+
+    // Check next year (in case the first week of the month belongs to next year's ISO week)
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(year + 1, week);
+      const midWeek = new Date(
+        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
+      );
+
+      if (
+        midWeek.getFullYear() === year &&
+        midWeek.getMonth() === monthIndex
+      ) {
+        return { week, year: year + 1 };
+      }
+    }
+
+    // Fallback: if nothing found (very rare), fall back to the original behaviour
+    const firstDay = new Date(year, monthIndex, 1);
+    for (let week = 1; week <= 53; week++) {
+      const weekStart = getWeekStartDate(year, week);
+      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+      if (firstDay >= weekStart && firstDay <= weekEnd) {
+        return { week, year };
+      }
+    }
+
+    return { week: 1, year }; // final fallback
+  };
+
+  // Handle year selection
+  const handleYearSelect = (year: number) => {
+    setCurrentYear(year);
+    // Keep dropdown open for month selection
+  };
+
+  // Handle month selection
+  const handleMonthSelect = (monthIndex: number) => {
+    const { week, year } = getFirstWeekOfMonth(monthIndex, currentYear);
+    setCurrentYear(year);
+    setCurrentWeek(week);
+    setShowMonthDropdown(false);
+  };
+
   // Handle price change (local state only)
   const handlePriceChange = (index: number, newValue: string) => {
     const date = competitorData?.dates[index];
@@ -447,108 +549,6 @@ function WeeklyPriceOverview({
     if (window.innerWidth < 1024) {
       e.preventDefault();
     }
-  };
-
-  // Memoize month names to support multiple languages and avoid recreating on every render
-  const monthNames = useMemo(() => [
-    t('dashboard:calendar.months.january'),
-    t('dashboard:calendar.months.february'),
-    t('dashboard:calendar.months.march'),
-    t('dashboard:calendar.months.april'),
-    t('dashboard:calendar.months.may'),
-    t('dashboard:calendar.months.june'),
-    t('dashboard:calendar.months.july'),
-    t('dashboard:calendar.months.august'),
-    t('dashboard:calendar.months.september'),
-    t('dashboard:calendar.months.october'),
-    t('dashboard:calendar.months.november'),
-    t('dashboard:calendar.months.december'),
-  ], [t]);
-
-  // Get the month name for the current week
-  const getCurrentMonthYear = (week: number, year: number) => {
-    const weekStart = getWeekStartDate(year, week);
-    const midWeek = new Date(weekStart.getTime() + 3 * 24 * 60 * 60 * 1000); // Wednesday
-    return `${monthNames[midWeek.getMonth()]} ${midWeek.getFullYear()}`;
-  };
-
-  // Get the first week of a specific month in a given year
-  // Returns { week, year } to handle ISO week year boundaries
-  const getFirstWeekOfMonth = (monthIndex: number, year: number): { week: number; year: number } => {
-    // We want the first week whose "mid-week" (Wednesday) lies inside the target month,
-    // to be consistent with getCurrentMonthYear which also uses the mid-week.
-    
-    // Check the given year first
-    for (let week = 1; week <= 53; week++) {
-      const weekStart = getWeekStartDate(year, week);
-      const midWeek = new Date(
-        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
-      );
-
-      if (
-        midWeek.getFullYear() === year &&
-        midWeek.getMonth() === monthIndex
-      ) {
-        return { week, year };
-      }
-    }
-
-    // Check previous year (in case the first week of the month belongs to previous year's ISO week)
-    for (let week = 1; week <= 53; week++) {
-      const weekStart = getWeekStartDate(year - 1, week);
-      const midWeek = new Date(
-        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
-      );
-
-      if (
-        midWeek.getFullYear() === year &&
-        midWeek.getMonth() === monthIndex
-      ) {
-        return { week, year: year - 1 };
-      }
-    }
-
-    // Check next year (in case the first week of the month belongs to next year's ISO week)
-    for (let week = 1; week <= 53; week++) {
-      const weekStart = getWeekStartDate(year + 1, week);
-      const midWeek = new Date(
-        weekStart.getTime() + 3 * 24 * 60 * 60 * 1000, // Wednesday
-      );
-
-      if (
-        midWeek.getFullYear() === year &&
-        midWeek.getMonth() === monthIndex
-      ) {
-        return { week, year: year + 1 };
-      }
-    }
-
-    // Fallback: if nothing found (very rare), fall back to the original behaviour
-    const firstDay = new Date(year, monthIndex, 1);
-    for (let week = 1; week <= 53; week++) {
-      const weekStart = getWeekStartDate(year, week);
-      const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
-
-      if (firstDay >= weekStart && firstDay <= weekEnd) {
-        return { week, year };
-      }
-    }
-
-    return { week: 1, year }; // final fallback
-  };
-
-  // Handle year selection
-  const handleYearSelect = (year: number) => {
-    setCurrentYear(year);
-    // Keep dropdown open for month selection
-  };
-
-  // Handle month selection
-  const handleMonthSelect = (monthIndex: number) => {
-    const { week, year } = getFirstWeekOfMonth(monthIndex, currentYear);
-    setCurrentYear(year);
-    setCurrentWeek(week);
-    setShowMonthDropdown(false);
   };
 
   return (
